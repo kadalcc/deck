@@ -15,6 +15,9 @@ jobs:
   release:
     if: github.repository == 'pmithunish/kadal-deck'
     runs-on: ubuntu-latest
+    # Nothing is published until the NPM_TOKEN secret exists; before that the job builds and tests only.
+    env:
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -30,6 +33,7 @@ jobs:
       # Opens a "Version packages" PR while changesets are pending; once that PR is merged,
       # publishes every changed package to npm with provenance.
       - uses: changesets/action@v1
+        if: env.HAS_NPM_TOKEN == 'true'
         with:
           version: bunx changeset version
           publish: bun run release
