@@ -1,34 +1,116 @@
 {
   "name": "@kadal/deck",
   "version": "0.1.0",
-  "private": true,
-  "description": "The deck engine: MDX slides, a runtime with every reveal.js and Slidev feature, and a live client for the shared Cloudflare backend. Dual-licensed \u2014 see LICENSING.md.",
+  "description": "Kadal Deck: presentations written in MDX, with reveal.js and Slidev features, a live room for the audience, islands in any framework, and export to PDF, PNG and PPTX.",
+  "keywords": [
+    "presentation",
+    "slides",
+    "mdx",
+    "deck",
+    "reveal.js",
+    "slidev",
+    "vite",
+    "react",
+    "live",
+    "audience"
+  ],
   "homepage": "https://deck.kadal.cc",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pmithunish/kadal-deck.git",
+    "directory": "packages/deck"
+  },
+  "bugs": {
+    "url": "https://github.com/pmithunish/kadal-deck/issues"
+  },
   "license": "AGPL-3.0-or-later",
-  "author": "Mithunish Prabhakaran",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
   "type": "module",
+  "sideEffects": [
+    "**/*.css",
+    "./dist/backgrounds/*.js",
+    "./dist/renderers/index.js"
+  ],
+  "files": [
+    "dist",
+    "LICENSE",
+    "LICENSING.md",
+    "README.md",
+    "tools/verify-island.mjs"
+  ],
+  "bin": {
+    "kadal-deck": "./dist/cli/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./vite": "./src/vite/index.ts",
-    "./compiler": "./src/compiler/index.ts",
-    "./live": "./src/live/index.ts",
-    "./protocol": "./src/live/protocol.ts",
-    "./presenter": "./src/presenter/index.tsx",
-    "./audience": "./src/audience/index.tsx",
-    "./backgrounds": "./src/backgrounds/index.tsx",
-    "./renderers": "./src/renderers/index.ts",
-    "./renderers/contract": "./src/renderers/contract.ts",
-    "./sketch": "./src/sketch/index.ts",
-    "./export": "./src/export/index.ts",
-    "./styles.css": "./src/themes/base.css",
-    "./themes/*": "./src/themes/*"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
+    "./compiler": {
+      "types": "./dist/compiler/index.d.ts",
+      "import": "./dist/compiler/index.js"
+    },
+    "./live": {
+      "types": "./dist/live/index.d.ts",
+      "import": "./dist/live/index.js"
+    },
+    "./protocol": {
+      "types": "./dist/live/protocol.d.ts",
+      "import": "./dist/live/protocol.js"
+    },
+    "./presenter": {
+      "types": "./dist/presenter/index.d.ts",
+      "import": "./dist/presenter/index.js"
+    },
+    "./audience": {
+      "types": "./dist/audience/index.d.ts",
+      "import": "./dist/audience/index.js"
+    },
+    "./backgrounds": {
+      "types": "./dist/backgrounds/index.d.ts",
+      "import": "./dist/backgrounds/index.js"
+    },
+    "./renderers": {
+      "types": "./dist/renderers/index.d.ts",
+      "import": "./dist/renderers/index.js"
+    },
+    "./renderers/contract": {
+      "types": "./dist/renderers/contract.d.ts",
+      "import": "./dist/renderers/contract.js"
+    },
+    "./sketch": {
+      "types": "./dist/sketch/index.d.ts",
+      "import": "./dist/sketch/index.js"
+    },
+    "./export": {
+      "types": "./dist/export/index.d.ts",
+      "import": "./dist/export/index.js"
+    },
+    "./styles.css": "./dist/themes/base.css",
+    "./themes/*": "./dist/themes/*",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20.19"
   },
   "scripts": {
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
     "format": "oxfmt src",
     "test": "bun test",
-    "verify:island": "bun tools/verify-island.mjs"
+    "verify:island": "node tools/verify-island.mjs",
+    "prepack": "tsdown"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "0.18.1",
@@ -53,15 +135,27 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "playwright": "^1.50.0",
-    "pptxgenjs": "^3.12.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
-    "@types/node": "^25.9.3"
+    "@types/node": "^25.9.3",
+    "playwright": "^1.50.0",
+    "pptxgenjs": "^3.12.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "peerDependencies": {
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "vite": "^8.0.16"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "vite": "^7.0.0 || ^8.0.0",
+    "playwright": "^1.50.0",
+    "pptxgenjs": "^3.12.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    },
+    "pptxgenjs": {
+      "optional": true
+    }
   }
 }
