@@ -1,19 +1,59 @@
 {
   "name": "@kadal/deck-svelte",
   "version": "0.1.0",
-  "private": true,
-  "description": "The Svelte renderer for @kadal/deck: Svelte 5 components as islands on a slide.",
+  "description": "The Svelte renderer for Kadal Deck (@kadal/deck): Svelte 5 components as islands on a slide.",
+  "keywords": [
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "islands",
+    "svelte"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pmithunish/kadal-deck.git",
+    "directory": "packages/deck-svelte"
+  },
+  "bugs": {
+    "url": "https://github.com/pmithunish/kadal-deck/issues"
+  },
   "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
   "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./build": "./src/build.ts",
-    "./props.svelte": "./src/props.svelte.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./build": {
+      "types": "./dist/build.d.ts",
+      "import": "./dist/build.js"
+    },
+    "./props.svelte": {
+      "types": "./dist/props.svelte.d.ts",
+      "svelte": "./dist/props.svelte.js",
+      "import": "./dist/props.svelte.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
-    "test": "bun test"
+    "test": "bun test",
+    "prepack": "tsdown"
   },
   "devDependencies": {
     "@kadal/deck": "workspace:*",

@@ -1,18 +1,54 @@
 {
   "name": "@kadal/deck-wasm",
   "version": "0.1.0",
-  "private": true,
-  "description": "The WebAssembly renderer for @kadal/deck: islands whose component is not JavaScript.",
+  "description": "The WebAssembly renderer for Kadal Deck (@kadal/deck): islands whose component is not JavaScript.",
+  "keywords": [
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "islands",
+    "wasm"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pmithunish/kadal-deck.git",
+    "directory": "packages/deck-wasm"
+  },
+  "bugs": {
+    "url": "https://github.com/pmithunish/kadal-deck/issues"
+  },
   "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
   "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./build": "./src/build.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./build": {
+      "types": "./dist/build.d.ts",
+      "import": "./dist/build.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
-    "test": "bun test"
+    "test": "bun test",
+    "prepack": "tsdown"
   },
   "devDependencies": {
     "@kadal/deck": "workspace:*",

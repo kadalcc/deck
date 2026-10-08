@@ -75,7 +75,7 @@
       "name": "@kadal/deck",
       "version": "0.1.0",
       "bin": {
-        "kadal-deck": "./dist/cli/index.js",
+        "kadal-deck": "./dist/cli/bin.js",
       },
       "dependencies": {
         "@excalidraw/excalidraw": "0.18.1",
