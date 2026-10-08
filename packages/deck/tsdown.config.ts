@@ -20,6 +20,7 @@ export default defineConfig({
     "sketch/index": "src/sketch/index.ts",
     "export/index": "src/export/index.ts",
     "cli/index": "src/cli/index.ts",
+    "cli/bin": "src/cli/bin.ts",
   },
   format: "esm",
   platform: "neutral",
