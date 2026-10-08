@@ -1680,7 +1680,7 @@ pre.deck-code.has-lines .line::before {
   left: 14px;
   bottom: 12px;
   z-index: 20;
-  font: 12px/1 var(--deck-font, system-ui, sans-serif);
+  font: 12px/1 var(--deck-body-font, system-ui, sans-serif);
   color: var(--deck-muted);
   text-decoration: none;
   background: var(--deck-surface);
