@@ -2,17 +2,41 @@
   "name": "create-kadal-deck",
   "version": "0.1.0",
   "description": "Start a Kadal Deck: npm create kadal-deck@latest my-talk",
-  "keywords": ["kadal-deck", "presentation", "slides", "mdx", "create"],
+  "keywords": [
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "mdx",
+    "create"
+  ],
   "homepage": "https://deck.kadal.cc/docs/",
-  "repository": { "type": "git", "url": "git+https://github.com/pmithunish/kadal-deck.git", "directory": "packages/create-kadal-deck" },
-  "bugs": { "url": "https://github.com/pmithunish/kadal-deck/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pmithunish/kadal-deck.git",
+    "directory": "packages/create-kadal-deck"
+  },
+  "bugs": {
+    "url": "https://github.com/pmithunish/kadal-deck/issues"
+  },
   "license": "AGPL-3.0-or-later",
   "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
   "type": "module",
-  "bin": { "create-kadal-deck": "./src/index.mjs" },
-  "files": ["src", "template", "README.md"],
-  "engines": { "node": ">=20.19" },
-  "publishConfig": { "access": "public", "provenance": true },
+  "bin": {
+    "create-kadal-deck": "./src/index.mjs"
+  },
+  "files": [
+    "src",
+    "template",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node scripts/sync-template.mjs",
     "prepack": "node scripts/sync-template.mjs",
