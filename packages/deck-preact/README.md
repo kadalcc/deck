@@ -1,5 +1,11 @@
 # @kadal/deck-preact
 
+```sh
+npm install @kadal/deck-preact preact
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Preact components on a deck slide. The shortest renderer in the engine, and the smallest amount of
 configuration of any of them.
 

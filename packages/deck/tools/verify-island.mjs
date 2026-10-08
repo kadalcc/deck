@@ -15,7 +15,7 @@
  *
  * The slide's component has to cooperate on two counts: a monotonically increasing attribute that
  * only a live loop can advance, and a `{ mounted, destroyed }` tally on `window`. See
- * `decks/showcase/src/vue-ticker.ts` for the shape to copy.
+ * `examples/showcase/src/vue-ticker.ts` for the shape to copy.
  *
  *   bun packages/deck/tools/verify-island.mjs \
  *     --base http://localhost:4178/showcase --slide 3 --framework vue \

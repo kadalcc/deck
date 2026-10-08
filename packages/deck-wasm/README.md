@@ -1,5 +1,11 @@
 # @kadal/deck-wasm
 
+```sh
+npm install @kadal/deck-wasm
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Islands whose component is not JavaScript.
 
 ```ts
@@ -87,7 +93,7 @@ with a DOM element and an object where it wanted two integers. The Rust ran, the
 itself mounted, no DOM appeared, and nothing threw. The engine could guess its way out of that and
 the guess would be wrong eventually, so the author says it instead.
 
-The showcase's island is Leptos 0.8 CSR: `decks/showcase/rust-ticker/`, built by `bun run rust`,
+The showcase's island is Leptos 0.8 CSR: `examples/showcase/rust-ticker/`, built by `bun run rust`,
 **107 kB of wasm** (down from 1,156 kB — `opt-level = "z"` plus LTO plus wasm-bindgen). Two things
 in it are not what a Leptos tutorial shows, and both come from being driven from outside rather than
 by a router: `ArcRwSignal` rather than `RwSignal`, because the arena kind belongs to a reactive
@@ -104,7 +110,7 @@ the rest of the talk. The renderer calls `free()` after `destroy()` when the han
 
 ## The demo island
 
-`decks/showcase/src/wasm-ticker.wat` is thirty lines of hand-written WebAssembly text, assembled to
+`examples/showcase/src/wasm-ticker.wat` is thirty lines of hand-written WebAssembly text, assembled to
 **195 bytes** by `bun run wat` (using `wabt`, which is pure JavaScript, so it needs no system
 toolchain). The module holds the state and does the arithmetic; the shim beside it owns the element
 and the interval. That division is not a simplification for the demo — it is exactly what

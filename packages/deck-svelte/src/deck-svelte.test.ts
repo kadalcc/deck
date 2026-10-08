@@ -48,7 +48,7 @@ describe("the build plugin that does the stamping", () => {
   });
 
   test("stamps a compiled component", () => {
-    const out = plugin.transform(compiled, "/decks/showcase/src/ticker.svelte");
+    const out = plugin.transform(compiled, "/examples/showcase/src/ticker.svelte");
     expect(out?.code).toContain('Probe[Symbol.for("deck.renderer")] = "svelte"');
   });
 

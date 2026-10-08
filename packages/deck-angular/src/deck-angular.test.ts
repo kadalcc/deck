@@ -18,10 +18,10 @@ import { deckAngularFiles, isDeckAngularFile } from "./build.ts";
 describe("the build surface, which a Vite config imports", () => {
   test("names the deck's Angular files and nothing else", () => {
     expect(deckAngularFiles).toContain("**/*.angular.ts");
-    expect(isDeckAngularFile("", "/decks/showcase/src/chart.angular.ts")).toBe(true);
-    expect(isDeckAngularFile("", "/decks/showcase/src/chart.angular.ts?used")).toBe(true);
-    expect(isDeckAngularFile("", "/decks/showcase/src/main.tsx")).toBe(false);
-    expect(isDeckAngularFile("", "/decks/showcase/src/ticker.svelte")).toBe(false);
+    expect(isDeckAngularFile("", "/examples/showcase/src/chart.angular.ts")).toBe(true);
+    expect(isDeckAngularFile("", "/examples/showcase/src/chart.angular.ts?used")).toBe(true);
+    expect(isDeckAngularFile("", "/examples/showcase/src/main.tsx")).toBe(false);
+    expect(isDeckAngularFile("", "/examples/showcase/src/ticker.svelte")).toBe(false);
   });
 
   test("it can be imported in Node without pulling Angular in", () => {

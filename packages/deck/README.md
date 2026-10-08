@@ -1,23 +1,36 @@
 # @kadal/deck
 
-The presentation engine: slides in MDX, a React runtime with every reveal.js and Slidev feature, and a live room on the shared Cloudflare host so the audience can follow, react, ask and vote from their phones.
-
-```
-decks/<slug>/deck.mdx  ──►  @kadal/deck/vite  ──►  one module per slide  ──►  <Deck> runtime
-                                                                                  │
-                                              apps/deck-worker  ◄── WebSocket ────┘
-                                              (rooms · Q&A · polls · stats · share links · exports)
-```
+**Kadal Deck** — presentations written in MDX. Every reveal.js and Slidev feature, a live room so
+the audience can follow, react, ask and vote from their phones, islands in any framework, and
+export to PDF, PNG and PPTX. Docs: **https://deck.kadal.cc/docs/**
 
 ## Start a deck
 
 ```sh
-bun scripts/new-deck.ts my-talk --title "My talk" --theme minimal   # from the repo root
-cd decks/my-talk && bun run dev                                     # http://localhost:5300/my-talk/
-bun run --filter deck-worker dev                                    # optional: the live room on :8797
+npm create kadal-deck@latest my-talk
+cd my-talk && npm install
+npm run dev                     # edit deck.mdx; the page reloads as you type
+npx kadal-deck build            # dist/, for any static host
+npx kadal-deck login            # once per machine
+npx kadal-deck publish          # https://deck.kadal.cc/@you/my-talk/ with a live room
 ```
 
-Edit `deck.mdx`. Slides split at `---`, vertical slides at `----`. YAML between the dashes is that slide's frontmatter; the block at the top is the headmatter (deck settings and the title slide's frontmatter). `deck.config.ts` overrides the headmatter; every option is documented in `src/core/model.ts`.
+Slides split at `---`, vertical slides at `----`. YAML between the dashes is that slide's
+frontmatter; the block at the top is the headmatter (deck settings and the title slide).
+`deck.config.ts` overrides the headmatter; every option is documented in `src/core/model.ts`.
+
+## The CLI
+
+| command | what |
+| --- | --- |
+| `kadal-deck dev` | Vite dev server for the deck in this folder |
+| `kadal-deck build` | `dist/` for any static host |
+| `kadal-deck export [--png] [--pptx]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX) |
+| `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
+| `kadal-deck publish [--slug] [--workspace] [--title]` | build for the host and publish; only changed files are uploaded |
+
+`KADAL_DECK_TOKEN` (an API token from the dashboard) and `KADAL_DECK_HOST` override the saved
+login, which is how CI publishes.
 
 ## Writing slides
 
@@ -105,7 +118,7 @@ export const architecture = s.build();
 
 Nodes: `box`, `pill`, `ellipse`, `diamond`, `cylinder`, `note`, `text`; tones as for bling plus `ink` and `muted`; `fill: hachure`, `dashed`, `font: hand | normal | code`. Arrows pick the facing sides (`from`/`to`/`fromShift`/`via` to steer), take a `label`, and belong to the regions of both ends. `steps` makes a tour: the whole drawing first, then one click per entry lights that region and dims the rest, with a caption; the notes' `[click]` markers line up. The corner button (and its F-hint) opens the real Excalidraw canvas in view mode to pan and zoom. Colours are rewritten to theme tokens on export, so a sketch follows the theme menu and the dark scheme; fonts are self-hosted by the Vite plugin under `<base>excalidraw/fonts/`.
 
-Embedded pages (`layout: iframe*`, `<Iframe>`) load when their slide shows, unload when it is left, and sit behind a "click to interact" shield so keys keep driving the deck until you mean it; `Done` hands the keyboard back. The slide a press lands on next has its pages loading already, hidden, so arriving there looks instant. `<Iframe scale={0.5}>` renders a page at twice the pane and shrinks it, for a desktop layout in a small card. `posterUrl:` (or `<Iframe posterUrl>`) photographs a different address for the poster — the same page in a state its URL does not carry — and `posterWait:` gives it longer than the default five seconds to settle. Where a page cannot be live — print, the overview, the presenter's next-slide box, the scroll view — and while it loads, a **poster** stands in: `poster: shots/map.jpg` on the slide (or `<Iframe poster>`), else the screenshot `bun run export` captures for that URL at the pane's size into `public/posters/` (`--posters` captures only, `--refresh-posters` recaptures), else a card with the address. A slide whose content overflows is scaled to fit (`autoFit`, on by default).
+Embedded pages (`layout: iframe*`, `<Iframe>`) load when their slide shows, unload when it is left, and sit behind a "click to interact" shield so keys keep driving the deck until you mean it; `Done` hands the keyboard back. The slide a press lands on next has its pages loading already, hidden, so arriving there looks instant. `<Iframe scale={0.5}>` renders a page at twice the pane and shrinks it, for a desktop layout in a small card. `posterUrl:` (or `<Iframe posterUrl>`) photographs a different address for the poster — the same page in a state its URL does not carry — and `posterWait:` gives it longer than the default five seconds to settle. Where a page cannot be live — print, the overview, the presenter's next-slide box, the scroll view — and while it loads, a **poster** stands in: `poster: shots/map.jpg` on the slide (or `<Iframe poster>`), else the screenshot `kadal-deck export` captures for that URL at the pane's size into `public/posters/` (`--posters` captures only, `--refresh-posters` recaptures), else a card with the address. A slide whose content overflows is scaled to fit (`autoFit`, on by default).
 
 ## Views
 
@@ -127,22 +140,19 @@ The one rule underneath: a move with no `sync.source` is a person, here, and end
 ## Export
 
 ```sh
-bun run export                  # PDF into export/ (builds + previews the deck itself)
-bun run export --png --pptx     # also PNGs and a PPTX (one image per slide, notes attached)
-bun run export --upload         # archive on the host (DECK_ADMIN_KEY, or the presenter cookie)
-bun run export --posters        # only capture posters for the embedded pages (done before every export too)
+npx kadal-deck export                  # PDF into export/ (builds + previews the deck itself)
+npx kadal-deck export --png --pptx     # also PNGs and a PPTX (one image per slide, notes attached)
+npx kadal-deck export --posters        # only capture posters for the embedded pages
 ```
+
+Needs `playwright` (and `pptxgenjs` for PPTX) installed in the deck: they are optional peers, so
+a deck that never exports never downloads a browser.
 
 ## Publish
 
-Every deck is served by one Worker at `deck.kadal.cc/<slug>/`:
-
-```sh
-turbo run build --filter='./decks/*'      # each deck's dist/
-cd apps/deck-worker && bun run deploy     # collect dist/ folders into assets/ and deploy
-```
-
-See `apps/deck-worker/README.md` for the host's setup (D1, R2, secrets, passcodes).
+`npx kadal-deck publish` puts the deck on https://deck.kadal.cc with a live room, analytics and
+share links (free plan included). Any static host also works: `npx kadal-deck build` and upload
+`dist/` — everything except the live room runs without a server.
 
 ## Layout of this package
 

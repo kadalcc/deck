@@ -1,5 +1,11 @@
 # @kadal/deck-python
 
+```sh
+npm install @kadal/deck-python
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Python islands on a deck slide, through Pyodide — CPython compiled to WebAssembly.
 
 ```ts

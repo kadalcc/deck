@@ -1,6 +1,6 @@
 # Licensing
 
-`@kadal/deck` is dual-licensed.
+**Kadal Deck** (`@kadal/deck` and the `@kadal/deck-*` renderers) is dual-licensed.
 
 ## 1 · AGPL-3.0-or-later (the default)
 

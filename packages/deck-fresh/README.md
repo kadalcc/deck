@@ -1,5 +1,11 @@
 # @kadal/deck-fresh
 
+```sh
+npm install @kadal/deck-fresh @kadal/deck-preact preact @preact/signals
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Fresh islands on a deck slide.
 
 ```ts

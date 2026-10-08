@@ -16,7 +16,7 @@
 //!     whose type depends on the view, and a `#[wasm_bindgen]` struct cannot carry a generic. Boxed
 //!     as `Any`, dropping it still runs the real `Drop` and tears the view down.
 //!
-//! Build: `bun run rust` from `decks/showcase`.
+//! Build: `bun run rust` from `examples/showcase`.
 
 use std::any::Any;
 

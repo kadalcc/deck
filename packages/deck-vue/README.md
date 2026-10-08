@@ -1,5 +1,11 @@
 # @kadal/deck-vue
 
+```sh
+npm install @kadal/deck-vue vue
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Vue 3 components on a deck slide.
 
 ```ts

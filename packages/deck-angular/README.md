@@ -1,5 +1,11 @@
 # @kadal/deck-angular
 
+```sh
+npm install @kadal/deck-angular @angular/core @angular/platform-browser @angular/compiler
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Angular standalone components on a deck slide — zoneless, JIT, and with **no Angular build plugin**.
 
 ```ts

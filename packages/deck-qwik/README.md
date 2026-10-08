@@ -1,5 +1,11 @@
 # @kadal/deck-qwik
 
+```sh
+npm install @kadal/deck-qwik @qwik.dev/core
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Qwik components on a deck slide, with **no Qwik Vite optimizer**.
 
 ```ts

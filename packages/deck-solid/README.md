@@ -1,5 +1,11 @@
 # @kadal/deck-solid
 
+```sh
+npm install @kadal/deck-solid solid-js vite-plugin-solid
+```
+
+Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
+
 Solid components on a deck slide.
 
 ```ts
