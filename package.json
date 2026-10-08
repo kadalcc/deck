@@ -2,7 +2,10 @@
   "name": "kadal-deck-monorepo",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "examples/*"],
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
   "scripts": {
     "build": "bun run --filter '@kadal/deck' build && bun run --filter './packages/deck-*' build && bun run --filter create-kadal-deck build",
     "typecheck": "bun run --filter './packages/*' typecheck",
@@ -10,13 +13,15 @@
     "lint": "oxlint packages",
     "format": "oxfmt packages examples/starter",
     "changeset": "changeset",
-    "release": "bun run build && changeset publish"
+    "release": "bun run build && changeset publish",
+    "smoke": "node tools/smoke.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
     "oxfmt": "latest",
     "oxlint": "latest",
     "tsdown": "^0.23.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "playwright": "1.61.1"
   }
 }
