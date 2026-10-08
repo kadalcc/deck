@@ -23,7 +23,9 @@ import {
   type DeckConfigInput,
   type DeckManifest,
   fromFlat,
+  readHostOverride,
   resolveConfig,
+  withHostOverride,
   resolveSlideOptions,
   type SlideOptions,
 } from "../core/model.ts";
@@ -105,7 +107,11 @@ export function Deck({
   const base = useMemo(baseOf, []);
   const slugFromBase = base.replace(/^\/|\/$/g, "");
   const config = useMemo(
-    () => resolveConfig({ slug: slugFromBase }, manifest.headmatter, configIn),
+    () =>
+      withHostOverride(
+        resolveConfig({ slug: slugFromBase }, manifest.headmatter, configIn),
+        readHostOverride(),
+      ),
     [manifest.headmatter, configIn, slugFromBase],
   );
   const columns = useMemo<Column[]>(

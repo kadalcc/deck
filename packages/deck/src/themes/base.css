@@ -1673,3 +1673,32 @@ pre.deck-code.has-lines .line::before {
 .deck-layout-two-cols > .deck-slot-bottom {
   grid-column: 1 / -1;
 }
+
+/* "Made with Kadal Deck": the free-plan badge, bottom-left, out of the way of the slide number. */
+.deck-made-with {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  z-index: 20;
+  font: 12px/1 var(--deck-font, system-ui, sans-serif);
+  color: var(--deck-muted);
+  text-decoration: none;
+  background: var(--deck-surface);
+  padding: 6px 9px;
+  border-radius: 6px;
+  opacity: 0.72;
+  transition: opacity 0.2s ease;
+}
+.deck-made-with:hover,
+.deck-made-with:focus-visible {
+  opacity: 1;
+  color: var(--deck-fg);
+}
+.deck-made-with strong {
+  font-weight: 600;
+}
+@media print {
+  .deck-made-with {
+    display: none;
+  }
+}

@@ -4,6 +4,7 @@ import { useStore } from "../core/store.ts";
 import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
+import { roomIdOf } from "../core/model.ts";
 import { type DeckRuntime, useDeck } from "../react/context.ts";
 import { Icon } from "../components/bling.tsx";
 import { useActions, useLayout, useNav, useUi } from "../react/hooks.ts";
@@ -23,7 +24,7 @@ import type { ServerMessage } from "./protocol.ts";
 export function LiveProvider({ children }: { children?: ReactNode }) {
   const deck = useDeck();
   const api = deck.config.live.api;
-  const room = deck.config.live.room ?? deck.config.slug ?? "deck";
+  const room = roomIdOf(deck.config);
   const value = useMemo<LiveValue | null>(() => {
     if (!api || deck.mode === "print") return null;
     const siteKey = deck.config.live.turnstile;

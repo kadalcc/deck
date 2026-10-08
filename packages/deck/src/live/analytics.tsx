@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { key as navKey } from "../core/navigation.ts";
+import { roomIdOf } from "../core/model.ts";
 import { useDeck } from "../react/context.ts";
 import { viewerId } from "./client.ts";
 
@@ -12,7 +13,7 @@ import { viewerId } from "./client.ts";
 export function Analytics() {
   const deck = useDeck();
   const api = deck.config.live.api;
-  const slug = deck.config.slug;
+  const slug = roomIdOf(deck.config);
   useEffect(() => {
     if (!api || !slug || deck.mode === "print" || deck.mode === "presenter") return;
     const dwell: Record<string, number> = {};

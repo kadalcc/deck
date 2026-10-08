@@ -15,6 +15,7 @@ import { DrawingLayer } from "../draw/DrawingLayer.tsx";
 import { PointerLayer, slideLabel } from "../live/LiveProvider.tsx";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { ConfettiLayer } from "../react/ConfettiLayer.tsx";
+import { roomIdOf } from "../core/model.ts";
 import { useDeck } from "../react/context.ts";
 import { useActions, useNav } from "../react/hooks.ts";
 import { closeTerm } from "../react/terms.ts";
@@ -238,7 +239,7 @@ export function AudiencePage() {
             onClick={async () => {
               const url = await shareLink(
                 deck.config.live.api,
-                deck.config.slug || "deck",
+                roomIdOf(deck.config),
                 deck.base,
                 { h: pos.h, v: pos.v },
               );

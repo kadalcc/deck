@@ -54,7 +54,11 @@ export { LAYOUTS, type LayoutProps } from "./react/layouts.tsx";
 export * from "./components/index.ts";
 export {
   DEFAULT_CONFIG,
+  readHostOverride,
   resolveConfig,
+  roomIdOf,
+  withHostOverride,
+  type HostOverride,
   resolveSlideOptions,
   resolveBackground,
   columnsOf,

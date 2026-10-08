@@ -34,7 +34,27 @@ export function Chrome() {
       <HintLayer />
       <Toast />
       <ConfettiLayer />
+      {deck.config.badge && deck.mode === "play" ? <MadeWith /> : null}
     </>
+  );
+}
+
+/**
+ * "Made with Kadal Deck", in the corner of a deck the host serves on the free plan. Only in the
+ * play window: never in print or export (mode "print"), the presenter's own window, or the
+ * audience page.
+ */
+export function MadeWith() {
+  return (
+    <a
+      className="deck-made-with"
+      href="https://deck.kadal.cc/?ref=badge"
+      target="_blank"
+      rel="noopener"
+      data-hint
+    >
+      Made with <strong>Kadal Deck</strong>
+    </a>
   );
 }
 

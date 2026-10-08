@@ -8,6 +8,7 @@ import { Pace, Presence, QrJoin } from "../live/components.tsx";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
 import { useLiveOptional, useRoomStatus } from "../live/context.ts";
 import { PointerLayer } from "../live/LiveProvider.tsx";
+import { roomIdOf } from "../core/model.ts";
 import { useDeck } from "../react/context.ts";
 import { useActions, useCurrentSlide, useNav, useUi } from "../react/hooks.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
@@ -123,7 +124,7 @@ function usePresenterGate(): Gate {
     checking: boolean;
     error: string | null;
   }>({ ok: false, required: !!api, checking: !!api, error: null });
-  const url = `${api}/decks/${encodeURIComponent(deck.config.slug || "deck")}/presenter`;
+  const url = `${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/presenter`;
   useEffect(() => {
     if (!api) return;
     let alive = true;
@@ -713,7 +714,7 @@ function PresenterTools({
         type="button"
         onClick={async () => {
           const n = deck.nav.get();
-          const url = await shareLink(deck.config.live.api, deck.config.slug || "deck", deck.base, {
+          const url = await shareLink(deck.config.live.api, roomIdOf(deck.config), deck.base, {
             h: n.h,
             v: n.v,
             click: n.click,
@@ -1066,7 +1067,7 @@ export function StatsPage() {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (!api) return;
-    fetch(`${api}/decks/${encodeURIComponent(deck.config.slug || "deck")}/stats`, {
+    fetch(`${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/stats`, {
       credentials: "include",
     })
       .then(async (r) =>
@@ -1079,7 +1080,7 @@ export function StatsPage() {
             ),
       )
       .catch((e: unknown) => setError(String(e)));
-  }, [api, deck.config.slug]);
+  }, [api, deck.config]);
   if (!api)
     return <div className="deck-stats-page">This deck has no host, so there are no stats.</div>;
   if (error) return <div className="deck-stats-page">{error}</div>;
@@ -1166,7 +1167,7 @@ export function StatsPage() {
         {stats.exports.map((e) => (
           <li key={e.key}>
             <a
-              href={`${api}/decks/${encodeURIComponent(deck.config.slug || "deck")}/exports/${encodeURIComponent(e.key)}`}
+              href={`${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/exports/${encodeURIComponent(e.key)}`}
             >
               {e.kind} · {new Date(e.at).toLocaleString()} · {Math.round(e.size / 1024)} KB
             </a>

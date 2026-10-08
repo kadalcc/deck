@@ -172,6 +172,8 @@ export interface DeckConfig {
   audienceNotes: boolean;
   /** The deck's slug on the host, from the Vite base — decks/<slug>. */
   slug: string;
+  /** Show the "Made with Kadal Deck" link in the corner (set by the host, see `withHostOverride`). */
+  badge: boolean;
   /** Google Fonts families to load, e.g. ["Inter:wght@400;600"]. */
   fonts: string[];
   seoMeta: Record<string, string>;
@@ -253,6 +255,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   polls: true,
   audienceNotes: false,
   slug: "",
+  badge: false,
   fonts: [],
   seoMeta: {},
 };
@@ -617,4 +620,54 @@ export function findById(columns: Column[], id: string): { h: number; v: number 
     }
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// The host override. A deck is built once and may be served anywhere; the host that serves it
+// knows which room it belongs to. It says so with one global set before the bundle runs:
+//
+//   <script>window.__KADAL_DECK__ = {"room":"d…","api":"/api","badge":true}</script>
+//
+// and it wins over whatever the build said. Applied once, in `Deck`, so every consumer of
+// `config.live` (the room, presenter login, stats, beacons, share links, exports) agrees.
+
+/** What a host may say about a deck it serves. */
+export interface HostOverride {
+  room?: string;
+  api?: string;
+  badge?: boolean;
+}
+
+/** The global a host sets, validated: anything malformed is ignored rather than trusted. */
+export function readHostOverride(scope: unknown = globalThis): HostOverride | null {
+  const raw = (scope as { __KADAL_DECK__?: unknown } | null)?.__KADAL_DECK__;
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const out: HostOverride = {};
+  if (typeof o.room === "string" && /^[a-z0-9][a-z0-9-]{0,63}$/.test(o.room)) out.room = o.room;
+  if (typeof o.api === "string" && o.api.length > 0) out.api = o.api;
+  if (typeof o.badge === "boolean") out.badge = o.badge;
+  return out;
+}
+
+/** The config with the host's word laid over it. Returns the same object when there is none. */
+export function withHostOverride(config: DeckConfig, override: HostOverride | null): DeckConfig {
+  if (!override || (!override.room && !override.api && override.badge === undefined)) return config;
+  return {
+    ...config,
+    live: {
+      ...config.live,
+      ...(override.room ? { room: override.room } : {}),
+      ...(override.api ? { api: override.api } : {}),
+    },
+    ...(override.badge !== undefined ? { badge: override.badge } : {}),
+  };
+}
+
+/**
+ * The id every host call is keyed by — the room, presenter login, stats, beacons, share links and
+ * exports. A published deck's is the room the host assigned; a self-hosted one's is its slug.
+ */
+export function roomIdOf(config: Pick<DeckConfig, "live" | "slug">): string {
+  return config.live.room || config.slug || "deck";
 }
