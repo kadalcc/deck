@@ -1,16 +1,15 @@
 {
-  "name": "@decks/template",
+  "name": "kadal-deck-starter",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "kadal-deck dev",
+    "build": "kadal-deck build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
-    "lint": "oxlint src",
-    "format": "oxfmt src deck.mdx",
-    "export": "bun ../../packages/deck/src/export/cli.ts"
+    "export": "kadal-deck export",
+    "publish:deck": "kadal-deck publish",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@kadal/deck": "workspace:*",

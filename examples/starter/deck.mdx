@@ -1,48 +1,83 @@
 ---
-title: A new deck
+title: My first Kadal Deck
 author: Your name
-info: One line about this talk, for the audience page and exports.
+info: A starter deck. Edit deck.mdx and the page reloads as you type.
 theme: minimal
 ---
 
-# A new deck
+# My first Kadal Deck
 
-One line under the title. Press <Kbd>→</Kbd> or <Kbd>Space</Kbd> to move, <Kbd>?</Kbd> for every key.
+Slides are Markdown. Press <Kbd>→</Kbd> or <Kbd>Space</Kbd> to move, <Kbd>?</Kbd> for every key.
 
 <Notes>
-  Speaker notes live in a `Notes` block. They show in the presenter view and nowhere else.
+  Speaker notes live in a `Notes` block. Press <Kbd>P</Kbd> to open the presenter view: notes,
+  a timer and the next slide, in its own window.
 </Notes>
 
 ---
 layout: section
 ---
 
-# The first section
+# Three dashes start a new slide
+
+Four dashes (`----`) start a slide below this one: a vertical column, as in reveal.js.
+
+----
+
+## Below the section
+
+Use vertical slides for detail a talk might skip. <Kbd>↓</Kbd> goes down, <Kbd>→</Kbd> goes on.
 
 ---
 
-## Points, one at a time
+## Points, one click at a time
 
 <Clicks>
 
-- The first point
-- The second, on the next click
-- The third
+- Wrap a list in `<Clicks>` and each item waits for a click
+- Notes can follow along: put `[click]` where each one starts
+- The presenter view highlights the matching note
 
 </Clicks>
 
-<Notes>[click] Say the first thing. [click] Then the second. [click] And the third.</Notes>
+<Notes>[click] The first point. [click] The second. [click] And the third.</Notes>
 
 ---
 
-## Code that steps
+## Code that steps through itself
 
-```ts {1|2-3|all} [example.ts]
+```ts {1|2-4|all} [ask.ts]
 const answer = 42;
-function ask(question: string) {
+export function ask(question: string) {
   return `${question}? ${answer}`;
 }
 ```
+
+The `{1|2-4|all}` after the language highlights those lines, one click each.
+
+---
+layout: two-cols
+---
+
+## Two columns
+
+The left column is everything before `::right::`.
+
+- Layouts: `center`, `section`, `two-cols`, `image-right` and more
+- Set one in a slide's own headmatter
+
+::right::
+
+> "Write the talk in the editor you already use, and present it in a browser."
+
+---
+
+## Ask the room
+
+<Poll id="first" question="Where will you present this deck?" options={["A meetup", "A class", "At work", "Just trying it out"]} />
+
+Polls, quizzes and questions need a live room: publish the deck with `npx kadal-deck publish`,
+and your audience joins from their phones with the code on the audience page.
 
 ---
 layout: center
@@ -50,4 +85,4 @@ layout: center
 
 # Thank you
 
-Questions? Scan the code on the audience page to ask one.
+Edit `deck.mdx` to start yours. Docs: [deck.kadal.cc/docs](https://deck.kadal.cc/docs/)
