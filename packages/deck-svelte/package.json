@@ -1,0 +1,27 @@
+{
+  "name": "@kadal/deck-svelte",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Svelte renderer for @kadal/deck: Svelte 5 components as islands on a slide.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./build": "./src/build.ts",
+    "./props.svelte": "./src/props.svelte.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "svelte": "^5.57.1",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "workspace:*",
+    "svelte": "^5.0.0"
+  }
+}

@@ -1,0 +1,59 @@
+# The showcase's glossary: the first mention of each term on every slide gets a hover card.
+# See "Terms that explain themselves" in deck.mdx, and packages/deck/README.md for the format.
+
+MDX:
+  def: Markdown that can contain JSX — components sit between the paragraphs, and the file compiles to JavaScript.
+  tag: Format
+  link: https://mdxjs.com
+
+reveal.js:
+  def: Hakim El Hattab's open-source HTML presentation framework — the source of this engine's keyboard map, fragments and two-dimensional slide grid.
+  tag: Prior art
+  see: [Slidev]
+
+Slidev:
+  def: Anthony Fu's slide tool for developers, written in Markdown on Vue and Vite — the source of the click model, the slots and the code-block meta.
+  tag: Prior art
+  see: [reveal.js]
+
+Durable Object:
+  def: >-
+    A Cloudflare Workers primitive — one addressable instance of a class with its own storage, to
+    which every request for the same id is routed.
+  more: A deck's room is one. Its position, polls and questions live there, so every window agrees.
+  aliases: [Durable Objects]
+  tag: Cloudflare
+  see: [WebSocket hibernation, D1]
+
+WebSocket hibernation:
+  def: A Durable Object may leave memory while its WebSockets stay connected, and is woken when a message arrives.
+  more: An idle room therefore costs nothing, however many phones are still joined.
+  aliases: [hibernating, hibernation]
+  tag: Cloudflare
+  see: [Durable Object]
+
+D1:
+  def: Cloudflare's serverless SQLite database. Sessions, poll results and deck passcodes are kept in it.
+  tag: Cloudflare
+
+KaTeX:
+  def: A fast maths typesetter for the web. Slides are typeset at build time, and so is any $\LaTeX$ inside a definition like this one.
+  tag: Library
+
+Shiki:
+  def: A syntax highlighter that uses VS Code's grammars and themes. It runs once, at build time, in a light and a dark theme together.
+  tag: Library
+  see: [Magic move]
+
+Magic move:
+  def: An animated step between two versions of a code block, in which every unchanged token glides to its new place.
+  tag: Feature
+  see: [Shiki]
+
+Excalidraw:
+  def: An open-source whiteboard with a hand-drawn look. Sketches here are described in code and drawn by it.
+  tag: Library
+
+Vite:
+  def: A front-end build tool whose dev server hands the browser source files as native ES modules. The deck plugin turns every slide into one.
+  tag: Tooling

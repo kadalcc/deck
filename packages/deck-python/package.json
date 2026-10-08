@@ -1,0 +1,24 @@
+{
+  "name": "@kadal/deck-python",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Python renderer for @kadal/deck: Python islands on a slide, through Pyodide.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./build": "./src/build.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "workspace:*"
+  }
+}

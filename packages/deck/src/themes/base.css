@@ -1,0 +1,1675 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   @kadal/deck — base stylesheet: the stage, slides, transitions, clicks, code,
+   chrome, overview, scroll view, print. Themes set the tokens; this sets the bones.
+   ───────────────────────────────────────────────────────────────────────────── */
+@import "katex/dist/katex.min.css";
+@import "shiki-magic-move/style.css";
+@import "./live.css";
+@import "./bling.css";
+@import "./sketch.css";
+@import "./glossary.css";
+
+:root {
+  --deck-bg: #ffffff;
+  --deck-fg: #111111;
+  --deck-muted: #6b7280;
+  --deck-accent: #2563eb;
+  --deck-accent-2: #7c3aed;
+  --deck-surface: rgba(0, 0, 0, 0.04);
+  --deck-border: rgba(0, 0, 0, 0.12);
+  --deck-heading-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --deck-body-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --deck-mono-font: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-code-bg: #f6f8fa;
+  --deck-code-fg: #24292e;
+  --deck-code-active: rgba(37, 99, 235, 0.12);
+  --deck-radius: 12px;
+  --deck-pad: 64px;
+  --deck-base-size: 32px;
+  --deck-live: #ec4899;
+  --deck-transition: 600ms;
+}
+[data-color-scheme="dark"] {
+  --deck-bg: #0b0b0d;
+  --deck-fg: #f4f4f5;
+  --deck-muted: #a1a1aa;
+  --deck-surface: rgba(255, 255, 255, 0.06);
+  --deck-border: rgba(255, 255, 255, 0.14);
+  --deck-code-bg: #16161a;
+  --deck-code-fg: #e4e4e7;
+  --deck-code-active: rgba(96, 165, 250, 0.16);
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  font-family: var(--deck-body-font);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+#root,
+.deck-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* Outside the stage: the bars that centre a 16:9 slide in a window of another shape. */
+  --deck-bars: color-mix(in oklab, var(--deck-bg) 30%, #000);
+}
+.deck-root.mode-play {
+  background: var(--deck-bars);
+}
+.deck-root.cursor-hidden {
+  cursor: none;
+}
+.deck-root.no-select .deck-slide {
+  user-select: none;
+}
+/* A PROJECTOR is for looking at, not touching: a second screen, or the one window shared on a
+   call. It takes no input (see `Flags.projector`), so it shows no cursor and holds no selection —
+   a pointer left sitting on it would otherwise ride along into the share. A desktop shell lays
+   its own drag surface over the top; that surface brings its own cursor back. */
+.deck-root.is-projector {
+  /* No `cursor: none` here: the idle rule above hides it, so it can come back when the pointer
+     moves — a share window has an embedded page and a Reload in it worth pointing at. */
+  user-select: none;
+}
+.deck-missing-page {
+  padding: 3rem;
+  font-family: var(--deck-mono-font);
+}
+
+/* ── backgrounds ─────────────────────────────────────────────────────────── */
+.deck-backgrounds {
+  /* The stage's box (inline left/top/width/height from the layout): the slide's own ground. */
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--deck-bg);
+}
+.deck-background {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--deck-transition) ease;
+}
+.deck-background-fill,
+.deck-background-video,
+.deck-background-iframe,
+.deck-background-component {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.deck-background-video {
+  object-fit: cover;
+}
+.deck-backgrounds[data-transition="fade"] .is-leaving {
+  opacity: 0;
+}
+.deck-backgrounds[data-transition="none"] .is-leaving {
+  display: none;
+}
+.deck-backgrounds[data-transition="slide"] .is-leaving,
+.deck-backgrounds[data-transition="convex"] .is-leaving,
+.deck-backgrounds[data-transition="concave"] .is-leaving,
+.deck-backgrounds[data-transition="zoom"] .is-leaving {
+  animation: deck-bg-leave var(--deck-transition) ease forwards;
+}
+.deck-backgrounds[data-transition="slide"] .is-entering,
+.deck-backgrounds[data-transition="convex"] .is-entering,
+.deck-backgrounds[data-transition="concave"] .is-entering,
+.deck-backgrounds[data-transition="zoom"] .is-entering {
+  animation: deck-bg-enter var(--deck-transition) ease;
+}
+.deck-backgrounds[data-direction="back"] .is-leaving {
+  animation-name: deck-bg-leave-back;
+}
+.deck-backgrounds[data-direction="back"] .is-entering {
+  animation-name: deck-bg-enter-back;
+}
+@keyframes deck-bg-enter {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes deck-bg-leave {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes deck-bg-enter-back {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes deck-bg-leave-back {
+  to {
+    transform: translateX(100%);
+  }
+}
+.deck-background-missing {
+  position: absolute;
+  inset: auto 1rem 1rem auto;
+  font: 12px var(--deck-mono-font);
+  color: #f43f5e;
+}
+
+/* ── stage and slides ────────────────────────────────────────────────────── */
+.deck-zoom {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.deck-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  perspective: 1600px;
+  will-change: transform;
+}
+.deck-slide {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: var(--deck-pad);
+  font-size: var(--deck-base-size);
+  line-height: 1.4;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  backface-visibility: hidden;
+  contain: layout style;
+  /* Never transition a slide's own properties: a transition on `visibility` or `transform` would
+     outlive the keyframe animation and show the slide that just left, at full opacity, for the
+     length of the transition. The keyframes are the only motion a slide gets. */
+  transition: none;
+}
+.deck-slide.is-present {
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 2;
+}
+.deck-slide.is-leaving {
+  visibility: visible;
+  z-index: 1;
+}
+.deck-slide.is-tile,
+.deck-slide.is-scroll,
+.deck-slide.is-print,
+.deck-slide.is-mirror {
+  visibility: visible;
+  position: absolute;
+}
+.deck-slide.is-scroll {
+  pointer-events: auto;
+}
+.deck-slide-loading {
+  position: absolute;
+  inset: 0;
+}
+.deck-slide-error {
+  font: 20px var(--deck-mono-font);
+  color: #f43f5e;
+  white-space: pre-wrap;
+}
+/* A failed slide is a dead end without these — in the share window there is not even a toolbar. */
+.deck-slide-error-actions {
+  display: flex;
+  gap: 0.5em;
+  margin-top: 1em;
+}
+.deck-slide-error-actions button {
+  font: 600 0.5em var(--deck-body-font);
+  padding: 0.6em 1.2em;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  cursor: pointer;
+}
+.deck-slide-error-actions button:hover {
+  border-color: var(--deck-accent);
+  color: var(--deck-accent);
+}
+
+/* the layouts */
+.deck-layout {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.deck-layout-default {
+  justify-content: flex-start;
+}
+.deck-layout-center,
+.deck-layout-cover,
+.deck-layout-intro,
+.deck-layout-section,
+.deck-layout-end,
+.deck-layout-fact,
+.deck-layout-quote,
+.deck-layout-statement {
+  justify-content: center;
+}
+.deck-layout-center,
+.deck-layout-fact,
+.deck-layout-statement,
+.deck-layout-end {
+  align-items: center;
+  text-align: center;
+}
+.deck-layout-fact > :is(h1, h2, p, .deck-counter) {
+  font-size: 3em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.deck-layout-quote {
+  padding-inline: 8%;
+  font-size: 1.4em;
+  font-style: italic;
+}
+.deck-layout-full {
+  padding: 0;
+}
+.deck-layout-two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2em;
+  align-items: start;
+  align-content: start;
+}
+/* Full-bleed layouts cover the slide's padding box: `inset: 0` already reaches the slide's edges
+   (an absolute child ignores the padding), so no negative margin — that overshot by a pad and
+   clipped the frame's top and bottom. */
+.deck-layout-image,
+.deck-layout-image-left,
+.deck-layout-image-right,
+.deck-layout-iframe,
+.deck-layout-iframe-left,
+.deck-layout-iframe-right {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  width: auto;
+  height: auto;
+  position: absolute;
+  inset: 0;
+}
+.deck-layout-image-left,
+.deck-layout-iframe-left,
+.deck-layout-image-right,
+.deck-layout-iframe-right {
+  grid-template-columns: 1fr 1fr;
+}
+.deck-layout-image,
+.deck-layout-iframe {
+  grid-template-columns: 1fr;
+}
+.deck-layout-image-pane {
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 100%;
+}
+.deck-layout-iframe-pane {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* An embedded page sits in a framed card with room around it, not flush with the slide's edge. */
+.deck-layout-iframe,
+.deck-layout-iframe-left,
+.deck-layout-iframe-right {
+  box-sizing: border-box;
+  padding: calc(var(--deck-pad) * 0.5);
+  gap: calc(var(--deck-pad) * 0.5);
+}
+.deck-layout-iframe-left .deck-layout-iframe-content,
+.deck-layout-iframe-right .deck-layout-iframe-content {
+  padding: calc(var(--deck-pad) * 0.25) calc(var(--deck-pad) * 0.5);
+}
+.deck-frame.deck-layout-iframe-pane {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--deck-border);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  background: var(--deck-surface);
+}
+.deck-layout-image-content,
+.deck-layout-iframe-content {
+  padding: calc(var(--deck-pad) * 0.75) var(--deck-pad);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.deck-layout-iframe-pane,
+.deck-layout-image-pane {
+  min-width: 0;
+  min-height: 0;
+}
+.deck-layout-image .deck-layout-image-content {
+  position: absolute;
+  inset: auto 0 0 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  color: #fff;
+}
+
+/* ── slide transitions (the incoming slide animates in, the leaving one out) ── */
+.deck-stage[data-speed="fast"] {
+  --deck-transition: 300ms;
+}
+.deck-stage[data-speed="slow"] {
+  --deck-transition: 1000ms;
+}
+/* `both`: the incoming slide sits at its first keyframe before the animation starts (no
+   one-frame flash at full opacity) and the leaving slide holds its last keyframe until unmounted. */
+.deck-stage:not([data-transition="none"]) .deck-slide.is-present {
+  animation: var(--deck-anim-in, none) var(--deck-transition) cubic-bezier(0.26, 0.86, 0.44, 0.985)
+    both;
+}
+.deck-stage:not([data-transition="none"]) .deck-slide.is-leaving {
+  animation: var(--deck-anim-out, none) var(--deck-transition) cubic-bezier(0.26, 0.86, 0.44, 0.985)
+    both;
+}
+.deck-stage[data-transition="fade"] {
+  --deck-anim-in: deck-fade-in;
+  --deck-anim-out: deck-fade-out;
+}
+.deck-stage[data-transition="slide"][data-direction="forward"],
+.deck-stage[data-transition="slide"][data-direction="none"] {
+  --deck-anim-in: deck-slide-in-right;
+  --deck-anim-out: deck-slide-out-left;
+}
+.deck-stage[data-transition="slide"][data-direction="back"] {
+  --deck-anim-in: deck-slide-in-left;
+  --deck-anim-out: deck-slide-out-right;
+}
+.deck-stage[data-transition="slide"][data-direction="down"] {
+  --deck-anim-in: deck-slide-in-bottom;
+  --deck-anim-out: deck-slide-out-top;
+}
+.deck-stage[data-transition="slide"][data-direction="up"] {
+  --deck-anim-in: deck-slide-in-top;
+  --deck-anim-out: deck-slide-out-bottom;
+}
+.deck-stage[data-transition="convex"][data-direction="forward"],
+.deck-stage[data-transition="convex"][data-direction="none"] {
+  --deck-anim-in: deck-convex-in-right;
+  --deck-anim-out: deck-convex-out-left;
+}
+.deck-stage[data-transition="convex"][data-direction="back"] {
+  --deck-anim-in: deck-convex-in-left;
+  --deck-anim-out: deck-convex-out-right;
+}
+.deck-stage[data-transition="convex"][data-direction="down"],
+.deck-stage[data-transition="convex"][data-direction="up"] {
+  --deck-anim-in: deck-fade-in;
+  --deck-anim-out: deck-fade-out;
+}
+.deck-stage[data-transition="concave"][data-direction="forward"],
+.deck-stage[data-transition="concave"][data-direction="none"] {
+  --deck-anim-in: deck-concave-in-right;
+  --deck-anim-out: deck-concave-out-left;
+}
+.deck-stage[data-transition="concave"][data-direction="back"] {
+  --deck-anim-in: deck-concave-in-left;
+  --deck-anim-out: deck-concave-out-right;
+}
+.deck-stage[data-transition="concave"][data-direction="down"],
+.deck-stage[data-transition="concave"][data-direction="up"] {
+  --deck-anim-in: deck-fade-in;
+  --deck-anim-out: deck-fade-out;
+}
+.deck-stage[data-transition="zoom"] {
+  --deck-anim-in: deck-zoom-in;
+  --deck-anim-out: deck-zoom-out;
+}
+.deck-stage[data-transition="zoom"][data-direction="back"] {
+  --deck-anim-in: deck-zoom-in-back;
+  --deck-anim-out: deck-zoom-out-back;
+}
+.deck-stage[data-transition="view-transition"] {
+  --deck-anim-in: none;
+  --deck-anim-out: none;
+}
+@keyframes deck-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes deck-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes deck-slide-in-right {
+  from {
+    transform: translateX(150%);
+  }
+}
+@keyframes deck-slide-out-left {
+  to {
+    transform: translateX(-150%);
+  }
+}
+@keyframes deck-slide-in-left {
+  from {
+    transform: translateX(-150%);
+  }
+}
+@keyframes deck-slide-out-right {
+  to {
+    transform: translateX(150%);
+  }
+}
+@keyframes deck-slide-in-bottom {
+  from {
+    transform: translateY(150%);
+  }
+}
+@keyframes deck-slide-out-top {
+  to {
+    transform: translateY(-150%);
+  }
+}
+@keyframes deck-slide-in-top {
+  from {
+    transform: translateY(-150%);
+  }
+}
+@keyframes deck-slide-out-bottom {
+  to {
+    transform: translateY(150%);
+  }
+}
+@keyframes deck-convex-in-right {
+  from {
+    transform: translate3d(100%, 0, 0) rotateY(90deg) translate3d(100%, 0, 0);
+  }
+}
+@keyframes deck-convex-out-left {
+  to {
+    transform: translate3d(-100%, 0, 0) rotateY(-90deg) translate3d(-100%, 0, 0);
+  }
+}
+@keyframes deck-convex-in-left {
+  from {
+    transform: translate3d(-100%, 0, 0) rotateY(-90deg) translate3d(-100%, 0, 0);
+  }
+}
+@keyframes deck-convex-out-right {
+  to {
+    transform: translate3d(100%, 0, 0) rotateY(90deg) translate3d(100%, 0, 0);
+  }
+}
+@keyframes deck-concave-in-right {
+  from {
+    transform: translate3d(100%, 0, 0) rotateY(-90deg) translate3d(100%, 0, 0);
+  }
+}
+@keyframes deck-concave-out-left {
+  to {
+    transform: translate3d(-100%, 0, 0) rotateY(90deg) translate3d(-100%, 0, 0);
+  }
+}
+@keyframes deck-concave-in-left {
+  from {
+    transform: translate3d(-100%, 0, 0) rotateY(90deg) translate3d(-100%, 0, 0);
+  }
+}
+@keyframes deck-concave-out-right {
+  to {
+    transform: translate3d(100%, 0, 0) rotateY(-90deg) translate3d(100%, 0, 0);
+  }
+}
+@keyframes deck-zoom-in {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+@keyframes deck-zoom-out {
+  to {
+    transform: scale(16);
+    opacity: 0;
+  }
+}
+@keyframes deck-zoom-in-back {
+  from {
+    transform: scale(16);
+    opacity: 0;
+  }
+}
+@keyframes deck-zoom-out-back {
+  to {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-stage .deck-slide {
+    animation: none !important;
+  }
+  /* No crossfade at all: the slide that left is hidden at once, and backgrounds swap. */
+  .deck-stage .deck-slide.is-leaving {
+    visibility: hidden;
+  }
+  .deck-background {
+    transition: none;
+  }
+}
+
+/* ── clicks (fragments) ──────────────────────────────────────────────────── */
+.deck-click {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease,
+    color 0.4s ease,
+    filter 0.4s ease;
+}
+.deck-click.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.deck-click.effect-fade-up.is-hidden {
+  transform: translateY(40px);
+}
+.deck-click.effect-fade-down.is-hidden {
+  transform: translateY(-40px);
+}
+.deck-click.effect-fade-left.is-hidden {
+  transform: translateX(40px);
+}
+.deck-click.effect-fade-right.is-hidden {
+  transform: translateX(-40px);
+}
+.deck-click.effect-fade-out.is-hidden,
+.deck-click.effect-semi-fade-out.is-hidden,
+.deck-click.effect-strike.is-hidden,
+.deck-click.effect-highlight-red.is-hidden,
+.deck-click.effect-highlight-green.is-hidden,
+.deck-click.effect-highlight-blue.is-hidden,
+.deck-click.effect-highlight-current-red.is-hidden,
+.deck-click.effect-highlight-current-green.is-hidden,
+.deck-click.effect-highlight-current-blue.is-hidden,
+.deck-click.effect-grow.is-hidden,
+.deck-click.effect-shrink.is-hidden {
+  opacity: 1;
+  pointer-events: auto;
+}
+.deck-click.effect-fade-out.is-shown {
+  opacity: 0;
+}
+.deck-click.effect-semi-fade-out.is-shown {
+  opacity: 0.5;
+}
+.deck-click.effect-grow.is-shown {
+  transform: scale(1.2);
+}
+.deck-click.effect-shrink.is-shown {
+  transform: scale(0.7);
+}
+.deck-click.effect-strike.is-shown {
+  text-decoration: line-through;
+}
+.deck-click.effect-highlight-red.is-shown,
+.deck-click.effect-highlight-current-red.is-current {
+  color: #ef4444;
+}
+.deck-click.effect-highlight-green.is-shown,
+.deck-click.effect-highlight-current-green.is-current {
+  color: #22c55e;
+}
+.deck-click.effect-highlight-blue.is-shown,
+.deck-click.effect-highlight-current-blue.is-current {
+  color: #3b82f6;
+}
+.deck-click.effect-current-visible.is-shown:not(.is-current),
+.deck-click.effect-fade-in-then-out.is-shown:not(.is-current) {
+  opacity: 0;
+}
+.deck-click.effect-fade-in-then-semi-out.is-shown:not(.is-current) {
+  opacity: 0.5;
+}
+.deck-click.effect-blur.is-hidden {
+  opacity: 1;
+  filter: blur(6px);
+}
+.deck-click.effect-blur.is-shown {
+  filter: none;
+}
+/* In print and the overview, everything is shown: a thumbnail of a slide is of the whole slide.
+   `.is-mirror` is deliberately not in this list — the audience's mirror and the presenter's
+   next-STEP box are live views of one moment in a slide, and showing them revealed would be
+   showing the room the answer before it is given. */
+.is-print .deck-click,
+.is-tile .deck-click {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* ── typography defaults inside slides ───────────────────────────────────── */
+.deck-slide h1,
+.deck-slide h2,
+.deck-slide h3,
+.deck-slide h4 {
+  font-family: var(--deck-heading-font);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5em;
+  text-wrap: balance;
+}
+.deck-slide h1 {
+  font-size: 2.6em;
+  font-weight: 700;
+}
+.deck-slide h2 {
+  font-size: 1.9em;
+  font-weight: 700;
+}
+.deck-slide h3 {
+  font-size: 1.35em;
+  font-weight: 600;
+}
+.deck-slide h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+}
+.deck-slide p {
+  margin: 0 0 0.6em;
+}
+.deck-slide ul,
+.deck-slide ol {
+  margin: 0 0 0.6em;
+  padding-inline-start: 1.2em;
+}
+.deck-slide li {
+  margin: 0.15em 0;
+}
+.deck-slide a {
+  color: var(--deck-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.deck-slide blockquote {
+  margin: 0.4em 0;
+  padding: 0.4em 1em;
+  border-inline-start: 4px solid var(--deck-accent);
+  color: var(--deck-muted);
+  background: var(--deck-surface);
+  border-radius: var(--deck-radius);
+}
+.deck-slide table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.72em;
+  line-height: 1.35;
+}
+.deck-slide th,
+.deck-slide td {
+  border-bottom: 1px solid var(--deck-border);
+  padding: 0.35em 0.6em;
+  text-align: start;
+}
+.deck-slide th {
+  color: var(--deck-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7em;
+  letter-spacing: 0.06em;
+}
+.deck-slide img,
+.deck-slide video,
+.deck-slide iframe {
+  max-width: 100%;
+  border-radius: var(--deck-radius);
+}
+.deck-slide :not(pre) > code {
+  font-family: var(--deck-mono-font);
+  font-size: 0.85em;
+  background: var(--deck-surface);
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+}
+.deck-slide hr {
+  border: 0;
+  border-top: 1px solid var(--deck-border);
+  margin: 1em 0;
+}
+.deck-slide strong {
+  font-weight: 700;
+}
+
+/* ── code blocks ─────────────────────────────────────────────────────────── */
+.deck-code-block {
+  position: relative;
+  margin: 0.5em 0;
+  border-radius: var(--deck-radius);
+  background: var(--deck-code-bg);
+  color: var(--deck-code-fg);
+  border: 1px solid var(--deck-border);
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+}
+.deck-code-block.is-hidden {
+  opacity: 0;
+}
+.deck-code-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.35em 1em;
+  font: 0.55em var(--deck-mono-font);
+  color: var(--deck-muted);
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-code-title-dot {
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 50%;
+  background: var(--deck-accent);
+}
+pre.deck-code {
+  margin: 0;
+  padding: 0.7em 0;
+  font: 0.6em/1.6 var(--deck-mono-font);
+  overflow: auto;
+  tab-size: 2;
+  background: transparent !important;
+}
+pre.deck-code code {
+  display: block;
+  min-width: 100%;
+  width: max-content;
+}
+pre.deck-code .line {
+  display: inline-block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 1.2em;
+  transition:
+    opacity 0.3s ease,
+    background 0.3s ease;
+}
+pre.deck-code .line.is-dim {
+  opacity: 0.35;
+}
+pre.deck-code .line.is-active {
+  background: var(--deck-code-active);
+}
+pre.deck-code.has-lines .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2.2em;
+  margin-inline-start: -0.4em;
+  color: var(--deck-muted);
+  opacity: 0.6;
+  text-align: end;
+  padding-inline-end: 1em;
+  user-select: none;
+}
+[data-color-scheme="light"] .shiki,
+[data-color-scheme="light"] .shiki span {
+  color: var(--shiki-light, inherit);
+}
+[data-color-scheme="dark"] .shiki,
+[data-color-scheme="dark"] .shiki span {
+  color: var(--shiki-dark, inherit);
+}
+.deck-code-copy {
+  position: absolute;
+  top: 0.4em;
+  right: 0.5em;
+  font: 0.45em var(--deck-mono-font);
+  padding: 0.3em 0.7em;
+  border-radius: 6px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: var(--deck-muted);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.deck-code-block.has-title .deck-code-copy {
+  top: 0.3em;
+}
+.deck-code-block:hover .deck-code-copy {
+  opacity: 1;
+}
+.shiki-magic-move-wrap {
+  padding: 0.7em 1.2em;
+}
+.shiki-magic-move-container {
+  font: inherit;
+}
+
+/* ── helpers ─────────────────────────────────────────────────────────────── */
+.deck-stack {
+  display: grid;
+  place-items: center;
+}
+.deck-stack > * {
+  grid-area: 1 / 1;
+}
+.deck-layout > .deck-stretch,
+.deck-stretch {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-stretch > :is(img, video, iframe) {
+  flex: 1;
+  min-height: 0;
+  object-fit: contain;
+  width: 100%;
+}
+.deck-cols,
+.deck-grid {
+  display: grid;
+  width: 100%;
+}
+/* A ROW OF CARDS ENDS ON ONE LINE. A grid stretches its cells, not what is in them: two cards with
+   different amounts of text sat in equal cells at unequal heights. So a card that is the only
+   thing in its cell — a column, or the step wrapper that reveals it — fills the cell. Nothing
+   changes where the author asked otherwise (`<Cols align="start">` does not stretch its cells, so
+   there is nothing to fill), nor for a card that shares its column with other content. A deck's own
+   card components join in with the `deck-card` class. */
+:is(.deck-col, div.deck-click):has(> :is(.deck-glass, .deck-callout, .deck-card):only-child) {
+  display: flex;
+  flex-direction: column;
+}
+:is(.deck-col, div.deck-click) > :is(.deck-glass, .deck-callout, .deck-card):only-child {
+  flex: 1 1 auto;
+}
+/* …and through both at once: a column whose one child is the step that reveals its one card. */
+.deck-col:has(
+  > div.deck-click:only-child > :is(.deck-glass, .deck-callout, .deck-card):only-child
+) {
+  display: flex;
+  flex-direction: column;
+}
+.deck-col
+  > div.deck-click:only-child:has(> :is(.deck-glass, .deck-callout, .deck-card):only-child) {
+  flex: 1 1 auto;
+}
+.deck-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+}
+.deck-frame {
+  border: 4px solid var(--deck-border);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+  border-radius: var(--deck-radius);
+}
+.deck-transform {
+  width: fit-content;
+}
+.deck-absolute {
+  position: absolute;
+}
+.deck-fit-text {
+  width: 100%;
+  line-height: 1;
+}
+.deck-kbd {
+  font: 0.75em var(--deck-mono-font);
+  border: 1px solid var(--deck-border);
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  padding: 0.05em 0.45em;
+  background: var(--deck-surface);
+}
+.deck-badge {
+  display: inline-block;
+  font-size: 0.55em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.25em 0.7em;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  vertical-align: middle;
+}
+.deck-badge.tone-accent {
+  color: var(--deck-accent);
+  border-color: currentColor;
+}
+.deck-badge.tone-good {
+  color: #16a34a;
+  border-color: currentColor;
+}
+.deck-badge.tone-warn {
+  color: #d97706;
+  border-color: currentColor;
+}
+.deck-badge.tone-bad {
+  color: #dc2626;
+  border-color: currentColor;
+}
+.deck-callout {
+  margin: 0.5em 0;
+  padding: 0.6em 1em;
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  border-inline-start-width: 6px;
+  background: var(--deck-surface);
+  font-size: 0.85em;
+}
+.deck-callout.kind-info {
+  border-inline-start-color: var(--deck-accent);
+}
+.deck-callout.kind-tip {
+  border-inline-start-color: #16a34a;
+}
+.deck-callout.kind-warn {
+  border-inline-start-color: #d97706;
+}
+.deck-callout.kind-danger {
+  border-inline-start-color: #dc2626;
+}
+.deck-callout-title {
+  display: block;
+  margin-bottom: 0.2em;
+}
+.deck-counter {
+  font-variant-numeric: tabular-nums;
+}
+.deck-typewriter-cursor {
+  animation: deck-blink 1s steps(2) infinite;
+}
+@keyframes deck-blink {
+  to {
+    opacity: 0;
+  }
+}
+.deck-timer {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--deck-mono-font);
+}
+.deck-timer.is-done {
+  color: #dc2626;
+}
+.deck-mark {
+  position: relative;
+  display: inline;
+}
+.deck-mark::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.deck-mark.is-on::after {
+  opacity: 1;
+}
+.deck-mark.type-underline::after {
+  left: 0;
+  right: 0;
+  bottom: -0.05em;
+  height: 0.15em;
+  background: var(--mark-color);
+  border-radius: 2px;
+  transform: rotate(-0.6deg);
+}
+.deck-mark.type-highlight::after {
+  inset: -0.05em -0.15em;
+  background: color-mix(in oklab, var(--mark-color) 35%, transparent);
+  border-radius: 4px;
+  z-index: -1;
+}
+.deck-mark.type-box::after,
+.deck-mark.type-circle::after {
+  inset: -0.2em -0.4em;
+  border: 3px solid var(--mark-color);
+  border-radius: 6px;
+}
+.deck-mark.type-circle::after {
+  border-radius: 50% / 45%;
+  transform: rotate(-2deg);
+}
+.deck-mark.type-strike::after {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 0.12em;
+  background: var(--mark-color);
+  transform: rotate(-1.5deg);
+}
+.deck-confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.deck-slide-background {
+  /* covers the whole slide, padding included: the layout box plus a pad on every side */
+  position: absolute;
+  inset: calc(var(--deck-pad) * -1);
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.deck-slide-background > * {
+  width: 100%;
+  height: 100%;
+}
+.deck-toc {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  column-gap: 2em;
+}
+.deck-toc li {
+  margin: 0.2em 0;
+  break-inside: avoid;
+}
+.deck-toc li.is-current > a {
+  color: var(--deck-accent);
+  font-weight: 700;
+}
+.deck-toc li.is-past > a {
+  color: var(--deck-muted);
+}
+.deck-toc a {
+  text-decoration: none;
+  color: inherit;
+}
+.deck-toc .level-2 {
+  font-size: 0.85em;
+}
+.deck-toc .level-3 {
+  font-size: 0.75em;
+}
+.deck-math .katex-display {
+  margin: 0.4em 0;
+}
+.deck-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.deck-qr {
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+}
+.deck-iframe {
+  border: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── chrome ──────────────────────────────────────────────────────────────── */
+.deck-controls {
+  position: absolute;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 2px;
+  --deck-controls-color: var(--deck-accent);
+}
+.deck-controls.layout-bottom-right {
+  right: 12px;
+  bottom: 12px;
+}
+.deck-controls.layout-edges {
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+.deck-control {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.1;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+.deck-control span {
+  width: 14px;
+  height: 14px;
+  border-top: 3px solid var(--deck-controls-color);
+  border-right: 3px solid var(--deck-controls-color);
+  display: block;
+}
+.deck-control-left span {
+  transform: rotate(-135deg);
+}
+.deck-control-right span {
+  transform: rotate(45deg);
+}
+.deck-control-up span {
+  transform: rotate(-45deg);
+}
+.deck-control-down span {
+  transform: rotate(135deg);
+}
+.deck-control.is-enabled {
+  opacity: 0.9;
+}
+.deck-control.is-enabled.is-faded {
+  opacity: 0.35;
+}
+.deck-control.is-enabled:hover {
+  transform: scale(1.15);
+  opacity: 1;
+}
+.deck-control:disabled {
+  cursor: default;
+}
+.deck-control.is-highlight span {
+  animation: deck-bounce 1.2s ease infinite;
+}
+@keyframes deck-bounce {
+  50% {
+    transform: rotate(45deg) translate(3px, -3px);
+  }
+}
+.deck-controls.layout-bottom-right .deck-control-left {
+  grid-area: 2 / 1;
+}
+.deck-controls.layout-bottom-right .deck-control-right {
+  grid-area: 2 / 3;
+}
+.deck-controls.layout-bottom-right .deck-control-up {
+  grid-area: 1 / 2;
+}
+.deck-controls.layout-bottom-right .deck-control-down {
+  grid-area: 3 / 2;
+}
+.deck-controls.layout-edges .deck-control {
+  position: absolute;
+}
+.deck-controls.layout-edges .deck-control-left {
+  left: 8px;
+  top: 50%;
+  margin-top: -22px;
+}
+.deck-controls.layout-edges .deck-control-right {
+  right: 8px;
+  top: 50%;
+  margin-top: -22px;
+}
+.deck-controls.layout-edges .deck-control-up {
+  top: 8px;
+  left: 50%;
+  margin-left: -22px;
+}
+.deck-controls.layout-edges .deck-control-down {
+  bottom: 8px;
+  left: 50%;
+  margin-left: -22px;
+}
+.deck-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  z-index: 20;
+  background: var(--deck-surface);
+  cursor: pointer;
+}
+.deck-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2));
+  transform-origin: 0 0;
+  transition: transform 0.4s ease;
+}
+.deck-slide-number {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  z-index: 20;
+  font: 14px var(--deck-mono-font);
+  color: var(--deck-muted);
+  text-decoration: none;
+  background: var(--deck-surface);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.deck-controls.layout-bottom-right ~ .deck-slide-number {
+  right: 160px;
+}
+.deck-pause-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  display: grid;
+  place-items: end center;
+  color: #444;
+  font: 14px var(--deck-mono-font);
+  padding-bottom: 24px;
+}
+.deck-pause-curtain[data-on] {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* The same curtain over the slide in someone's hand. Smaller, and it never takes a tap: the
+   viewer cannot lift a blackout, and swiping to another slide must still work under it. */
+.deck-pause-curtain.is-audience {
+  font-size: 12px;
+  padding-bottom: 10px;
+}
+.deck-pause-curtain.is-audience[data-on] {
+  pointer-events: none;
+}
+.deck-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+}
+.deck-sheet-panel {
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-border);
+  border-radius: 16px;
+  padding: 24px 28px;
+  width: min(640px, 92vw);
+  max-height: 84vh;
+  overflow: auto;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+  font-size: 15px;
+}
+.deck-sheet-panel h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.deck-sheet-panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.deck-sheet-panel td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-sheet-panel kbd {
+  font: 12px var(--deck-mono-font);
+  border: 1px solid var(--deck-border);
+  border-radius: 5px;
+  padding: 2px 6px;
+  background: var(--deck-surface);
+}
+.deck-sheet-hint {
+  color: var(--deck-muted);
+  font-size: 12px;
+  margin: 12px 0 0;
+}
+.deck-sheet input,
+.deck-jump input {
+  width: 100%;
+  box-sizing: border-box;
+  font: 18px var(--deck-body-font);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  outline: none;
+}
+.deck-search ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.deck-search button {
+  width: 100%;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: inherit;
+}
+.deck-search button:hover {
+  background: var(--deck-surface);
+}
+.deck-search button span {
+  color: var(--deck-muted);
+  font-size: 13px;
+}
+.deck-search-empty {
+  color: var(--deck-muted);
+  padding: 10px 12px;
+}
+.deck-jump {
+  position: absolute;
+  z-index: 70;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
+  width: 320px;
+}
+.deck-toast {
+  position: absolute;
+  z-index: 80;
+  left: 50%;
+  top: 24px;
+  transform: translate(-50%, -20px);
+  background: var(--deck-fg);
+  color: var(--deck-bg);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.deck-toast[data-on] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.deck-notes-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  max-height: 30%;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 16px;
+  backdrop-filter: blur(6px);
+}
+.deck-lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.9);
+  display: grid;
+  place-items: center;
+}
+.deck-lightbox-media {
+  width: 90vw;
+  height: 88vh;
+  display: grid;
+  place-items: center;
+}
+.deck-lightbox-media > * {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+.deck-lightbox-media[data-fit="contain"] > :is(img, video) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.deck-lightbox-media[data-fit="cover"] > :is(img, video) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.deck-lightbox-media iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+.deck-lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: transparent;
+  color: #fff;
+  border: 0;
+  font-size: 36px;
+  cursor: pointer;
+}
+
+/* ── overview ────────────────────────────────────────────────────────────── */
+.deck-overview {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+  overflow: auto;
+  padding: 40px;
+}
+.deck-overview-grid {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  min-height: 100%;
+}
+.deck-overview-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.deck-overview-tile {
+  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0;
+  background: var(--deck-bg);
+  overflow: hidden;
+  cursor: pointer;
+  flex: none;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
+}
+.deck-overview-tile:hover {
+  transform: scale(1.03);
+}
+.deck-overview-tile.is-current {
+  border-color: var(--deck-accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--deck-accent) 40%, transparent);
+}
+.deck-overview-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.deck-overview-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font: 11px var(--deck-mono-font);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 3px 6px;
+  text-align: start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── scroll view ─────────────────────────────────────────────────────────── */
+.deck-scroll {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+.deck-scroll[data-snap="mandatory"] {
+  scroll-snap-type: y mandatory;
+}
+.deck-scroll[data-snap="proximity"] {
+  scroll-snap-type: y proximity;
+}
+.deck-scroll-segment {
+  position: relative;
+  scroll-snap-align: start;
+}
+.deck-scroll-sticky {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.deck-scroll-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.deck-scrollbar {
+  position: fixed;
+  right: 6px;
+  top: 12px;
+  bottom: 12px;
+  width: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 30;
+  opacity: 0.6;
+}
+.deck-scrollbar span {
+  display: block;
+  background: var(--deck-border);
+  border-radius: 3px;
+}
+.deck-scrollbar span.is-current {
+  background: var(--deck-accent);
+}
+
+/* ── print ───────────────────────────────────────────────────────────────── */
+.deck-print .deck-root,
+.deck-print body,
+.deck-print html {
+  height: auto;
+  overflow: visible;
+}
+.deck-print-pages {
+  margin: 0 auto;
+}
+.deck-print-page {
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  background: var(--deck-bg);
+}
+.deck-print-page .deck-background {
+  position: absolute;
+  inset: 0;
+}
+.deck-print-page .deck-slide {
+  position: absolute;
+  inset: 0;
+}
+.deck-print-notes {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+  max-height: 30%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+  padding: 16px 20px;
+  border-radius: 10px;
+  font-size: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+.deck-print-notes.is-full {
+  position: static;
+  max-height: none;
+  padding: 80px;
+  font-size: 28px;
+  background: transparent;
+  box-shadow: none;
+}
+@media screen {
+  .deck-print-pages {
+    padding: 16px 0;
+  }
+  .deck-print-page {
+    margin: 0 auto 16px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.25);
+  }
+}
+@media print {
+  .deck-print-pages {
+    zoom: 1 !important;
+    padding: 0;
+  }
+  .deck-print-page {
+    margin: 0;
+    box-shadow: none;
+  }
+  .deck-controls,
+  .deck-progress,
+  .deck-scrollbar {
+    display: none !important;
+  }
+}
+
+/* a slide that forces its own scheme repaints its text: `color` inherited from the body was
+   resolved with the root's tokens, so it has to be re-read here */
+.deck-slide[data-color-scheme] {
+  color: var(--deck-fg);
+}
+
+/* named slots (`::right::` in a slide): the two-cols layout places them, others stack them */
+.deck-layout-two-cols > .deck-slot-default {
+  grid-column: 1;
+}
+.deck-layout-two-cols > .deck-slot-right {
+  grid-column: 2;
+}
+.deck-layout-two-cols > .deck-slot-default,
+.deck-layout-two-cols > .deck-slot-right {
+  grid-row: 1;
+  min-width: 0;
+}
+.deck-layout-two-cols > .deck-slot-bottom {
+  grid-column: 1 / -1;
+}

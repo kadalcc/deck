@@ -1,0 +1,317 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   GLOSSARY TERMS  —  the dotted word, its countdown, and the definition card
+   ─────────────────────────────────────────────────────────────────────────────
+   A term reads like its sentence: same colour, same weight, a faint dotted underline. While the
+   pointer rests on it the underline draws itself solid over the open delay (`--term-delay`, set
+   inline from the deck's config) — the visible half of the countdown whose other half is the pie
+   cursor. Everything inside the card is sized in em, so the one number that matters is the
+   container's font-size: stage pixels × `--term-zoom` on a slide, page pixels in the readout. */
+
+.deck-term {
+  cursor: help;
+  border-radius: 0.18em;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, var(--deck-accent) 60%, transparent);
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.2em;
+  background-image: linear-gradient(var(--deck-accent), var(--deck-accent));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 0.085em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition:
+    background-size 180ms ease-out,
+    background-color 180ms ease-out;
+}
+.deck-term.is-arming {
+  background-size: 100% 0.085em;
+  transition: background-size var(--term-delay, 700ms) linear;
+}
+.deck-term.is-open {
+  background-size: 100% 0.085em;
+  background-color: color-mix(in srgb, var(--deck-accent) 13%, transparent);
+  text-decoration-color: transparent;
+}
+.deck-term.is-inert {
+  cursor: inherit;
+}
+/* A heading's term keeps the heading's look; the underline scales with the type on its own. */
+.deck-slide :is(h1, h2, h3) .deck-term {
+  text-decoration-thickness: 0.045em;
+  background-size: 0% 0.05em;
+}
+.deck-slide :is(h1, h2, h3) .deck-term:is(.is-arming, .is-open) {
+  background-size: 100% 0.05em;
+}
+
+.deck-term-card {
+  position: absolute;
+  z-index: 60;
+  box-sizing: border-box;
+  width: min(calc(640px * var(--term-zoom, 1)), calc(100% - 40px));
+  padding: 1em 1.25em 1.05em 1.4em;
+  font-size: calc(23px * var(--term-zoom, 1));
+  font-family: var(--deck-font, inherit);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.45;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  color: var(--deck-fg);
+  /* Opaque on purpose: a definition is read in a hurry, and slide text ghosting through it costs more
+     than the glass look is worth. */
+  background: var(--deck-bg);
+  border: 1px solid var(--deck-border);
+  border-radius: 0.7em;
+  box-shadow:
+    inset 0.2em 0 0 var(--deck-accent),
+    0 0.1em 0.3em rgba(0, 0, 0, 0.08),
+    0 0.9em 2.6em rgba(0, 0, 0, 0.24);
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: auto;
+  cursor: default;
+  user-select: text;
+}
+.deck-term-card.is-ready {
+  visibility: visible;
+  opacity: 1;
+  animation: deck-term-in 150ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.deck-term-card.is-below.is-ready {
+  animation-name: deck-term-in-below;
+}
+@keyframes deck-term-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em) scale(0.985);
+  }
+}
+@keyframes deck-term-in-below {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35em) scale(0.985);
+  }
+}
+/* The pointer: a square turned on its corner, sharing the card's surface and border. */
+.deck-term-card::after {
+  content: "";
+  position: absolute;
+  left: var(--term-arrow, 2em);
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: -0.36em;
+  background: inherit;
+  border: inherit;
+  border-width: 0 1px 1px 0;
+  transform: rotate(45deg);
+}
+.deck-term-card.is-above::after {
+  bottom: calc(-0.36em - 1px);
+}
+.deck-term-card.is-below::after {
+  top: calc(-0.36em - 1px);
+  transform: rotate(225deg);
+}
+
+.deck-term-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  padding-right: 1.4em;
+}
+.deck-term-icon {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  color: var(--deck-accent);
+}
+.deck-term-name {
+  font-family: var(--deck-heading-font, inherit);
+  font-size: 1.22em;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.deck-term-tag {
+  margin-left: auto;
+  padding: 0.12em 0.6em;
+  border-radius: 999px;
+  font-size: 0.66em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--deck-accent);
+  background: color-mix(in srgb, var(--deck-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--deck-accent) 32%, transparent);
+}
+.deck-term-full {
+  margin-top: 0.12em;
+  font-size: 0.9em;
+  font-style: italic;
+  color: var(--deck-muted);
+}
+.deck-term-def,
+.deck-term-more {
+  margin: 0.5em 0 0;
+  text-wrap: pretty;
+}
+.deck-term-more {
+  font-size: 0.87em;
+  color: var(--deck-muted);
+}
+.deck-term-def :is(strong, b) {
+  font-weight: 650;
+}
+.deck-term-card code,
+.deck-term-readout code {
+  padding: 0.05em 0.3em;
+  border-radius: 0.3em;
+  font-family: var(--deck-mono-font, ui-monospace, monospace);
+  font-size: 0.88em;
+  background: var(--deck-surface);
+}
+.deck-term-card .katex,
+.deck-term-readout .katex {
+  font-size: 1.02em;
+  /* A formula is one word: it moves to the next line whole. */
+  white-space: nowrap;
+}
+.deck-term-def a,
+.deck-term-more a,
+.deck-term-link {
+  color: var(--deck-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.16em;
+}
+
+.deck-term-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4em 0.45em;
+  margin-top: 0.75em;
+  padding-top: 0.6em;
+  border-top: 1px solid var(--deck-border);
+  font-size: 0.78em;
+}
+.deck-term-see-label {
+  color: var(--deck-muted);
+}
+.deck-term-see {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  margin: 0;
+  padding: 0.14em 0.65em;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--deck-fg);
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-border);
+  cursor: pointer;
+}
+.deck-term-see:hover {
+  color: var(--deck-accent);
+  border-color: color-mix(in srgb, var(--deck-accent) 50%, transparent);
+}
+.deck-term-see svg,
+.deck-term-link svg,
+.deck-term-badge svg {
+  width: 1em;
+  height: 1em;
+}
+.deck-term-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.deck-term-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  flex-basis: 100%;
+  color: var(--deck-muted);
+  font-size: 0.92em;
+}
+.deck-term-badge svg {
+  color: var(--deck-accent);
+}
+.deck-term-close {
+  position: absolute;
+  top: 0.55em;
+  right: 0.55em;
+  display: grid;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font: inherit;
+  color: var(--deck-muted);
+  background: transparent;
+  cursor: pointer;
+}
+.deck-term-close:hover {
+  color: var(--deck-fg);
+  background: var(--deck-surface);
+}
+.deck-term-close svg {
+  width: 0.95em;
+  height: 0.95em;
+}
+
+/* The same words as page content, for a screen whose slide is too small to carry a card. */
+.deck-term-readout {
+  position: relative;
+  margin: 10px 16px 0;
+  padding: 12px 14px 12px 17px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--deck-fg);
+  background: var(--deck-bg);
+  border: 1px solid var(--deck-border);
+  border-radius: 12px;
+  box-shadow:
+    inset 3px 0 0 var(--deck-accent),
+    0 6px 20px rgba(0, 0, 0, 0.1);
+  animation: deck-term-in 150ms ease-out both;
+}
+
+.mode-print .deck-term,
+.deck-print .deck-term {
+  cursor: inherit;
+  text-decoration: none;
+  background: none;
+}
+@media print {
+  .deck-term {
+    text-decoration: none;
+    background: none;
+  }
+  .deck-term-card,
+  .deck-term-readout {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-term,
+  .deck-term.is-arming {
+    transition: none;
+  }
+  .deck-term-card.is-ready,
+  .deck-term-readout {
+    animation: none;
+  }
+}

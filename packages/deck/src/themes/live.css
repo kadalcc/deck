@@ -1,0 +1,1557 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   @kadal/deck — the live pieces: drawing, pointer, reactions, polls, the presenter
+   view, the audience page, stats, backgrounds. Loaded by base.css.
+   ───────────────────────────────────────────────────────────────────────────── */
+.deck-muted {
+  color: var(--deck-muted);
+}
+
+/* drawing + pointer */
+.deck-drawing {
+  position: absolute;
+  z-index: 30;
+  touch-action: none;
+}
+.deck-draw-toolbar-host .deck-draw-toolbar {
+  position: fixed;
+}
+.deck-draw-toolbar {
+  position: absolute;
+  z-index: 35;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--deck-bg);
+  border: 1px solid var(--deck-border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+.deck-draw-toolbar button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: var(--deck-fg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+.deck-draw-toolbar button.is-on {
+  background: var(--deck-surface);
+  box-shadow: inset 0 0 0 2px var(--deck-accent);
+}
+.deck-draw-color {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0;
+}
+.deck-draw-swatch {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--deck-border);
+  background-clip: padding-box;
+  box-sizing: border-box;
+}
+.deck-draw-color.is-on .deck-draw-swatch {
+  border-color: var(--deck-accent);
+  box-shadow: 0 0 0 2px var(--deck-accent);
+}
+.deck-draw-dot {
+  display: block;
+  border-radius: 50%;
+  background: var(--deck-fg);
+}
+.deck-draw-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--deck-border);
+  margin: 0 4px;
+}
+.deck-pointer {
+  position: absolute;
+  z-index: 34;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow:
+    0 0 0 4px rgba(239, 68, 68, 0.35),
+    0 0 24px rgba(239, 68, 68, 0.8);
+  pointer-events: none;
+}
+.deck-spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 33;
+  pointer-events: none;
+}
+
+/* reactions */
+.deck-reactions-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 32;
+  pointer-events: none;
+  overflow: hidden;
+}
+.deck-reaction-float {
+  position: absolute;
+  bottom: -40px;
+  font-size: 40px;
+  animation: deck-float 2.6s ease-out forwards;
+}
+@keyframes deck-float {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-60px) scale(1);
+  }
+  100% {
+    transform: translateY(-70vh) translateX(20px) scale(1.2);
+    opacity: 0;
+  }
+}
+.deck-reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
+.deck-reaction-bar button {
+  font-size: 1em;
+  padding: 0.25em 0.5em;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.3em;
+  align-items: center;
+}
+.deck-reaction-bar small {
+  font-size: 0.5em;
+  color: var(--deck-muted);
+}
+.deck-reaction-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 15px;
+}
+/* THE WAY BACK. On screen only while a viewer is reading on their own — in step there is nothing
+   to say, and any move of their own is how they leave. It sits low and centred, clear of the
+   controls in the corner and of the progress bar under it. */
+.deck-follow {
+  position: absolute;
+  z-index: 40;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px 6px 16px;
+  border-radius: 999px;
+  background: var(--deck-bg);
+  border: 1px solid var(--deck-border);
+  font-size: 13px;
+  max-width: min(92vw, 560px);
+  white-space: nowrap;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+.deck-follow > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--deck-muted);
+}
+.deck-follow b {
+  color: var(--deck-fg);
+  font-weight: 650;
+}
+.deck-follow button,
+.deck-audience-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: 999px;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+  cursor: pointer;
+}
+.deck-follow button {
+  padding: 5px 12px;
+}
+.deck-follow button:hover {
+  filter: brightness(1.08);
+}
+.deck-follow svg,
+.deck-audience-follow svg {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+/* The phone's own way through the deck: a chevron on each edge of the slide, a swipe across it,
+   and the same way back as a full-width button under it. */
+.deck-audience-tap {
+  position: relative;
+  /* A sideways drag is ours; up and down still scroll the page. */
+  touch-action: pan-y;
+}
+.deck-audience-step {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--deck-border);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--deck-bg) 76%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--deck-fg);
+  cursor: pointer;
+}
+.deck-audience-step.is-prev {
+  left: 6px;
+}
+.deck-audience-step.is-next {
+  right: 6px;
+}
+.deck-audience-step:disabled {
+  opacity: 0.22;
+}
+.deck-audience-step svg {
+  width: 20px;
+  height: 20px;
+}
+.deck-audience-follow {
+  justify-content: center;
+  width: calc(100% - 32px);
+  margin: 10px 16px 0;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+.deck-audience-follow small {
+  font-weight: 500;
+  opacity: 0.82;
+}
+
+/* presence, pace, qr */
+.deck-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.6em;
+  color: var(--deck-muted);
+}
+.deck-presence i {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: var(--deck-muted);
+}
+.deck-presence.is-live i {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+.deck-pace {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--deck-muted);
+}
+.deck-pace-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--deck-surface);
+}
+.deck-pace-track i {
+  position: absolute;
+  top: -5px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 50%;
+  background: var(--deck-accent);
+  transition: left 0.4s ease;
+}
+.deck-qr-join {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+.deck-qr-join-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+.deck-qr-join-text strong {
+  font-family: var(--deck-mono-font);
+  font-size: 0.8em;
+}
+.deck-qr-join-text span {
+  color: var(--deck-muted);
+  font-size: 0.6em;
+}
+
+/* polls, quizzes, questions */
+.deck-poll,
+.deck-quiz {
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  padding: 0.6em 0.9em;
+  background: var(--deck-surface);
+  font-size: 0.8em;
+}
+.deck-poll-head,
+.deck-quiz-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8em;
+  flex-wrap: wrap;
+  margin-bottom: 0.4em;
+}
+.deck-poll-meta {
+  color: var(--deck-muted);
+  font-size: 0.7em;
+}
+.deck-poll-controls {
+  margin-inline-start: auto;
+  display: flex;
+  gap: 0.3em;
+}
+.deck-poll-controls button,
+.deck-question-actions button,
+.deck-room-polls button {
+  font-size: 0.65em;
+  padding: 0.2em 0.7em;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: inherit;
+  cursor: pointer;
+}
+.deck-poll-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+.deck-poll-options button {
+  position: relative;
+  width: 100%;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  padding: 0.35em 0.7em;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+}
+.deck-poll-options button:disabled {
+  cursor: default;
+}
+.deck-poll-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in oklab, var(--deck-accent) 22%, transparent);
+  transition: width 0.5s ease;
+}
+.deck-poll-label,
+.deck-poll-count {
+  position: relative;
+}
+.deck-poll-count {
+  color: var(--deck-muted);
+  font-size: 0.8em;
+}
+.deck-poll-options li.is-mine button {
+  box-shadow: inset 0 0 0 2px var(--deck-accent);
+}
+.deck-poll-options li.is-correct button {
+  box-shadow: inset 0 0 0 2px #22c55e;
+}
+.deck-poll-options li.is-wrong button {
+  box-shadow: inset 0 0 0 2px #ef4444;
+}
+.deck-poll-word {
+  display: flex;
+  gap: 0.4em;
+  margin-top: 0.4em;
+}
+.deck-poll-word input {
+  flex: 1;
+  font: inherit;
+  padding: 0.3em 0.6em;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: inherit;
+}
+.deck-poll-word button {
+  font: inherit;
+  padding: 0.3em 0.9em;
+  border-radius: 8px;
+  border: 0;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+  cursor: pointer;
+}
+.deck-wordcloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em 0.6em;
+  align-items: baseline;
+  line-height: 1.1;
+  min-height: 2em;
+}
+.deck-quiz-timer {
+  font-family: var(--deck-mono-font);
+  font-size: 0.8em;
+  color: var(--deck-muted);
+}
+.deck-quiz-timer.is-urgent {
+  color: #ef4444;
+  font-weight: 700;
+}
+.deck-leaderboard {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85em;
+}
+.deck-leaderboard li {
+  display: grid;
+  grid-template-columns: 2em 1fr auto;
+  gap: 0.6em;
+  padding: 0.25em 0;
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-leaderboard-rank {
+  color: var(--deck-muted);
+  font-family: var(--deck-mono-font);
+}
+.deck-leaderboard-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.deck-questions ul,
+.deck-room-questions,
+.deck-audience-questions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+.deck-questions li,
+.deck-room-questions li,
+.deck-audience-questions li {
+  display: flex;
+  gap: 0.6em;
+  align-items: flex-start;
+  font-size: 0.8em;
+  padding: 0.3em 0;
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-questions li.is-answered,
+.deck-room-questions li.is-answered,
+.deck-audience-questions li.is-answered {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.deck-question-votes,
+.deck-vote {
+  font-family: var(--deck-mono-font);
+  font-size: 0.8em;
+  color: var(--deck-muted);
+  white-space: nowrap;
+}
+.deck-vote {
+  border: 1px solid var(--deck-border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: var(--deck-bg);
+  cursor: pointer;
+}
+.deck-vote.is-on {
+  color: var(--deck-accent);
+  border-color: var(--deck-accent);
+}
+.deck-question-text {
+  flex: 1;
+}
+.deck-question-actions {
+  display: flex;
+  gap: 0.3em;
+}
+
+/* presenter view */
+/* The presenter view follows the deck's own theme and scheme (press D to flip), so the slide
+   previews inside it are exactly what the audience sees. */
+.deck-presenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in oklab, var(--deck-bg) 92%, var(--deck-fg));
+  color: var(--deck-fg);
+  font: 14px var(--deck-body-font);
+}
+.deck-presenter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-presenter-spacer {
+  flex: 1;
+}
+.deck-presenter-timer {
+  font: 22px var(--deck-mono-font);
+  background: transparent;
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.deck-presenter-timer small {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--deck-surface);
+}
+.deck-presenter-timer.is-ok small {
+  color: #22c55e;
+}
+.deck-presenter-timer.is-behind small {
+  color: #ef4444;
+}
+.deck-presenter-timer.is-ahead small {
+  color: #60a5fa;
+}
+.deck-presenter-clock {
+  font: 16px var(--deck-mono-font);
+  color: var(--deck-muted);
+}
+.deck-presenter-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.deck-presenter-tools button,
+.deck-presenter-link {
+  font: 12px var(--deck-body-font);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.deck-presenter-tools button.is-on {
+  background: var(--deck-accent);
+  border-color: var(--deck-accent);
+  color: var(--deck-bg);
+}
+.deck-presenter-tools button.is-rec {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+/* The three columns share the width 1.6 : 1 : 0.9 (notes-left swaps the first two; next-big is
+   1 : 1.3 : 0.9). The notes/next pane is sized in pixels from that share rather than as a
+   fraction, so when the room collapses to its rail the pane keeps its width and the slide alone
+   takes the room. */
+.deck-presenter-main {
+  --pane: calc((100vw - 48px) / 3.5);
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  grid-template-columns: 1.6fr var(--pane) 0.9fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "current notes room"
+    "current next room";
+}
+.deck-presenter.layout-notes-left .deck-presenter-main {
+  grid-template-columns: var(--pane) 1.6fr 0.9fr;
+  grid-template-areas:
+    "notes current room"
+    "next current room";
+}
+.deck-presenter.layout-next-big .deck-presenter-main {
+  --pane: calc((100vw - 48px) * 1.3 / 3.2);
+  grid-template-columns: 1fr var(--pane) 0.9fr;
+  grid-template-areas:
+    "current next room"
+    "notes next room";
+}
+.deck-presenter-current {
+  grid-area: current;
+}
+.deck-presenter-next {
+  grid-area: next;
+}
+.deck-presenter-notes {
+  grid-area: notes;
+}
+.deck-presenter-room {
+  grid-area: room;
+  min-height: 0;
+  overflow: auto;
+}
+.deck-presenter-current,
+.deck-presenter-next,
+.deck-presenter-notes {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 6px;
+}
+.deck-presenter-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.deck-presenter-stage {
+  flex: 1;
+  min-height: 0;
+}
+.deck-presenter-box {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  /* The bars around the slide take the opposite tone of the scheme, so the slide's edge reads. */
+  background: #000;
+  border: 1px solid var(--deck-border);
+  display: grid;
+  place-items: center;
+}
+[data-color-scheme="dark"] .deck-presenter-box {
+  background: #f4f4f2;
+}
+.deck-presenter-box.is-end {
+  color: var(--deck-muted);
+}
+.deck-presenter-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+  /* The stage's own ground: the bars around it must not show through a slide's background. */
+  background: var(--deck-bg);
+}
+.deck-presenter-canvas .deck-background {
+  position: absolute;
+  inset: 0;
+}
+.deck-presenter-canvas .deck-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.deck-presenter-next-label {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font: 11px var(--deck-mono-font);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.deck-notes-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--deck-bg);
+  border: 1px solid var(--deck-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.deck-notes-tools {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-notes-tools button {
+  font: 11px var(--deck-mono-font);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--deck-border);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.deck-notes-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 16px;
+  line-height: 1.5;
+}
+.deck-notes-body p {
+  margin: 0 0 0.6em;
+}
+.deck-notes-segment {
+  transition: opacity 0.2s;
+}
+.deck-notes-segment.is-past {
+  opacity: 0.45;
+}
+.deck-notes-segment.is-current {
+  background: rgba(37, 99, 235, 0.25);
+  border-radius: 4px;
+}
+.deck-click-marker {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  margin: 0 0.3em;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.6em;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.deck-click-marker.is-current {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+}
+.deck-room-panel {
+  height: 100%;
+  background: var(--deck-bg);
+  border: 1px solid var(--deck-border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.deck-room-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px;
+  border-bottom: 1px solid var(--deck-border);
+  align-items: center;
+}
+.deck-room-tabs button {
+  font: 12px var(--deck-body-font);
+  text-transform: capitalize;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--deck-muted);
+  cursor: pointer;
+  position: relative;
+}
+.deck-room-tabs button.is-on {
+  background: var(--deck-surface);
+  color: inherit;
+}
+.deck-room-tabs em,
+.deck-audience-tabs em {
+  font-style: normal;
+  font-size: 10px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 5px;
+  margin-inline-start: 4px;
+}
+.deck-room-status {
+  margin-inline-start: auto;
+  font: 10px var(--deck-mono-font);
+  color: var(--deck-muted);
+}
+.deck-room-status.is-open {
+  color: #22c55e;
+}
+.deck-room-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: auto;
+}
+.deck-room-questions,
+.deck-room-polls {
+  padding: 10px;
+  overflow: auto;
+}
+.deck-room-polls {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.deck-room-polls li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.deck-poll-kind {
+  font: 10px var(--deck-mono-font);
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.deck-camera {
+  position: fixed;
+  z-index: 200;
+  width: 260px;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--deck-border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  background: #000;
+}
+.deck-camera video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.deck-camera button {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  border: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+.deck-gate {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+}
+.deck-gate form {
+  width: min(420px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 15px;
+}
+.deck-gate h1 {
+  margin: 0;
+  font-size: 28px;
+}
+.deck-gate p {
+  margin: 0;
+  color: var(--deck-muted);
+}
+.deck-gate input {
+  font: 18px var(--deck-body-font);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+}
+.deck-gate button {
+  font: 16px var(--deck-body-font);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+  cursor: pointer;
+}
+.deck-gate-error {
+  color: #ef4444 !important;
+}
+
+/* notes and stats pages */
+.deck-notes-page,
+.deck-stats-page {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 40px clamp(20px, 6vw, 80px);
+  font: 16px var(--deck-body-font);
+  line-height: 1.6;
+}
+.deck-notes-page h1,
+.deck-stats-page h1 {
+  font-size: 28px;
+  margin: 0 0 24px;
+}
+.deck-notes-entry {
+  padding: 16px 0;
+  border-top: 1px solid var(--deck-border);
+}
+.deck-notes-entry h2 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.deck-notes-entry a {
+  color: inherit;
+  text-decoration: none;
+}
+.deck-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.deck-stats-cards div {
+  border: 1px solid var(--deck-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.deck-stats-cards strong {
+  font-size: 28px;
+}
+.deck-stats-cards span {
+  color: var(--deck-muted);
+  font-size: 13px;
+}
+.deck-stats-page h2 {
+  font-size: 16px;
+  margin: 28px 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--deck-muted);
+}
+.deck-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.deck-stats-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-stats-bar {
+  width: 40%;
+}
+.deck-stats-bar i {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--deck-accent);
+}
+.deck-stats-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  color: var(--deck-muted);
+  white-space: nowrap;
+}
+.deck-stats-exports {
+  list-style: none;
+  padding: 0;
+}
+
+/* audience page */
+.deck-audience {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  font: 15px var(--deck-body-font);
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+}
+.deck-audience-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-audience-head > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.deck-audience-head strong {
+  display: block;
+}
+.deck-audience-count {
+  white-space: nowrap;
+}
+.deck-audience-status {
+  font-size: 12px;
+  color: var(--deck-muted);
+}
+.deck-audience-status.is-open {
+  color: #22c55e;
+}
+.deck-audience-count {
+  font-size: 12px;
+  color: var(--deck-muted);
+}
+.deck-audience-slide {
+  position: relative;
+  padding: 12px 16px 0;
+}
+.deck-audience-canvas-box {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+}
+.deck-audience-canvas-box.fit-contain {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.deck-audience-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: var(--deck-bg);
+}
+.deck-audience-canvas .deck-background {
+  position: absolute;
+  inset: 0;
+}
+/* The mirror is a real slide: its embedded pages and controls answer to touch. */
+.deck-audience-canvas .deck-slide {
+  pointer-events: auto;
+}
+.deck-audience .deck-sketch-open {
+  display: none;
+}
+.deck-audience-expand {
+  font-size: 12px !important;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border) !important;
+  background: var(--deck-surface) !important;
+}
+.deck-audience-expand:disabled {
+  opacity: 0.5;
+}
+
+/* the slide, full screen */
+.deck-audience-full {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--deck-bars, #0b0b0c);
+  display: grid;
+}
+.deck-audience-full-stage {
+  position: absolute;
+  inset: 0;
+}
+.deck-audience-full-close {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 0;
+  font: 22px/1 var(--deck-body-font);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+.deck-audience-full-react {
+  /* Bottom-left, clear of an embedded page's "tap to interact" pill at the bottom centre. */
+  position: absolute;
+  left: max(10px, env(safe-area-inset-left));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+}
+.deck-audience-full-react button {
+  font-size: 24px;
+  line-height: 1;
+  padding: 6px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.deck-audience-full-react button:active {
+  transform: scale(1.4);
+}
+.deck-audience-full .deck-audience-flash {
+  right: max(16px, env(safe-area-inset-right));
+  top: 56px;
+}
+.deck-audience-empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--deck-muted);
+  border: 1px dashed var(--deck-border);
+  border-radius: 10px;
+}
+.deck-audience-slide-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  font-size: 12px;
+  color: var(--deck-muted);
+}
+.deck-audience-slide-bar button {
+  background: transparent;
+  border: 0;
+  font-size: 18px;
+  color: var(--deck-muted);
+  cursor: pointer;
+}
+.deck-audience-slide-bar button.is-on {
+  color: #f59e0b;
+}
+.deck-audience-slide-bar a {
+  margin-inline-start: auto;
+  color: inherit;
+}
+.deck-audience-flash {
+  position: absolute;
+  right: 20px;
+  top: 12px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  pointer-events: none;
+}
+.deck-audience-flash span {
+  font-size: 22px;
+  animation: deck-flash 1.5s ease-out forwards;
+}
+@keyframes deck-flash {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+.deck-audience-react {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 16px;
+}
+.deck-audience-react button {
+  font-size: 26px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.deck-audience-react button:active {
+  transform: scale(1.4);
+}
+.deck-audience-tabs {
+  display: flex;
+  border-top: 1px solid var(--deck-border);
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-audience-tabs button {
+  flex: 1;
+  padding: 10px 4px;
+  font: 13px var(--deck-body-font);
+  text-transform: capitalize;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--deck-muted);
+  cursor: pointer;
+}
+.deck-audience-tabs button.is-on {
+  color: inherit;
+  border-bottom-color: var(--deck-accent);
+}
+.deck-audience-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.deck-audience-pace p {
+  margin: 0 0 8px;
+}
+.deck-audience-pace-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.deck-audience-pace-buttons button,
+.deck-audience-hand {
+  font: 14px var(--deck-body-font);
+  padding: 12px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  cursor: pointer;
+}
+.deck-audience-pace-buttons button.is-on,
+.deck-audience-hand.is-on {
+  border-color: var(--deck-accent);
+  box-shadow: inset 0 0 0 1px var(--deck-accent);
+}
+.deck-audience-hand {
+  width: 100%;
+  margin-top: 12px;
+}
+.deck-audience-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--deck-muted);
+}
+.deck-audience-name input,
+.deck-audience-ask textarea {
+  font: 15px var(--deck-body-font);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.deck-audience-ask form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.deck-audience-ask button[type="submit"] {
+  align-self: flex-end;
+  font: 14px var(--deck-body-font);
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+  cursor: pointer;
+}
+.deck-audience-ask button:disabled {
+  opacity: 0.5;
+}
+.deck-audience-questions li em {
+  font-size: 11px;
+  color: var(--deck-muted);
+}
+.deck-audience-polls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 18px;
+}
+.deck-audience-mine ul {
+  list-style: none;
+  padding: 0;
+}
+.deck-audience-mine a {
+  color: inherit;
+}
+
+/* backgrounds */
+.deck-bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.deck-bg-mesh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  filter: blur(80px) saturate(1.2);
+}
+.deck-bg-mesh span {
+  position: absolute;
+  width: 55vmax;
+  height: 55vmax;
+  margin: -27vmax 0 0 -27vmax;
+  border-radius: 50%;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: deck-mesh var(--speed, 40s) ease-in-out infinite alternate;
+}
+.deck-bg-mesh:not([data-active]) span {
+  animation-play-state: paused;
+}
+@keyframes deck-mesh {
+  0% {
+    transform: translate(-10%, -5%) scale(1);
+  }
+  50% {
+    transform: translate(20%, 15%) scale(1.15);
+  }
+  100% {
+    transform: translate(-15%, 25%) scale(0.9);
+  }
+}
+.deck-bg-grid,
+.deck-bg-spot,
+.deck-bg-noise {
+  position: absolute;
+  inset: 0;
+}
+.deck-bg-grid {
+  mask-image: radial-gradient(ellipse at center, #000 40%, transparent 80%);
+}
+.deck-bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+.deck-flipboard {
+  display: grid;
+  gap: 3px;
+  font-family: var(--deck-mono-font);
+  background: #111;
+  padding: 6px;
+  border-radius: 8px;
+  width: fit-content;
+}
+.deck-flip-cell {
+  display: grid;
+  place-items: center;
+  width: 1.4em;
+  height: 1.9em;
+  background: #222;
+  border-radius: 3px;
+  color: #eee;
+  animation: deck-flip var(--flip, 35ms) linear 6;
+  animation-fill-mode: both;
+  transform-origin: center;
+}
+@keyframes deck-flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(90deg);
+    background: #333;
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+.deck-audience-share {
+  font-size: 15px !important;
+}
+.deck-audience-toast {
+  font-size: 12px;
+  color: var(--deck-accent);
+}
+.deck-leaderboard li.deck-muted {
+  display: block;
+}
+.deck-pointer-layer {
+  z-index: 34;
+  overflow: visible;
+}
+.deck-presenter-canvas .deck-drawing,
+.deck-presenter-canvas .deck-pointer-layer {
+  position: absolute;
+}
+
+/* ── icons in the toolbars ────────────────────────────────────────────────── */
+.deck-presenter-tools button,
+.deck-presenter-link,
+.deck-audience-slide-bar button,
+.deck-audience-slide-bar a,
+.deck-audience-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.deck-presenter-tools .deck-icon,
+.deck-audience-slide-bar .deck-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.deck-audience-slide-bar button {
+  font-size: 14px;
+  padding: 4px 6px;
+}
+.deck-draw-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.deck-draw-toolbar .deck-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── the room panel collapsed to a rail ───────────────────────────────────── */
+.deck-room-toggle {
+  margin-inline-start: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--deck-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0 !important;
+}
+.deck-room-toggle:hover {
+  background: var(--deck-surface);
+  color: inherit;
+}
+.deck-room-toggle .deck-icon {
+  width: 16px;
+  height: 16px;
+}
+.deck-room-panel.is-rail {
+  align-items: center;
+  padding: 6px 0;
+  gap: 4px;
+}
+.deck-room-panel.is-rail .deck-room-toggle {
+  margin-inline-start: 0;
+  margin-bottom: 4px;
+}
+.deck-room-rail-item {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--deck-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.deck-room-rail-item .deck-icon {
+  width: 20px;
+  height: 20px;
+}
+.deck-room-rail-item:hover,
+.deck-room-rail-item.is-on {
+  background: var(--deck-surface);
+  color: inherit;
+}
+.deck-room-rail-item em {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  font-style: normal;
+  font: 600 10px/16px var(--deck-body-font);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--deck-bg);
+}
+.deck-room-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--deck-muted);
+  margin-top: auto;
+  margin-bottom: 6px;
+}
+.deck-room-dot.is-open {
+  background: #22c55e;
+}
+.deck-presenter.room-collapsed .deck-presenter-main {
+  grid-template-columns: 1fr var(--pane) 52px;
+}
+.deck-presenter.room-collapsed.layout-notes-left .deck-presenter-main {
+  grid-template-columns: var(--pane) 1fr 52px;
+}
+.deck-presenter.room-collapsed.layout-next-big .deck-presenter-main {
+  grid-template-columns: 1fr var(--pane) 52px;
+}
+.deck-presenter.room-collapsed .deck-presenter-room {
+  overflow: visible;
+}
+
+/* ── confetti over a stage ────────────────────────────────────────────────── */
+.deck-confetti-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 60;
+}
+.deck-confetti-layer.in-canvas {
+  position: absolute;
+  z-index: 36;
+}

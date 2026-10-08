@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.react.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

@@ -1,0 +1,592 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   @kadal/deck — bling: gradient text, glass, glows, chips, ribbons, halos, shimmer, blobs,
+   the hint labels, the theme menu, the iframe shield and the fit scaler. Loaded by base.css.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --tone-accent: var(--deck-accent);
+  --tone-accent-2: var(--deck-accent-2);
+  --tone-good: #16a34a;
+  --tone-warn: #d97706;
+  --tone-bad: #dc2626;
+  --tone-info: #2563eb;
+  --tone-neutral: var(--deck-muted);
+  --tone-purple: #7c3aed;
+  --tone-pink: #db2777;
+  --tone-amber: #f59e0b;
+  --tone-teal: #0d9488;
+}
+.tone-accent {
+  --tone: var(--tone-accent);
+}
+.tone-accent-2 {
+  --tone: var(--tone-accent-2);
+}
+.tone-good {
+  --tone: var(--tone-good);
+}
+.tone-warn {
+  --tone: var(--tone-warn);
+}
+.tone-bad {
+  --tone: var(--tone-bad);
+}
+.tone-info {
+  --tone: var(--tone-info);
+}
+.tone-neutral {
+  --tone: var(--tone-neutral);
+}
+.tone-purple {
+  --tone: var(--tone-purple);
+}
+.tone-pink {
+  --tone: var(--tone-pink);
+}
+.tone-amber {
+  --tone: var(--tone-amber);
+}
+.tone-teal {
+  --tone: var(--tone-teal);
+}
+
+/* gradient text */
+.deck-gradient-text {
+  background: linear-gradient(var(--gt-angle, 90deg), var(--gt-from), var(--gt-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* glass */
+.deck-glass {
+  position: relative;
+  border-radius: var(--deck-radius);
+  background: color-mix(in oklab, var(--deck-bg) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 12px 40px rgba(0, 0, 0, 0.08);
+}
+.deck-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--tone, var(--deck-accent)) 60%, transparent),
+    transparent 45%,
+    color-mix(in oklab, var(--tone, var(--deck-accent)) 25%, transparent)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.deck-glass.has-glow::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--tone, var(--deck-accent)) 32%, transparent),
+    transparent 68%
+  );
+  filter: blur(28px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* glow + blob: absolutely positioned inside a relative box */
+.deck-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(20px);
+}
+.deck-blob {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(2px);
+}
+
+/* chips */
+.deck-chip {
+  display: inline-flex;
+  align-items: center;
+  /* A chip on its own line in a slide's column layout keeps its width; the column stretches it otherwise. */
+  align-self: flex-start;
+  justify-self: start;
+  gap: 0.4em;
+  padding: 0.18em 0.7em 0.18em 0.55em;
+  border-radius: 999px;
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--tone, var(--deck-fg));
+  background: color-mix(in oklab, var(--tone, var(--deck-muted)) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--tone, var(--deck-muted)) 35%, transparent);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.deck-chip-dot {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--tone, var(--deck-muted));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--tone, var(--deck-muted)) 25%, transparent);
+}
+.deck-icon {
+  vertical-align: -0.15em;
+  flex: none;
+}
+.deck-icon-missing {
+  color: var(--deck-muted);
+}
+
+/* divider */
+.deck-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  margin: 0.8em 0;
+  color: var(--deck-muted);
+  font-size: 0.55em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.deck-divider::before,
+.deck-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--deck-border), transparent);
+}
+
+/* ribbon */
+.deck-ribbon {
+  position: absolute;
+  top: 1.2em;
+  padding: 0.25em 2.2em;
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--tone, var(--deck-accent));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+}
+.deck-ribbon.corner-right {
+  right: -2.4em;
+  transform: rotate(45deg);
+}
+.deck-ribbon.corner-left {
+  left: -2.4em;
+  transform: rotate(-45deg);
+}
+
+/* halo */
+.deck-halo {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--tone, var(--deck-accent)) 22%, transparent),
+    transparent 70%
+  );
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--tone, var(--deck-accent)) 45%, transparent);
+  color: var(--tone, var(--deck-accent));
+  font-weight: 800;
+  font-size: 1em;
+  vertical-align: middle;
+}
+
+/* shimmer */
+.deck-shimmer {
+  background: linear-gradient(
+    110deg,
+    currentColor 35%,
+    color-mix(in oklab, currentColor 40%, #fff) 50%,
+    currentColor 65%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: deck-shimmer 4s linear infinite;
+}
+@keyframes deck-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+/* tilt */
+.deck-tilt {
+  transition: transform 0.15s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* ── hints (vim f) ─────────────────────────────────────────────────────── */
+.deck-hints {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+  font-family: var(--deck-mono-font);
+}
+.deck-hint {
+  position: fixed;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #fde047;
+  color: #1c1917;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.25),
+    0 3px 10px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.deck-hint b {
+  color: #b45309;
+}
+.deck-hint.kind-iframe {
+  background: #a5f3fc;
+}
+.deck-hint.kind-link {
+  background: #fde047;
+}
+.deck-hint.kind-button {
+  background: #d9f99d;
+}
+.deck-hint.is-match {
+  background: #fff;
+  outline: 2px solid #f59e0b;
+}
+.deck-hint.is-dim {
+  opacity: 0.25;
+}
+.deck-hint-empty {
+  position: fixed;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+/* ── theme menu ─────────────────────────────────────────────────────────── */
+.deck-theme-menu {
+  position: absolute;
+  z-index: 60;
+  left: 18px;
+  bottom: 18px;
+  font: 13px var(--deck-body-font);
+}
+.deck-theme-menu.is-compact {
+  position: relative;
+  left: auto;
+  bottom: auto;
+}
+.deck-theme-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: color-mix(in oklab, var(--deck-bg) 85%, transparent);
+  backdrop-filter: blur(10px);
+  color: var(--deck-muted);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.deck-theme-button:hover,
+.deck-theme-menu.is-open .deck-theme-button {
+  opacity: 1;
+  color: var(--deck-fg);
+}
+.deck-theme-popover {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  min-width: 190px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.deck-theme-menu.is-compact .deck-theme-popover {
+  bottom: auto;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+}
+.deck-theme-section {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+  padding: 6px 8px 2px;
+}
+.deck-theme-popover > button,
+.deck-theme-row > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.deck-theme-popover > button:hover,
+.deck-theme-row > button:hover {
+  background: var(--deck-surface);
+}
+.deck-theme-popover > button.is-on,
+.deck-theme-row > button.is-on {
+  background: color-mix(in oklab, var(--deck-accent) 15%, transparent);
+  color: var(--deck-accent);
+  font-weight: 600;
+}
+.deck-theme-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+.deck-theme-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--deck-accent), var(--deck-accent-2));
+  border: 1px solid var(--deck-border);
+  flex: none;
+}
+.deck-theme-hint {
+  font-size: 11px;
+  color: var(--deck-muted);
+  padding: 6px 8px 2px;
+}
+
+/* ── embedded pages: a shield until you mean to interact ────────────────── */
+.deck-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.deck-frame > iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.deck-frame-shield {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 1.2em;
+  cursor: pointer;
+  background: transparent;
+  z-index: 2;
+}
+.deck-frame-shield span {
+  font: 600 0.5em var(--deck-body-font);
+  padding: 0.6em 1.2em;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.72);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.2s;
+}
+.deck-frame-shield:hover span {
+  background: rgba(17, 17, 17, 0.9);
+}
+.deck-frame-done {
+  position: absolute;
+  top: 0.6em;
+  right: 0.6em;
+  z-index: 3;
+  font: 600 0.45em var(--deck-body-font);
+  padding: 0.5em 1em;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(17, 17, 17, 0.72);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+.deck-frame-done:hover {
+  background: rgba(17, 17, 17, 0.9);
+}
+/* One click from a fresh load, for the page that failed. Out of sight until the pointer is on the
+   frame (or it is tabbed to), so the window you share on a call stays clean. */
+.deck-frame-reload {
+  position: absolute;
+  top: 0.6em;
+  left: 0.6em;
+  /* Above the shield: a press here reloads the page, it does not hand the frame the keyboard. */
+  z-index: 4;
+  font: 600 0.45em var(--deck-body-font);
+  padding: 0.5em 1em;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(17, 17, 17, 0.72);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.deck-frame:hover .deck-frame-reload,
+.deck-frame-reload:focus-visible {
+  opacity: 1;
+}
+.deck-frame-reload:hover {
+  background: rgba(17, 17, 17, 0.9);
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-frame-reload {
+    transition: none;
+  }
+}
+.deck-frame.is-live .deck-frame-shield {
+  display: none;
+}
+/* The poster behind a page that has not loaded (or never will, in print and the previews). */
+.deck-frame-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  z-index: 1;
+  pointer-events: none;
+}
+.deck-frame-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1em;
+  background: var(--deck-surface);
+  color: var(--deck-muted);
+  font: 500 0.45em var(--deck-mono-font);
+  text-align: center;
+  word-break: break-all;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── the fit scaler: a slide that overflows is scaled to fit (SlideFrame measures it) ── */
+.deck-layout.is-fitted {
+  transform: scale(var(--deck-fit, 1));
+  transform-origin: 0 0;
+  width: calc(100% / var(--deck-fit, 1));
+  height: calc(100% / var(--deck-fit, 1));
+}
+
+/* ── the second set of backgrounds ──────────────────────────────────────── */
+.deck-bg-glows {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  filter: blur(60px);
+}
+.deck-bg-glows span {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  margin: -35vmax 0 0 -35vmax;
+  border-radius: 50%;
+  animation: deck-glow-drift var(--speed, 60s) ease-in-out infinite alternate;
+}
+.deck-bg-glows:not([data-active]) span {
+  animation-play-state: paused;
+}
+@keyframes deck-glow-drift {
+  0% {
+    transform: translate(-8%, -4%) scale(1);
+  }
+  100% {
+    transform: translate(10%, 12%) scale(1.15);
+  }
+}
+.deck-bg-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.deck-bg-rays {
+  position: absolute;
+  inset: -50%;
+  background: repeating-conic-gradient(
+    from 0deg at var(--rays-x) var(--rays-y),
+    var(--rays-c) 0deg 4deg,
+    transparent 4deg 16deg
+  );
+  mask-image: radial-gradient(circle at var(--rays-x) var(--rays-y), #000 0, transparent 70%);
+  animation: deck-rays 120s linear infinite;
+}
+.deck-bg-rays:not([data-active]) {
+  animation-play-state: paused;
+}
+@keyframes deck-rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.deck-bg-sweep {
+  position: absolute;
+  inset: 0;
+  background-size: 300% 300%;
+  animation: deck-sweep var(--speed, 24s) ease-in-out infinite alternate;
+}
+.deck-bg-sweep:not([data-active]) {
+  animation-play-state: paused;
+}
+@keyframes deck-sweep {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}

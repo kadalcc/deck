@@ -1,0 +1,3 @@
+# Cargo's build directory. The built .wasm and its shim live in ../src/rust-ticker/, which IS
+# committed, so a deck builds without a Rust toolchain.
+/target

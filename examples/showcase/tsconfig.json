@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.react.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false
+  },
+  "include": ["src", "deck.config.ts", "vite.config.ts", "env.d.ts"]
+}

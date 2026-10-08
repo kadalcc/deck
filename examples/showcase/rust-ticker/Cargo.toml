@@ -1,0 +1,25 @@
+[package]
+name = "deck-rust-ticker"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+description = "A Leptos island for the @kadal/deck showcase, meeting the @kadal/deck-wasm ABI."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+leptos = { version = "0.8.21", features = ["csr"] }
+wasm-bindgen = "0.2.129"
+serde = { version = "1", features = ["derive"] }
+serde-wasm-bindgen = "0.6.5"
+web-sys = { version = "0.3.106", features = ["Element", "HtmlElement"] }
+
+# Small, because this ships to a slide. `opt-level = "z"` and LTO together take a Leptos island
+# from roughly half a megabyte to something a deck can fetch on arrival without anyone noticing.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

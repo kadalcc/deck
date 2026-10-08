@@ -1,0 +1,92 @@
+/* rla — the semester-2 look: zinc-950 with a blue→violet ramp, dot-matrix headings (Bitcount
+   Grid Double), a dyslexia-friendly body face, Fira Code for code, and the animated backgrounds
+   from the backgrounds module (`background: sparkles` / `lines` / `mesh` in frontmatter). */
+@import url("https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@400;700&family=Bitcount+Grid+Single&family=Fira+Code:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap");
+
+.theme-rla {
+  --deck-bg: #09090b;
+  --deck-fg: #fafafa;
+  --deck-muted: #a1a1aa;
+  --deck-accent: #3b82f6;
+  --deck-accent-2: #8b5cf6;
+  --deck-surface: rgba(255, 255, 255, 0.05);
+  --deck-border: rgba(255, 255, 255, 0.12);
+  --deck-code-bg: #111114;
+  --deck-code-fg: #e4e4e7;
+  --deck-code-active: rgba(59, 130, 246, 0.18);
+  --deck-radius: 14px;
+  --deck-pad: 72px;
+  --deck-base-size: 34px;
+  --deck-heading-font: "Bitcount Grid Double", "Pixelify Sans", system-ui, sans-serif;
+  --deck-body-font: "Atkinson Hyperlegible", "OpenDyslexic", system-ui, sans-serif;
+  --deck-mono-font: "Fira Code", ui-monospace, monospace;
+  color-scheme: dark;
+}
+.theme-rla[data-color-scheme="light"] {
+  --deck-bg: #f4f4f5;
+  --deck-fg: #09090b;
+  --deck-muted: #52525b;
+  --deck-surface: rgba(0, 0, 0, 0.05);
+  --deck-border: rgba(0, 0, 0, 0.12);
+  --deck-code-bg: #ffffff;
+  --deck-code-fg: #18181b;
+}
+.theme-rla .deck-slide h1,
+.theme-rla .deck-slide h2 {
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+}
+.theme-rla .deck-slide h1 {
+  font-size: 2.9em;
+}
+.theme-rla .deck-slide h3,
+.theme-rla .deck-slide h4 {
+  font-family: "Bitcount Grid Single", var(--deck-heading-font);
+  font-weight: 400;
+}
+.theme-rla .gradient-text,
+.theme-rla .deck-layout-cover h1 {
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.theme-rla .deck-layout-cover h1 + p,
+.theme-rla .deck-layout-cover h1 + h3 {
+  color: #60a5fa;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.8em;
+}
+.theme-rla .deck-slide blockquote {
+  border-inline-start-color: var(--deck-accent-2);
+}
+.theme-rla .deck-progress span {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+.theme-rla .deck-controls {
+  --deck-controls-color: #3b82f6;
+}
+.theme-rla .deck-poll,
+.theme-rla .deck-quiz,
+.theme-rla .deck-callout {
+  backdrop-filter: blur(10px);
+}
+/* the RLA card: a bordered glassy panel with a small uppercase tag */
+.theme-rla .card {
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: rgba(24, 24, 27, 0.6);
+  padding: 0.6em 0.9em;
+  backdrop-filter: blur(8px);
+}
+.theme-rla .tag {
+  font: 0.45em var(--deck-mono-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  border-radius: 6px;
+  padding: 0.2em 0.6em;
+}

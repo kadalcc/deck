@@ -1,0 +1,5 @@
+# wasm-bindgen output. Committed so a deck builds without a Rust toolchain, but it is generated —
+# regenerate with `bun run rust` rather than editing, and keep it out of diffs and language stats.
+* linguist-generated=true
+*.js -diff
+*.wasm -diff binary

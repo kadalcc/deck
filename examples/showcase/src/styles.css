@@ -1,0 +1,97 @@
+@import "tailwindcss";
+@source "../deck.mdx";
+
+.feature {
+  display: grid;
+  gap: 0.2em;
+  padding: 0.7em 0.9em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+  font-size: 0.8em;
+}
+.feature-icon {
+  width: 1.4em;
+  height: 1.4em;
+  color: var(--deck-accent);
+}
+.feature span {
+  color: var(--deck-muted);
+  font-size: 0.85em;
+}
+.deck-slide.hero h1 {
+  font-size: 4em;
+  letter-spacing: -0.04em;
+}
+.big-number {
+  font-size: 5em;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+/* The islands slide. Two runtimes, one row, and the framework's name on each so the slide shows
+   what it claims rather than only saying it. */
+/* Three runtimes in a row, so the slide shows what it says rather than three stacked boxes. */
+.islands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8em;
+  align-items: stretch;
+}
+.deck-island {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+}
+/* The host grows so the framework labels below the cards share one baseline, whatever each
+   card happens to contain. */
+.deck-island-host {
+  flex: 1;
+}
+.deck-island-host > * {
+  height: 100%;
+}
+.deck-island::after {
+  content: attr(data-framework);
+  display: block;
+  margin-top: 0.3em;
+  color: var(--deck-muted);
+  font-size: 0.6em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Two islands on this slide share the `wasm` renderer — the hand-written module and the Leptos
+   one — which is the ABI doing its job and makes the renderer's name ambiguous as a label. */
+.deck-island.from-rust::after {
+  content: "rust · leptos";
+}
+.deck-island-error {
+  color: var(--deck-accent);
+  font-size: 0.7em;
+}
+.ticker {
+  display: grid;
+  gap: 0.1em;
+  min-width: 9em;
+  padding: 0.7em 0.9em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+  font-size: 0.8em;
+}
+.ticker-label {
+  color: var(--deck-muted);
+  font-size: 0.8em;
+}
+.ticker-count {
+  font-size: 1.6em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.ticker-step {
+  color: var(--deck-accent);
+  font-size: 0.75em;
+  font-style: normal;
+}

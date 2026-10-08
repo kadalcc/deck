@@ -1,0 +1,62 @@
+/* stack — the monorepo's brand: an emerald accent on warm neutrals, Inter, and the same tokens
+   the portals use, so a deck about the platform looks like the platform. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+.theme-stack {
+  --deck-bg: #fbfbf9;
+  --deck-fg: #14171a;
+  --deck-muted: #6b7280;
+  --deck-accent: #059669;
+  --deck-accent-2: #0d9488;
+  --deck-surface: #f1f2ee;
+  --deck-border: #e2e4dd;
+  --deck-code-bg: #f3f4f0;
+  --deck-code-fg: #1f2937;
+  --deck-code-active: rgba(5, 150, 105, 0.14);
+  --deck-radius: 12px;
+  --deck-pad: 88px;
+  --deck-base-size: 34px;
+  --deck-heading-font: "Inter", system-ui, sans-serif;
+  --deck-body-font: "Inter", system-ui, sans-serif;
+  --deck-mono-font: "JetBrains Mono", ui-monospace, monospace;
+}
+.theme-stack[data-color-scheme="dark"] {
+  --deck-bg: #0f1412;
+  --deck-fg: #f3f4f1;
+  --deck-muted: #9aa39e;
+  --deck-accent: #34d399;
+  --deck-accent-2: #2dd4bf;
+  --deck-surface: #1a2320;
+  --deck-border: #26332e;
+  --deck-code-bg: #141b18;
+  --deck-code-fg: #e5e7e2;
+  --deck-code-active: rgba(52, 211, 153, 0.16);
+}
+.theme-stack .deck-slide h1 {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+.theme-stack .deck-slide h2 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.theme-stack .deck-layout-section::before,
+.theme-stack .deck-layout-cover::before {
+  content: "";
+  display: block;
+  width: 3em;
+  height: 0.35em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2));
+  margin-bottom: 0.8em;
+}
+.theme-stack .deck-layout-cover {
+  align-items: flex-start;
+}
+.theme-stack .deck-slide a {
+  color: var(--deck-accent);
+}
+.theme-stack .deck-badge.tone-accent {
+  background: color-mix(in oklab, var(--deck-accent) 15%, transparent);
+  border-color: transparent;
+}

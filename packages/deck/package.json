@@ -1,0 +1,66 @@
+{
+  "name": "@kadal/deck",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The deck engine: MDX slides, a runtime with every reveal.js and Slidev feature, and a live client for the shared Cloudflare backend. Dual-licensed \u2014 see LICENSING.md.",
+  "homepage": "https://deck.kadal.cc",
+  "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./vite": "./src/vite/index.ts",
+    "./compiler": "./src/compiler/index.ts",
+    "./live": "./src/live/index.ts",
+    "./protocol": "./src/live/protocol.ts",
+    "./presenter": "./src/presenter/index.tsx",
+    "./audience": "./src/audience/index.tsx",
+    "./backgrounds": "./src/backgrounds/index.tsx",
+    "./renderers": "./src/renderers/index.ts",
+    "./renderers/contract": "./src/renderers/contract.ts",
+    "./sketch": "./src/sketch/index.ts",
+    "./export": "./src/export/index.ts",
+    "./styles.css": "./src/themes/base.css",
+    "./themes/*": "./src/themes/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "format": "oxfmt src",
+    "test": "bun test",
+    "verify:island": "bun tools/verify-island.mjs"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
+    "@excalidraw/mermaid-to-excalidraw": "2.2.2",
+    "@mdx-js/mdx": "^3.1.1",
+    "katex": "^0.16.22",
+    "lucide-react": "^1.18.0",
+    "mermaid": "^11.4.1",
+    "motion": "^12.23.24",
+    "qrcode": "^1.5.4",
+    "rehype-katex": "^7.0.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "shiki": "^3.13.0",
+    "shiki-magic-move": "^1.1.0",
+    "unist-util-visit": "^5.0.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/hast": "^3.0.5",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "playwright": "^1.50.0",
+    "pptxgenjs": "^3.12.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "peerDependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.0.16"
+  }
+}

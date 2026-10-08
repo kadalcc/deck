@@ -1,0 +1,26 @@
+{
+  "name": "@kadal/deck-qwik",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Qwik renderer for @kadal/deck: Qwik components as islands on a slide.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./build": "./src/build.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@qwik.dev/core": "2.0.0-rc.0",
+    "@kadal/deck": "workspace:*",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@qwik.dev/core": "^2.0.0-rc.0",
+    "@kadal/deck": "workspace:*"
+  }
+}

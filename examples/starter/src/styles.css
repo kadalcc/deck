@@ -1,0 +1,9 @@
+/* Tailwind for your slides: utilities work in deck.mdx and in src/components. Engine styles come
+   from @kadal/deck/styles.css and the theme; put deck-specific overrides below. */
+@import "tailwindcss";
+@source "../deck.mdx";
+
+/* Example: a slide with `class: hero` in its frontmatter. */
+.deck-slide.hero h1 {
+  letter-spacing: -0.04em;
+}

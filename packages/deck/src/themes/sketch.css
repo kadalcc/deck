@@ -1,0 +1,121 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   @kadal/deck — sketch: Excalidraw drawings on slides, their click tour and the canvas.
+   Loaded by base.css.
+   ───────────────────────────────────────────────────────────────────────────── */
+.deck-sketch {
+  position: relative;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35em;
+}
+.deck-sketch-body {
+  width: 100%;
+  line-height: 0;
+  text-align: center;
+}
+/* Width follows the column; a height limit shrinks the width with it (no letterboxing). */
+.deck-sketch-body svg {
+  width: min(100%, calc(var(--sk-max-h, 100000px) * var(--sk-ratio, 1)));
+  height: auto;
+  overflow: visible;
+}
+.deck-sketch .sk-el {
+  transition:
+    opacity 0.45s ease,
+    filter 0.45s ease;
+}
+.deck-sketch .sk-el.is-dim {
+  opacity: 0.12;
+  filter: saturate(0.2);
+}
+.deck-sketch-caption {
+  font-size: 0.6em;
+  line-height: 1.35;
+  color: var(--deck-muted);
+  text-align: center;
+  max-width: 60ch;
+  animation: deck-sketch-caption 0.4s ease both;
+}
+.deck-sketch-caption strong {
+  color: var(--deck-fg);
+}
+@keyframes deck-sketch-caption {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.deck-sketch-loading,
+.deck-sketch-missing {
+  font-size: 0.6em;
+  color: var(--deck-muted);
+  padding: 1.5em;
+}
+.deck-sketch-error {
+  font-size: 0.5em;
+  color: var(--tone-bad);
+  white-space: pre-wrap;
+  text-align: left;
+}
+.deck-sketch-open {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1.5em;
+  height: 1.5em;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: color-mix(in oklab, var(--deck-bg) 80%, transparent);
+  color: var(--deck-muted);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease;
+  font-size: 0.7em;
+}
+.deck-sketch:hover .deck-sketch-open,
+.deck-sketch.hints-on .deck-sketch-open,
+.deck-sketch-open:focus-visible {
+  opacity: 1;
+}
+.deck-sketch-open:hover {
+  color: var(--deck-accent);
+}
+
+/* The canvas in the lightbox. */
+.deck-lightbox-media[data-fit="sketch"] > * {
+  width: 100%;
+  height: 100%;
+}
+.deck-sketch-canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--deck-bg);
+}
+.deck-sketch-canvas .excalidraw {
+  --color-primary: var(--deck-accent);
+  --color-primary-darker: var(--deck-accent);
+  --color-primary-darkest: var(--deck-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-sketch .sk-el {
+    transition: none;
+  }
+  .deck-sketch-caption {
+    animation: none;
+  }
+}

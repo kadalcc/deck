@@ -1,0 +1,650 @@
+---
+title: deck — the showcase
+author: Mithunish Prabhakaran
+date: 2026-09-19
+info: Every feature of the engine, on one deck. Press ? for the keys.
+theme: minimal
+transition: slide
+slideNumber: c/t
+defaultTiming: 40
+layout: cover
+background: mesh
+class: hero
+---
+
+# deck
+
+### MDX slides, a live room, nothing for the audience to install
+
+<Motion at={0} initial={{ opacity: 0, y: 12 }} enter={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+  <p>Arrow keys or <Kbd>Space</Kbd> to move · <Kbd>?</Kbd> for every key · <Kbd>S</Kbd> for the presenter view</p>
+</Motion>
+
+<Notes>
+Welcome. This deck is the reference: every feature in the engine appears on a slide here.
+[click] The first click on the cover reveals nothing — the cover is a single step.
+</Notes>
+
+---
+layout: section
+---
+
+# What's in the box
+
+<Toc columns={2} maxDepth={1} mode="all" />
+
+<Notes>
+The table of contents is generated from the slide titles. `mode="onlyCurrentTree"` shows the current section, `maxDepth` limits it.
+</Notes>
+
+---
+
+## Clicks, one point at a time
+
+<Clicks>
+
+- **Fragments** come from `<Click>`, `<After>` and `<Clicks>` around a list
+- Effects: fade-in, fade-up, fade-out, highlight, grow, shrink, strike, zoom
+- `at` picks the click; `hide` removes on a click; `[a,b]` shows for a range
+- Every effect reveal.js has — and Slidev's `v-click`, `v-after`, `v-clicks`
+
+</Clicks>
+
+<Click at={5} effect="highlight"><Callout kind="tip" title="Try it">Press <Kbd>→</Kbd> five times, then <Kbd>←</Kbd> — going back undoes each step.</Callout></Click>
+
+<Notes>
+[click] The first point. [click] The effects. [click] Absolute and relative positions. [click] Parity. [click] And the callout.
+</Notes>
+
+---
+
+## One slide, any framework
+
+<Clicks>
+
+- A slide is HTML, so nothing about it requires React — an **island** is one piece of another framework living inside one
+- A renderer knows two things: how to put a component into an element, and how to take it out
+- `client="slide"` is the deck's own hydration rule: alive while you are here, gone when you leave
+- The framework arrives with the slide that needs it — **none of these was in this deck's first load**
+- Below: a **custom element**, **Vue**, **Svelte**, **Solid**, **Preact**, **Qwik**, **Angular**, **Fresh** — 195 bytes of **WebAssembly**, **Leptos** compiled from Rust, and **CPython** itself
+- Step a click and each island is handed new props — they keep counting, because they were updated rather than rebuilt
+- Svelte needed no `framework="svelte"`: a Vite plugin stamped the compiled component, because nothing else could
+- Solid and React both want `.tsx` — the deck gives each plugin a glob, which is the one thing Astro gets for free and a deck does not
+
+</Clicks>
+
+<div className="islands">
+  <ElementIsland label="a custom element, alive for" />
+  <VueIsland label="a vue island, alive for" />
+  <SvelteIsland label="a svelte island, alive for" />
+  <SolidIsland label="a solid island, alive for" />
+  <PreactIsland label="a preact island, alive for" />
+  <QwikIsland label="a qwik island, alive for" />
+  <AngularIsland label="an angular island, alive for" />
+  <FreshIsland label="a fresh island, alive for" />
+  <WasmIsland label="a wasm island, alive for" />
+  <RustIsland label="a rust island, alive for" />
+  <PythonIsland label="a python island, alive for" />
+</div>
+
+<Notes>
+Measured on this deck, not asserted. [click] The engine ships React and custom elements; every other framework is a package exporting a renderer. [click] The contract is deliberately two functions wide: put a component in an element, take it out again. [click] A deck keeps neighbouring slides mounted so transitions do not stall, so hydrating all of them is how a phone runs out of memory — an island exists only while its slide is up. [click] Registering Vue eagerly put 64 kB of its runtime in the first chunk, paid on slide one by every viewer; a renderer is registered as a name and an import instead, and each framework's chunk is fetched on arrival here. [click] Three runtimes on one slide, none of them bothering the others. [click] Press the arrow — the step changes and the counts do not restart, because each renderer was handed new props instead of being torn down. A chart would keep its animation; a half-typed form would keep what you typed. [click] And Svelte is why the engine asks the build rather than guessing: compile the same component for production and there is nothing left in it that says Svelte. A Vite plugin stamps it as it is compiled. [click] Solid is the same story one step further: its component is a plain function, exactly like React's, so nothing can tell them apart and both plugins want the same file extension. The deck hands each one a glob and they stay out of each other's way.
+</Notes>
+
+---
+
+## Code that walks
+
+```ts {1|3-5|7|all} [answer.ts]
+import { deck } from "@kadal/deck/vite";
+
+function ask(question: string) {
+  return `${question}? 42`;
+}
+
+export default deck({ entry: "deck.mdx" });
+```
+
+<After effect="fade-up">
+
+Line highlights step with the clicks: `{1|3-5|7|all}` in the fence is the whole recipe. Add `{lines:true}` for numbers and `[name]` for a title.
+
+</After>
+
+<Notes>
+the import [click] the function [click] the export [click] everything
+</Notes>
+
+---
+
+## Magic move
+
+````md magic-move {lines: true}
+```ts
+const answer = 42;
+```
+```ts
+const answer = 42;
+function ask(q: string) {
+  return `${q}? ${answer}`;
+}
+```
+```ts
+const answer = 42;
+export function ask(q: string): string {
+  return `${q}? ${answer}`;
+}
+ask("What is the meaning");
+```
+````
+
+<Notes>
+Tokens morph between steps — the same shiki-magic-move engine Slidev uses, precompiled at build time.
+</Notes>
+
+---
+layout: two-cols
+---
+
+## Layouts and bits
+
+Two columns, from `layout: two-cols`. Inline pieces: <Badge tone="accent">badge</Badge> <Badge tone="good">good</Badge> <Badge tone="warn">warn</Badge> <Kbd>⌘</Kbd><Kbd>K</Kbd>
+
+<Callout kind="info" title="Callouts">info · tip · warn · danger · note</Callout>
+
+<Callout kind="warn">Fourteen layouts: default, center, cover, intro, section, end, fact, quote, statement, full, none, two-cols, image, image-left/right, iframe, iframe-left/right.</Callout>
+
+::right::
+
+<Grid cols={2} gap="0.8em">
+  <Feature icon="rocket" title="Fast">Vite, code-split per slide.</Feature>
+  <Feature icon="zap" title="Live">A room per deck.</Feature>
+  <Feature icon="users" title="Audience">Phones join by QR.</Feature>
+  <Feature icon="sparkles" title="Yours">Your components, in MDX.</Feature>
+</Grid>
+
+---
+
+## Math and diagrams
+
+<Cols n={2}>
+<Col>
+
+Inline $E = mc^2$ and display math:
+
+$$
+\hat{\theta} = \arg\max_\theta \sum_{i=1}^{n} \log p(x_i \mid \theta)
+$$
+
+<Tex block tex="\int_0^\infty e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}" />
+
+</Col>
+<Col>
+
+<Mermaid scale={0.9}>
+{`flowchart LR
+  A[deck.mdx] --> B[vite plugin]
+  B --> C[one module per slide]
+  C --> D[React runtime]
+  D --> E[(room)]
+`}
+</Mermaid>
+
+</Col>
+</Cols>
+
+---
+
+## Terms that explain themselves
+
+<Cols n={2}>
+<Col>
+
+Rest the pointer on a dotted word. The cursor fills like a pie, the underline draws itself in, and the definition opens — so sweeping across a slide sets nothing off. **Click** pins it, <Kbd>F</Kbd> reaches it from the keyboard, <Kbd>Esc</Kbd> closes it.
+
+Nothing here was tagged: the compiler links a slide's first mention of every entry in `glossary.yaml` — MDX, a Durable Object and its WebSocket hibernation, KaTeX.
+
+By hand, <Term id="mdx">other words for the same entry</Term>, or a <Term def="Written right where it is used, with **Markdown** and $e^{i\pi} = -1$; no glossary entry needed." tag="One-off">one-off definition</Term>.
+
+<Callout kind="tip">Cards are yours alone until the presenter view's **Share terms** is on — then they open on the projector and on every phone.</Callout>
+
+</Col>
+<Col>
+
+```yaml
+# glossary.yaml, beside deck.mdx
+Durable Object:
+  def: One addressable instance of a class…
+  more: A deck's room is one.
+  aliases: [Durable Objects]
+  tag: Cloudflare
+  see: [WebSocket hibernation, D1]
+D1: Cloudflare's serverless SQLite.
+```
+
+```mdx
+---
+terms: false        # this slide links nothing
+---
+<Term>D1</Term>  <Term def="…">once</Term>
+```
+
+</Col>
+</Cols>
+
+---
+background:
+  component: dots
+---
+background:
+  component: globe
+  fill: "rgba(5,150,105,0.08)"
+  color: "rgba(5,150,105,0.55)"
+  x: 0.82
+  y: 0.45
+  radius: 0.66
+---
+
+## The map room
+
+Backgrounds for talks about places: a wire **globe** turning about a tilted axis, a **lattice** zooming three levels into one cell, **thiessen** polygons over drifting seeds, **cells** lighting up as reports land, a **compass** with its ring turning, a map sheet's **neatline**, a graticule under a satellite **scan**, and a GPS **track**. ↓ for four of them.
+
+----
+background:
+  component: thiessen
+  fill: "rgba(13,148,136,0.1)"
+  color: "rgba(13,148,136,0.55)"
+  accent: "rgba(13,148,136,0.8)"
+  count: 20
+---
+
+### thiessen
+
+----
+background:
+  component: cells
+  fill: "rgba(219,39,119,0.06)"
+  color: "rgba(219,39,119,0.3)"
+  accent: "rgba(219,39,119,0.85)"
+  size: 32
+---
+
+### cells
+
+----
+background:
+  component: lattice
+  fill: "rgba(124,58,237,0.1)"
+  color: "rgba(124,58,237,0.4)"
+  accent: "rgba(124,58,237,0.9)"
+  size: 150
+---
+
+### lattice
+
+----
+background:
+  component: compass
+  fill: "rgba(59,130,246,0.08)"
+  color: "rgba(59,130,246,0.55)"
+---
+
+### compass
+
+---
+
+## Sketches
+
+Excalidraw drawings on a slide: drawn in code, converted from Mermaid, or a file saved on excalidraw.com. Theme-aware, click-toured, and one press from the real canvas.
+
+<Cols cols="1.4fr 1fr" gap="1.5rem" align="start">
+<Col>
+
+<FlowSketch />
+
+</Col>
+<Col>
+
+<Sketch fontSize={16} height="260px" caption="Mermaid, converted">
+{`flowchart LR
+  A[deck.mdx] --> B[vite plugin]
+  B --> C[one module per slide]
+  B --> D[(room)]
+`}
+</Sketch>
+
+<Sketch src="sketches/pipeline.excalidraw" caption="a .excalidraw file, frames as regions" />
+
+</Col>
+</Cols>
+
+<Notes>
+Three ways in, one look out. [click] The code-drawn one has regions, so it steps. [click] The engine side. [click] And the whole thing again.
+</Notes>
+
+---
+layout: fact
+---
+
+<Counter value={98.6} decimals={1} suffix="%" className="big-number" />
+
+of the reveal.js and Slidev feature list, and then some
+
+<Notes>
+Counters animate when the slide arrives. `layout: fact` centres and enlarges.
+</Notes>
+
+---
+layout: quote
+---
+
+"The slide is the unit of thought. Everything else is delivery."
+
+— a note on the wall
+
+---
+layout: image-right
+image: https://picsum.photos/seed/deck-engine/1200/1400
+---
+
+## Image layouts
+
+`layout: image-right` with `image:` in frontmatter. `image-left` mirrors it, `image` fills the slide with the text over a gradient.
+
+<Image src="https://picsum.photos/seed/deck-thumb/600/300" preview alt="Click to open in the lightbox" className="rounded-xl mt-6" />
+
+<Notes>
+Click the small image: the lightbox opens, Esc closes.
+</Notes>
+
+---
+transition: zoom
+background: aurora
+colorScheme: dark
+---
+
+## Transitions
+
+This slide arrives with `transition: zoom`. The next ones use `convex`, `fade` and `none`; `-in`/`-out` variants and `backgroundTransition` work like reveal.js.
+
+----
+transition: convex
+background: sparkles
+colorScheme: dark
+---
+
+### convex
+
+Vertical slides sit beneath the previous one — `----` in the file, <Kbd>↓</Kbd> to reach them.
+
+----
+transition: fade
+background: lines
+colorScheme: dark
+---
+
+### fade
+
+Press <Kbd>O</Kbd> for the overview: every column and every vertical stack, at once.
+
+----
+transition: none
+background:
+  component: starfield
+  count: 400
+colorScheme: dark
+---
+
+### none
+
+Backgrounds as components take props: `component: starfield`, `count: 400`.
+
+---
+background: waves
+colorScheme: dark
+---
+
+## Backgrounds
+
+<Grid cols={4} gap="0.6em">
+  <Badge>mesh</Badge><Badge>aurora</Badge><Badge>waves</Badge><Badge>lines</Badge>
+  <Badge>beams</Badge><Badge>sparkles</Badge><Badge>starfield</Badge><Badge>grid</Badge>
+  <Badge>dots</Badge><Badge>noise</Badge><Badge>spotlight</Badge><Badge>any colour, gradient, image, video, iframe</Badge>
+</Grid>
+
+Or in the slide: `<Background name="grid" />` layers one behind the content.
+
+<Background name="dots" opacity={0.5} />
+
+----
+background:
+  component: topo
+  color: "rgba(59,130,246,0.3)"
+---
+
+### The second set: quieter, more designed
+
+<Grid cols={5} gap="0.5em">
+  <Badge>topo</Badge><Badge>glows</Badge><Badge>graticule</Badge><Badge>hex</Badge><Badge>constellation</Badge>
+  <Badge>vignette</Badge><Badge>rays</Badge><Badge>stripes</Badge><Badge>sweep</Badge><Badge>+ props on each</Badge>
+</Grid>
+
+Contour lines behind this slide come from `component: topo` with a colour and a spacing. Every background takes props in frontmatter or on `<Background>`.
+
+----
+background:
+  component: glows
+  colors: "#7c3aed,#0ea5e9,#f59e0b"
+  opacity: 0.3
+---
+
+### Bling: the small things
+
+<Cols n={2} gap="1.5rem" align="start">
+<Col>
+
+# <GradientText from="#7c3aed" to="#0ea5e9">Gradient text</GradientText>
+
+<Glass tone="purple" pad="0.7em 1em" glow>
+<p className="m-0 text-[0.8em]"><Chip tone="purple" icon="sparkles">Glass</Chip> a frosted card with a gradient hairline, a tone and an optional glow. <Chip tone="good" icon="check">good</Chip> <Chip tone="warn">warn</Chip> <Chip tone="bad">bad</Chip> <Chip tone="info" icon="info">info</Chip></p>
+</Glass>
+
+<p className="mt-4 text-[0.8em]"><Halo tone="amber">1</Halo> <Halo tone="teal"><Icon name="map-pin" /></Halo> <Halo tone="pink">★</Halo> halos for steps and icons — any lucide icon by name: <Icon name="rocket" /> <Icon name="zap" /> <Icon name="globe" /></p>
+
+<Divider label="divider with a label" />
+
+<Shimmer as="strong">Shimmer runs a slow sheen over text.</Shimmer>
+
+</Col>
+<Col>
+
+<div className="relative" style={{ minHeight: "9em" }}>
+  <Blob color="#0ea5e9" x="60%" y="50%" size="70%" opacity={0.35} />
+  <Glow color="#f59e0b" x="30%" y="40%" size="50%" opacity={0.5} />
+  <Tilt>
+    <Glass tone="teal" pad="1em" className="relative">
+      <Ribbon tone="pink">live</Ribbon>
+      <p className="m-0 text-[0.8em]">A <b>Tilt</b> card leaning toward the pointer, over a <b>Blob</b> and a <b>Glow</b>, with a corner <b>Ribbon</b>.</p>
+    </Glass>
+  </Tilt>
+</div>
+
+</Col>
+</Cols>
+
+---
+autoAnimate: true
+---
+
+## Auto-animate
+
+<div data-id="box" className="inline-block rounded-2xl px-6 py-3" style={{ background: "var(--deck-accent)", color: "#fff" }}>one box</div>
+
+Elements with the same `data-id` on consecutive `autoAnimate: true` slides move into place.
+
+---
+autoAnimate: true
+---
+
+## Auto-animate
+
+<div className="flex justify-end">
+  <div data-id="box" className="inline-block rounded-2xl px-12 py-8 text-4xl" style={{ background: "var(--deck-accent-2)", color: "#fff" }}>one box, elsewhere</div>
+</div>
+
+<After>The box crossed the slide. Position, size, colour and radius interpolate — reveal.js's FLIP, in React.</After>
+
+---
+
+## Motion
+
+<Motion initial={{ x: -80, opacity: 0 }} enter={{ x: 0, opacity: 1 }} clicks={{ "click-1": { x: 120, rotate: 6 }, "click-2": { scale: 1.2 } }}>
+  <Frame>
+    <p>`initial` before the slide, `enter` when it arrives, per-click targets after that.</p>
+  </Frame>
+</Motion>
+
+<Click at={1}><p>First click: it slides right.</p></Click>
+<Click at={2}><p>Second: it grows.</p></Click>
+
+---
+
+## Words that move
+
+<Typewriter text="Typewriter types this out when the slide arrives." />
+
+<Encrypted text="Encrypted resolves from noise." delay={1200} />
+
+<p>Mark <Mark type="circle" at={1}>circles</Mark>, <Mark type="highlight" at={2}>highlights</Mark> and <Mark type="strike" at={3}>strikes</Mark> on a click.</p>
+
+<FlipBoard text={"DECK  LIVE\nNOW BOARDING"} />
+
+<Confetti at={4} />
+
+<Notes>
+[click] circle [click] highlight [click] strike [click] confetti
+</Notes>
+
+---
+layout: section
+---
+
+# The live room
+
+<Notes>
+Everything from here on needs the host (apps/deck-worker) — in dev it is on :8794 behind the /api proxy.
+</Notes>
+
+---
+
+## Join from a phone
+
+<Cols n={2} align="center">
+<Col>
+
+<QrJoin />
+
+</Col>
+<Col>
+
+<Presence />
+
+The audience page follows the presenter, or explores and catches up. It has reactions, an ask box with upvotes, polls, the quiz, pace feedback, a raised hand, bookmarks and the notes when shared.
+
+<Reactions />
+
+</Col>
+</Cols>
+
+---
+
+## A poll
+
+<Poll id="engine" question="What do you present with today?" options={["Keynote or PowerPoint", "Google Slides", "reveal.js or Slidev", "Something else"]} />
+
+<Notes>
+The presenter opens and closes it from the room panel. Results bar up live.
+</Notes>
+
+---
+
+## A rating and a word cloud
+
+<Cols n={2}>
+<Col>
+
+<Poll id="pace" kind="rating" scale={5} question="How is the pace so far?" />
+
+</Col>
+<Col>
+
+<WordCloud id="oneword" question="One word for how this feels" />
+
+</Col>
+</Cols>
+
+---
+
+## A timed quiz
+
+<Quiz id="q1" question="Which separator starts a vertical slide?" options={["---", "----", "***", "==="]} correct={1} seconds={20} />
+
+<Leaderboard top={5} />
+
+<Notes>
+Open it from the room panel: viewers get 20 seconds, points for right answers and for speed.
+</Notes>
+
+---
+
+## Questions and pace
+
+<Cols n={2}>
+<Col>
+
+<Questions limit={5} />
+
+</Col>
+<Col>
+
+<Pace />
+
+<p>Viewers vote slower or faster on their phones; the dial moves live. Hands raised show in the presenter's room panel.</p>
+
+</Col>
+</Cols>
+
+---
+layout: iframe-right
+url: https://ooru.kadal.cc/
+---
+
+## Iframes
+
+`layout: iframe-right` with `url:` embeds a page beside the text. `<Iframe>`, `<Youtube id="…" />` and `<Tweet>` work inside a slide too.
+
+---
+
+## Everything else
+
+<Clicks every={1}>
+
+- **Vim keys**: <Kbd>j</Kbd>/<Kbd>k</Kbd> step, <Kbd>h</Kbd>/<Kbd>l</Kbd> column, <Kbd>gg</Kbd>/<Kbd>G</Kbd>, <Kbd>/</Kbd> search, <Kbd>:12</Kbd> jump, <Kbd>f</Kbd> labels every link and control — type one to use it
+- **Theme menu** <Kbd>T</Kbd>: every screen picks its own theme and light/dark, remembered per deck
+- **Presenter view** <Kbd>S</Kbd>: current, next, notes with click markers, timer with pacing, tools, room panel
+- **Drawing** <Kbd>C</Kbd>, **laser** <Kbd>X</Kbd>, spotlight, blackout <Kbd>B</Kbd>, dark/light <Kbd>D</Kbd>
+- **Overview** <Kbd>O</Kbd>, **zoom** <Kbd>Z</Kbd>, fullscreen <Kbd>⇧F</Kbd>; embedded pages sit behind a shield until you click them or press <Kbd>f</Kbd>
+- **Scroll view** `?view=scroll`, **print** `?print-pdf`, `bun run export` for PDF, PNG, PPTX
+- **Share links** deck.kadal.cc/s/xxxx to any slide; **stats** at /stats
+
+</Clicks>
+
+---
+layout: end
+---
+
+# Thanks
+
+Questions? Scan the code on the audience page, or ask out loud.
+
+<Confetti at={0} />
