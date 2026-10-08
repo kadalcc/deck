@@ -21,6 +21,6 @@
   },
   "peerDependencies": {
     "@qwik.dev/core": "^2.0.0-rc.0",
-    "@kadal/deck": "workspace:*"
+    "@kadal/deck": "^0.1.0"
   }
 }

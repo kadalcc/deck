@@ -21,8 +21,8 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "workspace:*",
-    "@kadal/deck-preact": "workspace:*",
+    "@kadal/deck": "^0.1.0",
+    "@kadal/deck-preact": "^0.1.0",
     "preact": "^10.0.0 || ^11.0.0"
   }
 }

@@ -19,7 +19,7 @@
     "vue": "^3.5.22"
   },
   "peerDependencies": {
-    "@kadal/deck": "workspace:*",
+    "@kadal/deck": "^0.1.0",
     "vue": "^3.5.0"
   }
 }

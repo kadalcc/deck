@@ -21,7 +21,7 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "workspace:*",
+    "@kadal/deck": "^0.1.0",
     "svelte": "^5.0.0"
   }
 }

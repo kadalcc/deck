@@ -19,6 +19,6 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "workspace:*"
+    "@kadal/deck": "^0.1.0"
   }
 }

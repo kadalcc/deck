@@ -18,11 +18,13 @@
     "@angular/core": "^22.2.1",
     "@angular/platform-browser": "^22.2.1",
     "@kadal/deck": "workspace:*",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@angular/compiler": "^22.2.1"
   },
   "peerDependencies": {
     "@angular/core": "^20.0.0 || ^21.0.0 || ^22.0.0",
     "@angular/platform-browser": "^20.0.0 || ^21.0.0 || ^22.0.0",
-    "@kadal/deck": "workspace:*"
+    "@kadal/deck": "^0.1.0",
+    "@angular/compiler": "^20.0.0 || ^21.0.0 || ^22.0.0"
   }
 }
