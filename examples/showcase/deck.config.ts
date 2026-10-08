@@ -12,5 +12,6 @@ export const config: DeckConfigInput = {
   slideNumber: "c/t",
   controls: true,
   progress: true,
-  live: { api: "/api", room: null },
+  // Offline locally; the host turns the room on when the deck is published (see the starter).
+  live: { api: import.meta.env?.VITE_KADAL_DECK_LIVE ? "/api" : null, room: null },
 };

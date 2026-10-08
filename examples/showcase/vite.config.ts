@@ -37,17 +37,16 @@ export default defineConfig({
   ],
   server: {
     port: Number(process.env.PORT ?? 5300),
-    proxy: {
-      // The shared backend (apps/deck-worker) in dev; DECK_API points at another instance.
-      "/api": {
-        target: process.env.DECK_API ?? "http://localhost:8797",
-        changeOrigin: true,
-        ws: true,
-      },
-    },
+    // KADAL_DECK_API=http://localhost:8797 proxies /api to a host and switches the room on.
+    proxy: process.env.KADAL_DECK_API
+      ? { "/api": { target: process.env.KADAL_DECK_API, changeOrigin: true, ws: true } }
+      : undefined,
   },
   // Qwik's runtime reads build-time constants its own plugin would substitute; without the
   // optimizer the deck supplies them, or the first render() throws before reaching the slide.
-  define: { ...deckQwikDefine },
+  define: {
+    ...deckQwikDefine,
+    ...(process.env.KADAL_DECK_API ? { "import.meta.env.VITE_KADAL_DECK_LIVE": JSON.stringify("1") } : {}),
+  },
   build: { outDir: "dist", emptyOutDir: true },
 });

@@ -1,17 +1,17 @@
 {
-  "name": "@decks/showcase",
+  "name": "kadal-deck-showcase",
   "version": "0.0.0",
   "private": true,
   "description": "Every feature of the deck engine on one deck: clicks, code, magic move, math, diagrams, layouts, backgrounds, auto-animate, motion, the live room, polls, quizzes and export.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "kadal-deck dev",
+    "build": "tsc --noEmit && kadal-deck build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
     "format": "oxfmt src deck.mdx",
-    "export": "bun ../../packages/deck/src/export/cli.ts",
+    "export": "kadal-deck export",
     "wat": "bun tools/wat2wasm.ts",
     "rust": "bun tools/build-rust.ts"
   },
