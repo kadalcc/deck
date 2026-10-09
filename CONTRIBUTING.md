@@ -9,7 +9,7 @@ You need [Bun](https://bun.sh) 1.3+ (the workspace's package manager and test ru
 Node 20.19+ (what the published packages run on).
 
 ```sh
-git clone https://github.com/kadalcc/kadal-deck && cd kadal-deck
+git clone https://github.com/kadalcc/deck && cd kadal-deck
 bun install
 bun run build          # every package into its dist/
 bun run typecheck

@@ -9,15 +9,12 @@ concurrency: release-${{ github.ref }}
 permissions:
   contents: write
   pull-requests: write
-  id-token: write # npm provenance
+  id-token: write # npm trusted publishing (OIDC) and provenance
 
 jobs:
   release:
-    if: github.repository == 'kadalcc/kadal-deck'
+    if: github.repository == 'kadalcc/deck'
     runs-on: ubuntu-latest
-    # Nothing is published until the NPM_TOKEN secret exists; before that the job builds and tests only.
-    env:
-      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -27,13 +24,16 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm >= 11.5.1: it trades this job's GitHub OIDC token for a
+      # short-lived npm one, so no npm token is stored anywhere. Each package lists
+      # kadalcc/deck + release.yml as its trusted publisher on npmjs.com.
+      - run: npm install -g npm@^11.5.1
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bun run test
       # Opens a "Version packages" PR while changesets are pending; once that PR is merged,
       # publishes every changed package to npm with provenance.
       - uses: changesets/action@v1
-        if: env.HAS_NPM_TOKEN == 'true'
         with:
           version: bunx changeset version
           publish: bun run release
@@ -41,6 +41,7 @@ jobs:
           commit: "Version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Only for bootstrapping a package that doesn't exist on npm yet (trusted publishers can
+          # only be added to existing packages). Unset otherwise; OIDC is used when it is.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"

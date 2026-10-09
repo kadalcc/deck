@@ -12,11 +12,11 @@
   "homepage": "https://deck.kadal.cc/docs/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kadalcc/kadal-deck.git",
+    "url": "git+https://github.com/kadalcc/deck.git",
     "directory": "packages/deck-svelte"
   },
   "bugs": {
-    "url": "https://github.com/kadalcc/kadal-deck/issues"
+    "url": "https://github.com/kadalcc/deck/issues"
   },
   "license": "AGPL-3.0-or-later",
   "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
