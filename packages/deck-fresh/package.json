@@ -1,7 +1,7 @@
 {
   "name": "@kadal/deck-fresh",
   "version": "0.1.0",
-  "description": "The Fresh renderer for Kadal Deck (@kadal/deck) \u2014 which is the Preact renderer, under the name Fresh islands are written in.",
+  "description": "The Fresh renderer for Kadal Deck (@kadal/deck) — which is the Preact renderer, under the name Fresh islands are written in.",
   "keywords": [
     "kadal-deck",
     "presentation",

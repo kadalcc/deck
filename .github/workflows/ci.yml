@@ -27,6 +27,14 @@ jobs:
       - run: bun run typecheck
       - run: bun run test
       - run: bun run lint
+      # npm silently rewrites (and for `./` bin paths, drops) what it doesn't like at publish time.
+      # `npm pkg fix` applies the same normalisation; any diff means a package.json would ship
+      # different from what's in the repo.
+      - name: package.json files are already what npm publishes
+        run: |
+          npm install -g npm@^11.15.0
+          for d in packages/*/; do (cd "$d" && npm pkg fix); done
+          git diff --exit-code -- 'packages/*/package.json'
       - name: The showcase builds against the built packages
         run: bun run build
         working-directory: examples/showcase

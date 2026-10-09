@@ -51,7 +51,14 @@ for (const dir of readdirSync(join(root, "packages")).sort()) {
   console.log(`$ npm ${argv.join(" ")}   (${name}@${version})`);
   try {
     execFileSync("npm", argv, { cwd: pkgDir, stdio: "inherit" });
-    console.log(`New tag: ${name}@${version}`);
+    // changesets/action pushes these tags and turns them into GitHub releases.
+    const tag = `${name}@${version}`;
+    try {
+      execFileSync("git", ["tag", tag], { cwd: root, stdio: "ignore" });
+    } catch {
+      // already tagged (a re-run after a partial failure)
+    }
+    console.log(`New tag: ${tag}`);
   } catch {
     failed.push(`${name}@${version}`);
   }

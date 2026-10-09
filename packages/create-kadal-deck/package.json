@@ -22,7 +22,7 @@
   "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
   "type": "module",
   "bin": {
-    "create-kadal-deck": "./src/index.mjs"
+    "create-kadal-deck": "src/index.mjs"
   },
   "files": [
     "src",

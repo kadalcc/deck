@@ -39,7 +39,7 @@
     "tools/verify-island.mjs"
   ],
   "bin": {
-    "kadal-deck": "./dist/cli/bin.js"
+    "kadal-deck": "dist/cli/bin.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
