@@ -24,10 +24,10 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      # Trusted publishing needs npm >= 11.5.1: it trades this job's GitHub OIDC token for a
-      # short-lived npm one, so no npm token is stored anywhere. Each package lists
-      # kadalcc/deck + release.yml as its trusted publisher on npmjs.com.
-      - run: npm install -g npm@^11.5.1
+      # Trusted publishing (npm >= 11.5.1) trades this job's GitHub OIDC token for a short-lived npm
+      # one, so no npm token is stored anywhere; each package lists kadalcc/deck + release.yml as
+      # its trusted publisher on npmjs.com. Staged publishing needs npm >= 11.15.0.
+      - run: npm install -g npm@^11.15.0
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bun run test
@@ -41,7 +41,10 @@ jobs:
           commit: "Version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Only for bootstrapping a package that doesn't exist on npm yet (trusted publishers can
-          # only be added to existing packages). Unset otherwise; OIDC is used when it is.
+          # tools/publish.mjs: `direct` (npm publish) unless the repo variable says `stage`.
+          NPM_PUBLISH_MODE: ${{ vars.NPM_PUBLISH_MODE || 'direct' }}
+          # Only for bootstrapping a package that doesn't exist on npm yet: `npm stage publish` with
+          # an ordinary (2FA-respecting) token, approved on npmjs.com. Unset otherwise; npm uses
+          # trusted publishing (OIDC) first whenever the package has a trusted publisher.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"

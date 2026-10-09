@@ -13,7 +13,7 @@
     "lint": "oxlint packages",
     "format": "oxfmt packages examples/starter",
     "changeset": "changeset",
-    "release": "bun run build && changeset publish",
+    "release": "bun run build && node tools/publish.mjs",
     "smoke": "node tools/smoke.mjs"
   },
   "devDependencies": {
