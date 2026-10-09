@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   release:
-    if: github.repository == 'pmithunish/kadal-deck'
+    if: github.repository == 'kadalcc/kadal-deck'
     runs-on: ubuntu-latest
     # Nothing is published until the NPM_TOKEN secret exists; before that the job builds and tests only.
     env:
