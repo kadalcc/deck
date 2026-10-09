@@ -52,7 +52,7 @@ jobs:
           node-version: 22
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - name: Pack, scaffold with create-kadal-deck, npm install the tarballs, kadal-deck build
+      - name: Pack, scaffold with @kadal/create-deck, npm install the tarballs, kadal-deck build
         run: node tools/smoke.mjs --out "$RUNNER_TEMP/smoke"
       - run: npx playwright install --with-deps chromium
       - name: The scaffolded deck in a browser (dev + published override)

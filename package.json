@@ -7,7 +7,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "bun run --filter '@kadal/deck' build && bun run --filter './packages/deck-*' build && bun run --filter create-kadal-deck build",
+    "build": "bun run --filter '@kadal/deck' build && bun run --filter './packages/deck-*' build && bun run --filter @kadal/create-deck build",
     "typecheck": "bun run --filter './packages/*' typecheck",
     "test": "bun run --filter './packages/*' test",
     "lint": "oxlint packages",

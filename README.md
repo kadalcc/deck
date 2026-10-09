@@ -9,7 +9,7 @@ export to PDF, PNG and PPTX. Write the talk in the editor you already use; prese
 ## Thirty seconds
 
 ```sh
-npm create kadal-deck@latest my-talk
+npm create @kadal/deck@latest my-talk
 cd my-talk && npm install
 npm run dev                 # edit deck.mdx; the page reloads as you type
 ```
@@ -64,7 +64,7 @@ Publish it with a live room: `npx kadal-deck login && npx kadal-deck publish`. O
 | package | |
 | --- | --- |
 | [`@kadal/deck`](packages/deck) | the engine: compiler + Vite plugin, React runtime, components, themes, live client, export, and the `kadal-deck` CLI |
-| [`create-kadal-deck`](packages/create-kadal-deck) | `npm create kadal-deck@latest` |
+| [`@kadal/create-deck`](packages/create-deck) | `npm create @kadal/deck@latest` |
 | `@kadal/deck-*` | the framework renderers above |
 
 ## Self-hosted or hosted

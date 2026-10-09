@@ -7,7 +7,7 @@ export to PDF, PNG and PPTX. Docs: **https://deck.kadal.cc/docs/**
 ## Start a deck
 
 ```sh
-npm create kadal-deck@latest my-talk
+npm create @kadal/deck@latest my-talk
 cd my-talk && npm install
 npm run dev                     # edit deck.mdx; the page reloads as you type
 npx kadal-deck build            # dist/, for any static host

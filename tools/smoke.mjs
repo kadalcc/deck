@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * The packages as a stranger gets them: `npm pack` every package, scaffold a deck with the packed
- * create-kadal-deck in a temp folder outside the repo, point its dependencies at the tarballs,
+ * @kadal/create-deck in a temp folder outside the repo, point its dependencies at the tarballs,
  * `npm install`, and `npx kadal-deck build`. Prints the folder so a browser check can follow.
  *
  *   node tools/smoke.mjs [--keep] [--out <dir>]
@@ -34,10 +34,10 @@ for (const dir of readdirSync(join(root, "packages"))) {
 }
 console.log(`packed ${Object.keys(tarballs).length} packages into ${packs}`);
 
-// 2 · scaffold with the packed create-kadal-deck
+// 2 · scaffold with the packed @kadal/create-deck
 const createDir = join(work, "create");
 mkdirSync(createDir, { recursive: true });
-sh("tar", ["-xzf", tarballs["create-kadal-deck"], "-C", createDir], work);
+sh("tar", ["-xzf", tarballs["@kadal/create-deck"], "-C", createDir], work);
 const app = join(work, "my-talk");
 rmSync(app, { recursive: true, force: true });
 sh("node", [join(createDir, "package", "src", "index.mjs"), app], work);

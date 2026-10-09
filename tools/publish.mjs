@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
  * Publishes every package whose current version isn't on npm yet (what `changeset publish` did),
- * in one of two modes, from NPM_PUBLISH_MODE:
+ * in one of three modes, from NPM_PUBLISH_MODE:
  *
  *   direct (default)  `npm publish` — in CI this authenticates through npm trusted publishing
  *   stage             `npm stage publish` — each version waits on npmjs.com (Staged Packages)
- *                     until a maintainer approves it with 2FA; also how a package that doesn't
- *                     exist yet gets onto npm without a token that bypasses 2FA
+ *                     until a maintainer approves it with 2FA
+ *   bootstrap         `npm stage publish` only for packages npm has never seen, with an ordinary
+ *                     token. Staging creates the package (as a `0.0.0-stage` placeholder), which
+ *                     is what a trusted publisher needs before it can be added; reject the staged
+ *                     version, add the trusted publisher, then publish directly.
  *
  * Prints `New tag: <name>@<version>` for each one, which changesets/action turns into git tags and
  * GitHub releases. Run after `bun run build`.
@@ -17,8 +20,8 @@ import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const mode = process.env.NPM_PUBLISH_MODE || "direct";
-if (mode !== "direct" && mode !== "stage")
-  throw new Error(`NPM_PUBLISH_MODE must be direct or stage, not ${mode}`);
+if (!["direct", "stage", "bootstrap"].includes(mode))
+  throw new Error(`NPM_PUBLISH_MODE must be direct, stage or bootstrap, not ${mode}`);
 
 const onNpm = (name, version) => {
   try {
@@ -30,6 +33,15 @@ const onNpm = (name, version) => {
     );
   } catch {
     return false; // 404: the package or this version doesn't exist yet
+  }
+};
+
+const exists = (name) => {
+  try {
+    execFileSync("npm", ["view", name, "name"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
   }
 };
 
@@ -47,10 +59,15 @@ for (const dir of readdirSync(join(root, "packages")).sort()) {
     console.log(`${name}@${version} is already on npm`);
     continue;
   }
-  const argv = mode === "stage" ? ["stage", "publish"] : ["publish"];
+  if (mode === "bootstrap" && exists(name)) {
+    console.log(`${name} already exists on npm; nothing to bootstrap`);
+    continue;
+  }
+  const argv = mode === "direct" ? ["publish"] : ["stage", "publish"];
   console.log(`$ npm ${argv.join(" ")}   (${name}@${version})`);
   try {
     execFileSync("npm", argv, { cwd: pkgDir, stdio: "inherit" });
+    if (mode === "bootstrap") continue; // a placeholder to reject, not a release
     // changesets/action pushes these tags and turns them into GitHub releases.
     const tag = `${name}@${version}`;
     try {
@@ -64,6 +81,6 @@ for (const dir of readdirSync(join(root, "packages")).sort()) {
   }
 }
 if (failed.length) {
-  console.error(`Failed to ${mode === "stage" ? "stage" : "publish"}: ${failed.join(", ")}`);
+  console.error(`Failed to ${mode === "direct" ? "publish" : "stage"}: ${failed.join(", ")}`);
   process.exit(1);
 }

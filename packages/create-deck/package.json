@@ -1,7 +1,7 @@
 {
-  "name": "create-kadal-deck",
+  "name": "@kadal/create-deck",
   "version": "0.1.0",
-  "description": "Start a Kadal Deck: npm create kadal-deck@latest my-talk",
+  "description": "Start a Kadal Deck: npm create @kadal/deck@latest my-talk",
   "keywords": [
     "kadal-deck",
     "presentation",
@@ -13,7 +13,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kadalcc/deck.git",
-    "directory": "packages/create-kadal-deck"
+    "directory": "packages/create-deck"
   },
   "bugs": {
     "url": "https://github.com/kadalcc/deck/issues"
@@ -22,7 +22,7 @@
   "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
   "type": "module",
   "bin": {
-    "create-kadal-deck": "src/index.mjs"
+    "create-deck": "src/index.mjs"
   },
   "files": [
     "src",

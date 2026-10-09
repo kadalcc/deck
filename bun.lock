@@ -72,18 +72,18 @@
         "vite": "^8.0.16",
       },
     },
-    "packages/create-kadal-deck": {
-      "name": "create-kadal-deck",
+    "packages/create-deck": {
+      "name": "@kadal/create-deck",
       "version": "0.1.0",
       "bin": {
-        "create-kadal-deck": "./src/index.mjs",
+        "create-deck": "src/index.mjs",
       },
     },
     "packages/deck": {
       "name": "@kadal/deck",
       "version": "0.1.0",
       "bin": {
-        "kadal-deck": "./dist/cli/bin.js",
+        "kadal-deck": "dist/cli/bin.js",
       },
       "dependencies": {
         "@excalidraw/excalidraw": "0.18.1",
@@ -380,6 +380,8 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.6.0", "", {}, "sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
+
+    "@kadal/create-deck": ["@kadal/create-deck@workspace:packages/create-deck"],
 
     "@kadal/deck": ["@kadal/deck@workspace:packages/deck"],
 
@@ -962,8 +964,6 @@
     "cose-base": ["cose-base@1.0.3", "", { "dependencies": { "layout-base": "^1.0.0" } }, "sha512-s9whTXInMSgAp/NVXVNuVxVKzGH2qck3aQlVHxDCdAEPgtMKwc4Wq6/QKhgdEdgbLSi9rBTAcPoRa6JpiG4ksg=="],
 
     "crc-32": ["crc-32@0.3.0", "", {}, "sha512-kucVIjOmMc1f0tv53BJ/5WIX+MGLcKuoBhnGqQrgKJNqLByb/sVMWfW/Aw6hw0jgcqjJ2pi9E5y32zOIpaUlsA=="],
-
-    "create-kadal-deck": ["create-kadal-deck@workspace:packages/create-kadal-deck"],
 
     "cross-env": ["cross-env@7.0.3", "", { "dependencies": { "cross-spawn": "^7.0.1" }, "bin": { "cross-env": "src/bin/cross-env.js", "cross-env-shell": "src/bin/cross-env-shell.js" } }, "sha512-+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw=="],
 

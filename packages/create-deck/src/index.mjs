@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// npm create kadal-deck@latest [directory]
+// npm create @kadal/deck@latest [directory]
 import { cpSync, existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -27,7 +27,7 @@ function pm() {
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith("-"));
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
-  console.log("Usage: npm create kadal-deck@latest [directory]");
+  console.log("Usage: npm create @kadal/deck@latest [directory]");
   process.exit(0);
 }
 const dirArg = args[0] ?? (await ask("Where should the deck go?", "my-deck"));

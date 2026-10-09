@@ -33,7 +33,7 @@ after changing its source. To try the live room, run a Kadal Deck host and set
 | --- | --- |
 | `packages/deck` | the engine and the `kadal-deck` CLI (`src/cli`) |
 | `packages/deck-*` | framework renderers: each has `src/index.ts` (the renderer) and `src/build.ts` (helpers a Vite config can import without loading the framework in Node — keep it importing nothing but the contract) |
-| `packages/create-kadal-deck` | the scaffolder; its `template/` is generated from `examples/starter` |
+| `packages/create-deck` | the scaffolder; its `template/` is generated from `examples/starter` |
 | `examples/` | the starter deck and the showcase |
 
 ## Tests
