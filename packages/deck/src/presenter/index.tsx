@@ -9,6 +9,14 @@ import { isEditable } from "../core/keyboard.ts";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
 import { useLiveOptional, useRoomStatus } from "../live/context.ts";
 import { PointerLayer } from "../live/LiveProvider.tsx";
+import {
+  isTicket,
+  presenterTicket,
+  setTicket,
+  ticketHeaders,
+  withTicket,
+} from "../live/ticket.ts";
+import { readItem, writeItem } from "../core/storage.ts";
 import { roomIdOf } from "../core/model.ts";
 import { useDeck } from "../react/context.ts";
 import { useActions, useCurrentSlide, useNav, useUi } from "../react/hooks.ts";
@@ -29,7 +37,7 @@ import { Stage } from "../react/Stage.tsx";
  * What the speaker sees: the current slide live, the next step, the notes with [click] markers,
  * a timer with pacing, the clock, the drawing and pointer tools, and the room — who is watching,
  * the pace they want, their questions, the polls to open. Opened with `S` from the deck; both
- * windows stay in step through a BroadcastChannel, and the room follows the presenter.
+ * windows stay in step over the window bus (core/windows.ts), and the room follows the presenter.
  *
  * Layouts (toggle with L): notes-right (default), notes-left, next-big.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -38,28 +46,14 @@ export function PresenterPage() {
   const deck = useDeck();
   const live = useLiveOptional();
   const gate = usePresenterGate();
-  const [layout, setLayout] = useState<"notes-right" | "notes-left" | "next-big">(() => {
-    try {
-      return (localStorage.getItem("deck.presenter.layout") as "notes-right") ?? "notes-right";
-    } catch {
-      return "notes-right";
-    }
-  });
+  const [layout, setLayout] = useState<"notes-right" | "notes-left" | "next-big">(
+    () => (readItem("deck.presenter.layout") as "notes-right" | null) ?? "notes-right",
+  );
   const [mirror, setMirror] = useState(false);
-  const [roomOpen, setRoomOpen] = useState(() => {
-    try {
-      return localStorage.getItem("deck.presenter.room") !== "closed";
-    } catch {
-      return true;
-    }
-  });
+  const [roomOpen, setRoomOpen] = useState(() => readItem("deck.presenter.room") !== "closed");
   useEffect(() => {
-    try {
-      localStorage.setItem("deck.presenter.layout", layout);
-      localStorage.setItem("deck.presenter.room", roomOpen ? "open" : "closed");
-    } catch {
-      /* ignore */
-    }
+    writeItem("deck.presenter.layout", layout);
+    writeItem("deck.presenter.room", roomOpen ? "open" : "closed");
   }, [layout, roomOpen]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -132,10 +126,15 @@ function usePresenterGate(): Gate {
     error: string | null;
   }>({ ok: false, required: !!api, checking: !!api, error: null });
   const url = `${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/presenter`;
+  // A ticket that arrives later (the passcode form, another window) is asked about again.
+  const ticket = useStore(presenterTicket);
   useEffect(() => {
     if (!api) return;
     let alive = true;
-    fetch(url, { credentials: "include" })
+    // No `credentials: "include"`: a sandboxed deck is cross-origin to its host, and the host's
+    // answer (`Access-Control-Allow-Origin: *`) is for requests without cookies. The ticket is the
+    // credential there; on an ordinary same-origin host the default still sends the cookie.
+    fetch(url, { headers: ticketHeaders() })
       .then(async (r) => {
         const j = (await r.json().catch(() => ({}))) as { ok?: boolean; required?: boolean };
         if (alive)
@@ -145,19 +144,24 @@ function usePresenterGate(): Gate {
     return () => {
       alive = false;
     };
-  }, [api, url]);
+  }, [api, url, ticket]);
   const login = async (passcode: string) => {
     setState((s) => ({ ...s, checking: true, error: null }));
     const r = await fetch(`${url}/login`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ passcode }),
-    });
-    if (r.ok) {
+    }).catch(() => null);
+    if (r?.ok) {
+      const j = (await r.json().catch(() => ({}))) as { ticket?: unknown };
       setState({ ok: true, required: true, checking: false, error: null });
-      window.location.reload();
-    } else
+      // A host that answers with a ticket: keep it and carry on (the room reconnects as presenter).
+      // One that only set a cookie: reload, so every request from here on carries it.
+      if (isTicket(j.ticket)) setTicket(j.ticket);
+      else window.location.reload();
+    } else if (!r)
+      setState((s) => ({ ...s, checking: false, error: "The host could not be reached." }));
+    else
       setState((s) => ({
         ...s,
         checking: false,
@@ -348,11 +352,8 @@ export function NotesPanel() {
   const [Notes, setNotes] = useState<ComponentType | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const [fontSize, setFontSize] = useState(() => {
-    try {
-      return Number(localStorage.getItem("deck.notes.size") ?? 20);
-    } catch {
-      return 20;
-    }
+    const saved = Number(readItem("deck.notes.size") ?? 20);
+    return Number.isFinite(saved) && saved > 0 ? saved : 20;
   });
   useEffect(() => {
     let alive = true;
@@ -421,11 +422,7 @@ export function NotesPanel() {
     });
   }, [click, Notes]);
   useEffect(() => {
-    try {
-      localStorage.setItem("deck.notes.size", String(fontSize));
-    } catch {
-      /* ignore */
-    }
+    writeItem("deck.notes.size", String(fontSize));
   }, [fontSize]);
   return (
     <div className="deck-notes-panel">
@@ -466,22 +463,15 @@ function PresenterTimer() {
    */
   const startKey = `deck.presenter.start.${deck.config.slug || "deck"}`;
   const [start, setStart] = useState(() => {
-    try {
-      const saved = Number(sessionStorage.getItem(startKey));
-      if (saved > 0) return saved;
-      sessionStorage.setItem(startKey, String(Date.now()));
-    } catch {
-      /* private window: the timer is simply per page load, as before */
-    }
+    // Where storage is blocked (a private window, a sandboxed deck) it is per page load, as before.
+    const saved = Number(readItem(startKey, "session"));
+    if (saved > 0) return saved;
+    writeItem(startKey, String(Date.now()), "session");
     return Date.now();
   });
   /** Reset writes through, or a reload would bring the old start back. */
   const restart = (at: number) => {
-    try {
-      sessionStorage.setItem(startKey, String(at));
-    } catch {
-      /* as above */
-    }
+    writeItem(startKey, String(at), "session");
     setStart(at);
   };
   const [now, setNow] = useState(Date.now());
@@ -546,6 +536,7 @@ function PresenterTools({
 }) {
   const deck = useDeck();
   const actions = useActions();
+  const ticket = useStore(presenterTicket);
   const live = useLiveOptional();
   const ui = useUi((s) => ({
     drawing: s.drawing,
@@ -734,7 +725,7 @@ function PresenterTools({
       </button>
       <a
         className="deck-presenter-link"
-        href={`${deck.base}stats`}
+        href={`${deck.base}stats${ticket ? withTicket("") : ""}`}
         target="_blank"
         rel="noreferrer"
       >
@@ -1072,10 +1063,11 @@ export function StatsPage() {
   const api = deck.config.live.api;
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const ticket = useStore(presenterTicket);
   useEffect(() => {
     if (!api) return;
     fetch(`${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/stats`, {
-      credentials: "include",
+      headers: ticketHeaders(),
     })
       .then(async (r) =>
         r.ok
@@ -1087,7 +1079,7 @@ export function StatsPage() {
             ),
       )
       .catch((e: unknown) => setError(String(e)));
-  }, [api, deck.config]);
+  }, [api, deck.config, ticket]);
   if (!api)
     return <div className="deck-stats-page">This deck has no host, so there are no stats.</div>;
   if (error) return <div className="deck-stats-page">{error}</div>;

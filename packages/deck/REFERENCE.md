@@ -1321,7 +1321,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `lineNumbers` | `boolean` | `false` | Line numbers on every code block. |
 | `autoFit` | `boolean` | `true` | Scale a slide whose content overflows so it fits (measured after render). |
 | `magicMoveDuration` | `number` | `800` | Milliseconds per magic-move morph. |
-| `live` | `{ api: string \| null; room: string \| null; turnstile: string \| null; }` | `{"api":"/api","room":null,"turnstile":null}` | Live room: the backend base (same origin `/api` on the host), or null for an offline deck. |
+| `live` | `{ api: string \| null; room: string \| null; turnstile: string \| null; verify?: string \| null; }` | `{"api":"/api","room":null,"turnstile":null}` | Live room: the backend base (same origin `/api` on the host), or null for an offline deck. `verify` is a host page that checks a viewer (Turnstile) and sends them back with a pass — how a host that serves decks sandboxed keeps the check, since Turnstile can't run in an opaque origin. Set by the host (`window.__KADAL_DECK__.verify`), never by a deck. |
 | `drawings` | `{ enabled: boolean; persist: boolean; presenterOnly: boolean; syncAll: boolean; }` | `{"enabled":true,"persist":true,"presenterOnly":false,"syncAll":true}` | Drawing: { enabled, persist, presenterOnly, syncAll }. |
 | `glossary` | `GlossaryOptions \| string \| false` | `{"src":"glossary.yaml","repeat":"first","headings":"fallback","skip":[],"delay":700,"sync":false}` | Term cards. The runtime reads `delay` and `sync`; the rest steers the compiler, which sees the headmatter only — set those there. `glossary: false` or a path are shorthands. Values: `false` |
 | `reactions` | `boolean` | `true` | Audience reactions in the live room. |

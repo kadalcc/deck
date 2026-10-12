@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 import * as N from "../core/navigation.ts";
 import { key as navKey } from "../core/navigation.ts";
+import { readItem, writeItem } from "../core/storage.ts";
 import { createSwipeTracker } from "../core/touch.ts";
 import { createStore, useStore } from "../core/store.ts";
 import { copyText, shareLink } from "../live/analytics.tsx";
@@ -47,9 +48,7 @@ export function AudiencePage() {
   const [hand, setHand] = useState(false);
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {
-      return JSON.parse(
-        localStorage.getItem(`deck.bookmarks.${deck.config.slug}`) ?? "[]",
-      ) as string[];
+      return JSON.parse(readItem(`deck.bookmarks.${deck.config.slug}`) ?? "[]") as string[];
     } catch {
       return [];
     }
@@ -62,18 +61,10 @@ export function AudiencePage() {
   const collapse = useCallback(() => setExpanded(false), []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("deck.name", name);
-    } catch {
-      /* ignore */
-    }
+    writeItem("deck.name", name);
   }, [name]);
   useEffect(() => {
-    try {
-      localStorage.setItem(`deck.bookmarks.${deck.config.slug}`, JSON.stringify(bookmarks));
-    } catch {
-      /* ignore */
-    }
+    writeItem(`deck.bookmarks.${deck.config.slug}`, JSON.stringify(bookmarks));
   }, [bookmarks, deck.config.slug]);
   useEffect(() => {
     if (!live) return;

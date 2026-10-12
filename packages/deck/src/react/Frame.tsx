@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { POSTER_DEFAULT_SIZE, posterName, resolvePoster } from "../core/poster.ts";
+import { opaqueOrigin } from "../core/storage.ts";
 import { useDeck, useSlideOptional } from "./context.ts";
 
 /**
@@ -19,6 +20,11 @@ import { useDeck, useSlideOptional } from "./context.ts";
  * of the talk. Worse, a browser's own error page fires `load` like any other document, so nothing
  * in here could tell a dead frame from a live one. Hence a Reload control that is always one click
  * away, and a timeout for the page that never finishes at all.
+ *
+ * On a host that serves the deck sandboxed (an opaque origin), every frame inherits the sandbox:
+ * a page that needs its own storage or cookies (YouTube's player, for one) or loads its scripts
+ * as CORS modules can't run in here, and nothing the deck does can lift that. So there it also
+ * gets an Open button: a window the deck opens escapes the sandbox, and the page works there.
  */
 const preconnected = new Set<string>();
 
@@ -191,6 +197,20 @@ export function FrameShell({
           }}
         >
           Reload
+        </button>
+      )}
+      {preview || !opaqueOrigin() ? null : (
+        <button
+          type="button"
+          className="deck-frame-reload deck-frame-open"
+          style={{ left: "auto", right: "0.6em" }}
+          title="Open this page in a window of its own"
+          onClick={(event) => {
+            event.stopPropagation();
+            window.open(url, "_blank", "noopener,noreferrer");
+          }}
+        >
+          Open ↗
         </button>
       )}
       {preview ? null : live ? (

@@ -31,8 +31,11 @@ import {
   splitTransition,
 } from "../core/model.ts";
 import * as N from "../core/navigation.ts";
+import { readItem, writeItem } from "../core/storage.ts";
 import { createStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
+import { createWindowBus, type WindowBus } from "../core/windows.ts";
+import { captureTicket, withTicket } from "../live/ticket.ts";
 import { Backgrounds } from "./Backgrounds.tsx";
 import { Chrome } from "./chrome.tsx";
 import {
@@ -107,14 +110,14 @@ export function Deck({
 }: DeckProps) {
   const base = useMemo(baseOf, []);
   const slugFromBase = base.replace(/^\/|\/$/g, "");
-  const config = useMemo(
-    () =>
-      withHostOverride(
-        resolveConfig({ slug: slugFromBase }, manifest.headmatter, configIn),
-        readHostOverride(),
-      ),
-    [manifest.headmatter, configIn, slugFromBase],
-  );
+  const config = useMemo(() => {
+    // Before anything reads the fragment: a presenter ticket rides in it (live/ticket.ts).
+    captureTicket();
+    return withHostOverride(
+      resolveConfig({ slug: slugFromBase }, manifest.headmatter, configIn),
+      readHostOverride(),
+    );
+  }, [manifest.headmatter, configIn, slugFromBase]);
   const columns = useMemo<Column[]>(
     () => columnsOf(manifest.slides, config),
     [manifest.slides, config],
@@ -144,6 +147,8 @@ export function Deck({
    */
   const projector = mode === "play" && flags.projector;
   const projectorWindow = useMemo<{ ref: Window | null }>(() => ({ ref: null }), []);
+  /** This deck's other windows in this browser: the bus to them, and the ones this window opened. */
+  const related = useMemo<Related>(() => ({ bus: null, children: new Set() }), []);
   const sync = useMemo<DeckRuntime["sync"]>(() => ({ source: null }), []);
 
   // The position the URL asked for, read once: a step (#/h/v/click) cannot be applied until the
@@ -311,6 +316,7 @@ export function Deck({
           `deck-projector-${config.slug || "deck"}`,
           "width=1280,height=720",
         );
+        adoptWindow(related, projectorWindow.ref);
         ui.update((s) => ({ ...s, projectorOpen: !!projectorWindow.ref }));
       },
       // Following again means being where they are, now; this is the one move that sets it back on.
@@ -368,11 +374,13 @@ export function Deck({
       },
       openPresenter: () => {
         const p = nav.get();
-        window.open(
-          `${base}presenter${formatHash(p, { withClick: true })}`,
+        // The presenter this window was opened for (a ticket) is the presenter of the view it opens.
+        const opened = window.open(
+          `${base}presenter${withTicket(formatHash(p, { withClick: true }))}`,
           `deck-presenter-${config.slug || "deck"}`,
           "width=1280,height=800",
         );
+        adoptWindow(related, opened);
       },
       openLightbox: (kind, src, fit = "scale-down") =>
         ui.update((s) => ({ ...s, lightbox: { kind, src, fit } })),
@@ -384,7 +392,7 @@ export function Deck({
         setTimeout(() => ui.update((s) => (s.toast === message ? { ...s, toast: null } : s)), 1800);
       },
     };
-  }, [nav, ui, columns, config, options, base, sync, projector, projectorWindow]);
+  }, [nav, ui, columns, config, options, base, sync, projector, projectorWindow, related]);
 
   const terms = useMemo(() => createStore<TermReveal | null>(null), []);
   const glossary = useMemo(
@@ -432,7 +440,7 @@ export function Deck({
     ],
   );
 
-  useDeckEffects(runtime, flags, wantedAtLoad);
+  useDeckEffects(runtime, flags, wantedAtLoad, related);
   useTermEffects(runtime);
   // A share window the viewer closed themselves: the button that opened it stops looking lit.
   useEffect(() => {
@@ -566,19 +574,11 @@ function stored<T extends string>(
   what: string,
   allowed: readonly T[],
 ): T | null {
-  try {
-    const v = localStorage.getItem(`deck.${what}.${config.slug || "deck"}`);
-    return v && (allowed as readonly string[]).includes(v) ? (v as T) : null;
-  } catch {
-    return null;
-  }
+  const v = readItem(`deck.${what}.${config.slug || "deck"}`);
+  return v && (allowed as readonly string[]).includes(v) ? (v as T) : null;
 }
 function remember(config: DeckConfig, what: string, value: string) {
-  try {
-    localStorage.setItem(`deck.${what}.${config.slug || "deck"}`, value);
-  } catch {
-    /* private mode */
-  }
+  writeItem(`deck.${what}.${config.slug || "deck"}`, value);
 }
 
 /**
@@ -591,24 +591,36 @@ const FOLLOW_MEMORY_MS = 12 * 60 * 60 * 1000;
 
 /** What this viewer last chose for this deck, if it is still about this talk. */
 function rememberedFollow(config: DeckConfig): boolean | null {
-  try {
-    const raw = localStorage.getItem(`deck.follow.${config.slug || "deck"}`);
-    const [value, at] = (raw ?? "").split(":");
-    if ((value !== "on" && value !== "off") || !Number.isFinite(Number(at))) return null;
-    return Date.now() - Number(at) > FOLLOW_MEMORY_MS ? null : value === "on";
-  } catch {
-    return null;
-  }
+  const raw = readItem(`deck.follow.${config.slug || "deck"}`);
+  const [value, at] = (raw ?? "").split(":");
+  if ((value !== "on" && value !== "off") || !Number.isFinite(Number(at))) return null;
+  return Date.now() - Number(at) > FOLLOW_MEMORY_MS ? null : value === "on";
 }
 function rememberFollow(config: DeckConfig, follow: boolean) {
-  try {
-    localStorage.setItem(
-      `deck.follow.${config.slug || "deck"}`,
-      `${follow ? "on" : "off"}:${Date.now()}`,
-    );
-  } catch {
-    /* private mode */
-  }
+  writeItem(`deck.follow.${config.slug || "deck"}`, `${follow ? "on" : "off"}:${Date.now()}`);
+}
+
+/** A position one window of this deck tells the others. */
+interface NavMessage {
+  type: "nav";
+  h: number;
+  v: number;
+  click: number;
+  paused: boolean;
+  from: string;
+  presenter?: boolean;
+}
+
+interface Related {
+  bus: WindowBus<NavMessage> | null;
+  children: Set<unknown>;
+}
+
+/** A window this one opened joins the bus (a desktop shell may hand back a stand-in, or null). */
+function adoptWindow(related: Related, opened: unknown) {
+  if (!opened) return;
+  related.children.add(opened);
+  related.bus?.adopt(opened);
 }
 
 function resolveScheme(scheme: DeckConfig["colorScheme"]): "light" | "dark" {
@@ -627,6 +639,7 @@ function useDeckEffects(
   deck: DeckRuntime,
   flags: ReturnType<typeof parseFlags>,
   wantedAtLoad: ReturnType<typeof parseHash>,
+  related: Related,
 ) {
   const { nav, ui, layout, config, columns, actions, base, mode } = deck;
 
@@ -1049,16 +1062,18 @@ function useDeckEffects(
     };
   }, [config, nav, actions, mode, deck.options, deck.projector]);
 
-  // Cross-window sync: the presenter window and the play window mirror each other.
+  // Cross-window sync: the presenter window and the play window mirror each other (core/windows.ts).
   useEffect(() => {
-    if (typeof BroadcastChannel === "undefined" || mode === "print") return;
-    const channel = new BroadcastChannel(`deck:${config.slug || base}`);
+    if (typeof window === "undefined" || mode === "print") return;
+    const bus = createWindowBus<NavMessage>(config.slug || base);
+    related.bus = bus;
+    for (const child of related.children) bus.adopt(child);
     const unsub = nav.subscribe((s, prev) => {
-      // Only local moves go out: a position applied from the channel or the room stays put.
+      // Only local moves go out: a position applied from another window or the room stays put.
       if (deck.sync.source) return;
       if (s.h === prev.h && s.v === prev.v && s.click === prev.click && s.paused === prev.paused)
         return;
-      channel.postMessage({
+      bus.post({
         type: "nav",
         h: s.h,
         v: s.v,
@@ -1068,22 +1083,13 @@ function useDeckEffects(
         presenter: deck.isPresenter,
       });
     });
-    channel.onmessage = (
-      e: MessageEvent<{
-        type: string;
-        h: number;
-        v: number;
-        click: number;
-        paused: boolean;
-        from: string;
-        presenter?: boolean;
-      }>,
-    ) => {
-      const m = e.data;
-      if (m.type !== "nav" || m.from === deck.windowId) return;
+    const unlisten = bus.subscribe(({ data: m, via }) => {
+      if (!m || m.type !== "nav" || m.from === deck.windowId) return;
       // The presenter's window is driven by the presenter. Another tab of this browser reading the
       // deck on its own is a viewer, and a viewer must never move the window that drives the room.
-      if (deck.isPresenter && !m.presenter) return;
+      // Nor may the page that OPENED a presenter view: that can be any page at all, and what it
+      // says about itself (`presenter: true`) is only its word.
+      if (deck.isPresenter && (!m.presenter || via === "opener")) return;
       deck.sync.source = "channel";
       try {
         nav.update((s) => {
@@ -1106,10 +1112,12 @@ function useDeckEffects(
       } finally {
         deck.sync.source = null;
       }
-    };
+    });
     return () => {
       unsub();
-      channel.close();
+      unlisten();
+      bus.close();
+      if (related.bus === bus) related.bus = null;
     };
-  }, [nav, columns, config.slug, base, deck.windowId, deck.isPresenter, deck.sync, mode]);
+  }, [nav, columns, config.slug, base, deck.windowId, deck.isPresenter, deck.sync, mode, related]);
 }

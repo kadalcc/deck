@@ -1,3 +1,4 @@
+import { readItem, writeItem } from "../core/storage.ts";
 import type { Stroke } from "../live/protocol.ts";
 
 /** A smooth SVG path through a stroke's points: quadratic curves through midpoints. */
@@ -156,7 +157,7 @@ const key = (slug: string) => `deck.drawings.${slug}`;
 
 export function loadDrawings(slug: string): Record<string, Stroke[]> {
   try {
-    const raw = localStorage.getItem(key(slug));
+    const raw = readItem(key(slug));
     const all = raw ? (JSON.parse(raw) as Record<string, Stroke[]>) : {};
     // Fading strokes are gone by the time a page is reopened.
     for (const k of Object.keys(all)) all[k] = (all[k] ?? []).filter((s) => !s.fade);
@@ -173,7 +174,7 @@ export function saveDrawings(slug: string, drawings: Record<string, Stroke[]>) {
       const keep = list.filter((s) => !s.fade);
       if (keep.length) kept[k] = keep;
     }
-    localStorage.setItem(key(slug), JSON.stringify(kept));
+    writeItem(key(slug), JSON.stringify(kept));
   } catch {
     /* storage full or blocked */
   }

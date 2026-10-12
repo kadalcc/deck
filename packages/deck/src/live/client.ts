@@ -1,3 +1,4 @@
+import { readItem, writeItem } from "../core/storage.ts";
 import { createStore, type Store } from "../core/store.ts";
 import {
   type ClientMessage,
@@ -23,22 +24,31 @@ export interface RoomClientOptions {
   name?: string;
   /** A one-off token appended to the URL (Turnstile), fetched before each connection attempt. */
   token?: () => Promise<string | null>;
+  /**
+   * Proof for the host, read at each connection attempt: the presenter's ticket (`ticket`), or a
+   * viewer's pass from the host's verification page (`pass`). See live/ticket.ts.
+   */
+  credentials?: () => Record<string, string>;
 }
 
 type Listener = (message: ServerMessage) => void;
 
+let pageViewer: string | null = null;
+
+/**
+ * The anonymous viewer id: kept per browser where storage allows, and at least per page where it
+ * doesn't (a sandboxed deck) — every beacon and every reconnect from one page is one viewer.
+ */
 export function viewerId(): string {
-  try {
-    const key = "deck.viewer";
-    let id = localStorage.getItem(key);
-    if (!id) {
-      id = `v_${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36)}`;
-      localStorage.setItem(key, id);
-    }
-    return id;
-  } catch {
-    return `v_${Math.random().toString(36).slice(2, 12)}`;
+  if (pageViewer) return pageViewer;
+  const key = "deck.viewer";
+  let id = readItem(key);
+  if (!id) {
+    id = `v_${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36)}`;
+    writeItem(key, id);
   }
+  pageViewer = id;
+  return id;
 }
 
 export class RoomClient {
@@ -70,6 +80,7 @@ export class RoomClient {
       : `${proto}//${window.location.host}${this.options.api}`;
     const q = new URLSearchParams({ role: this.options.role });
     if (token) q.set("t", token);
+    for (const [k, v] of Object.entries(this.options.credentials?.() ?? {})) q.set(k, v);
     return `${base}/rooms/${encodeURIComponent(this.options.room)}/ws?${q}`;
   }
 
@@ -191,6 +202,23 @@ export class RoomClient {
     return () => {
       this.listeners.delete(listener);
     };
+  }
+
+  /** Drop the connection and open it again now — the credentials changed (a presenter signed in). */
+  reconnect() {
+    if (typeof window === "undefined" || this.closedByUs) return;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    this.attempts = 0;
+    const ws = this.ws;
+    if (ws) {
+      this.ws = null;
+      ws.onclose = null;
+      if (this.heartbeat) clearInterval(this.heartbeat);
+      this.heartbeat = null;
+      ws.close();
+    }
+    this.open();
   }
 
   close() {

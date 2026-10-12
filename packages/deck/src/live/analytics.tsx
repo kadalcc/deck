@@ -7,7 +7,8 @@ import { viewerId } from "./client.ts";
 
 /**
  * Time on each slide, sent to the host every 20 seconds and when the page is hidden, with the
- * anonymous viewer id (a random string kept in localStorage — no cookies, no fingerprinting).
+ * anonymous viewer id (a random string kept in localStorage, or for the page where storage is
+ * blocked — no cookies, no fingerprinting).
  * The host counts a view per viewer per day and sums dwell per slide for the stats page.
  */
 export function Analytics() {
@@ -40,13 +41,13 @@ export function Analytics() {
       for (const k of Object.keys(dwell)) delete dwell[k];
       for (const k of Object.keys(enters)) delete enters[k];
       const url = `${api}/decks/${encodeURIComponent(slug)}/beacon`;
-      if (!navigator.sendBeacon?.(url, new Blob([body], { type: "application/json" })))
-        void fetch(url, {
-          method: "POST",
-          body,
-          headers: { "content-type": "application/json" },
-          keepalive: true,
-        }).catch(() => {});
+      // Sent as text/plain, a "simple" request: from a sandboxed deck (an opaque origin) JSON would
+      // need a CORS preflight, and a beacon's credentials mode can't pass one. The host parses the
+      // body as JSON either way, and no cookie is involved.
+      if (!navigator.sendBeacon?.(url, body))
+        void fetch(url, { method: "POST", body, keepalive: true, credentials: "omit" }).catch(
+          () => {},
+        );
     };
     const timer = setInterval(flush, 20_000);
     const onVisibility = () => {

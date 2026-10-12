@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
+import { readItem } from "../core/storage.ts";
 import { useStore } from "../core/store.ts";
 import { Qr } from "../components/content.tsx";
 import { useDeck, useSlideOptional } from "../react/context.ts";
@@ -366,11 +367,7 @@ export function Quiz({ id, question, options, correct, seconds = 20, className }
 }
 
 export function nickname(): string {
-  try {
-    return localStorage.getItem("deck.name") ?? "";
-  } catch {
-    return "";
-  }
+  return readItem("deck.name") ?? "";
 }
 
 /** The leaderboard across every quiz in the room. */
