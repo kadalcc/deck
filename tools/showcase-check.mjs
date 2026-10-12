@@ -220,6 +220,7 @@ await step("walk: every slide and every click, light", async () => {
   let last = "";
   let stepsTaken = 0;
   let arrivedAt = "";
+  const smallest = [];
   for (let i = 0; i < 1000; i++) {
     const s = await nav(page);
     const key = `${s.h}/${s.v}/${s.click}`;
@@ -237,6 +238,26 @@ await step("walk: every slide and every click, light", async () => {
     for (const p of take()) expect(false, `${key}: ${p}`);
     visited.set(slideKey, Math.max(visited.get(slideKey) ?? 0, s.total));
     if (s.click >= s.total) {
+      // The smallest words on the slide, in stage pixels (1920 wide), after autoFit and zoom.
+      const type = await page.evaluate(() => {
+        const el = document.querySelector(".deck-slide.is-present");
+        const layout = el?.querySelector(".deck-layout");
+        const fit = Number(layout?.style.getPropertyValue("--deck-fit") || 1);
+        const zoom = Number(getComputedStyle(el).zoom || 1);
+        let min = Infinity;
+        let what = "";
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+          const host = t.parentElement;
+          if (!t.textContent.trim() || !host || host.closest("svg, .deck-frame, .deck-sketch, .deck-mermaid, .deck-island, .deck-background-component, .sc-bg-tile, .katex, [aria-hidden=true]")) continue;
+          if (!host.offsetParent || getComputedStyle(host).opacity === "0") continue;
+          const px = parseFloat(getComputedStyle(host).fontSize) * fit * zoom;
+          if (px < min) { min = px; what = t.textContent.trim().slice(0, 30); }
+        }
+        return { min, what, fit };
+      });
+      if (type.min < 16) expect(false, `${key}: text at ${type.min.toFixed(1)}px on the 1920 stage (“${type.what}”)`);
+      smallest.push({ key, ...type });
       await page.waitForTimeout(400);
       await page.screenshot({ path: join(out, "light", shotName(s.h, s.v)) });
     }
@@ -247,6 +268,10 @@ await step("walk: every slide and every click, light", async () => {
       .catch(() => {});
   }
   expect(visited.size === expected, `visited ${visited.size} of ${expected} slides`);
+  const fitted = smallest.filter((t) => t.fit < 1);
+  if (fitted.length) note(`autoFit shrank ${fitted.length}: ${fitted.map((t) => `${t.key}×${t.fit}`).join(" ")}`);
+  const small = smallest.filter((t) => t.min < 24).map((t) => `${t.key} ${t.min.toFixed(0)}px`);
+  if (small.length) note(`text under 24 stage px (16 at 1280): ${small.join(", ")}`);
   note(`${visited.size} slides, ${stepsTaken} steps, ${[...visited.values()].reduce((a, b) => a + b, 0)} clicks`);
   await context.close();
 });
@@ -523,29 +548,73 @@ await step("links: #/h/v/click, #/id, ?at", async () => {
 });
 
 // ── 7 · the other routes ───────────────────────────────────────────────────
+/** The presenter's slide boxes: each canvas inside its box, 16:9, filling it one way, unclipped. */
+async function presenterBoxes(page) {
+  return page.evaluate(() =>
+    ["current", "next"].map((pane) => {
+      const box = document.querySelector(`.deck-presenter-${pane} .deck-presenter-box`);
+      const canvas = box?.querySelector(".deck-presenter-canvas");
+      const slide = canvas?.querySelector(".deck-slide.is-present, .deck-slide");
+      if (!box || !canvas) return { pane, missing: true };
+      const b = box.getBoundingClientRect();
+      const c = canvas.getBoundingClientRect();
+      return {
+        pane,
+        inside: c.left >= b.left - 1 && c.top >= b.top - 1 && c.right <= b.right + 1 && c.bottom <= b.bottom + 1,
+        aspect: c.width / c.height,
+        // within the box's 1px border on each side
+        fills: Math.abs(c.width - b.width) <= 4 || Math.abs(c.height - b.height) <= 4,
+        clipped: slide ? slide.scrollWidth > slide.clientWidth + 2 : false,
+        size: `${Math.round(c.width)}×${Math.round(c.height)} in ${Math.round(b.width)}×${Math.round(b.height)}`,
+      };
+    }),
+  );
+}
+
 await step("presenter: current, next, notes for the click, timer, L", async () => {
-  const { page, context, take } = await openPage({ viewport: { width: 1440, height: 900 } });
   const s = at("presenter-view");
-  await page.goto(`${base}presenter#/${s.h}/0/2`);
-  await page.waitForSelector(".deck-presenter", { timeout: 30_000 });
-  await page.waitForTimeout(1500);
-  expect((await page.locator(".deck-presenter-current .deck-slide").count()) > 0, "no current slide");
-  expect((await page.locator(".deck-presenter-next .deck-slide").count()) > 0, "no next slide");
-  expect((await page.locator(".deck-presenter-timer").count()) === 1, "no timer");
-  const lit = await page.locator(".deck-notes-segment.is-current").first().textContent().catch(() => "");
-  expect(/lights the part for the current step/.test(lit ?? ""), `the lit note is not step 2's: “${(lit ?? "").slice(0, 60)}”`);
-  await page.keyboard.press("ArrowRight");
-  await page.waitForTimeout(400);
-  const lit2 = await page.locator(".deck-notes-segment.is-current").first().textContent().catch(() => "");
-  expect(/Pacing/.test(lit2 ?? ""), "the notes did not follow the click");
-  await page.keyboard.press("l");
-  await page.waitForTimeout(200);
-  expect((await page.locator(".deck-presenter.layout-notes-left").count()) === 1, "L did not change the layout");
-  await page.keyboard.press("l");
-  await page.keyboard.press("l");
-  await page.screenshot({ path: join(out, "presenter.png") });
-  for (const p of take()) expect(false, p);
-  await context.close();
+  for (const scheme of ["light", "dark"]) {
+    const { page, context, take } = await openPage({ viewport: { width: 1440, height: 900 }, scheme });
+    await page.goto(`${base}presenter#/${s.h}/0/2`);
+    await page.waitForSelector(".deck-presenter", { timeout: 30_000 });
+    await page.waitForTimeout(1500);
+    expect((await page.locator(".deck-presenter-current .deck-slide").count()) > 0, "no current slide");
+    expect((await page.locator(".deck-presenter-next .deck-slide").count()) > 0, "no next slide");
+    expect((await page.locator(".deck-presenter-timer").count()) === 1, "no timer");
+    const lit = await page.locator(".deck-notes-segment.is-current").first().textContent().catch(() => "");
+    expect(/lights the part for the current step/.test(lit ?? ""), `the lit note is not step 2's: “${(lit ?? "").slice(0, 60)}”`);
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(400);
+    const lit2 = await page.locator(".deck-notes-segment.is-current").first().textContent().catch(() => "");
+    expect(/Pacing/.test(lit2 ?? ""), "the notes did not follow the click");
+    const before = await nav(page);
+    for (const [vw, vh] of [[1280, 720], [1440, 900], [1920, 1080]]) {
+      await page.setViewportSize({ width: vw, height: vh });
+      for (const layout of ["notes-right", "notes-left", "next-big"]) {
+        for (let i = 0; i < 3 && (await page.locator(`.deck-presenter.layout-${layout}`).count()) === 0; i++)
+          await page.keyboard.press("l");
+        expect((await page.locator(`.deck-presenter.layout-${layout}`).count()) === 1, `L never reached ${layout}`);
+        await page.waitForTimeout(700);
+        for (const b of await presenterBoxes(page)) {
+          const where = `${vw}×${vh} ${layout} ${b.pane}`;
+          if (b.missing) { expect(false, `${where}: no slide box`); continue; }
+          expect(b.inside, `${where}: the slide spills out of its box (${b.size})`);
+          expect(Math.abs(b.aspect - 16 / 9) < 0.02, `${where}: aspect ${b.aspect.toFixed(3)}, not 16:9`);
+          expect(b.fills, `${where}: the slide does not fill its box either way (${b.size})`);
+          expect(!b.clipped, `${where}: the slide's content is clipped`);
+        }
+      }
+    }
+    const after = await nav(page);
+    expect(after.h === before.h && after.click === before.click, `L moved the deck (${before.h}/${before.click} → ${after.h}/${after.click})`);
+    expect((await page.evaluate(() => String(getSelection()))) === "", "text is selected on the presenter page");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (let i = 0; i < 3 && (await page.locator(".deck-presenter.layout-notes-right").count()) === 0; i++) await page.keyboard.press("l");
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: join(out, `presenter-${scheme}.png`) });
+    for (const p of take()) expect(false, `${scheme}: ${p}`);
+    await context.close();
+  }
 });
 
 await step("notes page: every note", async () => {
@@ -578,7 +647,7 @@ await step("audience: /join on a phone (390×844)", async () => {
   await context.close();
 });
 
-await step("scroll view: every slide, on a phone and a desktop", async () => {
+await step("scroll view: slides stacked full width, on a phone and a desktop", async () => {
   for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     const { page, context, take } = await openPage({ viewport: vp, mobile: vp.width < 600 });
     await page.goto(`${base}?view=scroll`);
@@ -587,12 +656,46 @@ await step("scroll view: every slide, on a phone and a desktop", async () => {
     const n = await page.locator(".deck-slide.is-scroll").count();
     const want = flat().length;
     expect(n === want, `${vp.width}px: ${n} slides in the scroll view, ${want} in the deck`);
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.locator(".deck-scroll").evaluate((el) => el.scrollTo(0, el.scrollHeight)).catch(() => {});
-    await page.waitForTimeout(800);
+    const geo = await page.evaluate(() => {
+      const scroller = document.querySelector(".deck-scroll");
+      const width = scroller.clientWidth;
+      const segs = [...document.querySelectorAll(".deck-scroll-segment")].map((s) => {
+        const r = s.getBoundingClientRect();
+        const c = s.querySelector(".deck-scroll-canvas").getBoundingClientRect();
+        return { top: r.top + scroller.scrollTop, height: r.height, w: c.width, h: c.height };
+      });
+      return { width, segs };
+    });
+    const slideH = (geo.width * 9) / 16;
+    const narrow = geo.segs.filter((g) => Math.abs(g.w - geo.width) > 2);
+    expect(narrow.length === 0, `${vp.width}px: ${narrow.length} slides are not the page's width (${narrow[0]?.w} vs ${geo.width})`);
+    let gaps = 0;
+    for (let i = 1; i < geo.segs.length; i++) {
+      const prev = geo.segs[i - 1];
+      if (Math.abs(geo.segs[i].top - (prev.top + prev.height)) > 1) gaps++;
+    }
+    expect(gaps === 0, `${vp.width}px: ${gaps} slides do not follow straight on from the one above`);
+    // A slide with no steps takes its own height and no more: no empty page between slides.
+    const plain = flat().map((s, i) => ({ s, g: geo.segs[i] })).filter(({ s }) => (visited.get(`${s.h},${s.v}`) ?? 0) === 0);
+    const tall = plain.filter(({ g }) => g && g.height > slideH + 2);
+    expect(tall.length === 0, `${vp.width}px: ${tall.length} slides without steps are taller than a slide (${tall[0]?.g.height.toFixed(0)} > ${slideH.toFixed(0)})`);
+    // What is on screen at the top is a slide with words on it, not an empty stretch.
+    const words = await page.evaluate(() => {
+      const r = document.querySelector(".deck-scroll").getBoundingClientRect();
+      const el = document.elementFromPoint(r.left + r.width * 0.3, r.top + 40);
+      return !!el?.closest(".deck-scroll-segment");
+    });
+    expect(words, `${vp.width}px: the top of the scroll view is not a slide`);
+    // Each slide sits on its own page colour, not on the dark bars around the stage.
+    const bare = await page.$$eval(".deck-scroll-sticky", (els) =>
+      els.filter((e) => { const m = getComputedStyle(e).backgroundColor.match(/[\d.]+/g) ?? []; return m.length < 3 || (m[3] !== undefined && Number(m[3]) < 0.9); }).length,
+    );
+    expect(bare === 0, `${vp.width}px: ${bare} slides have no page colour behind them`);
+    await page.locator(".deck-scroll").evaluate((el) => el.scrollTo({ top: el.scrollHeight / 2, behavior: "instant" }));
+    await page.waitForTimeout(600);
     const wide = await page.evaluate(() => document.scrollingElement.scrollWidth);
     expect(wide <= vp.width + 1, `${vp.width}px: the page scrolls sideways (${wide}px)`);
-    if (vp.width < 600) await page.screenshot({ path: join(out, "phone", "scroll.png") });
+    await page.screenshot({ path: join(out, vp.width < 600 ? "phone" : ".", "scroll.png") });
     for (const p of take()) expect(false, `${vp.width}px: ${p}`);
     await context.close();
   }

@@ -1594,6 +1594,9 @@ pre.deck-code.has-lines .line::before {
   top: 0;
   width: 100%;
   overflow: hidden;
+  /* the slide's own page: without it a slide with no background of its own sat on the dark
+     bars around the stage, dark text on near-black in a light theme */
+  background: var(--deck-bg);
 }
 .deck-scroll-canvas {
   position: absolute;

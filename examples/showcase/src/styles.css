@@ -12,20 +12,20 @@
 .sc-eyebrow {
   margin: 0 0 0.7em;
   color: var(--deck-muted);
-  font: 600 0.46em/1.2 var(--deck-mono-font);
-  letter-spacing: 0.14em;
+  font: 600 0.62em/1.2 var(--deck-mono-font);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .deck-slide .sc-lede {
   max-width: 46em;
   margin-bottom: 0.9em;
   color: var(--deck-muted);
-  font-size: 0.78em;
+  font-size: 0.86em;
 }
 .deck-slide .sc-small {
   margin: 0.6em 0 0;
   color: var(--deck-muted);
-  font-size: 0.6em;
+  font-size: 0.72em;
   line-height: 1.5;
 }
 .deck-slide .sc-tight {
@@ -35,7 +35,7 @@
 .deck-slide .sc-caption {
   margin: -0.2em 0 0.8em;
   color: var(--deck-muted);
-  font-size: 0.5em;
+  font-size: 0.66em;
 }
 .deck-slide .sc-h3 {
   margin: 0 0 0.5em;
@@ -63,7 +63,7 @@
   line-height: 1.02;
 }
 .deck-slide.hero .sc-eyebrow {
-  font-size: 0.55em;
+  font-size: 0.66em;
 }
 .sc-keys {
   color: var(--deck-muted);
@@ -110,13 +110,13 @@
 }
 .sc-how-label {
   color: var(--deck-muted);
-  font: 600 0.42em var(--deck-mono-font);
-  letter-spacing: 0.12em;
+  font: 600 0.62em var(--deck-mono-font);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 .sc-how .deck-code-block {
   margin: 0;
-  font-size: 0.86em;
+  font-size: 1em;
 }
 .sc-how .deck-code-block + .deck-code-block {
   margin-top: 0.6em;
@@ -131,7 +131,7 @@
   padding: 0.45em 0.8em;
   border-inline-start: 3px solid var(--deck-border);
   border-radius: 0 var(--deck-radius) var(--deck-radius) 0;
-  font-size: 0.74em;
+  font-size: 0.8em;
   line-height: 1.45;
 }
 .sc-steps > .deck-click.is-shown {
@@ -149,7 +149,7 @@
   border: 1px solid var(--deck-border);
   border-radius: var(--deck-radius);
   background: var(--deck-surface);
-  font-size: 0.8em;
+  font-size: 0.85em;
 }
 .sc-card > :last-child {
   margin-bottom: 0;
@@ -176,7 +176,7 @@
   border-radius: 999px;
   background: var(--deck-surface);
   color: var(--deck-fg);
-  font: 500 0.56em var(--deck-mono-font);
+  font: 500 0.68em var(--deck-mono-font);
   text-align: center;
   text-decoration: none;
   transition:
@@ -231,7 +231,7 @@
 }
 /* the fact layout makes every paragraph the fact; the eyebrow and the caption are not */
 .deck-layout-fact > p.sc-eyebrow {
-  font-size: 0.46em;
+  font-size: 0.62em;
   font-weight: 600;
   letter-spacing: 0.14em;
 }
@@ -290,7 +290,7 @@
 }
 .deck-slide .sc-effect code {
   color: var(--deck-muted);
-  font-size: 0.48em;
+  font-size: 0.56em;
   background: none;
   padding: 0;
 }
@@ -397,7 +397,7 @@
 }
 .sc-theme-name {
   color: var(--deck-muted);
-  font: 500 0.46em var(--deck-mono-font);
+  font: 500 0.62em var(--deck-mono-font);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -407,7 +407,7 @@
   grid-template-columns: repeat(9, minmax(0, 1fr));
   grid-auto-rows: 7.6em;
   gap: 0.45em;
-  font-size: 0.5em;
+  font-size: 0.56em;
 }
 .sc-bg-tile {
   position: relative;
@@ -618,7 +618,7 @@
 }
 .ticker-label {
   color: var(--deck-muted);
-  font-size: 0.75em;
+  font-size: 0.85em;
 }
 .ticker-count {
   font-size: 1.6em;
@@ -642,7 +642,7 @@
   border-radius: 999px;
   background: var(--deck-surface);
   color: var(--deck-muted);
-  font: 500 0.5em var(--deck-mono-font);
+  font: 500 0.6em var(--deck-mono-font);
 }
 .sc-live-status i {
   width: 0.7em;
@@ -669,7 +669,7 @@
   border-radius: var(--deck-radius);
   background: var(--deck-surface);
   color: var(--deck-muted);
-  font-size: 0.66em;
+  font-size: 0.74em;
 }
 .sc-keys-grid > div > span {
   color: var(--deck-fg);
@@ -705,11 +705,11 @@
   border-color: var(--deck-accent);
 }
 .sc-views b {
-  font: 600 0.62em var(--deck-mono-font);
+  font: 600 0.74em var(--deck-mono-font);
 }
 .sc-views span {
   color: var(--deck-muted);
-  font-size: 0.55em;
+  font-size: 0.66em;
 }
 /* `state: calm` on a slide adds this class; the tour shows it is there by using it. */
 .deck-slide.state-calm .sc-eyebrow {
@@ -745,7 +745,7 @@
 }
 .sc-layout-groups > div > span {
   color: var(--deck-muted);
-  font: 600 0.48em var(--deck-mono-font);
+  font: 600 0.56em var(--deck-mono-font);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -760,7 +760,7 @@
   border-radius: 999px;
   background: var(--deck-surface);
   color: var(--deck-fg);
-  font: 500 0.62em var(--deck-mono-font);
+  font: 500 0.72em var(--deck-mono-font);
   text-decoration: none;
   transition:
     border-color 0.2s,
@@ -797,6 +797,7 @@
 }
 .sc-blocks .deck-badge {
   margin: 0 0.15em 0.3em 0;
+  font-size: 0.8em;
 }
 .sc-placed {
   position: relative;
