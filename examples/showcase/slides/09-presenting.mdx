@@ -1,0 +1,251 @@
+---
+layout: section
+id: presenting
+background:
+  component: compass
+  color: "rgba(59,130,246,0.45)"
+---
+
+<p className="sc-eyebrow">Chapter 9</p>
+
+# Presenting
+
+The presenter view, the keyboard, the pen, every view of the same deck, and export.
+
+<Notes>
+The last chapter: delivering it.
+</Notes>
+
+---
+id: presenter-view
+timing: 90
+---
+
+<p className="sc-eyebrow">Presenting · presenter view</p>
+
+## The presenter view
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Clicks>
+
+- <Kbd>S</Kbd> opens it: this slide, the next one, and your notes
+- Notes follow the clicks — the part for this step is lit
+- A timer with pacing: `timing: 90` gives this slide ninety seconds
+- <Kbd>L</Kbd> changes its layout; the room panel opens polls and the quiz
+
+</Clicks>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+---
+timing: 90
+---
+## The presenter view
+
+<Notes>
+Open it with S. [click] Notes follow…
+</Notes>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Press S to open the presenter window; it stays in step with this one through the browser, and with the room when there is one.
+[click] The notes are split at each `[click]` marker, and the presenter view lights the part for the current step — this sentence is lit at step two.
+[click] Pacing: `defaultTiming: 45` in the headmatter gives every slide forty-five seconds, and this one asks for ninety. The timer tells you whether you are ahead or behind.
+[click] L cycles three layouts: notes on the right, notes on the left, and the next slide large.
+</Notes>
+
+---
+id: keys
+---
+
+<p className="sc-eyebrow">Presenting · the keyboard</p>
+
+## Every key
+
+<div className="sc-keys-grid">
+  <div><span><Kbd>→</Kbd> <Kbd>Space</Kbd> <Kbd>J</Kbd></span>next step</div>
+  <div><span><Kbd>←</Kbd> <Kbd>K</Kbd></span>step back</div>
+  <div><span><Kbd>↓</Kbd> <Kbd>↑</Kbd></span>down and up a stack</div>
+  <div><span><Kbd>⇧</Kbd> <Kbd>→</Kbd></span>next slide, skip steps</div>
+  <div><span><Kbd>gg</Kbd> <Kbd>G</Kbd></span>first and last</div>
+  <div><span><Kbd>g</Kbd> <Kbd>:</Kbd></span>jump to a slide</div>
+  <div><span><Kbd>/</Kbd></span>search the deck</div>
+  <div><span><Kbd>Esc</Kbd> <Kbd>O</Kbd></span>overview</div>
+  <div><span><Kbd>F</Kbd></span>label every control</div>
+  <div><span><Kbd>⇧</Kbd> <Kbd>F</Kbd></span>fullscreen</div>
+  <div><span><Kbd>B</Kbd> <Kbd>.</Kbd></span>black out</div>
+  <div><span><Kbd>S</Kbd></span>presenter view</div>
+  <div><span><Kbd>C</Kbd> <Kbd>X</Kbd></span>pen and laser</div>
+  <div><span><Kbd>Alt</Kbd> + click</span>zoom to a point</div>
+  <div><span><Kbd>A</Kbd></span>auto-slide on and off</div>
+  <div><span><Kbd>D</Kbd> <Kbd>T</Kbd></span>dark, and the theme menu</div>
+</div>
+
+<p className="sc-small"><Kbd>?</Kbd> shows this sheet over any slide.</p>
+
+<Notes>
+reveal.js's keys, with vim's on top: j and k step, h and l move between columns, gg and G go to the ends, slash searches every slide's text, g or colon jumps by number. F is Vimium's: every link, button, term and embedded page gets a short label — type it to use it. Alt-click zooms to the point you click; Escape zooms back out.
+</Notes>
+
+----
+id: draw
+---
+
+<p className="sc-eyebrow">Presenting · pen and laser</p>
+
+## Draw on it
+
+<Cols cols="1fr 1fr" gap="3rem" align="center">
+<Col>
+
+<Clicks>
+
+- <Kbd>C</Kbd> the pen — draw anywhere on this slide
+- <Kbd>⇧</Kbd><Kbd>C</Kbd> clears it, <Kbd>Ctrl</Kbd><Kbd>Z</Kbd> takes back a stroke
+- <Kbd>X</Kbd> a laser pointer that follows you
+- <Kbd>Alt</Kbd> + click zooms there; <Kbd>Esc</Kbd> comes back
+
+</Clicks>
+
+</Col>
+<Col>
+
+<div className="sc-draw-target">
+  <Icon name="pen-line" size="2.4em" />
+  <span>Try the pen here</span>
+</div>
+
+</Col>
+</Cols>
+
+<Notes>
+Drawings belong to the slide they were made on and are kept per deck. With a room, they reach every screen — the projector, the phones — unless `drawings.presenterOnly` is set.
+[click] clearing and undo [click] the laser [click] and zoom.
+</Notes>
+
+---
+id: views
+---
+
+<p className="sc-eyebrow">Presenting · views</p>
+
+## One deck, many views
+
+<div className="sc-views">
+  <a href="?view=scroll"><b>?view=scroll</b><span>every slide in one long page</span></a>
+  <a href="?print-pdf"><b>?print-pdf</b><span>a page per slide and step, for print</span></a>
+  <a href="presenter"><b>/presenter</b><span>notes, next, timer, room</span></a>
+  <a href="join"><b>/join</b><span>the audience page, for phones</span></a>
+  <a href="notes"><b>/notes</b><span>every note on one page</span></a>
+  <a href="stats"><b>/stats</b><span>the deck's numbers, from the host</span></a>
+  <a href="?projector"><b>?projector</b><span>a screen that only follows</span></a>
+  <a href="?embedded"><b>?embedded</b><span>for a deck inside another page</span></a>
+  <a href="#/views"><b>#/views</b><span>a slide by its id — or #/h/v/step</span></a>
+</div>
+
+<p className="sc-small">Every view is the same build, at a different address. <Kbd>Esc</Kbd> is the overview of the deck itself.</p>
+
+<Notes>
+One build, many pages. The scroll view is for reading on a phone; print lays out every slide — and every step, with `pdfSeparateFragments` — as a page. The presenter, audience, notes and stats pages are routes of the same bundle. A projector window takes no input and always follows. And any slide has an address: by position, `#/5/2/1` for column five, row two, step one — or by its `id`, like this one.
+</Notes>
+
+----
+id: zoomed
+zoom: 0.8
+state: calm
+hideInToc: true
+---
+
+<p className="sc-eyebrow">Presenting · per-slide options</p>
+
+## A slide with options of its own
+
+<Cols n={2} gap="2rem" align="start">
+<Col>
+
+This slide is `zoom: 0.8` — everything on it is set smaller, for a slide with more to show.
+
+It carries `state: calm`, which puts a `state-calm` class on it for your CSS. And the slide after it in the source is `hide: true`: built, but never shown.
+
+</Col>
+<Col>
+
+<How>
+
+```yaml
+---
+zoom: 0.8
+state: calm
+hideInToc: true
+---
+```
+
+```yaml
+---
+hide: true      # built, never shown
+---
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Per-slide options: `zoom` scales a slide's content, `state` adds a class, `hideInToc` keeps it out of the table of contents, and `hide` leaves a slide in the source but out of the deck.
+</Notes>
+
+----
+hide: true
+id: hidden-slide
+---
+
+## You should never see this slide
+
+It is `hide: true`. The tour's checks fail if it ever appears.
+
+---
+id: export
+---
+
+<p className="sc-eyebrow">Presenting · export</p>
+
+## Export
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<How label="in the deck's folder">
+
+```sh
+kadal-deck export                  # PDF
+kadal-deck export --png --pptx     # + a PNG per page, PowerPoint
+kadal-deck export --scale 1 --out handouts
+```
+
+</How>
+
+</Col>
+<Col>
+
+A headless browser prints `?print-pdf`. The PowerPoint is a picture per slide with your notes attached — it opens in Keynote and Google Slides looking exactly like the web.
+
+<Callout kind="tip">Embedded pages are photographed first, so paper gets a picture where the page was.</Callout>
+
+</Col>
+</Cols>
+
+<Notes>
+Export drives a headless Chromium over the print view. PDF comes from the browser's own printer; PNGs are a screenshot of each page; the PPTX wraps those pictures one per slide with the speaker notes attached.
+</Notes>

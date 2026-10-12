@@ -1,12 +1,23 @@
-import { Island, Sketch, useClickIndex, type SketchStep } from "@kadal/deck";
+import {
+  Background,
+  Click,
+  Island,
+  type LayoutProps,
+  Sketch,
+  type SketchStep,
+  useClickIndex,
+  useNav,
+  useSlide,
+} from "@kadal/deck";
 import { deckPython } from "@kadal/deck-python/build";
 import { wasmBindgenModule } from "@kadal/deck-wasm";
 import { FlipBoard } from "@kadal/deck/backgrounds";
+import { useLiveOptional, useRoomStatus } from "@kadal/deck/live";
 import { sketch } from "@kadal/deck/sketch";
 
 import "./island-demo.ts";
 import { Rocket, Sparkles, Users, Zap } from "lucide-react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 /**
  * Components the slides use without importing. Anything here is available as `<Name />` in
@@ -29,6 +40,103 @@ function Feature({
       <strong>{title}</strong>
       <span>{children}</span>
     </div>
+  );
+}
+
+/* ─────────────────────────── the tour's own pieces ─────────────────────────── */
+
+/**
+ * A layout of the deck's own, registered below as `layout:spotlight` and picked with
+ * `layout: spotlight` in a slide's frontmatter: a tall band of colour carrying the slide's
+ * `eyebrow`, and the content beside it. Any frontmatter key reaches a layout as a prop.
+ */
+function SpotlightLayout({ frontmatter, children }: LayoutProps) {
+  const eyebrow = typeof frontmatter.eyebrow === "string" ? frontmatter.eyebrow : "";
+  return (
+    <div className="deck-layout deck-layout-spotlight">
+      <aside className="sc-spotlight-band" aria-hidden>
+        <span>{eyebrow}</span>
+      </aside>
+      <div className="sc-spotlight-body">{children}</div>
+    </div>
+  );
+}
+
+/** "How it's written": the MDX behind a slide, set small beside the thing it makes. */
+function How({ children, label = "How it’s written" }: { children?: ReactNode; label?: string }) {
+  return (
+    <div className="sc-how">
+      <span className="sc-how-label">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+/** One click effect on a card: the effect's name, and a word that does it on its click. */
+function EffectTile({ effect, children }: { effect: string; children?: ReactNode }) {
+  return (
+    <div className="sc-effect">
+      <code>{effect}</code>
+      <Click effect={effect} className="sc-effect-word">
+        {children ?? "Tide"}
+      </Click>
+    </div>
+  );
+}
+
+/** One registered background, running in a card the size of a thumbnail. */
+function BgTile({ name, label, ...props }: { name: string; label?: string; [k: string]: unknown }) {
+  return (
+    <div className="sc-bg-tile" data-background={name}>
+      <Background name={name} {...props} />
+      <span>{label ?? name}</span>
+    </div>
+  );
+}
+
+/**
+ * A theme, shown small. A theme is a class carrying tokens, so a card that wears `theme-rla` and a
+ * colour scheme gets that theme's colours and type wherever it sits — even on a slide in another.
+ */
+function ThemeCard({ theme, scheme }: { theme: string; scheme: "light" | "dark" }) {
+  return (
+    <div className={`sc-theme theme-${theme}`} data-color-scheme={scheme}>
+      <div className="sc-theme-face">
+        <strong>Tides</strong>
+        <span>High water at six.</span>
+        <code>{"<Click>"}</code>
+        <i />
+      </div>
+      <span className="sc-theme-name">
+        {theme} · {scheme}
+      </span>
+    </div>
+  );
+}
+
+/** Where this slide is in its clicks: “step 2 of 5”, live as you press. */
+function StepMeter() {
+  const slide = useSlide();
+  const total = useNav((s) => s.totals[`${slide.h},${slide.v}`] ?? 0);
+  return (
+    <span className="sc-step-meter" data-step={slide.click} data-total={total}>
+      step <b>{slide.click}</b> of {total}
+    </span>
+  );
+}
+
+/** Whether this copy of the deck has a room: the live pieces below work either way. */
+function LiveStatus() {
+  const live = useLiveOptional();
+  const status = useRoomStatus();
+  return live ? (
+    <span className="sc-live-status is-on" data-status={status}>
+      <i /> room {status}
+    </span>
+  ) : (
+    <span className="sc-live-status" data-status="offline">
+      <i /> offline · every piece below still renders, and works for one screen
+    </span>
   );
 }
 
@@ -316,4 +424,12 @@ export const components: Record<string, ComponentType<Record<string, unknown>>> 
   Feature: Feature as ComponentType<Record<string, unknown>>,
   FlipBoard: FlipBoard as ComponentType<Record<string, unknown>>,
   Island: Island as unknown as ComponentType<Record<string, unknown>>,
+  How: How as ComponentType<Record<string, unknown>>,
+  EffectTile: EffectTile as ComponentType<Record<string, unknown>>,
+  BgTile: BgTile as ComponentType<Record<string, unknown>>,
+  ThemeCard: ThemeCard as ComponentType<Record<string, unknown>>,
+  StepMeter: StepMeter as ComponentType<Record<string, unknown>>,
+  LiveStatus: LiveStatus as ComponentType<Record<string, unknown>>,
+  // `layout: spotlight` in frontmatter picks this; the `layout:` prefix is the whole convention.
+  "layout:spotlight": SpotlightLayout as unknown as ComponentType<Record<string, unknown>>,
 };

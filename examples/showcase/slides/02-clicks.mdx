@@ -1,0 +1,174 @@
+---
+layout: section
+id: clicks
+background:
+  component: lines
+  colors: "#0ea5e9,#6366f1"
+---
+
+<p className="sc-eyebrow">Chapter 2</p>
+
+# Clicks
+
+A slide can say one thing at a time. Each press reveals the next step; going back undoes it.
+
+<Notes>
+Chapter two: steps inside a slide. reveal.js calls them fragments, Slidev calls them clicks; here both spellings work.
+</Notes>
+
+---
+id: clicks-basics
+---
+
+<p className="sc-eyebrow">Clicks</p>
+
+## One point at a time
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Clicks>
+
+- A list inside `<Clicks>` reveals an item per press
+- `<Click>` wraps anything else
+- `<After>` arrives with the step before it
+- <Kbd>←</Kbd> takes a step back; <Kbd>⇧</Kbd><Kbd>→</Kbd> skips them all
+
+</Clicks>
+
+<After><p className="sc-small">↑ that line came with the last item — it is an <code>{"<After>"}</code>. <StepMeter /></p></After>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Clicks>
+
+- A list inside `<Clicks>` reveals…
+- `<Click>` wraps anything else
+- …
+
+</Clicks>
+
+<After>that line came with…</After>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+[click] A Markdown list inside `<Clicks>` steps through its items. [click] `<Click>` is the general form — any element, any position. [click] `<After>` shares the previous step instead of taking a new one. [click] And backwards works step by step, while shift-arrow jumps over a slide's steps entirely. The step meter at the bottom reads the slide's position live.
+</Notes>
+
+----
+id: click-effects
+---
+
+<p className="sc-eyebrow">Clicks · effects</p>
+
+## Every effect, one press each
+
+<div className="sc-effects">
+  <EffectTile effect="fade-in" />
+  <EffectTile effect="fade-up" />
+  <EffectTile effect="fade-down" />
+  <EffectTile effect="fade-left" />
+  <EffectTile effect="fade-right" />
+  <EffectTile effect="blur" />
+  <EffectTile effect="grow" />
+  <EffectTile effect="shrink" />
+  <EffectTile effect="strike" />
+  <EffectTile effect="fade-out" />
+  <EffectTile effect="semi-fade-out" />
+  <EffectTile effect="highlight-red" />
+  <EffectTile effect="highlight-green" />
+  <EffectTile effect="highlight-blue" />
+  <EffectTile effect="highlight-current-blue" />
+  <EffectTile effect="current-visible" />
+  <EffectTile effect="fade-in-then-out" />
+  <EffectTile effect="fade-in-then-semi-out" />
+</div>
+
+<p className="sc-small">reveal.js's fragment styles by their own names — <code>{'<Click effect="grow">'}</code> — and a theme can add more. <StepMeter /></p>
+
+<Notes>
+Eighteen effects, one per press, in reading order. The first six arrive: fade in, from below, above, the right, the left, and out of a blur. The next ones change something already there: grow, shrink, strike, fade out, half-fade, and three highlight colours. The last four are about the current step: a highlight that only lasts its step, a word visible only on its step, and two that arrive and then leave or dim.
+</Notes>
+
+----
+id: click-timing
+clicks: 5
+---
+
+<p className="sc-eyebrow">Clicks · timing</p>
+
+## Saying exactly when
+
+<div className="sc-timeline">
+  <div><code>{"at={1}"}</code><Click at={1} className="sc-pill">from step 1</Click></div>
+  <div><code>{'at="+0"'}</code><Click at="+0" className="sc-pill">with the one before</Click></div>
+  <div><code>{'at="+2"'}</code><Click at="+2" className="sc-pill">two steps after it</Click></div>
+  <div><code>{"hide at={2}"}</code><Click hide at={2} className="sc-pill is-muted">here until step 2</Click></div>
+  <div><code>{"at={[2, 4]}"}</code><Click at={[2, 4]} className="sc-pill">steps 2 and 3, then gone</Click></div>
+</div>
+
+<p className="sc-small"><code>clicks: 5</code> in the frontmatter adds a last step that reveals nothing — a beat to talk over. <StepMeter /></p>
+
+<Notes>
+Positions are absolute — `at={1}` — or relative to the element before: `+0` shares its step, `+2` lands two after it. A pair is a range.
+[click] Step one: the absolute pill, and the `+0` with it.
+[click] Step two: `hide` takes its pill away, and the range arrives.
+[click] Step three: `+2`, counted from step one.
+[click] Step four: the range is over.
+[click] And step five exists only because `clicks: 5` in frontmatter says so — a pause before the slide moves on.
+</Notes>
+
+---
+id: marks
+---
+
+<p className="sc-eyebrow">Clicks · words</p>
+
+## Words that move
+
+<Cols cols="1.15fr 1fr" gap="2.5rem" align="start">
+<Col className="sc-words">
+
+<p className="sc-type"><Typewriter text="A typewriter types when the slide arrives." /></p>
+
+<p className="sc-type"><Encrypted text="Encrypted text resolves out of noise." delay={900} /></p>
+
+On a click, a hand-drawn mark: <Mark type="underline" at={1}>underline</Mark>, <Mark type="circle" at={2}>circle</Mark>, <Mark type="box" at={3}>box</Mark>, <Mark type="highlight" at={4}>highlight</Mark> and <Mark type="strike" at={5}>strike</Mark>.
+
+<FlipBoard text={"HIGH WATER\n06:12 CHENNAI"} />
+
+<Confetti at={6} />
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Typewriter text="A typewriter types…" />
+<Encrypted text="…" delay={900} />
+
+<Mark type="circle" at={2}>circle</Mark>
+
+<FlipBoard text={"HIGH WATER\n06:12"} />
+<Confetti at={6} />
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Text that animates on arrival — the typewriter and the encrypted line — and marks drawn on clicks.
+[click] underline [click] circle [click] box [click] highlight [click] strike [click] and confetti, fired on the sixth step. The flip board is a component this deck takes from `@kadal/deck/backgrounds`.
+</Notes>

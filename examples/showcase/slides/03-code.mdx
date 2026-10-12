@@ -1,0 +1,305 @@
+---
+layout: section
+id: code
+background:
+  component: graticule
+  color: "rgba(99,102,241,0.22)"
+---
+
+<p className="sc-eyebrow">Chapter 3</p>
+
+# Code, maths, diagrams
+
+Highlighted at build time, stepped on clicks, typeset without a server.
+
+<Notes>
+Chapter three: the things a technical talk is made of. Code is highlighted by Shiki when the deck is built — in a light and a dark theme at once — so nothing ships a highlighter to the audience. The graticule behind this slide is one of the quieter backgrounds.
+</Notes>
+
+---
+id: code-steps
+---
+
+<p className="sc-eyebrow">Code</p>
+
+## Code that walks
+
+<Cols cols="1.2fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+```ts {2|4-7|9|all} [tide.ts]
+import { deck } from "@kadal/deck/vite";
+const HIGH_WATER = "06:12";
+
+function ask(question: string) {
+  const answer = question.includes("tide") ? HIGH_WATER : "42";
+  return `${question}? ${answer}`;
+}
+
+export default deck({ entry: "deck.mdx" });
+```
+
+</Col>
+<Col>
+
+<div className="sc-steps">
+<Click at={0}>`{2|4-7|9|all}` after the language: one highlight per step.</Click>
+<Click at={1}>Lines and ranges, comma-separated: `{1,4-7}`.</Click>
+<Click at={2}>`[tide.ts]` puts a title bar on the block.</Click>
+<Click at={3}>`all` (or `*`) lights every line again.</Click>
+</div>
+
+</Col>
+</Cols>
+
+<Notes>
+The fence's meta is the whole recipe: the braces list one highlight per step and the deck turns each into a click. Line two first, the constant.
+[click] The function.
+[click] The export.
+[click] And everything, to finish. Copy is in the corner of every block.
+</Notes>
+
+----
+id: code-options
+---
+
+<p className="sc-eyebrow">Code · options</p>
+
+## Every fence option
+
+<Cols n={2} gap="2rem" align="start">
+<Col>
+
+```py {*}{lines:true,startLine:40} [tides.py · numbered from 40]
+def next_high(now, period=745):
+    """Minutes to the next high water."""
+    return (period - now % period) % period
+```
+
+```sh {hide|1|2}
+kadal-deck build
+kadal-deck export --png --pptx
+```
+
+<p className="sc-caption"><code>{"{hide|1|2}"}</code>: hidden until its first step</p>
+
+</Col>
+<Col>
+
+```json {2-4}{maxHeight:'300px'} [deck.config.json · scrolls past 300px]
+{
+  "theme": "minimal",
+  "transition": "slide",
+  "slideNumber": "c/t",
+  "autoFit": true,
+  "controls": true,
+  "progress": true,
+  "hash": true,
+  "fragmentInURL": true,
+  "pdfSeparateFragments": true,
+  "drawings": { "enabled": true }
+}
+```
+
+```rust data-line-numbers="1|3"
+fn main() {
+    let tide = 6.12;
+    println!("high water at {tide}");
+}
+```
+
+</Col>
+</Cols>
+
+<Notes>
+Four blocks, four options. Line numbers starting where the excerpt starts in the real file. A block that stays hidden until its first step, then highlights each line. A maximum height, past which the block scrolls. And reveal.js's own spelling, `data-line-numbers`, for decks brought over from it.
+[click] The hidden block arrives.
+[click] Its second line.
+[click] The Rust block steps once.
+</Notes>
+
+---
+id: magic-move
+---
+
+<p className="sc-eyebrow">Code · magic move</p>
+
+## Magic move
+
+<Cols cols="1.3fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+````md magic-move {lines: true} [tide.ts]
+```ts
+const highWater = "06:12";
+```
+```ts
+const highWater = "06:12";
+function ask(q: string) {
+  return `${q}? ${highWater}`;
+}
+```
+```ts
+const highWater = "06:12";
+export function ask(q: string): string {
+  return `${q}? ${highWater}`;
+}
+ask("When is high water");
+```
+````
+
+</Col>
+<Col>
+
+Each press morphs the code to the next version: unchanged tokens glide to their new places, new ones fade in.
+
+<How>
+
+`````mdx
+````md magic-move {lines: true}
+```ts
+const highWater = "06:12";
+```
+```ts
+…the next version
+```
+````
+`````
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Slidev's magic move, compiled at build time. One fence of fences: each inner block is a step.
+[click] The function arrives around the constant.
+[click] It is exported, typed and called — the tokens it shares with the step before slide into place.
+</Notes>
+
+---
+id: maths
+---
+
+<p className="sc-eyebrow">Maths</p>
+
+## Maths, typeset at build time
+
+<Cols cols="1.1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+Inline, between dollars: the tide height is $h(t) = A\cos(\omega t + \varphi)$.
+
+Display, between double dollars:
+
+$$
+\omega = \frac{2\pi}{T}, \qquad T \approx 12\,\text{h}\;25\,\text{min}
+$$
+
+From JSX, where Markdown cannot reach:
+
+<Tex block tex="\int_0^{T} h(t)\,dt = 0" />
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+$h(t) = A\cos(\omega t + \varphi)$
+
+$$
+\omega = \frac{2\pi}{T}
+$$
+
+<Tex block tex="\int_0^{T} h(t)\,dt = 0" />
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+KaTeX, at build time: the slide arrives as HTML, so maths costs the audience nothing to render. `<Tex>` — also exported as `<Math>` — is for maths inside components, where the dollar syntax does not reach.
+</Notes>
+
+---
+id: diagrams
+---
+
+<p className="sc-eyebrow">Diagrams</p>
+
+## Mermaid, in the deck's colours
+
+<Cols n={2} gap="2.5rem" align="center">
+<Col>
+
+<Mermaid scale={1.5}>
+{`flowchart LR
+  A[deck.mdx] --> B[vite plugin]
+  B --> C[one module per slide]
+  C --> D[React runtime]
+  D --> E[(room)]
+`}
+</Mermaid>
+
+</Col>
+<Col>
+
+<Mermaid scale={1.3}>
+{`sequenceDiagram
+  participant P as Presenter
+  participant R as Room
+  participant A as Audience
+  P->>R: next slide
+  R-->>A: position
+  A->>R: 👏
+  R-->>P: reactions
+`}
+</Mermaid>
+
+</Col>
+</Cols>
+
+<p className="sc-small">Rendered in the browser, redrawn when you press <Kbd>D</Kbd> for the dark scheme.</p>
+
+<Notes>
+Any Mermaid diagram: a flowchart of how this deck is built, and a sequence diagram of what the room does when the presenter moves. Mermaid is loaded only by slides that use it, and the diagram follows the colour scheme.
+</Notes>
+
+---
+id: sketches
+---
+
+<p className="sc-eyebrow">Sketches</p>
+
+## Sketches, three ways in
+
+<Cols cols="1.4fr 1fr" gap="1.5rem" align="start">
+<Col>
+
+<FlowSketch />
+
+</Col>
+<Col>
+
+<Sketch fontSize={16} height="250px" caption="from Mermaid">
+{`flowchart LR
+  A[deck.mdx] --> B[vite plugin]
+  B --> C[one module per slide]
+  B --> D[(room)]
+`}
+</Sketch>
+
+<Sketch src="sketches/pipeline.excalidraw" height="250px" caption="a .excalidraw file" />
+
+</Col>
+</Cols>
+
+<Notes>
+Excalidraw drawings: drawn in code with the `sketch()` builder, converted from Mermaid, or loaded from a file saved on excalidraw.com. All three follow the theme and the dark scheme.
+[click] The code-drawn one has regions, so it can be toured: first what you write.
+[click] Then what the engine does with it.
+[click] And the whole drawing again. The corner button opens the real Excalidraw canvas to pan and zoom.
+</Notes>

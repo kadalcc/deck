@@ -1,0 +1,356 @@
+---
+layout: section
+id: motion
+transition: zoom
+background:
+  component: waves
+---
+
+<p className="sc-eyebrow">Chapter 5</p>
+
+# Movement
+
+Between slides, across them, and on their own.
+
+<Notes>
+Chapter five: things that move. This slide arrived with `transition: zoom`.
+</Notes>
+
+---
+id: transitions
+---
+
+<p className="sc-eyebrow">Movement · transitions</p>
+
+## Transitions
+
+<Cols cols="1fr 1.1fr" gap="3rem" align="start">
+<Col>
+
+The deck sets one; any slide may set its own. Press <Kbd>→</Kbd> to arrive at each in turn:
+
+<div className="sc-chips">
+  <Link to="tr-slide">slide</Link>
+  <Link to="tr-fade">fade</Link>
+  <Link to="tr-convex">convex</Link>
+  <Link to="tr-concave">concave</Link>
+  <Link to="tr-zoom">zoom</Link>
+  <Link to="tr-none">none</Link>
+  <Link to="tr-view">view-transition</Link>
+  <Link to="tr-in-out">zoom-in fade-out</Link>
+  <Link to="tr-speed">transitionSpeed</Link>
+</div>
+
+</Col>
+<Col>
+
+<How>
+
+```yaml
+# headmatter: the deck's
+transition: slide
+transitionSpeed: default   # fast · slow
+backgroundTransition: fade
+
+# a slide's own
+---
+transition: zoom-in fade-out
+---
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+reveal.js's transitions, by the same names. A slide's `transition` decides how it arrives; `-in` and `-out` give the two halves different ones. The next nine slides each arrive with the transition they are named after — press right through them.
+</Notes>
+
+---
+transition: slide
+id: tr-slide
+layout: center
+class: sc-transition
+background:
+  component: stripes
+  color: "rgba(14,165,233,0.12)"
+---
+
+<p className="sc-eyebrow">transition: slide</p>
+
+## slide
+
+Across for the next column, up and down inside a stack.
+
+<Notes>
+`slide`, the default: horizontal between columns, vertical within one.
+</Notes>
+
+---
+transition: fade
+id: tr-fade
+layout: center
+class: sc-transition
+background:
+  component: glows
+  colors: "#f59e0b,#ec4899"
+  opacity: 0.3
+---
+
+<p className="sc-eyebrow">transition: fade</p>
+
+## fade
+
+A cross-fade, and the background fades with it.
+
+<Notes>
+`fade`.
+</Notes>
+
+---
+transition: convex
+id: tr-convex
+layout: center
+class: sc-transition
+background:
+  component: hex
+  color: "rgba(99,102,241,0.2)"
+---
+
+<p className="sc-eyebrow">transition: convex</p>
+
+## convex
+
+A cube turning outward. Sideways only: down a vertical stack, it fades.
+
+<Notes>
+`convex` and `concave` are horizontal ideas, so within a vertical stack they fade.
+</Notes>
+
+---
+transition: concave
+id: tr-concave
+layout: center
+class: sc-transition
+background:
+  component: hex
+  color: "rgba(236,72,153,0.18)"
+---
+
+<p className="sc-eyebrow">transition: concave</p>
+
+## concave
+
+The cube turning inward.
+
+<Notes>
+`concave`.
+</Notes>
+
+---
+transition: zoom
+id: tr-zoom
+layout: center
+class: sc-transition
+background:
+  component: rays
+  color: "rgba(250,204,21,0.25)"
+---
+
+<p className="sc-eyebrow">transition: zoom</p>
+
+## zoom
+
+From a point in the middle, out to the edges.
+
+<Notes>
+`zoom`.
+</Notes>
+
+---
+transition: none
+id: tr-none
+layout: center
+class: sc-transition
+background:
+  component: noise
+---
+
+<p className="sc-eyebrow">transition: none</p>
+
+## none
+
+A cut: one frame, then the next.
+
+<Notes>
+`none`, a hard cut — the slide that left is gone at once.
+</Notes>
+
+---
+transition: view-transition
+id: tr-view
+layout: center
+class: sc-transition
+colorScheme: dark
+background:
+  component: sweep
+---
+
+<p className="sc-eyebrow">transition: view-transition</p>
+
+## view-transition
+
+The browser's own View Transitions API animates the change, where the browser has it.
+
+<Notes>
+`view-transition` hands the change to the browser's View Transitions API, where it exists, and falls back to a cut where it does not.
+</Notes>
+
+---
+transition: zoom-in fade-out
+id: tr-in-out
+layout: center
+class: sc-transition
+background:
+  component: spotlight
+---
+
+<p className="sc-eyebrow">transition: zoom-in fade-out</p>
+
+## Two halves
+
+This slide zoomed in. Press <Kbd>→</Kbd>: it fades out while the next one slides in, slowly.
+
+<Notes>
+reveal.js's split form: `zoom-in fade-out`. The in-half is how this slide arrives, the out-half how it leaves.
+</Notes>
+
+---
+transition: slide
+transitionSpeed: slow
+backgroundTransition: zoom
+id: tr-speed
+layout: center
+class: sc-transition
+background:
+  component: beams
+---
+
+<p className="sc-eyebrow">transitionSpeed: slow</p>
+
+## Slower, and a background that zooms
+
+`transitionSpeed` is `fast`, `default` or `slow`; `backgroundTransition` animates the backgrounds separately from the slides.
+
+<Notes>
+A slow slide transition, a second long, with the background zooming rather than fading.
+</Notes>
+
+---
+autoAnimate: true
+id: auto-animate
+---
+
+<p className="sc-eyebrow">Movement · auto-animate</p>
+
+## Auto-animate
+
+<div className="sc-aa-row">
+  <div data-id="tide-box" className="sc-aa-box">high</div>
+  <div data-id="tide-dot" className="sc-aa-dot" />
+</div>
+
+Elements with the same `data-id` on two neighbouring `autoAnimate: true` slides move between their places. Press <Kbd>↓</Kbd>.
+
+<Notes>
+Auto-animate, reveal.js's FLIP: two slides side by side or one above the other, both `autoAnimate: true`, and every element sharing a `data-id` animates from its old box to its new one — position, size, colour and radius.
+</Notes>
+
+----
+autoAnimate: true
+id: auto-animate-2
+---
+
+<p className="sc-eyebrow">Movement · auto-animate</p>
+
+## Auto-animate
+
+<div className="sc-aa-row is-after">
+  <div data-id="tide-dot" className="sc-aa-dot is-after" />
+  <div data-id="tide-box" className="sc-aa-box is-after">high water</div>
+</div>
+
+<p className="sc-small">The box crossed the slide and grew; the dot changed colour on its way. Nothing here was animated by hand.</p>
+
+<Notes>
+Same ids, different places. The engine measured both, then played the difference.
+</Notes>
+
+---
+id: motion-component
+---
+
+<p className="sc-eyebrow">Movement · motion</p>
+
+## Motion, step by step
+
+<Cols cols="1fr 1fr" gap="3rem" align="center">
+<Col>
+
+<Motion initial={{ x: -120, opacity: 0 }} enter={{ x: 0, opacity: 1 }} clicks={{ "click-1": { x: 48, rotate: 3 }, "click-2": { x: 0, scale: 1.08, rotate: 0 } }}>
+  <Glass tone="teal" pad="1em 1.2em">
+    <p className="sc-tight"><b>`initial`</b> before the slide, <b>`enter`</b> when it arrives, then one target per click.</p>
+  </Glass>
+</Motion>
+
+<Click at={1}><p className="sc-small">Step 1 — it moves right and tilts.</p></Click>
+<Click at={2}><p className="sc-small">Step 2 — it comes back, grows and straightens.</p></Click>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Motion
+  initial={{ x: -120, opacity: 0 }}
+  enter={{ x: 0, opacity: 1 }}
+  clicks={{
+    "click-1": { x: 48, rotate: 3 },
+    "click-2": { x: 0, scale: 1.08 },
+  }}
+>
+  …
+</Motion>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Slidev's v-motion, in React, backed by the motion library: any property it can animate.
+[click] Step one, from `click-1`.
+[click] Step two, from `click-2`.
+</Notes>
+
+---
+id: auto-slide
+autoSlide: 6000
+background:
+  component: track
+---
+
+<p className="sc-eyebrow">Movement · autoSlide</p>
+
+## This slide moves on by itself
+
+<p className="sc-countdown"><Timer seconds={6} /></p>
+
+`autoSlide: 6000` in its frontmatter: six seconds, then the next slide. <Kbd>A</Kbd> pauses and resumes; a click anywhere stops it.
+
+<Notes>
+Auto-slide. A deck can set `autoSlide` for every slide — a kiosk, a loop in a foyer — or a single slide can, like this one: six seconds and it moves on. A pauses it; any click stops it. On a deck that sets nothing, A still starts a gentle five-second advance.
+</Notes>

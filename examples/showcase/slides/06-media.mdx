@@ -1,0 +1,173 @@
+---
+layout: section
+id: media
+background:
+  image: media/sea-wide.jpg
+  opacity: 0.35
+---
+
+<p className="sc-eyebrow">Chapter 6</p>
+
+# Pictures, sound, other pages
+
+<Notes>
+Chapter six: media. Everything in this chapter ships with the deck, in `public/`, except the two embeds from other sites at the bottom of the stack.
+</Notes>
+
+---
+layout: image-right
+image: media/sea-portrait.jpg
+id: media-images
+---
+
+<p className="sc-eyebrow">layout: image-right</p>
+
+## Pictures
+
+`image:` in frontmatter fills half the slide. Inside a slide, `<Image>` is lazy, and `preview` opens it in a lightbox — click one:
+
+<div className="sc-thumbs">
+  <Image src="media/sea-thumb.jpg" preview alt="The sea at dusk — click to open" />
+  <Image src="media/night-thumb.jpg" preview alt="The sea at night — click to open" />
+</div>
+
+<p className="sc-small"><Kbd>Esc</Kbd> closes the lightbox.</p>
+
+<Notes>
+`image-right`, the mirror of image-left. The two thumbnails are `<Image preview>`: click one and it opens full size over the deck; Escape closes it. The F key labels them too, so the keyboard can open them.
+</Notes>
+
+----
+id: media-av
+---
+
+<p className="sc-eyebrow">Media · video and sound</p>
+
+## Video and sound
+
+<Cols cols="1.4fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<Video src="media/tide.webm" autoplay loop muted className="sc-video" />
+
+</Col>
+<Col>
+
+`<Video>` plays when its slide is shown and stops when you leave; `autoplay`, `loop`, `muted` and `controls` as on the element.
+
+<Audio src="media/chime.ogg" controls />
+
+`<Audio>` loads with its slide. Press play: three notes.
+
+</Col>
+</Cols>
+
+<Notes>
+Media with manners: the video starts when the slide arrives and is paused and rewound when it leaves, so nothing keeps playing behind the next slide. The audio player is a plain `<audio>` with the same lazy loading.
+</Notes>
+
+---
+layout: iframe-right
+url: embed/tide.html
+poster: media/tide-poster-half.jpg
+id: other-pages
+---
+
+<p className="sc-eyebrow">layout: iframe-right</p>
+
+## Other pages
+
+The page on the right is live: click it, then press its button. <Kbd>F</Kbd> labels it for the keyboard too.
+
+It loads when the slide is shown and unloads when you leave; in print and the overview, its `poster:` stands in.
+
+<Notes>
+`iframe-right` with `url:`. The shield keeps your keys driving the deck until you click the page; Done hands them back. A Reload button is always there, for a page that failed to load in the middle of a talk.
+</Notes>
+
+----
+id: iframe-component
+---
+
+<p className="sc-eyebrow">Media · embeds</p>
+
+## An embed anywhere in a slide
+
+<Cols cols="1.3fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<Iframe src="embed/tide.html" title="Tide clock" poster="media/tide-poster-half.jpg" className="sc-frame" />
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Iframe
+  src="embed/tide.html"
+  poster="media/tide-poster-half.jpg"
+/>
+
+<Youtube id="…" />
+<Tweet id="…" />
+```
+
+</How>
+
+<p className="sc-small">↓ YouTube and a post on X — the two things on this tour that need the network.</p>
+
+</Col>
+</Cols>
+
+<Notes>
+`<Iframe>` is the same frame shell as the layouts: lazy, shielded, with a poster. `<Youtube>` and `<Tweet>` are shorthands for the two embeds people ask for most — press down to see them.
+</Notes>
+
+----
+id: youtube-tweet
+---
+
+<p className="sc-eyebrow">Media · from other sites</p>
+
+## YouTube and X
+
+<Cols n={2} gap="2rem" align="start">
+<Col>
+
+<Youtube id="aqz-KE-bpKQ" className="sc-yt" />
+
+</Col>
+<Col>
+
+<Tweet id="20" />
+
+</Col>
+</Cols>
+
+<Notes>
+The only two pieces of this tour that come from somewhere else — so they are the two that are blank without a network. `<Youtube id>` uses the privacy-enhanced domain; `<Tweet id>` renders the post in the deck's colour scheme.
+</Notes>
+
+----
+id: qr
+---
+
+<p className="sc-eyebrow">Media · QR</p>
+
+## A QR code for anything
+
+<Cols cols="auto 1fr" gap="3rem" align="center">
+<Qr value="https://deck.kadal.cc/tour/" size={300} />
+<div>
+
+`<Qr value="…" />`, drawn in the browser — nothing is sent anywhere.
+
+The live room's `<QrJoin />` is the same code, pointed at the audience page.
+
+</div>
+</Cols>
+
+<Notes>
+A QR code drawn locally, for a link you want the room to have — this one is the tour itself.
+</Notes>
