@@ -22,7 +22,7 @@ import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const run = (cmd, args, opts = {}) =>
-  execFileSync(cmd, args, { cwd: root, encoding: "utf8", ...opts }).trim();
+  (execFileSync(cmd, args, { cwd: root, encoding: "utf8", ...opts }) ?? "").trim();
 
 const { version } = JSON.parse(readFileSync(join(root, "packages/deck/package.json"), "utf8"));
 const tag = `v${version}`;
@@ -77,10 +77,17 @@ npm install @kadal/deck@${version}            # or upgrade one
 \`\`\`
 `;
 
-const target = process.env.GITHUB_SHA || run("git", ["rev-list", "-n", "1", `@kadal/deck@${version}`]);
+// The tag goes up with git, not with `gh release create --target`: GitHub refuses to create a ref
+// through the API on a commit that touches .github/workflows unless the token has the `workflow`
+// scope, which a git push of the tag doesn't need.
+if (!run("git", ["ls-remote", "--tags", "origin", `refs/tags/${tag}`])) {
+  const target = process.env.GITHUB_SHA || run("git", ["rev-list", "-n", "1", `@kadal/deck@${version}`]);
+  run("git", ["tag", "--force", tag, target]);
+  run("git", ["push", "origin", `refs/tags/${tag}`], { stdio: "inherit" });
+}
 const file = join(mkdtempSync(join(tmpdir(), "deck-release-")), "notes.md");
 writeFileSync(file, body);
-const args = ["release", "create", tag, "--target", target, "--title", `Kadal Deck ${version}`];
+const args = ["release", "create", tag, "--verify-tag", "--title", `Kadal Deck ${version}`];
 args.push("--notes-file", file, version.includes("-") ? "--prerelease" : "--latest");
 run("gh", args, { stdio: "inherit" });
 console.log(`Released ${tag}`);
