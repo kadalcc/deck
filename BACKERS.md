@@ -2,7 +2,7 @@
 
 Kadal Deck is open source under the AGPL and paid for by the hosted service at
 [deck.kadal.cc](https://deck.kadal.cc) and by the people and companies below.
-[Sponsor the project](https://github.com/sponsors/kadalcc) to join them; the tiers are on
+[Sponsor the project](https://github.com/sponsors/pmithunish) to join them; the tiers are on
 [deck.kadal.cc/sponsor](https://deck.kadal.cc/sponsor/).
 
 ## Gold

@@ -7,7 +7,7 @@ export to PDF, PNG and PPTX. Docs: **https://deck.kadal.cc/docs/**
 [![npm](https://img.shields.io/npm/v/@kadal/deck?color=0e7490)](https://www.npmjs.com/package/@kadal/deck)
 [![CI](https://img.shields.io/github/actions/workflow/status/kadalcc/deck/ci.yml?branch=main&label=CI)](https://github.com/kadalcc/deck/actions/workflows/ci.yml)
 [![Licence](https://img.shields.io/badge/licence-AGPL--3.0--or--later-0e7490)](https://github.com/kadalcc/deck/blob/main/LICENSING.md)
-[![Sponsor](https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/kadalcc)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/pmithunish)
 
 ## Start a deck
 

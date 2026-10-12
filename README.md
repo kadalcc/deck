@@ -23,7 +23,7 @@
   <a href="https://deck.kadal.cc"><img alt="deck.kadal.cc status" src="https://img.shields.io/website?url=https%3A%2F%2Fdeck.kadal.cc%2Fapi%2Fhealth&label=deck.kadal.cc&up_message=online&down_message=down"></a>
   <a href="https://deck.kadal.cc/tour/"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-the%20tour-5eead4"></a>
   <a href="https://deck.kadal.cc/docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-deck.kadal.cc-7dd3fc"></a>
-  <a href="https://github.com/sponsors/kadalcc"><img alt="Sponsor Kadal Deck" src="https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white"></a>
+  <a href="https://github.com/sponsors/pmithunish"><img alt="Sponsor Kadal Deck" src="https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white"></a>
 </p>
 
 <p align="center">
@@ -225,9 +225,10 @@ The engine's own reference, with every component and option, is in
 
 ## Sponsors
 
-Kadal Deck is built by [Kadal](https://kadal.cc), a small studio in Chennai. Sponsorships pay for
-time on the open-source engine: issues, docs, new islands and the features you ask for.
-**[Become a sponsor →](https://github.com/sponsors/kadalcc)**
+Kadal Deck is made by [@pmithunish](https://github.com/pmithunish), an independent developer in Chennai
+working as [Kadal](https://kadal.cc). Sponsorships go straight to the maintainer and pay for time on
+the open-source engine: issues, docs, new islands and the features you ask for.
+**[Become a sponsor →](https://github.com/sponsors/pmithunish)**
 
 | Tier | A month | What you get |
 | --- | --- | --- |
@@ -243,7 +244,7 @@ One-time sponsorships of $10 and $50 are welcome too. Companies can sponsor
 
 <!-- sponsors: Gold, Silver and Bronze logos and Patron avatars go here, largest first -->
 <p align="center">
-  <a href="https://github.com/sponsors/kadalcc"><strong>Your logo here</strong></a> —
+  <a href="https://github.com/sponsors/pmithunish"><strong>Your logo here</strong></a> —
   be the first company to sponsor Kadal Deck.
 </p>
 <!-- /sponsors -->
