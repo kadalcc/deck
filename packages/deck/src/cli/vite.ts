@@ -1,7 +1,10 @@
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, type StdioOptions, spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+
+/** A prerequisite is missing (Vite, Playwright, Chromium): exit code 4, with what to run. */
+export class MissingDependencyError extends Error {}
 
 /**
  * The deck's own Vite, run with whatever runtime is running us (Node or Bun). Resolved from the
@@ -13,13 +16,27 @@ export function viteBin(cwd: string): string {
   try {
     pkgPath = req.resolve("vite/package.json");
   } catch {
-    throw new Error(`Vite isn't installed in ${cwd}. Run \`npm install\` in the deck folder first.`);
+    throw new MissingDependencyError(
+      `Vite isn't installed in ${cwd}. Run \`npm install\` in the deck folder first.`,
+    );
   }
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { bin?: string | Record<string, string> };
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as {
+    bin?: string | Record<string, string>;
+  };
   const rel = typeof pkg.bin === "string" ? pkg.bin : (pkg.bin?.vite ?? "bin/vite.js");
   const bin = join(dirname(pkgPath), rel);
-  if (!existsSync(bin)) throw new Error(`Couldn't find Vite's CLI at ${bin}.`);
+  if (!existsSync(bin)) throw new MissingDependencyError(`Couldn't find Vite's CLI at ${bin}.`);
   return bin;
+}
+
+/**
+ * Where children's output goes when it is not captured: normally the terminal. When our own
+ * stdout is a protocol — `--json`, the MCP server's JSON-RPC — it has to stay clean, so Vite's
+ * chatter goes to stderr instead.
+ */
+let inherit: StdioOptions = "inherit";
+export function keepStdoutClean(): void {
+  inherit = ["ignore", process.stderr, process.stderr];
 }
 
 export function spawnVite(
@@ -27,7 +44,11 @@ export function spawnVite(
   args: string[],
   stdio: "inherit" | "ignore" | "pipe" = "inherit",
 ): ChildProcess {
-  return spawn(process.execPath, [viteBin(cwd), ...args], { cwd, stdio, env: process.env });
+  return spawn(process.execPath, [viteBin(cwd), ...args], {
+    cwd,
+    stdio: stdio === "inherit" ? inherit : stdio,
+    env: process.env,
+  });
 }
 
 export function runVite(cwd: string, args: string[]): Promise<void> {

@@ -1,0 +1,2 @@
+# template/ and skill/ are generated (see tools/sync-template.mjs) but must ship; this file stops npm from
+# reading .gitignore instead.

@@ -14,7 +14,7 @@ const deckVersion = JSON.parse(readFileSync(join(root, "..", "deck", "package.js
 rmSync(template, { recursive: true, force: true });
 cpSync(starter, template, {
   recursive: true,
-  filter: (src) => !/[\\/](node_modules|dist|export|\.kadal-deck)([\\/]|$)/.test(src.slice(starter.length)),
+  filter: (src) => !/[\\/](node_modules|dist|export|screenshots|\.kadal-deck)([\\/]|$)/.test(src.slice(starter.length)),
 });
 const pkgPath = join(template, "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
