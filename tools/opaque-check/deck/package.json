@@ -1,0 +1,7 @@
+{
+  "name": "kadal-deck-opaque-check",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The fixture deck tools/opaque-check/run.mjs publishes to a local host. Not a workspace: run.mjs links node_modules to examples/starter's."
+}
