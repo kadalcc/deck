@@ -662,14 +662,15 @@
   height: 100%;
   border-radius: 10px;
   overflow: hidden;
-  /* The bars around the slide take the opposite tone of the scheme, so the slide's edge reads. */
+  /* Letterbox bars are black in both schemes, as in every presenter tool — light bars flashed
+     around a dark slide in a dark UI. A dark slide's edge is drawn by the canvas's hairline. */
   background: #000;
   border: 1px solid var(--deck-border);
   display: grid;
   place-items: center;
 }
-[data-color-scheme="dark"] .deck-presenter-box {
-  background: #f4f4f2;
+[data-color-scheme="dark"] .deck-presenter-canvas {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 .deck-presenter-box.is-end {
   color: var(--deck-muted);

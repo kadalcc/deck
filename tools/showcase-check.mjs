@@ -565,6 +565,7 @@ async function presenterBoxes(page) {
         // within the box's 1px border on each side
         fills: Math.abs(c.width - b.width) <= 4 || Math.abs(c.height - b.height) <= 4,
         clipped: slide ? slide.scrollWidth > slide.clientWidth + 2 : false,
+        bars: getComputedStyle(box).backgroundColor,
         size: `${Math.round(c.width)}×${Math.round(c.height)} in ${Math.round(b.width)}×${Math.round(b.height)}`,
       };
     }),
@@ -602,6 +603,9 @@ await step("presenter: current, next, notes for the click, timer, L", async () =
           expect(Math.abs(b.aspect - 16 / 9) < 0.02, `${where}: aspect ${b.aspect.toFixed(3)}, not 16:9`);
           expect(b.fills, `${where}: the slide does not fill its box either way (${b.size})`);
           expect(!b.clipped, `${where}: the slide's content is clipped`);
+          // letterbox bars are dark whatever the scheme (sampled from the box behind the canvas)
+          const [r, g, bl] = (b.bars.match(/[\d.]+/g) ?? []).map(Number);
+          expect(r + g + bl < 3 * 40, `${where} (${scheme}): letterbox bars are ${b.bars}, not dark`);
         }
       }
     }
