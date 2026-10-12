@@ -185,7 +185,9 @@ CLI whose every command answers in JSON.
 [`skills/kadal-deck`](skills/kadal-deck)): `npx skills add kadalcc/deck`
 
 **The MCP server alone** — `kadal-deck mcp` speaks the Model Context Protocol on stdio. It works
-on the deck in the folder it starts in (or `--dir <path>`; every tool also takes a `dir`).
+on the deck in the folder it starts in (or `--dir <path>`; every tool also takes a `dir` inside
+it). Tools never read or write outside that folder unless the server is started with
+`--allow-outside`.
 
 ```sh
 claude mcp add kadal-deck -- npx -y @kadal/deck mcp          # Claude Code

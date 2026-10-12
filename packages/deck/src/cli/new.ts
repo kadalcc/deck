@@ -68,7 +68,9 @@ const list = (dir: string, base = dir): string[] =>
     e.isDirectory() ? list(join(dir, e.name), base) : [join(dir, e.name).slice(base.length + 1)],
   );
 
-export class TargetNotEmptyError extends Error {}
+export class TargetNotEmptyError extends Error {
+  override name = "TargetNotEmptyError";
+}
 
 export async function newDeck(target: string, options: NewOptions = {}): Promise<NewResult> {
   const dir = resolve(target);

@@ -37,7 +37,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | `kadal-deck export [--png] [--pptx] [--no-pdf] [--out dir] [--scale n] [--url u]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX) |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
 | `kadal-deck publish [--slug] [--workspace] [--title] [--host]` | build for the host and publish; only changed files are uploaded |
-| `kadal-deck mcp [--dir path]` | a Model Context Protocol server on stdio for AI agents (see below) |
+| `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |
 
 Every command takes `--dir <path>` (`-C`) and, except `dev`, `build` and `mcp`, `--json`: one JSON
 object on stdout, progress on stderr. Flags accept `--flag value` and `--flag=value`; switches

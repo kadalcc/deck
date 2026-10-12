@@ -55,6 +55,7 @@ export const HELP = `kadal-deck <command> [options]
   publish     build and publish the deck; prints its URL
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
   mcp         serve the Model Context Protocol on stdio, for AI agents (Claude, Cursor, VS Code…)
+              --allow-outside  let tools read and write outside --dir (off by default)
 
 Global: --dir <path> (-C) runs in another folder · --json prints one JSON object on stdout ·
 --help · --version.  Exit codes: 0 ok, 1 failed, 2 usage, 3 not signed in, 4 missing prerequisite.
@@ -99,11 +100,26 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     title: { kind: "string" },
     host: { kind: "string" },
   },
-  mcp: {},
+  mcp: { "allow-outside": { kind: "boolean" } },
 };
 
+/** Global options may come before the command (`kadal-deck -C talk check`); move them after it. */
+function commandFirst(argv: string[]): string[] {
+  const lead: string[] = [];
+  let i = 0;
+  while (i < argv.length) {
+    const a = argv[i]!;
+    const takesValue = (a === "--dir" || a === "-C") && argv[i + 1] !== undefined;
+    if (!takesValue && a !== "--json" && !a.startsWith("--dir=") && !a.startsWith("--json=")) break;
+    const n = takesValue ? 2 : 1;
+    lead.push(...argv.slice(i, i + n));
+    i += n;
+  }
+  return lead.length && i < argv.length ? [argv[i]!, ...lead, ...argv.slice(i + 1)] : argv;
+}
+
 export async function main(argv: string[], cwd: string = process.cwd()): Promise<number> {
-  const [command, ...rest] = argv;
+  const [command, ...rest] = commandFirst(argv);
   const json = rest.includes("--json") || rest.includes("--json=true");
   if (json) keepStdoutClean();
   // In JSON mode people-facing lines go to stderr; stdout carries exactly one JSON document.
@@ -114,14 +130,15 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
     return await run(command, rest, cwd, { json, say, emit });
   } catch (e) {
     const code =
-      e instanceof UsageError
+      e instanceof UsageError || (e as Error)?.name === "TargetNotEmptyError"
         ? EXIT.usage
         : e instanceof MissingDependencyError || e instanceof NoDeckError
           ? EXIT.missing
           : e instanceof HostError && e.status === 401
             ? EXIT.auth
             : EXIT.failed;
-    const message = e instanceof Error ? e.message : String(e);
+    // oxlint-disable-next-line no-control-regex -- colour codes from Playwright and Vite
+    const message = (e instanceof Error ? e.message : String(e)).replace(/\u001b\[[0-9;]*m/g, "");
     if (json)
       emit({
         ok: false,
@@ -316,7 +333,7 @@ async function run(
       return publishCommand(dir, flags, io);
     case "mcp": {
       const { serveStdio } = await import("../mcp/index.ts");
-      await serveStdio({ dir });
+      await serveStdio({ dir, allowOutside: flags["allow-outside"] === true });
       return EXIT.ok;
     }
   }

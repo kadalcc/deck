@@ -125,8 +125,11 @@ describe("kadal-deck commands", () => {
     const pkg = JSON.parse(readFileSync(join(work, "my-talk", "package.json"), "utf8"));
     expect(pkg.name).toBe("my-talk");
     expect(pkg.dependencies["@kadal/deck"]).toMatch(/^\^\d/);
-    // Not empty any more: refuse.
-    expect((await cli(["new", "my-talk", "--no-install"])).code).toBe(EXIT.failed);
+    // Not empty any more: refuse, as a usage error.
+    expect((await cli(["new", "my-talk", "--no-install"])).code).toBe(EXIT.usage);
+    // Global options may come before the command.
+    expect((await cli(["-C", "my-talk", "check"])).code).toBe(EXIT.ok);
+    expect((await cli(["--json", "--dir", "my-talk", "check"])).code).toBe(EXIT.ok);
 
     const ok = await cli(["check", "--dir", "my-talk", "--json"]);
     expect(ok.code).toBe(EXIT.ok);

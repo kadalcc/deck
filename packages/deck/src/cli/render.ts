@@ -19,8 +19,11 @@ import { MissingDependencyError, runVite, spawnVite } from "./vite.ts";
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-// oxlint-disable-next-line no-control-regex -- terminal colour codes in Vite's output
+// oxlint-disable-next-line no-control-regex -- terminal colour codes in Vite's and Playwright's output
 const ANSI = /\u001b\[[0-9;]*m/g;
+
+/** Text without terminal colour codes (Playwright's errors carry them). */
+export const stripAnsi = (s: string): string => s.replace(ANSI, "");
 
 export async function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -54,6 +57,10 @@ export class DeckServer {
         ? ["--port", String(port), "--strictPort", "--host", "127.0.0.1"]
         : ["preview", "--port", String(port), "--strictPort", "--host", "127.0.0.1"];
     const child = spawnVite(dir, args, "pipe");
+    // However we exit, the server goes with us (an orphaned Vite would hold its port forever).
+    const reap = () => child.kill();
+    process.once("exit", reap);
+    child.once("exit", () => process.off("exit", reap));
     let output = "";
     const url = await new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -125,18 +132,28 @@ interface PageLike {
 
 /** Playwright from the deck's own node_modules first, then from wherever we were installed. */
 export async function loadPlaywright(dir: string): Promise<PlaywrightLike> {
+  // `require.resolve` finds Playwright's CommonJS entry; Node's `import()` of that gives a
+  // namespace whose API sits on `default` (Bun hoists it), so take whichever has `chromium`.
+  const api = (mod: unknown): PlaywrightLike | null => {
+    const m = mod as { chromium?: unknown; default?: { chromium?: unknown } };
+    return (m?.chromium ? m : m?.default?.chromium ? m.default : null) as PlaywrightLike | null;
+  };
   try {
     const path = createRequire(join(dir, "package.json")).resolve("playwright");
-    return (await import(pathToFileURL(path).href)) as PlaywrightLike;
+    const pw = api(await import(pathToFileURL(path).href));
+    if (pw) return pw;
   } catch {
-    try {
-      return (await import("playwright")) as unknown as PlaywrightLike;
-    } catch {
-      throw new MissingDependencyError(
-        "Rendering slides needs Playwright and Chromium. In the deck folder run: npm install -D playwright && npx playwright install chromium",
-      );
-    }
+    /* not in the deck; try our own */
   }
+  try {
+    const pw = api(await import("playwright"));
+    if (pw) return pw;
+  } catch {
+    /* not installed */
+  }
+  throw new MissingDependencyError(
+    "Rendering slides needs Playwright and Chromium. In the deck folder run: npm install -D playwright && npx playwright install chromium",
+  );
 }
 
 export interface RenderRequest {
@@ -173,8 +190,20 @@ export class SlideRenderer {
     private readonly baseUrl: () => string,
   ) {}
 
+  /** One browser per renderer: concurrent renders wait for the same launch. */
+  private launching: Promise<BrowserLike> | null = null;
+
   private async open(): Promise<BrowserLike> {
     if (this.browser?.isConnected()) return this.browser;
+    if (!this.launching) {
+      this.launching = this.launch().finally(() => {
+        this.launching = null;
+      });
+    }
+    return this.launching;
+  }
+
+  private async launch(): Promise<BrowserLike> {
     const pw = await loadPlaywright(this.dir);
     try {
       this.browser = await pw.chromium.launch({
@@ -186,12 +215,12 @@ export class SlideRenderer {
         ],
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = stripAnsi(e instanceof Error ? e.message : String(e));
       if (/Executable doesn't exist|playwright install/i.test(msg))
         throw new MissingDependencyError(
           "Playwright is installed but Chromium is not. Run: npx playwright install chromium",
         );
-      throw e;
+      throw new Error(msg);
     }
     return this.browser;
   }
@@ -280,13 +309,14 @@ export class SlideRenderer {
           png,
         });
       }
-      return { shots, missing, errors: [...new Set(errors)].slice(0, 20) };
+      return { shots, missing, errors: [...new Set(errors.map(stripAnsi))].slice(0, 20) };
     } finally {
       await context.close();
     }
   }
 
   async close(): Promise<void> {
+    await this.launching?.catch(() => {});
     const b = this.browser;
     this.browser = null;
     if (b?.isConnected()) await b.close();

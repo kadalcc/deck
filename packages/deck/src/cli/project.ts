@@ -2,11 +2,12 @@ import {
   existsSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   renameSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import type { DeckFiles, EditResult, LintResult } from "../authoring/index.ts";
 
@@ -28,18 +29,50 @@ export interface DeckProject {
   entry: string;
   files: DeckFiles;
   exists: (path: string) => boolean;
+  /** Set when reads and writes are confined to the deck folder. */
+  confined: boolean;
 }
 
-export function openProject(dir: string, { mustExist = true } = {}): DeckProject {
+/** A path tried to leave the folder a tool is confined to. */
+export class OutsideError extends Error {
+  override name = "OutsideError";
+}
+
+/** The real path of `p`, or of its nearest existing ancestor joined with the rest. */
+export function realish(p: string): string {
+  const abs = resolve(p);
+  try {
+    return realpathSync(abs);
+  } catch {
+    const parent = dirname(abs);
+    return parent === abs ? abs : join(realish(parent), basename(abs));
+  }
+}
+
+/** Is `p` (after symlinks) inside `root`? */
+export function isInside(root: string, p: string): boolean {
+  const r = realish(root);
+  const q = realish(p);
+  const rel = relative(r, q);
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+export function openProject(
+  dir: string,
+  { mustExist = true, confine = false }: { mustExist?: boolean; confine?: boolean } = {},
+): DeckProject {
   const root = resolve(dir);
   const entry = join(root, "deck.mdx");
   if (mustExist && !existsSync(entry)) throw new NoDeckError(root);
+  const allowed = (p: string) => !confine || isInside(root, p);
   return {
     dir: root,
     entry,
+    confined: confine,
     files: {
       entry,
       read: (p) => {
+        if (!allowed(p)) return null;
         try {
           return readFileSync(p, "utf8");
         } catch {
@@ -48,6 +81,7 @@ export function openProject(dir: string, { mustExist = true } = {}): DeckProject
       },
     },
     exists: (p) => {
+      if (!allowed(p)) return false;
       try {
         return statSync(p).isFile();
       } catch {
@@ -57,10 +91,20 @@ export function openProject(dir: string, { mustExist = true } = {}): DeckProject
   };
 }
 
-/** Save an edit's files (write to a temp file, then rename, so a reader never sees half). */
-export function saveEdit(result: EditResult): string[] {
+/**
+ * Save an edit's files (write to a temp file, then rename, so a reader never sees half). A
+ * confined project refuses any file outside its folder before writing anything.
+ */
+export function saveEdit(result: EditResult, project?: DeckProject): string[] {
+  const files = Object.entries(result.files);
+  if (project?.confined)
+    for (const [file] of files)
+      if (!isInside(project.dir, file))
+        throw new OutsideError(
+          `Refusing to write ${file}: it is outside the deck folder ${project.dir}.`,
+        );
   const written: string[] = [];
-  for (const [file, text] of Object.entries(result.files)) {
+  for (const [file, text] of files) {
     const tmp = `${file}.kadal-deck-${process.pid}.tmp`;
     writeFileSync(tmp, text);
     renameSync(tmp, file);

@@ -25,7 +25,6 @@ import { z } from "zod";
 import {
   type EditResult,
   addSlide,
-  deckOnlyKeys,
   findSlide,
   formatDiagnostics,
   moveSlide,
@@ -48,13 +47,26 @@ import {
   sectionMarkdown,
 } from "../catalog/index.ts";
 import { loadCredentials } from "../cli/host.ts";
-import { type DeckProject, checkProject, openProject, rel, saveEdit } from "../cli/project.ts";
-import { DeckServer, SlideRenderer } from "../cli/render.ts";
+import {
+  type DeckProject,
+  OutsideError,
+  checkProject,
+  isInside,
+  openProject,
+  rel,
+  saveEdit,
+} from "../cli/project.ts";
+import { DeckServer, SlideRenderer, stripAnsi } from "../cli/render.ts";
 import { MissingDependencyError, keepStdoutClean, runVite } from "../cli/vite.ts";
 
 export interface McpOptions {
   /** The folder relative `dir` arguments resolve against, and the default deck. */
   dir: string;
+  /**
+   * Let tools read and write outside `dir` (other folders, includes that leave the deck). Off by
+   * default: an agent works inside the folder the server was started for.
+   */
+  allowOutside?: boolean;
 }
 
 type Content = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
@@ -125,34 +137,62 @@ export function createServer(options: McpOptions): {
   close: () => Promise<void>;
 } {
   const base = resolve(options.dir);
-  const live = new Map<string, { server: DeckServer | null; renderer: SlideRenderer | null }>();
+  const confine = !options.allowOutside;
+  interface Live {
+    server: Promise<DeckServer> | null;
+    renderer: SlideRenderer | null;
+    url: string;
+  }
+  const live = new Map<string, Live>();
 
-  const pathOf = (dir?: string) => (dir ? (isAbsolute(dir) ? dir : resolve(base, dir)) : base);
-  const project = (dir?: string): DeckProject => openProject(pathOf(dir));
-  const deckKeys = deckOnlyKeys(
-    catalog.deckFrontmatter.map((k) => k.name),
-    catalog.slideFrontmatter.map((k) => k.name),
-  );
+  /** A tool's `dir`, resolved — and, unless the server allows it, kept inside its folder. */
+  const pathOf = (dir?: string) => {
+    const p = dir ? (isAbsolute(dir) ? dir : resolve(base, dir)) : base;
+    if (confine && !isInside(base, p))
+      throw new OutsideError(
+        `${p} is outside the folder this server works in (${base}). Start the server there, or with --allow-outside.`,
+      );
+    return p;
+  };
+  const project = (dir?: string): DeckProject => openProject(pathOf(dir), { confine });
 
+  /**
+   * The deck's dev server, started once and shared: concurrent calls wait for the same start, and
+   * a server that has died is started again.
+   */
   async function devServer(p: DeckProject): Promise<DeckServer> {
-    const entry = live.get(p.dir) ?? { server: null, renderer: null };
-    if (!entry.server?.alive) {
-      entry.server = await DeckServer.start(p.dir, "dev");
+    let entry = live.get(p.dir);
+    if (!entry) {
+      entry = { server: null, renderer: null, url: "" };
       live.set(p.dir, entry);
     }
-    return entry.server;
+    if (entry.server) {
+      const running = await entry.server.catch(() => null);
+      if (running?.alive) return running;
+    }
+    const starting = DeckServer.start(p.dir, "dev");
+    entry.server = starting;
+    try {
+      const s = await starting;
+      entry.url = s.url;
+      return s;
+    } catch (e) {
+      if (entry.server === starting) entry.server = null;
+      throw e;
+    }
   }
 
   async function renderer(p: DeckProject): Promise<SlideRenderer> {
-    const server = await devServer(p);
+    await devServer(p);
     const entry = live.get(p.dir)!;
-    entry.renderer ??= new SlideRenderer(p.dir, () => server.url);
+    // The URL is read at each render, so a restarted server is picked up.
+    entry.renderer ??= new SlideRenderer(p.dir, () => live.get(p.dir)?.url ?? "");
     return entry.renderer;
   }
 
   /** Save an edit and lint the deck, reporting what concerns the edited slide. */
   async function afterEdit(p: DeckProject, result: EditResult, verb: string): Promise<ToolResult> {
-    const written = saveEdit(result);
+    const written = saveEdit(result, p);
     const check = await checkProject(p);
     const outline = outlineDeck(p.files);
     const slide = result.index !== null ? (outline.slides[result.index] ?? null) : null;
@@ -172,7 +212,9 @@ export function createServer(options: McpOptions): {
       ...result.notes.map((n) => `note: ${n}`),
       own.length
         ? formatDiagnostics({ ...check, diagnostics: own }, (f) => rel(p, f))
-        : "No problems on this slide.",
+        : result.index === null
+          ? "No problems."
+          : "No problems on this slide.",
       check.errors && own.length !== check.diagnostics.length
         ? `The deck has ${check.errors} error(s) elsewhere; run deck_check.`
         : "",
@@ -186,7 +228,7 @@ export function createServer(options: McpOptions): {
       try {
         return await fn(args);
       } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
+        const message = stripAnsi(e instanceof Error ? e.message : String(e));
         return failure(
           message,
           e instanceof MissingDependencyError ? { missingDependency: true } : {},
@@ -604,17 +646,12 @@ export function createServer(options: McpOptions): {
         const p = project(a.dir);
         return afterEdit(
           p,
-          updateSlide(
-            p.files,
-            a.slide,
-            {
-              content: a.content,
-              frontmatter: a.frontmatter,
-              patch: a.patch,
-              keepNotes: a.keepNotes,
-            },
-            deckKeys,
-          ),
+          updateSlide(p.files, a.slide, {
+            content: a.content,
+            frontmatter: a.frontmatter,
+            patch: a.patch,
+            keepNotes: a.keepNotes,
+          }),
           "Updated",
         );
       },
@@ -697,7 +734,11 @@ export function createServer(options: McpOptions): {
     },
     guard(async ({ dir, patch }: { dir?: string; patch: Record<string, unknown> }) => {
       const p = project(dir);
-      return afterEdit(p, updateHeadmatter(p.files, patch), "Updated the headmatter of");
+      return afterEdit(
+        p,
+        updateHeadmatter(p.files, patch),
+        "Updated the deck settings (headmatter)",
+      );
     }),
   );
 
@@ -824,7 +865,7 @@ export function createServer(options: McpOptions): {
       if (stop) {
         const entry = live.get(p.dir);
         await entry?.renderer?.close();
-        entry?.server?.stop();
+        (await entry?.server?.catch(() => null))?.stop();
         live.delete(p.dir);
         return ok(
           { running: false, url: null, presenter: null, audience: null },
@@ -918,6 +959,10 @@ export function createServer(options: McpOptions): {
         out?: string;
       }) => {
         const p = project(dir);
+        if (out && confine && !isInside(p.dir, resolve(p.dir, out)))
+          throw new OutsideError(
+            `"${out}" is outside the deck folder; export into a folder inside it.`,
+          );
         const f = new Set(formats?.length ? formats : ["pdf"]);
         const { runExport } = await import("../export/run.ts");
         const args = [
@@ -1143,7 +1188,7 @@ export function createServer(options: McpOptions): {
   async function close() {
     for (const entry of live.values()) {
       await entry.renderer?.close().catch(() => {});
-      entry.server?.stop();
+      (await entry.server?.catch(() => null))?.stop();
     }
     live.clear();
   }

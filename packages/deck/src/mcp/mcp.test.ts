@@ -1,5 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -41,7 +49,10 @@ type Result = {
   structuredContent?: Record<string, unknown>;
 };
 const call = async (name: string, args: Record<string, unknown> = {}) =>
-  (await client.callTool({ name, arguments: args })) as unknown as Result;
+  // Generous: under a loaded CI box a first render starts Vite and Chromium.
+  (await client.callTool({ name, arguments: args }, undefined, {
+    timeout: 240_000,
+  })) as unknown as Result;
 const text = (r: Result) =>
   r.content
     .filter((c) => c.type === "text")
@@ -198,16 +209,16 @@ describe("project and edits", () => {
 
   test("deck_create scaffolds a deck the other tools can use", async () => {
     const r = await call("deck_create", {
-      dir: join(work, "fresh"),
+      dir: join(deck, "talks", "fresh"),
       title: "Fresh talk",
       install: false,
     });
     expect(r.structuredContent).toMatchObject({ ok: true, installed: false, title: "Fresh talk" });
-    const o = await call("deck_outline", { dir: join(work, "fresh") });
+    const o = await call("deck_outline", { dir: join(deck, "talks", "fresh") });
     expect(o.structuredContent!.title).toBe("Fresh talk");
-    expect((await call("deck_create", { dir: join(work, "fresh"), install: false })).isError).toBe(
-      true,
-    );
+    expect(
+      (await call("deck_create", { dir: join(deck, "talks", "fresh"), install: false })).isError,
+    ).toBe(true);
   });
 
   test("deck_publish without a login says how to sign in", async () => {
@@ -224,13 +235,13 @@ describe.if(canBuild)("serving and building", () => {
     expect(url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
     expect((await fetch(url)).ok).toBe(true);
     expect((await call("deck_preview", { stop: true })).structuredContent!.running).toBe(false);
-  }, 60_000);
+  }, 240_000);
 
   test("deck_build writes dist/", async () => {
     const r = await call("deck_build");
     expect(r.isError, text(r)).toBeFalsy();
     expect(existsSync(join(deck, "dist", "index.html"))).toBe(true);
-  }, 120_000);
+  }, 240_000);
 });
 
 describe.if(canBuild && canRender)("seeing it", () => {
@@ -253,7 +264,7 @@ describe.if(canBuild && canRender)("seeing it", () => {
     await call("slide_update", { slide: 0, content: "# Changed" });
     const again = await call("slide_render", { slides: [0] });
     expect(again.content.filter((c) => c.type === "image").length).toBe(1);
-  }, 120_000);
+  }, 300_000);
 
   test("deck_export writes a PDF", async () => {
     const r = await call("deck_export", { formats: ["pdf"] });
@@ -261,5 +272,59 @@ describe.if(canBuild && canRender)("seeing it", () => {
     const files = r.structuredContent!.files as Array<{ kind: string; path: string }>;
     expect(files.map((f) => f.kind)).toEqual(["pdf"]);
     expect(readFileSync(files[0]!.path).subarray(0, 4).toString()).toBe("%PDF");
-  }, 180_000);
+  }, 300_000);
+});
+
+describe("review regressions (PR #6)", () => {
+  test("tools stay inside the server's folder", async () => {
+    expect(text(await call("deck_outline", { dir: "/etc" }))).toMatch(/outside the folder/);
+    expect(
+      (await call("deck_create", { dir: join(work, "elsewhere"), install: false })).isError,
+    ).toBe(true);
+    expect(text(await call("deck_export", { out: "../escaped" }))).toMatch(
+      /outside the deck folder/,
+    );
+
+    // An include that leaves the deck is neither read nor written.
+    const original = deckText();
+    writeFileSync(join(work, "outside.mdx"), "# Outside\n");
+    writeFileSync(join(deck, "deck.mdx"), `${original}\n---\nsrc: ../outside.mdx\n---\n`);
+    try {
+      const check = await call("deck_check");
+      expect(
+        (check.structuredContent!.diagnostics as Array<{ code: string }>).map((d) => d.code),
+      ).toContain("include-outside");
+      const edit = await call("slide_update", { slide: 1, content: "## Changed" });
+      expect(edit.isError).toBe(true);
+      expect(readFileSync(join(work, "outside.mdx"), "utf8")).toBe("# Outside\n");
+    } finally {
+      writeFileSync(join(deck, "deck.mdx"), original);
+    }
+  });
+
+  test("a refused edit says why and writes nothing", async () => {
+    const before = deckText();
+    const r = await call("slide_update", {
+      slide: 1,
+      content: "## Unclosed\n\n```js\nconst a = 1",
+    });
+    expect(r.isError).toBe(true);
+    expect(text(r)).toMatch(/never closes/);
+    expect(deckText()).toBe(before);
+  });
+});
+
+describe.if(canBuild)("the dev server is shared", () => {
+  test("concurrent calls start one server; a stopped one is started again", async () => {
+    const [a, b] = await Promise.all([call("deck_preview"), call("deck_preview")]);
+    expect(a.structuredContent!.url).toBe(b.structuredContent!.url);
+    await call("deck_preview", { stop: true });
+    if (canRender) {
+      const r = await call("slide_render", { slides: [0], width: 320 });
+      expect(r.isError, text(r)).toBeFalsy();
+    }
+    const again = await call("deck_preview");
+    expect((await fetch(again.structuredContent!.url as string)).ok).toBe(true);
+    await call("deck_preview", { stop: true });
+  }, 300_000);
 });
