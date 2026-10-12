@@ -1,6 +1,7 @@
 import YAML from "yaml";
 
-import type { RawSlide } from "../compiler/split.ts";
+import { catalog } from "../catalog/index.ts";
+import { type RawSlide, type SplitResult, fencedRanges, notesBlocks } from "../compiler/split.ts";
 import { type DeckFiles, type SlideRef, findSlide, readDeck } from "./source.ts";
 
 /**
@@ -10,13 +11,18 @@ import { type DeckFiles, type SlideRef, findSlide, readDeck } from "./source.ts"
  *
  * Every operation finds the slide through `splitDeck`'s line ranges and rewrites only those lines
  * of the one file the slide lives in (deck.mdx, or a file it includes with `src:`), so every
- * other byte — comments, spacing, other slides — stays exactly as it was. Frontmatter is edited
- * with YAML's document model, which keeps comments and key order. Each operation re-splits the
- * result and refuses to return text that no longer parses.
+ * other byte — comments, spacing, line endings, other slides — stays exactly as it was.
+ * Frontmatter is edited with YAML's document model, which keeps comments and key order.
+ *
+ * Two guards make that a promise rather than a hope. Input that would change the deck's
+ * structure (a `---` line in a body, an unclosed code fence, a `</Notes>` in notes) is refused
+ * up front. And after every operation the result is split again and checked: the slide count is
+ * what the operation means (n, n+1, n−1) and every slide it did not touch reads exactly as
+ * before. If not, an EditError is thrown and nothing is returned for saving.
  *
  * The first slide is special, as in Slidev: the YAML at the top of the file (the headmatter)
- * configures the whole deck AND is that slide's frontmatter. Edits to the first slide's
- * frontmatter therefore edit the headmatter; a full replace keeps the deck-level keys.
+ * configures the whole deck AND is that slide's frontmatter. Editing the first slide's
+ * frontmatter edits the headmatter; a full replace keeps every deck setting it does not name.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -33,34 +39,145 @@ export interface FrontmatterPatch {
   [key: string]: unknown;
 }
 
-const NOTES_BLOCK = /\n*[ \t]*<Notes(?:\s[^>]*)?>[\s\S]*?<\/Notes>[ \t]*/g;
+/** A refused edit: the input would have changed more than it says. Nothing was written. */
+export class EditError extends Error {
+  override name = "EditError";
+}
+
+const DECK_KEYS = new Set(catalog.deckFrontmatter.map((k) => k.name));
+const SLIDE_KEYS = new Set(catalog.slideFrontmatter.map((k) => k.name));
+const SEPARATOR = /^-{3,}\s*$/;
+
+/** Keys that configure the deck rather than a slide (they live only in the headmatter). */
+export function deckOnlyKeys(deckKeys: Iterable<string>, slideKeys: Iterable<string>): Set<string> {
+  const slide = new Set(slideKeys);
+  return new Set([...deckKeys].filter((k) => !slide.has(k)));
+}
+
+const pick = (o: Record<string, unknown>, keys: Set<string>) =>
+  Object.fromEntries(Object.entries(o).filter(([k]) => keys.has(k)));
+
+/** Refuse text that would change the deck's structure where it lands. */
+function assertBody(text: string, what: string) {
+  let fence: string | null = null;
+  text.split(/\r?\n/).forEach((line, i) => {
+    const f = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (f) {
+      if (!fence) fence = f[1]!;
+      else if (f[1]![0] === fence[0] && f[1]!.length >= fence.length) fence = null;
+      return;
+    }
+    if (!fence && SEPARATOR.test(line))
+      throw new EditError(
+        `${what} line ${i + 1} is "${line.trim()}", which would start a new slide. For a horizontal rule write *** (or <hr />); to add a slide, add one.`,
+      );
+  });
+  if (fence)
+    throw new EditError(
+      `${what} opens a code fence (${fence}) it never closes, which would swallow every slide after it. Close the fence.`,
+    );
+  const fences = fencedRanges(text);
+  const outside = (re: RegExp) =>
+    [...text.matchAll(re)].filter((m) => !fences.some(([a, b]) => m.index! >= a && m.index! < b))
+      .length;
+  if (outside(/<Notes\b/g) !== outside(/<\/Notes>/g))
+    throw new EditError(
+      `${what} has an unbalanced <Notes> tag. Put speaker notes in the notes field instead.`,
+    );
+}
+
+function assertNotes(notes: string) {
+  if (/<\/?Notes\b/.test(notes))
+    throw new EditError(
+      "Notes must not contain <Notes> or </Notes> tags; give just the text of the notes.",
+    );
+  assertBody(notes, "The notes'");
+}
+
+/** A file as lines, each with its own line ending, so an edit never rewrites another line's. */
+class Lines {
+  readonly lines: string[] = [];
+  readonly eols: string[] = [];
+  constructor(text: string) {
+    const parts = text.split(/(\r\n|\n)/);
+    for (let i = 0; i < parts.length; i += 2) {
+      this.lines.push(parts[i]!);
+      this.eols.push(parts[i + 1] ?? "");
+    }
+  }
+  /** The ending most lines use; new lines get it. */
+  get eol(): string {
+    const crlf = this.eols.filter((e) => e === "\r\n").length;
+    return crlf > this.eols.filter((e) => e === "\n").length ? "\r\n" : "\n";
+  }
+  splice(start: number, remove: number, insert: string[]) {
+    const eol = this.eol;
+    const atEnd = start + remove >= this.lines.length;
+    // Appending after a last line that had no ending: it gets one now.
+    if (start >= this.lines.length && start > 0 && this.eols[start - 1] === "")
+      this.eols[start - 1] = eol;
+    const endings = insert.map((_, i) => (atEnd && i === insert.length - 1 ? "" : eol));
+    this.lines.splice(start, remove, ...insert);
+    this.eols.splice(start, remove, ...endings);
+    // Cutting the tail: the line that is now last ends the file, as the cut one did.
+    if (atEnd && insert.length === 0 && this.lines.length) this.eols[this.lines.length - 1] = "";
+  }
+  text(): string {
+    return this.lines.map((l, i) => l + this.eols[i]).join("");
+  }
+}
+
+interface Expect {
+  count: number;
+  /** [old index, new index, compare frontmatter too?] for every slide the edit must not touch. */
+  same: Array<[number, number, boolean]>;
+}
 
 class Doc {
   readonly texts = new Map<string, string>();
-  constructor(private readonly base: DeckFiles) {}
+  readonly before: SplitResult;
+  constructor(private readonly base: DeckFiles) {
+    this.before = this.deck();
+  }
   read = (path: string): string | null => this.texts.get(path) ?? this.base.read(path);
   files(): DeckFiles {
     return { entry: this.base.entry, read: this.read };
   }
-  lines(file: string): { lines: string[]; eol: string } {
+  lines(file: string): Lines {
     const text = this.read(file);
-    if (text === null) throw new Error(`${file} does not exist`);
-    return { lines: text.split(/\r?\n/), eol: text.includes("\r\n") ? "\r\n" : "\n" };
+    if (text === null) throw new EditError(`${file} does not exist`);
+    return new Lines(text);
   }
   splice(file: string, start: number, remove: number, insert: string[]) {
-    const { lines, eol } = this.lines(file);
-    lines.splice(start, remove, ...insert);
-    this.texts.set(file, lines.join(eol));
+    const l = this.lines(file);
+    l.splice(start, remove, insert);
+    this.texts.set(file, l.text());
   }
   deck() {
     const d = readDeck(this.files());
     if (d.problems.length)
-      throw new Error(d.problems.map((p) => `${p.file}:${p.line}: ${p.message}`).join("\n"));
+      throw new EditError(d.problems.map((p) => `${p.file}:${p.line}: ${p.message}`).join("\n"));
     return d;
   }
-  result(index: number | null, notes: string[] = []): EditResult {
-    // Refuse to hand back a deck that no longer splits.
-    this.deck();
+  /** Check the edit did what it says and nothing else, then hand back the changed files. */
+  result(index: number | null, notes: string[], expect: Expect): EditResult {
+    const after = this.deck();
+    if (after.slides.length !== expect.count)
+      throw new EditError(
+        `This edit would leave ${after.slides.length} slides instead of ${expect.count}, so it was not made. Check the content for separators, fences or frontmatter-like lines.`,
+      );
+    for (const [o, n, fm] of expect.same) {
+      const a = this.before.slides[o]!;
+      const b = after.slides[n]!;
+      const same =
+        a.content === b.content &&
+        a.notes === b.notes &&
+        (!fm || JSON.stringify(a.frontmatter) === JSON.stringify(b.frontmatter));
+      if (!same)
+        throw new EditError(
+          `This edit would also change slide ${o} ("${a.content.split("\n")[0]!.slice(0, 50)}"), so it was not made.`,
+        );
+    }
     return { files: Object.fromEntries(this.texts), index, notes };
   }
 }
@@ -68,16 +185,27 @@ class Doc {
 function require(slides: RawSlide[], ref: SlideRef): RawSlide {
   const s = findSlide(slides, ref);
   if (!s)
-    throw new Error(
+    throw new EditError(
       `No slide ${JSON.stringify(ref)} (the deck has ${slides.length}: use an index 0–${slides.length - 1}, "h.v", or an id)`,
     );
   return s;
 }
 
+/** Every slide but `skip`, mapped to its index after the edit, compared in full. */
+const untouched = (
+  n: number,
+  skip: number,
+  map: (i: number) => number = (i) => i,
+): Expect["same"] =>
+  Array.from({ length: n }, (_, i) => i)
+    .filter((i) => i !== skip)
+    .map((i) => [i, map(i), true]);
+
 /** Content lines for a body: a blank line before (unless at the very top), one after. */
 function bodyLines(content: string, top: boolean): string[] {
   const text = content.replace(/\r\n/g, "\n").replace(/^\n+|\s+$/g, "");
-  const lines = text ? text.split("\n") : [];
+  if (!text) return top ? [] : [""];
+  const lines = text.split("\n");
   return top ? [...lines, ""] : ["", ...lines, ""];
 }
 
@@ -88,18 +216,23 @@ function yamlLines(value: Record<string, unknown>): string[] {
 
 /** The slide's body as written (notes included), from its own file. */
 function rawBody(doc: Doc, s: RawSlide): string {
-  const { lines } = doc.lines(s.range.file);
-  return lines.slice(s.range.body, s.range.end).join("\n");
+  return doc.lines(s.range.file).lines.slice(s.range.body, s.range.end).join("\n");
 }
 
-function notesOf(body: string): string[] {
-  return [...body.matchAll(NOTES_BLOCK)].map((m) => m[0].trim());
-}
-
-/** Keys that configure the deck rather than a slide (they live only in the headmatter). */
-export function deckOnlyKeys(deckKeys: Iterable<string>, slideKeys: Iterable<string>): Set<string> {
-  const slide = new Set(slideKeys);
-  return new Set([...deckKeys].filter((k) => !slide.has(k)));
+/** A body without its notes blocks (those outside code fences), and the blocks verbatim. */
+function withoutNotes(body: string): { body: string; notes: string[] } {
+  const blocks = notesBlocks(body);
+  let out = "";
+  let at = 0;
+  for (const b of blocks) {
+    out += body.slice(at, b.start).replace(/[ \t]*$/, "");
+    at = b.end;
+  }
+  out += body.slice(at);
+  return {
+    body: out.replace(/\n{3,}/g, "\n\n"),
+    notes: blocks.map((b) => body.slice(b.start, b.end)),
+  };
 }
 
 function writeFrontmatter(
@@ -110,7 +243,7 @@ function writeFrontmatter(
   const r = s.range;
   const { lines } = doc.lines(r.file);
   if (r.frontmatter) {
-    const yamlStart = r.head ? r.frontmatter.open + 1 : r.frontmatter.open + 1;
+    const yamlStart = r.frontmatter.open + 1;
     const current = YAML.parseDocument(lines.slice(yamlStart, r.frontmatter.close).join("\n"));
     const next = edit(current);
     const empty = !next || !YAML.isMap(next.contents) || next.contents.items.length === 0;
@@ -149,7 +282,7 @@ function patchDocument(current: YAML.Document | null, patch: FrontmatterPatch): 
 export interface SlideUpdate {
   /** New MDX body. Speaker notes already on the slide are kept unless this has its own <Notes>. */
   content?: string;
-  /** Replace the frontmatter entirely (on the first slide, deck-level keys are kept). */
+  /** Replace the frontmatter (on the first slide, deck settings it does not name are kept). */
   frontmatter?: Record<string, unknown>;
   /** Merge into the frontmatter; a null value deletes that key. */
   patch?: FrontmatterPatch;
@@ -158,25 +291,31 @@ export interface SlideUpdate {
 }
 
 /**
- * Update one slide's body and/or frontmatter. `deckKeys` (names that are deck-level only) keeps
- * the headmatter's deck settings when the first slide's frontmatter is replaced.
+ * Update one slide's body and/or frontmatter. On the first slide (whose frontmatter is the
+ * headmatter) a `frontmatter` replace keeps every deck setting (`deckKeys`, by default every
+ * deck option the engine knows) that the replacement does not name.
  */
 export function updateSlide(
   files: DeckFiles,
   ref: SlideRef,
   update: SlideUpdate,
-  deckKeys: Set<string> = new Set(),
+  deckKeys: Set<string> = DECK_KEYS,
 ): EditResult {
   const doc = new Doc(files);
   const notes: string[] = [];
-  let s = require(doc.deck().slides, ref);
+  let s = require(doc.before.slides, ref);
   const index = s.index;
+  const n = doc.before.slides.length;
   if (update.content !== undefined) {
+    assertBody(update.content, "The content");
     let content = update.content;
-    if (update.keepNotes !== false && !/<Notes\b/.test(content)) {
-      const old = notesOf(rawBody(doc, s));
+    if (update.keepNotes !== false && !notesBlocks(content).length) {
+      const old = withoutNotes(rawBody(doc, s)).notes;
       if (old.length) content = `${content.replace(/\s+$/, "")}\n\n${old.join("\n\n")}`;
     }
+    const fmAfter = update.frontmatter ?? { ...s.frontmatter, ...update.patch };
+    if (!content.trim() && !Object.values(fmAfter).some((v) => v !== null && v !== undefined))
+      throw new EditError("An empty slide needs frontmatter (or remove it with slide_remove).");
     doc.splice(
       s.range.file,
       s.range.body,
@@ -186,72 +325,71 @@ export function updateSlide(
     s = require(doc.deck().slides, index);
   }
   if (update.frontmatter || update.patch) {
-    if (s.range.includedBy && Object.keys(update.patch ?? update.frontmatter ?? {}).length)
+    if (s.range.includedBy)
       notes.push(`Slide ${index} lives in ${s.range.file}; its frontmatter was edited there.`);
     writeFrontmatter(doc, s, (current) => {
       let d = current;
       if (update.frontmatter) {
-        const keep: Record<string, unknown> = {};
-        if (s.range.head && current) {
-          const now = (current.toJS() ?? {}) as Record<string, unknown>;
-          for (const [k, v] of Object.entries(now)) if (deckKeys.has(k)) keep[k] = v;
-        }
-        const replacement = { ...keep, ...update.frontmatter };
-        // Keep comments and order for keys that stay; drop the rest.
-        d = current ?? new YAML.Document({});
-        const existing = (d.toJS() ?? {}) as Record<string, unknown>;
-        const patch: FrontmatterPatch = { ...replacement };
-        for (const k of Object.keys(existing)) if (!(k in replacement)) patch[k] = null;
-        d = patchDocument(d, patch);
+        const existing = (current?.toJS() ?? {}) as Record<string, unknown>;
+        const patch: FrontmatterPatch = { ...update.frontmatter };
+        // Keys that stay keep their comments and order; the rest go — except deck settings.
+        for (const k of Object.keys(existing))
+          if (!(k in update.frontmatter) && !(s.range.head && deckKeys.has(k))) patch[k] = null;
+        d = patchDocument(current, patch);
       }
       if (update.patch) d = patchDocument(d, update.patch);
       return d;
     });
   }
-  return doc.result(index, notes);
+  return doc.result(index, notes, { count: n, same: untouched(n, index) });
 }
 
 /** Set (or with null/"" remove) a slide's speaker notes. `[click]` markers pace them. */
 export function setNotes(files: DeckFiles, ref: SlideRef, notes: string | null): EditResult {
   const doc = new Doc(files);
-  const s = require(doc.deck().slides, ref);
-  const body = rawBody(doc, s).replace(NOTES_BLOCK, "").replace(/\s+$/, "");
+  const s = require(doc.before.slides, ref);
+  if (notes) assertNotes(notes);
+  const body = withoutNotes(rawBody(doc, s)).body.replace(/\s+$/, "");
   const next = notes?.trim() ? `${body}\n\n<Notes>\n${notes.trim()}\n</Notes>` : body;
+  if (!next.trim() && !s.range.frontmatter)
+    throw new EditError("Removing the notes would leave an empty slide; remove the slide instead.");
   doc.splice(
     s.range.file,
     s.range.body,
     s.range.end - s.range.body,
     bodyLines(next, s.range.head && !s.range.frontmatter),
   );
-  return doc.result(s.index);
+  const n = doc.before.slides.length;
+  return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
 }
 
 /** Merge into the deck's headmatter (null deletes a key). */
 export function updateHeadmatter(files: DeckFiles, patch: FrontmatterPatch): EditResult {
   const doc = new Doc(files);
-  const { lines, eol } = doc.lines(files.entry);
-  const deck = doc.deck();
-  const first = deck.slides[0];
-  if (first && first.range.head && first.range.file === files.entry) {
-    writeFrontmatter(doc, first, (current) => patchDocument(current, patch));
-    return doc.result(null);
+  const n = doc.before.slides.length;
+  const first = doc.before.slides[0];
+  const headSlide = !!first && first.range.head && first.range.file === files.entry;
+  const expect = { count: n, same: untouched(n, headSlide ? 0 : -1) };
+  if (headSlide) {
+    writeFrontmatter(doc, first!, (current) => patchDocument(current, patch));
+    return doc.result(null, [], expect);
   }
   // No slide comes from the top piece (an empty body, or an empty file): edit the fence directly.
+  const { lines } = doc.lines(files.entry);
   let at = 0;
   while (at < lines.length && !lines[at]!.trim()) at++;
-  if (lines[at] === "---") {
+  if (lines[at] === "---" && Object.keys(doc.before.headmatter).length) {
     let close = at + 1;
     while (close < lines.length && lines[close] !== "---") close++;
     const current = YAML.parseDocument(lines.slice(at + 1, close).join("\n"));
     const next = patchDocument(current, patch).toString({ lineWidth: 0 }).replace(/\n+$/, "");
-    if (close < lines.length && deck.headmatter && Object.keys(deck.headmatter).length) {
-      doc.splice(files.entry, at + 1, close - at - 1, next.split("\n"));
-      return doc.result(null);
-    }
+    doc.splice(files.entry, at + 1, close - at - 1, next.split("\n"));
+    return doc.result(null, [], expect);
   }
   const yaml = yamlLines(Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== null)));
-  doc.texts.set(files.entry, ["---", ...yaml, "---", "", ...lines].join(eol));
-  return doc.result(null);
+  if (yaml.length)
+    doc.splice(files.entry, 0, 0, ["---", ...yaml, "---", ...(lines.join("").trim() ? [""] : [])]);
+  return doc.result(null, [], expect);
 }
 
 export interface NewSlide {
@@ -261,66 +399,72 @@ export interface NewSlide {
   notes?: string;
 }
 
-function pieceLines(slide: NewSlide, vertical: boolean): string[] {
-  const fm = yamlLines(slide.frontmatter ?? {});
+function withNotes(slide: NewSlide): string {
   let content = slide.content.replace(/\s+$/, "");
   if (slide.notes?.trim()) content += `\n\n<Notes>\n${slide.notes.trim()}\n</Notes>`;
+  return content;
+}
+
+function pieceLines(slide: NewSlide, vertical: boolean, yamlRaw?: string[]): string[] {
+  const fm = yamlRaw ?? yamlLines(slide.frontmatter ?? {});
   return [
     vertical ? "----" : "---",
     ...(fm.length ? [...fm, "---"] : []),
-    ...bodyLines(content, false),
+    ...bodyLines(withNotes(slide), false),
   ];
 }
 
-/** Where a new piece goes so that it becomes slide `at`: a file and a line to insert before. */
-function insertionPoint(
-  doc: Doc,
-  slides: RawSlide[],
-  at: number,
-): { file: string; line: number } | "top" | "end" {
-  if (at >= slides.length) return "end";
-  const target = slides[at]!;
-  const r = target.range;
-  if (r.head && r.file === doc.files().entry) return "top";
-  if (r.head && r.includedBy) return { file: r.includedBy.file, line: r.includedBy.start };
-  return { file: r.file, line: r.start };
-}
-
-function insertPiece(doc: Doc, at: number, lines: string[], slide: NewSlide): string[] {
+/** Insert a piece so it becomes slide `at`. */
+function insertPiece(doc: Doc, at: number, piece: string[], slide: NewSlide): string[] {
   const notes: string[] = [];
   const slides = doc.deck().slides;
-  const point = insertionPoint(doc, slides, Math.max(0, at));
-  if (point === "end") {
-    const entry = doc.files().entry;
-    const { lines: all } = doc.lines(entry);
-    while (all.length && !all[all.length - 1]!.trim()) all.pop();
-    doc.splice(entry, 0, Infinity, [...all, ...(all.length ? [""] : []), ...lines]);
+  const entry = doc.files().entry;
+  if (at >= slides.length) {
+    const l = doc.lines(entry);
+    let end = l.lines.length;
+    while (end > 0 && !l.lines[end - 1]!.trim()) end--;
+    doc.splice(entry, end, l.lines.length - end, [...(end ? [""] : []), ...piece]);
     return notes;
   }
-  if (point === "top") {
-    // The new slide becomes the title slide: its body goes right after the headmatter, and the
-    // old first slide follows behind a separator.
-    const first = slides[0]!;
-    let content = slide.content.replace(/\s+$/, "");
-    if (slide.notes?.trim()) content += `\n\n<Notes>\n${slide.notes.trim()}\n</Notes>`;
-    doc.splice(first.range.file, first.range.body, 0, [
-      ...bodyLines(content, !first.range.frontmatter),
-      "---",
+  const target = slides[at]!;
+  const r = target.range;
+  if (!(r.head && r.file === entry)) {
+    // Before the target's separator — or, for the first slide of an include, before the include.
+    if (r.head && r.includedBy) doc.splice(r.includedBy.file, r.includedBy.start, 0, piece);
+    else doc.splice(r.file, r.start, 0, piece);
+    return notes;
+  }
+  // The new slide goes before the slide at the top of the file.
+  const oldBody = rawBody(doc, target);
+  if (r.frontmatter) {
+    // The headmatter stays where it is, now followed by an empty body, so it configures the deck
+    // and is no slide's frontmatter; then the new slide; then the old first slide, which keeps
+    // the headmatter's slide keys (layout, background…) as its own frontmatter.
+    const keep = pick(target.frontmatter, SLIDE_KEYS);
+    doc.splice(r.file, r.body, r.end - r.body, [
+      "",
+      ...piece.map((l, i) => (i === 0 ? "---" : l)),
+      ...pieceLines({ content: oldBody }, false, yamlLines(keep)),
     ]);
-    if (slide.frontmatter && Object.keys(slide.frontmatter).length) {
-      const s0 = doc.deck().slides[0]!;
-      writeFrontmatter(doc, s0, (current) => patchDocument(current, slide.frontmatter!));
+    if (Object.keys(keep).length)
       notes.push(
-        "The first slide's frontmatter is the headmatter: the new slide's keys were merged into it.",
-      );
-    }
-    if (first.range.frontmatter)
-      notes.push(
-        "The previous first slide no longer gets the headmatter's slide keys (layout, background…); set them on it if it needs them.",
+        `The previous first slide keeps the headmatter's slide keys (${Object.keys(keep).join(", ")}) as its own frontmatter.`,
       );
     return notes;
   }
-  doc.splice(point.file, point.line, 0, lines);
+  // No headmatter: the new slide's frontmatter (if any) becomes it, as the first slide's always is.
+  const fm = yamlLines(slide.frontmatter ?? {});
+  doc.splice(r.file, 0, 0, [
+    ...(fm.length ? ["---", ...fm, "---", ""] : []),
+    ...bodyLines(withNotes(slide), true),
+    "---",
+    "",
+  ]);
+  const both = Object.keys(slide.frontmatter ?? {}).filter((k) => DECK_KEYS.has(k));
+  if (both.length)
+    notes.push(
+      `The first slide's frontmatter is the headmatter, so ${both.join(", ")} now also set${both.length === 1 ? "s" : ""} the deck default.`,
+    );
   return notes;
 }
 
@@ -335,49 +479,64 @@ export function addSlide(
   vertical = false,
 ): EditResult {
   const doc = new Doc(files);
-  const before = doc.deck().slides;
-  const target = at === undefined ? before.length : Math.max(0, Math.min(at, before.length));
+  assertBody(slide.content, "The content");
+  if (slide.notes) assertNotes(slide.notes);
+  if (!slide.content.trim() && !Object.keys(slide.frontmatter ?? {}).length)
+    throw new EditError("A new slide needs content or frontmatter.");
+  const before = doc.before.slides;
+  const n = before.length;
+  const target = at === undefined ? n : Math.max(0, Math.min(at, n));
   const notes: string[] = [];
   if (vertical && target === 0)
     notes.push("A vertical slide needs a slide before it; added as a horizontal one.");
   const v = vertical && target > 0;
-  if (!v && target < before.length && before[target]!.v > 0)
+  if (!v && target < n && before[target]!.v > 0)
     notes.push(
       `Slide ${target} was inside a vertical stack; the new horizontal slide starts a new column there and takes the rest of the stack with it.`,
     );
   notes.push(...insertPiece(doc, target, pieceLines(slide, v), slide));
-  return doc.result(target, notes);
+  const same = untouched(n, -1, (i) => (i < target ? i : i + 1)).map(
+    ([o, now]) => [o, now, !(o === 0 && target === 0)] as [number, number, boolean],
+  );
+  return doc.result(target, notes, { count: n + 1, same });
 }
 
-/** Remove a slide. A stack's top slide hands its column to the slide beneath it. */
-export function removeSlide(files: DeckFiles, ref: SlideRef): EditResult {
-  const doc = new Doc(files);
-  const deck = doc.deck();
-  const s = require(deck.slides, ref);
-  const notes: string[] = [];
+function removeLines(doc: Doc, s: RawSlide, notes: string[]) {
   const r = s.range;
   if (r.includedBy) {
-    const siblings = deck.slides.filter((x) => x.range.file === r.file);
+    const siblings = doc.deck().slides.filter((x) => x.range.file === r.file);
     if (siblings.length === 1) {
       doc.splice(r.includedBy.file, r.includedBy.start, r.includedBy.end - r.includedBy.start, []);
       notes.push(
         `Removed the include of ${r.file} (its only slide); the file itself is untouched.`,
       );
-      return doc.result(null, notes);
+      return;
     }
   }
   const { lines } = doc.lines(r.file);
-  const promote = s.v === 0 && r.end < lines.length && /^----+\s*$/.test(lines[r.end]!);
-  if (promote) doc.splice(r.file, r.end, 1, ["---"]);
+  if (s.v === 0 && r.end < lines.length && /^----+\s*$/.test(lines[r.end]!))
+    doc.splice(r.file, r.end, 1, ["---"]);
   if (r.head) {
     if (r.frontmatter) {
       doc.splice(r.file, r.body, r.end - r.body, [""]);
       notes.push(
-        "The headmatter (deck settings) stays at the top; the next slide is now the first one and does not inherit the headmatter's slide keys (layout, background…).",
+        "The headmatter (deck settings) stays at the top; the next slide is now the first one and keeps its own frontmatter.",
       );
     } else doc.splice(r.file, 0, r.end, []);
   } else doc.splice(r.file, r.start, r.end - r.start, []);
-  return doc.result(null, notes);
+}
+
+/** Remove a slide. A stack's top slide hands its column to the slide beneath it. */
+export function removeSlide(files: DeckFiles, ref: SlideRef): EditResult {
+  const doc = new Doc(files);
+  const s = require(doc.before.slides, ref);
+  const notes: string[] = [];
+  removeLines(doc, s, notes);
+  const n = doc.before.slides.length;
+  return doc.result(null, notes, {
+    count: n - 1,
+    same: untouched(n, s.index, (i) => (i < s.index ? i : i - 1)),
+  });
 }
 
 /** Move a slide so it ends up at index `to`; `vertical` stacks it beneath the slide before it. */
@@ -388,35 +547,33 @@ export function moveSlide(
   vertical = false,
 ): EditResult {
   const doc = new Doc(files);
-  const deck = doc.deck();
-  const s = require(deck.slides, ref);
-  if (s.index === to && s.v > 0 === vertical)
-    return { files: {}, index: to, notes: ["Already there."] };
+  const s = require(doc.before.slides, ref);
+  const n = doc.before.slides.length;
+  const target = Math.max(0, Math.min(to, n - 1));
+  if (s.index === target && s.v > 0 === vertical)
+    return { files: {}, index: target, notes: ["Already there."] };
   const r = s.range;
   const { lines } = doc.lines(r.file);
-  const frontmatter = r.head
-    ? undefined
+  // Keep the moved slide's YAML exactly as written (comments included); a slide that was the
+  // first takes the headmatter's slide keys along as its own.
+  const frontmatter = r.head ? pick(s.frontmatter, SLIDE_KEYS) : s.frontmatter;
+  const yamlRaw = r.head
+    ? yamlLines(frontmatter)
     : r.frontmatter
-      ? (YAML.parse(lines.slice(r.frontmatter.open + 1, r.frontmatter.close).join("\n")) as Record<
-          string,
-          unknown
-        >)
-      : undefined;
-  const yamlRaw =
-    !r.head && r.frontmatter ? lines.slice(r.frontmatter.open + 1, r.frontmatter.close) : [];
+      ? lines.slice(r.frontmatter.open + 1, r.frontmatter.close)
+      : [];
   const body = lines.slice(r.body, r.end).join("\n");
-  const removed = removeSlide(files, s.index);
-  const after = new Doc({ entry: files.entry, read: (p) => removed.files[p] ?? files.read(p) });
-  for (const [f, t] of Object.entries(removed.files)) after.texts.set(f, t);
-  const count = after.deck().slides.length;
-  const target = Math.max(0, Math.min(to, count));
+  const notes: string[] = [];
+  removeLines(doc, s, notes);
   const v = vertical && target > 0;
-  // Keep the moved slide's YAML exactly as written (comments included).
-  const piece = [
-    v ? "----" : "---",
-    ...(yamlRaw.length ? [...yamlRaw, "---"] : []),
-    ...bodyLines(body, false),
-  ];
-  const notes = insertPiece(after, target, piece, { content: body, frontmatter });
-  return after.result(target, notes);
+  notes.push(
+    ...insertPiece(doc, target, pieceLines({ content: body }, v, yamlRaw), {
+      content: body,
+      frontmatter,
+    }),
+  );
+  const order = doc.before.slides.map((x) => x.index).filter((i) => i !== s.index);
+  order.splice(target, 0, s.index);
+  const same: Expect["same"] = order.map((old, now) => [old, now, old !== 0 && now !== 0]);
+  return doc.result(target, notes, { count: n, same });
 }

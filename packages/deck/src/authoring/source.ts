@@ -38,18 +38,33 @@ export interface SplitProblem {
 /** Split the deck with includes resolved through `files`, collecting problems instead of throwing. */
 export function readDeck(
   files: DeckFiles,
+  { root }: { root?: string } = {},
 ): SplitResult & { problems: SplitProblem[]; text: string } {
   const text = files.read(files.entry);
   if (text === null) throw new Error(`${files.entry} does not exist`);
   const problems: SplitProblem[] = [];
+  const outside = new Set<string>();
+  const inside = (file: string) =>
+    !root || file === root || file.startsWith(`${root.replace(/\/+$/, "")}/`);
   const result = splitDeck(text, {
     file: files.entry,
     resolveInclude: (path, from) => {
       const file = joinPath(dirOf(from), path);
+      if (!inside(file)) {
+        outside.add(path);
+        return null;
+      }
       const inc = files.read(file);
       return inc === null ? null : { file, text: inc };
     },
-    onError: (e) => problems.push(e),
+    onError: (e) => {
+      const src = /cannot include "(.*)"$/.exec(e.message)?.[1];
+      problems.push(
+        src && outside.has(src)
+          ? { ...e, message: `"${src}" is outside the deck folder; includes must stay inside it` }
+          : e,
+      );
+    },
   });
   return { ...result, problems, text };
 }
@@ -67,7 +82,12 @@ export function findSlide(slides: RawSlide[], ref: SlideRef): RawSlide | null {
   if (/^\d+$/.test(r)) return slides[Number(r)] ?? null;
   const hv = /^(\d+)\.(\d+)$/.exec(r);
   if (hv) return slides.find((s) => s.h === Number(hv[1]) && s.v === Number(hv[2])) ?? null;
-  return slides.find((s) => idOf(s) === r || s.frontmatter.routeAlias === r) ?? null;
+  // An id someone wrote wins over a generated `s<index>` that happens to match it.
+  return (
+    slides.find((s) => s.frontmatter.id === r || s.frontmatter.routeAlias === r) ??
+    slides.find((s) => idOf(s) === r) ??
+    null
+  );
 }
 
 const CLICK_TAG = /<(Click|Fragment)\b(?![\w-])([^>]*)>/g;

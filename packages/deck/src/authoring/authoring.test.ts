@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   type DeckFiles,
+  EditError,
   addSlide,
   estimateClicks,
   lintDeck,
@@ -313,5 +314,101 @@ describe("lint", () => {
       'export const components = { "layout:wide": W };\nregisterBackground("rain", Rain);',
     );
     expect(r.errors).toBe(0);
+  });
+});
+
+describe("review regressions (PR #6)", () => {
+  const THREE = "# A\n\n---\n\n## B\n\n---\n\n## C\n";
+
+  test("content that would change the structure is refused, and nothing is returned", () => {
+    const f = files({ "deck.mdx": THREE });
+    expect(() => updateSlide(f, 1, { content: "## X\n\n```js\nconst a = 1;" })).toThrow(EditError);
+    expect(() => updateSlide(f, 1, { content: "## X\n\n```js\nconst a = 1;" })).toThrow(
+      /never closes/,
+    );
+    expect(() => updateSlide(f, 1, { content: "## X\n\n---\n\n## Y" })).toThrow(/new slide/);
+    expect(() => addSlide(f, { content: "## X\n----\n## Y" })).toThrow(/new slide/);
+    expect(() => setNotes(f, 1, "evil </Notes> # Heading")).toThrow(/<\/Notes>/);
+    expect(() => addSlide(f, { content: "" })).toThrow(/content or frontmatter/);
+    // A fence that holds a separator is fine.
+    const ok = updateSlide(f, 1, { content: "## X\n\n```yaml\n---\na: 1\n---\n```" });
+    expect(readDeck({ entry: "deck.mdx", read: (p) => ok.files[p] ?? null }).slides.length).toBe(3);
+  });
+
+  test("a frontmatter-only slide moved or added to the top stays a slide of its own", () => {
+    const deck =
+      "---\ntitle: X\n---\n\n# A\n\n---\nlayout: center\nbackground: aurora\n---\n\n---\n\n## C\n";
+    const f = files({ "deck.mdx": deck });
+    apply(f, moveSlide(f, 1, 0));
+    const d = readDeck(f);
+    expect(d.slides.length).toBe(3);
+    expect(d.slides[0]!.frontmatter).toEqual({ layout: "center", background: "aurora" });
+    expect(d.headmatter).toEqual({ title: "X" });
+    expect(d.slides[1]!.content).toBe("# A");
+    const g = files({ "deck.mdx": deck });
+    apply(g, addSlide(g, { content: "", frontmatter: { layout: "end" } }, 0));
+    expect(readDeck(g).slides.map((s) => s.frontmatter.layout ?? null)).toEqual([
+      "end",
+      null,
+      "center",
+      null,
+    ]);
+  });
+
+  test("replacing the first slide's frontmatter keeps every deck setting, including title", () => {
+    const f = files({
+      "deck.mdx":
+        "---\ntitle: T\ntheme: minimal\ntransition: fade\nlayout: cover\n---\n\n# A\n\n---\n\n## B\n",
+    });
+    apply(f, updateSlide(f, 0, { frontmatter: { layout: "center" } }));
+    expect(readDeck(f).headmatter).toEqual({
+      title: "T",
+      theme: "minimal",
+      transition: "fade",
+      layout: "center",
+    });
+  });
+
+  test("<Notes> inside a code fence is code, not notes", () => {
+    const deck =
+      "# A\n\n---\n\n## Syntax\n\n```mdx\n<Notes>\nexample\n</Notes>\n```\n\n---\n\n## C\n";
+    const f = files({ "deck.mdx": deck });
+    expect(readDeck(f).slides[1]!.notes).toBeNull();
+    expect(readDeck(f).slides[1]!.content).toContain("<Notes>\nexample\n</Notes>");
+    apply(f, setNotes(f, 1, "real"));
+    expect(readDeck(f).slides[1]!.notes).toBe("real");
+    expect(f.texts["deck.mdx"]).toContain("```mdx\n<Notes>\nexample\n</Notes>\n```");
+  });
+
+  test("line endings are kept per line in a mixed file", () => {
+    const deck = "# A\r\n\r\n---\n\n## B\n\n---\r\n\r\n## C\r\n";
+    const r = updateSlide(files({ "deck.mdx": deck }), 0, { content: "# Z" });
+    expect(r.files["deck.mdx"]!.endsWith("---\n\n## B\n\n---\r\n\r\n## C\r\n")).toBe(true);
+  });
+
+  test("an explicit id wins over a generated one", () => {
+    const f = files({ "deck.mdx": "# A\n\n---\nid: s0\n---\n\n## B\n" });
+    expect(updateSlide(f, "s0", { content: "## B2" }).index).toBe(1);
+  });
+
+  test("lint: includes may not leave the deck folder; unknown props warn", async () => {
+    const r = await lintDeck({
+      files: files(
+        {
+          "/d/deck.mdx":
+            '# A\n\n---\nsrc: ../outside.mdx\n---\n\n---\n\n<Poll id="p" question="q" bogusProp="x" />\n<Click effect="fade-up" data-x="1" anyThing />\n',
+          "/outside.mdx": "# Out",
+        },
+        "/d/deck.mdx",
+      ),
+      root: "/d",
+    });
+    expect(r.diagnostics.map((d) => `${d.severity}:${d.code}:${d.line}`)).toEqual([
+      "error:include-outside:4",
+      "warning:prop-unknown:9",
+    ]);
+    expect(r.diagnostics[0]!.message).toBe(
+      '"../outside.mdx" is outside the deck folder; includes must stay inside it',
+    );
   });
 });

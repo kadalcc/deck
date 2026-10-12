@@ -228,13 +228,54 @@ function cut(text: string): Piece[] {
   return pieces;
 }
 
+/**
+ * Character ranges of fenced code blocks (``` or ~~~, closed by a fence of the same kind and at
+ * least the same length, or the end of the text). Things that look like syntax inside them — a
+ * `<Notes>` in an example, a `---` in YAML — are code, not structure.
+ */
+export function fencedRanges(text: string): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  let open: { start: number; mark: string } | null = null;
+  let offset = 0;
+  for (const line of text.split("\n")) {
+    const m = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (m) {
+      const mark = m[1]!;
+      if (!open) open = { start: offset, mark };
+      else if (mark[0] === open.mark[0] && mark.length >= open.mark.length) {
+        out.push([open.start, offset + line.length]);
+        open = null;
+      }
+    }
+    offset += line.length + 1;
+  }
+  if (open) out.push([open.start, text.length]);
+  return out;
+}
+
+/** The `<Notes>…</Notes>` blocks of a slide that are not inside fenced code. */
+export function notesBlocks(content: string): Array<{ start: number; end: number; inner: string }> {
+  const fences = fencedRanges(content);
+  const out: Array<{ start: number; end: number; inner: string }> = [];
+  for (const m of content.matchAll(NOTES)) {
+    const start = m.index!;
+    if (fences.some(([a, b]) => start >= a && start < b)) continue;
+    out.push({ start, end: start + m[0].length, inner: m[1]! });
+  }
+  return out;
+}
+
 function extractNotes(content: string): { content: string; notes: string | null } {
-  const notes: string[] = [];
-  const stripped = content.replace(NOTES, (_m, inner: string) => {
-    notes.push(inner.trim());
-    return "";
-  });
-  return { content: stripped, notes: notes.length ? notes.join("\n\n") : null };
+  const blocks = notesBlocks(content);
+  if (!blocks.length) return { content, notes: null };
+  let stripped = "";
+  let at = 0;
+  for (const b of blocks) {
+    stripped += content.slice(at, b.start);
+    at = b.end;
+  }
+  stripped += content.slice(at);
+  return { content: stripped, notes: blocks.map((b) => b.inner.trim()).join("\n\n") };
 }
 
 /**
@@ -311,8 +352,8 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
       const { src, ...merge } = frontmatter;
       const included = options.resolveInclude?.(src, options.file);
       if (!included) {
-        const message = `${where}: cannot include "${src}"`;
-        if (!options.onError) throw new Error(message);
+        const message = `cannot include "${src}"`;
+        if (!options.onError) throw new Error(`${where}: ${message}`);
         options.onError({ message, file: options.file, line: piece.start + 2 });
         return;
       }

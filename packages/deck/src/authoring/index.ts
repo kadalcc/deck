@@ -24,6 +24,7 @@ export {
   type FrontmatterPatch,
   type NewSlide,
   type SlideUpdate,
+  EditError,
   addSlide,
   deckOnlyKeys,
   moveSlide,

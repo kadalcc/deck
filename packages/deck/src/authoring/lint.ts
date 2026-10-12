@@ -109,6 +109,8 @@ const ASSET_ATTRS: Record<string, string[]> = {
 };
 
 const LIVE_IDS = new Set(["Poll", "Quiz", "WordCloud"]);
+/** Attributes React or MDX handle on any element. */
+const PASS_PROPS = new Set(["key", "ref", "className", "style", "children", "id", "title"]);
 
 interface Node {
   type: string;
@@ -160,7 +162,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
 
   let deck: ReturnType<typeof readDeck>;
   try {
-    deck = readDeck(files);
+    deck = readDeck(files, { root });
   } catch (e) {
     add({
       severity: "error",
@@ -174,8 +176,12 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   for (const p of deck.problems)
     add({
       severity: "error",
-      code: /cannot include/.test(p.message) ? "include-missing" : "yaml",
-      message: p.message.replace(/^[^:]+:\d+: /, ""),
+      code: /outside the deck folder/.test(p.message)
+        ? "include-outside"
+        : /cannot include/.test(p.message)
+          ? "include-missing"
+          : "yaml",
+      message: p.message,
       file: p.file,
       line: p.line,
     });
@@ -195,6 +201,10 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const transitions = new Set(cat.transitions.map((t) => t.name));
   const themes = new Set(options.themes ?? cat.themes.map((t) => t.name));
   const components = new Set([...builtinComponentNames(cat), ...ext.components]);
+  // Built-in components the deck has not replaced with its own of the same name.
+  const byName = new Map(
+    cat.components.filter((c) => !ext.components.includes(c.name)).map((c) => [c.name, c]),
+  );
 
   // ── frontmatter ──────────────────────────────────────────────────────────────────────────
   const ids = new Map<string, RawSlide>();
@@ -474,6 +484,27 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
               });
             }
           }
+          const info = byName.get(n.name);
+          if (info && !info.openProps && !scope.has(base))
+            for (const attr of n.attributes ?? []) {
+              const name = attr.type === "mdxJsxAttribute" ? attr.name : null;
+              if (!name || PASS_PROPS.has(name) || /^(data|aria)-/.test(name)) continue;
+              if (!info.props.some((p) => p.name === name)) {
+                const near = closest(
+                  name,
+                  info.props.map((p) => p.name),
+                );
+                add({
+                  ...at,
+                  severity: "warning",
+                  code: "prop-unknown",
+                  message: `<${n.name}> has no prop "${name}"; it is ignored.`,
+                  hint: near
+                    ? `Did you mean "${near}"?`
+                    : `Props: ${info.props.map((p) => p.name).join(", ") || "none"}.`,
+                });
+              }
+            }
           for (const attr of n.attributes ?? []) {
             if (attr.type !== "mdxJsxAttribute" || typeof attr.value !== "string") continue;
             if (ASSET_ATTRS[n.name]?.includes(attr.name ?? ""))
