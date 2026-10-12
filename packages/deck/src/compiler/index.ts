@@ -3,6 +3,7 @@ export {
   type RawSlide,
   type SplitOptions,
   type SplitResult,
+  type SlideRange,
   levelOf,
   splitDeck,
   titleOf,

@@ -37,6 +37,33 @@ export interface RawSlide {
   notes: string | null;
   /** Where the slide starts, for error messages and the editor. */
   source: { file: string; line: number };
+  /** The slide's exact lines in its file, for tools that edit the deck as text. */
+  range: SlideRange;
+}
+
+/**
+ * Where a slide sits in its file, as 0-based line numbers into `text.split(/\r?\n/)`. Everything
+ * an editor needs to rewrite one slide and leave every other byte alone.
+ */
+export interface SlideRange {
+  file: string;
+  /** First line of the slide's piece: its separator, or 0 for the piece at the top of the file. */
+  start: number;
+  /** Exclusive end: the next piece's separator, or the line count. */
+  end: number;
+  /** The separator line's kind; null for the piece at the top of the file. */
+  separator: "horizontal" | "vertical" | null;
+  /**
+   * The fence lines around the slide's YAML, when it has some. On the top piece this is the
+   * headmatter, which configures the deck as well as the first slide.
+   */
+  frontmatter: { open: number; close: number } | null;
+  /** First line of the body (after the frontmatter or the separator). */
+  body: number;
+  /** True for the piece at the top of the file (no separator line of its own). */
+  head: boolean;
+  /** For a slide pulled in by `src:`, the including piece in the parent file. */
+  includedBy: { file: string; start: number; end: number } | null;
 }
 
 export interface SplitResult {
@@ -48,6 +75,12 @@ export interface SplitOptions {
   file: string;
   /** Returns the text of an included file (the `src:` frontmatter), or null when it is missing. */
   resolveInclude?: (path: string, from: string) => { file: string; text: string } | null;
+  /**
+   * Called for a frontmatter block that is not valid YAML, or an include that cannot be read,
+   * instead of throwing — for linters that want every problem, not the first. The block then
+   * counts as empty and the include as no slides.
+   */
+  onError?: (error: { message: string; file: string; line: number }) => void;
 }
 
 const HORIZONTAL = /^---\s*$/;
@@ -67,7 +100,23 @@ function looksLikeYaml(lines: string[]): boolean {
   return any;
 }
 
-function parseYaml(text: string, where: string): Frontmatter {
+function parseYaml(
+  text: string,
+  where: string,
+  onError?: SplitOptions["onError"],
+  at?: { file: string; line: number },
+): Frontmatter {
+  if (onError && at) {
+    try {
+      return parseYaml(text, where);
+    } catch (e) {
+      // YAML's own position, relative to the block, when it has one.
+      const pos = (e as { linePos?: Array<{ line: number }> }).linePos?.[0]?.line;
+      const message = (e instanceof Error ? e.message : String(e)).split("\n")[0]!;
+      onError({ message, file: at.file, line: at.line + (pos ? pos - 1 : 0) });
+      return {};
+    }
+  }
   const value = YAML.parse(text) as unknown;
   if (value === null || value === undefined) return {};
   if (typeof value !== "object" || Array.isArray(value)) {
@@ -82,6 +131,10 @@ interface Piece {
   lines: string[];
   /** 1-based line of the piece's first content line. */
   line: number;
+  /** 0-based first line (the separator) and exclusive end; the fence lines when there is YAML. */
+  start: number;
+  end: number;
+  fence: { open: number; close: number } | null;
 }
 
 /**
@@ -117,11 +170,24 @@ function cut(text: string): Piece[] {
   // The head: an opening fence at the very top is headmatter.
   let firstContent = 0;
   while (firstContent < lines.length && !lines[firstContent]!.trim()) firstContent++;
-  let head: Piece = { vertical: false, frontmatter: null, lines: [], line: 1 };
+  let head: Piece = {
+    vertical: false,
+    frontmatter: null,
+    lines: [],
+    line: 1,
+    start: 0,
+    end: lines.length,
+    fence: null,
+  };
   if (firstContent < lines.length && HORIZONTAL.test(lines[firstContent]!)) {
     const fm = frontmatterAt(firstContent + 1);
     if (fm) {
-      head = { vertical: false, frontmatter: fm.yaml, lines: [], line: fm.next + 1 };
+      head = {
+        ...head,
+        frontmatter: fm.yaml,
+        line: fm.next + 1,
+        fence: { open: firstContent, close: fm.next - 1 },
+      };
       i = fm.next;
     }
   }
@@ -142,11 +208,18 @@ function cut(text: string): Piece[] {
     if (!inFence && (HORIZONTAL.test(line) || VERTICAL.test(line))) {
       const vertical = VERTICAL.test(line);
       const fm = frontmatterAt(i + 1);
+      pieces[pieces.length - 1]!.end = i;
+      const base = { vertical, lines: [], start: i, end: lines.length };
       if (fm) {
-        pieces.push({ vertical, frontmatter: fm.yaml, lines: [], line: fm.next + 1 });
+        pieces.push({
+          ...base,
+          frontmatter: fm.yaml,
+          line: fm.next + 1,
+          fence: { open: i, close: fm.next - 1 },
+        });
         i = fm.next - 1;
       } else {
-        pieces.push({ vertical, frontmatter: null, lines: [], line: i + 2 });
+        pieces.push({ ...base, frontmatter: null, line: i + 2, fence: null });
       }
       continue;
     }
@@ -172,7 +245,12 @@ function extractNotes(content: string): { content: string; notes: string | null 
 export function splitDeck(text: string, options: SplitOptions): SplitResult {
   const pieces = cut(text);
   const head = pieces[0]!;
-  const headmatter = head.frontmatter ? parseYaml(head.frontmatter, `${options.file}:1`) : {};
+  const headmatter = head.frontmatter
+    ? parseYaml(head.frontmatter, `${options.file}:1`, options.onError, {
+        file: options.file,
+        line: (head.fence?.open ?? 0) + 2,
+      })
+    : {};
 
   const slides: RawSlide[] = [];
   let h = -1;
@@ -183,6 +261,7 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
     frontmatter: Frontmatter,
     vertical: boolean,
     source: RawSlide["source"],
+    range: SlideRange,
   ) => {
     if (vertical && h >= 0) v++;
     else {
@@ -190,22 +269,53 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
       v = 0;
     }
     const { content: body, notes } = extractNotes(content);
-    slides.push({ index: slides.length, h, v, frontmatter, content: body.trim(), notes, source });
+    slides.push({
+      index: slides.length,
+      h,
+      v,
+      frontmatter,
+      content: body.trim(),
+      notes,
+      source,
+      range,
+    });
   };
+  const rangeOf = (piece: Piece, i: number): SlideRange => ({
+    file: options.file,
+    start: piece.start,
+    end: piece.end,
+    separator: i === 0 ? null : piece.vertical ? "vertical" : "horizontal",
+    frontmatter: piece.fence,
+    body: piece.line - 1,
+    head: i === 0,
+    includedBy: null,
+  });
 
   pieces.forEach((piece, i) => {
     const where = `${options.file}:${piece.line}`;
     // The head piece's fence is headmatter — and, as in Slidev, the first slide's frontmatter too,
     // so `layout: cover` or `background:` at the top of the file style the title slide.
     const frontmatter =
-      i === 0 ? { ...headmatter } : !piece.frontmatter ? {} : parseYaml(piece.frontmatter, where);
+      i === 0
+        ? { ...headmatter }
+        : !piece.frontmatter
+          ? {}
+          : parseYaml(piece.frontmatter, where, options.onError, {
+              file: options.file,
+              line: piece.start + 2,
+            });
     const content = piece.lines.join("\n");
     const blank = !content.trim();
 
     if (typeof frontmatter.src === "string") {
       const { src, ...merge } = frontmatter;
       const included = options.resolveInclude?.(src, options.file);
-      if (!included) throw new Error(`${where}: cannot include "${src}"`);
+      if (!included) {
+        const message = `${where}: cannot include "${src}"`;
+        if (!options.onError) throw new Error(message);
+        options.onError({ message, file: options.file, line: piece.start + 2 });
+        return;
+      }
       const inner = splitDeck(included.text, { ...options, file: included.file });
       inner.slides.forEach((s, j) => {
         push(
@@ -213,6 +323,14 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
           j === 0 ? { ...inner.headmatter, ...s.frontmatter, ...merge } : s.frontmatter,
           j === 0 ? piece.vertical : s.v > 0,
           s.source,
+          {
+            ...s.range,
+            includedBy: s.range.includedBy ?? {
+              file: options.file,
+              start: piece.start,
+              end: piece.end,
+            },
+          },
         );
       });
       return;
@@ -220,7 +338,13 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
     // An empty head piece is not a slide; an empty later piece is a blank slide only when it
     // carries frontmatter (a deliberate pause), otherwise it is skipped.
     if (blank && (i === 0 || !Object.keys(frontmatter).length)) return;
-    push(content, frontmatter, piece.vertical, { file: options.file, line: piece.line });
+    push(
+      content,
+      frontmatter,
+      piece.vertical,
+      { file: options.file, line: piece.line },
+      rangeOf(piece, i),
+    );
   });
 
   return { headmatter, slides };
