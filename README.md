@@ -95,10 +95,20 @@ npx kadal-deck publish       # deck.kadal.cc/@you/my-talk/ with a live room (fre
 
 ## See it
 
-| The presenter view | The audience, on a phone |
-| --- | --- |
-| <img src=".github/assets/presenter.jpg" alt="Presenter view: the current slide, the next slide, notes with click markers, a timer and tools for drawing, pointer, spotlight, blackout, share window, camera and recording" width="100%"> | <img src=".github/assets/phone.jpg" alt="The audience page: the presenter's slide, reactions, and tabs for pace, questions, polls, notes and bookmarks" width="260"> |
-| Current and next slide, notes that follow your clicks, a timer with pacing, drawing, laser, spotlight, blackout, a frameless share window for calls, and the room panel. | The slide in step with you (or roam ahead and catch up with one button), reactions, ask and upvote, polls, quizzes, pace and a raised hand. |
+<table>
+<tr>
+<th width="70%">The presenter view</th>
+<th width="30%">The audience, on a phone</th>
+</tr>
+<tr>
+<td valign="top"><img src=".github/assets/presenter.jpg" alt="Presenter view: the current slide, the next slide, notes with click markers, a timer and tools for drawing, pointer, spotlight, blackout, share window, camera and recording" width="100%"></td>
+<td valign="top"><img src=".github/assets/phone.jpg" alt="The audience page: the presenter's slide, reactions, and buttons for pace and raising a hand" width="100%"></td>
+</tr>
+<tr>
+<td valign="top">Current and next slide, notes that follow your clicks, a timer with pacing, drawing, laser, spotlight, blackout, a frameless share window for calls, and the room panel.</td>
+<td valign="top">The slide in step with you (or roam ahead and catch up), reactions, questions, polls, quizzes, pace and a raised hand.</td>
+</tr>
+</table>
 
 **[Open the tour →](https://deck.kadal.cc/tour/)**: the engine's own feature deck, with every
 framework island running on one slide. Press `?` for the keys.
