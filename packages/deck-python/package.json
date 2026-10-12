@@ -10,6 +10,10 @@
     "python"
   ],
   "homepage": "https://deck.kadal.cc/docs/",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/kadalcc"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kadalcc/deck.git",
