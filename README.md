@@ -110,8 +110,10 @@ npx kadal-deck publish       # deck.kadal.cc/@you/my-talk/ with a live room (fre
 </tr>
 </table>
 
-**[Open the tour →](https://deck.kadal.cc/tour/)**: the engine's own feature deck, with every
-framework island running on one slide. Press `?` for the keys.
+**[Open the tour →](https://deck.kadal.cc/tour/)**: the engine's own feature deck, nine chapters
+showing every layout, component, background, transition and view, with every framework island
+running on one slide. Press `?` for the keys. Its source is [`examples/showcase`](examples/showcase),
+and `node tools/showcase-check.mjs` drives every slide and view of it in a headless browser.
 
 ## Features
 

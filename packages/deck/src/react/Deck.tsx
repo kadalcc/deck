@@ -713,6 +713,9 @@ function useDeckEffects(
       if (!p) return;
       const s = nav.get();
       if (p.h === s.h && p.v === s.v && (p.click ?? 0) === s.click) return;
+      // A step on a slide not shown yet has no total to clamp against: keep it, as at load.
+      const known = s.totals[`${p.h},${p.v}`] ?? 0;
+      if ((p.click ?? 0) > known) pending = p;
       nav.update((st) => ({ ...N.goto(st, columns, p), follow: false }));
     };
     window.addEventListener("hashchange", onHash);

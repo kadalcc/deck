@@ -7,3 +7,4 @@ examples/*/export/
 examples/showcase/rust-ticker/target/
 .wrangler/
 coverage/
+examples/*/check-output/

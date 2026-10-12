@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
-import { useStore } from "../core/store.ts";
+import { createStore, useStore } from "../core/store.ts";
 import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
@@ -13,7 +13,11 @@ import { Analytics } from "./analytics.tsx";
 import { RoomClient, viewerId } from "./client.ts";
 import { turnstileToken } from "./turnstile.ts";
 import { LiveContext, type LiveValue, useLiveOptional } from "./context.ts";
-import type { ServerMessage } from "./protocol.ts";
+import { EMPTY_ROOM, type Role, type RoomState, type ServerMessage } from "./protocol.ts";
+
+/** Without a room, this window is the one presenting: it draws and points for itself. */
+const OFFLINE_ROLE = createStore<Role>("presenter");
+const OFFLINE_ROOM = createStore<RoomState>(EMPTY_ROOM);
 
 /**
  * Put `<LiveProvider />` inside `<Deck>` and the deck joins its room: the presenter window pushes
@@ -46,7 +50,20 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
     return () => value.client.close();
   }, [value]);
 
-  if (!value) return <>{children}</>;
+  // Without a room the pen and the laser still belong to this window: C and X used to switch
+  // themselves on with nothing mounted to draw or point.
+  if (!value)
+    return (
+      <>
+        {children}
+        {deck.mode === "play" && !deck.projector ? (
+          <>
+            <DrawingLayer />
+            <PointerLayer />
+          </>
+        ) : null}
+      </>
+    );
   return (
     <LiveContext.Provider value={value}>
       {children}
@@ -239,19 +256,19 @@ function Wiring() {
  */
 export function PointerLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) {
   const deck = useDeck();
-  const live = useLiveOptional()!;
+  const live = useLiveOptional();
   const layout = useLayout();
   const host = useRef<HTMLDivElement>(null);
   const on = useUi((s) => s.pointer);
   const spotlight = useUi((s) => s.spotlight);
-  const role = useStore(live.client.role);
-  const remote = useStore(live.client.state, (s) => s.pointer);
+  const role = useStore(live?.client.role ?? OFFLINE_ROLE);
+  const remote = useStore(live?.client.state ?? OFFLINE_ROOM, (s) => s.pointer);
   const follow = useNav((s) => s.follow);
   const [local, setLocal] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!on || role !== "presenter") {
-      if (role === "presenter") live.client.send({ type: "pointer:off" });
+      if (role === "presenter") live?.client.send({ type: "pointer:off" });
       setLocal(null);
       return;
     }
@@ -271,12 +288,12 @@ export function PointerLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
       const now = performance.now();
       if (now - last > 33) {
         last = now;
-        live.client.send({ type: "pointer", x: p.x, y: p.y });
+        live?.client.send({ type: "pointer", x: p.x, y: p.y });
       }
     };
     window.addEventListener("pointermove", onMove);
     return () => window.removeEventListener("pointermove", onMove);
-  }, [on, role, live.client, deck.layout, deck.config.width, deck.config.height]);
+  }, [on, role, live, deck.layout, deck.config.width, deck.config.height]);
 
   // A laser points at a place on the PRESENTER's slide, so on any other slide it means nothing:
   // a viewer reading on their own is not given the dot.
