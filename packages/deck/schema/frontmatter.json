@@ -1,0 +1,1137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/@kadal/deck@0.1.1/schema/frontmatter.json",
+  "title": "Kadal Deck frontmatter",
+  "description": "Frontmatter for deck.mdx. Validate the top block (headmatter) against #/$defs/headmatter and every other slide's block against #/$defs/slide.",
+  "$ref": "#/$defs/slide",
+  "$defs": {
+    "slide": {
+      "type": "object",
+      "properties": {
+        "layout": {
+          "type": "string",
+          "examples": [
+            "default",
+            "center",
+            "cover",
+            "intro",
+            "section",
+            "end",
+            "fact",
+            "quote",
+            "statement",
+            "full",
+            "none",
+            "two-cols",
+            "image",
+            "image-left",
+            "image-right",
+            "iframe",
+            "iframe-left",
+            "iframe-right"
+          ],
+          "description": "The slide's layout (see layouts). Default: cover for the first slide, default after."
+        },
+        "class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array"
+            }
+          ],
+          "description": "Extra CSS classes on the slide."
+        },
+        "id": {
+          "type": "string",
+          "description": "A stable id: `#/<id>` links here and <Link to> finds it."
+        },
+        "routeAlias": {
+          "type": "string",
+          "description": "Slidev's spelling of `id` for links."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title the table of contents and search use (default: the first heading)."
+        },
+        "level": {
+          "type": "number",
+          "description": "Heading level for the table of contents (default: the first heading's depth)."
+        },
+        "hide": {
+          "type": "boolean",
+          "description": "Leave the slide out of the talk (still in the file)."
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Same as hide."
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "hidden",
+            "uncounted"
+          ],
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+        },
+        "hideInToc": {
+          "type": "boolean",
+          "description": "Keep the slide out of <Toc>."
+        },
+        "transition": {
+          "type": "string",
+          "examples": [
+            "none",
+            "fade",
+            "slide",
+            "convex",
+            "concave",
+            "zoom",
+            "view-transition"
+          ],
+          "description": "This slide's transition (see transitions)."
+        },
+        "transitionSpeed": {
+          "type": "string",
+          "enum": [
+            "default",
+            "fast",
+            "slow"
+          ],
+          "description": "This slide's transition speed."
+        },
+        "backgroundTransition": {
+          "type": "string",
+          "examples": [
+            "none",
+            "fade",
+            "slide",
+            "convex",
+            "concave",
+            "zoom",
+            "view-transition"
+          ],
+          "description": "This slide's background transition."
+        },
+        "autoAnimate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "Animate matching elements (same text or data-id) from the previous auto-animate slide."
+        },
+        "autoAnimateId": {
+          "type": "string",
+          "description": "Only auto-animate between slides with the same id."
+        },
+        "autoAnimateRestart": {
+          "type": "boolean",
+          "description": "Break the auto-animate chain here."
+        },
+        "autoSlide": {
+          "type": "number",
+          "description": "Milliseconds before this slide advances on its own."
+        },
+        "autoslide": {
+          "type": "number",
+          "description": "reveal.js spelling of autoSlide."
+        },
+        "clicks": {
+          "type": "number",
+          "description": "Force the number of click steps."
+        },
+        "clicksStart": {
+          "type": "number",
+          "description": "The step the slide opens at."
+        },
+        "preload": {
+          "type": "boolean",
+          "description": "Load the slide's module ahead of time (default true).",
+          "default": true
+        },
+        "timing": {
+          "type": "number",
+          "description": "Seconds planned for this slide (the presenter's pacing timer)."
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array"
+            }
+          ],
+          "description": "Adds state-<name> classes while the slide shows (CSS hooks)."
+        },
+        "colorScheme": {
+          "type": "string",
+          "enum": [
+            "light",
+            "dark"
+          ],
+          "description": "Force light or dark tokens on this slide (dark background under a light theme)."
+        },
+        "zoom": {
+          "type": "number",
+          "description": "Scale the slide's content (0.8 fits more)."
+        },
+        "background": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill | tint }."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "description": "reveal.js: flat background colour."
+        },
+        "backgroundGradient": {
+          "type": "string",
+          "description": "reveal.js: a CSS gradient."
+        },
+        "backgroundImage": {
+          "type": "string",
+          "description": "reveal.js: an image URL."
+        },
+        "backgroundSize": {
+          "type": "string",
+          "description": "CSS background-size for the image (also the image layouts)."
+        },
+        "backgroundPosition": {
+          "type": "string",
+          "description": "CSS background-position."
+        },
+        "backgroundRepeat": {
+          "type": "string",
+          "description": "CSS background-repeat."
+        },
+        "backgroundOpacity": {
+          "type": "number",
+          "description": "0–1."
+        },
+        "backgroundVideo": {
+          "type": "string",
+          "description": "reveal.js: a video URL."
+        },
+        "backgroundVideoLoop": {
+          "type": "boolean",
+          "description": "Loop the background video."
+        },
+        "backgroundVideoMuted": {
+          "type": "boolean",
+          "description": "Mute the background video (default true)."
+        },
+        "backgroundIframe": {
+          "type": "string",
+          "description": "reveal.js: a page behind the slide."
+        },
+        "backgroundInteractive": {
+          "type": "boolean",
+          "description": "Let the background page take input."
+        },
+        "image": {
+          "type": "string",
+          "description": "The image for the image, image-left and image-right layouts."
+        },
+        "url": {
+          "type": "string",
+          "description": "The page for the iframe, iframe-left and iframe-right layouts."
+        },
+        "poster": {
+          "type": "string",
+          "description": "A picture that stands in for the iframe in print, previews and while it loads."
+        },
+        "posterUrl": {
+          "type": "string",
+          "description": "Capture the poster from this address instead of `url`."
+        },
+        "posterWait": {
+          "type": "number",
+          "description": "Milliseconds to let the page settle before the poster capture (default 5000)."
+        },
+        "terms": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "false: link no glossary terms automatically on this slide; { skip: [GIS] } leaves some out."
+        },
+        "src": {
+          "type": "string",
+          "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+        }
+      },
+      "additionalProperties": true
+    },
+    "headmatter": {
+      "type": "object",
+      "properties": {
+        "layout": {
+          "type": "string",
+          "examples": [
+            "default",
+            "center",
+            "cover",
+            "intro",
+            "section",
+            "end",
+            "fact",
+            "quote",
+            "statement",
+            "full",
+            "none",
+            "two-cols",
+            "image",
+            "image-left",
+            "image-right",
+            "iframe",
+            "iframe-left",
+            "iframe-right"
+          ],
+          "description": "The slide's layout (see layouts). Default: cover for the first slide, default after."
+        },
+        "class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array"
+            }
+          ],
+          "description": "Extra CSS classes on the slide."
+        },
+        "id": {
+          "type": "string",
+          "description": "A stable id: `#/<id>` links here and <Link to> finds it."
+        },
+        "routeAlias": {
+          "type": "string",
+          "description": "Slidev's spelling of `id` for links."
+        },
+        "title": {
+          "type": "string",
+          "description": "The deck's title (browser tab, table of contents, publish).",
+          "default": "Untitled deck"
+        },
+        "level": {
+          "type": "number",
+          "description": "Heading level for the table of contents (default: the first heading's depth)."
+        },
+        "hide": {
+          "type": "boolean",
+          "description": "Leave the slide out of the talk (still in the file)."
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Same as hide."
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "hidden",
+            "uncounted"
+          ],
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+        },
+        "hideInToc": {
+          "type": "boolean",
+          "description": "Keep the slide out of <Toc>."
+        },
+        "transition": {
+          "type": "string",
+          "enum": [
+            "zoom",
+            "none",
+            "fade",
+            "slide",
+            "convex",
+            "concave",
+            "view-transition"
+          ],
+          "examples": [
+            "none",
+            "fade",
+            "slide",
+            "convex",
+            "concave",
+            "zoom",
+            "view-transition"
+          ],
+          "description": "Slide transition (see transitions).",
+          "default": "slide"
+        },
+        "transitionSpeed": {
+          "type": "string",
+          "enum": [
+            "default",
+            "fast",
+            "slow"
+          ],
+          "description": "default · fast · slow.",
+          "default": "default"
+        },
+        "backgroundTransition": {
+          "type": "string",
+          "enum": [
+            "zoom",
+            "none",
+            "fade",
+            "slide",
+            "convex",
+            "concave",
+            "view-transition"
+          ],
+          "examples": [
+            "none",
+            "fade",
+            "slide",
+            "convex",
+            "concave",
+            "zoom",
+            "view-transition"
+          ],
+          "description": "Transition for backgrounds.",
+          "default": "fade"
+        },
+        "autoAnimate": {
+          "type": "boolean",
+          "description": "Allow auto-animate between slides that set `autoAnimate`.",
+          "default": true
+        },
+        "autoAnimateId": {
+          "type": "string",
+          "description": "Only auto-animate between slides with the same id."
+        },
+        "autoAnimateRestart": {
+          "type": "boolean",
+          "description": "Break the auto-animate chain here."
+        },
+        "autoSlide": {
+          "type": "number",
+          "description": "Milliseconds between automatic steps; 0 disables.",
+          "default": 0
+        },
+        "autoslide": {
+          "type": "number",
+          "description": "reveal.js spelling of autoSlide."
+        },
+        "clicks": {
+          "type": "number",
+          "description": "Force the number of click steps."
+        },
+        "clicksStart": {
+          "type": "number",
+          "description": "The step the slide opens at."
+        },
+        "preload": {
+          "type": "boolean",
+          "description": "Load the slide's module ahead of time (default true).",
+          "default": true
+        },
+        "timing": {
+          "type": "number",
+          "description": "Seconds planned for this slide (the presenter's pacing timer)."
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array"
+            }
+          ],
+          "description": "Adds state-<name> classes while the slide shows (CSS hooks)."
+        },
+        "colorScheme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "description": "\"auto\" (follow the system), \"light\" or \"dark\".",
+          "default": "auto"
+        },
+        "zoom": {
+          "type": "boolean",
+          "description": "Z zooms into a point.",
+          "default": true
+        },
+        "background": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill | tint }."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "description": "reveal.js: flat background colour."
+        },
+        "backgroundGradient": {
+          "type": "string",
+          "description": "reveal.js: a CSS gradient."
+        },
+        "backgroundImage": {
+          "type": "string",
+          "description": "reveal.js: an image URL."
+        },
+        "backgroundSize": {
+          "type": "string",
+          "description": "CSS background-size for the image (also the image layouts)."
+        },
+        "backgroundPosition": {
+          "type": "string",
+          "description": "CSS background-position."
+        },
+        "backgroundRepeat": {
+          "type": "string",
+          "description": "CSS background-repeat."
+        },
+        "backgroundOpacity": {
+          "type": "number",
+          "description": "0–1."
+        },
+        "backgroundVideo": {
+          "type": "string",
+          "description": "reveal.js: a video URL."
+        },
+        "backgroundVideoLoop": {
+          "type": "boolean",
+          "description": "Loop the background video."
+        },
+        "backgroundVideoMuted": {
+          "type": "boolean",
+          "description": "Mute the background video (default true)."
+        },
+        "backgroundIframe": {
+          "type": "string",
+          "description": "reveal.js: a page behind the slide."
+        },
+        "backgroundInteractive": {
+          "type": "boolean",
+          "description": "Let the background page take input."
+        },
+        "image": {
+          "type": "string",
+          "description": "The image for the image, image-left and image-right layouts."
+        },
+        "url": {
+          "type": "string",
+          "description": "The page for the iframe, iframe-left and iframe-right layouts."
+        },
+        "poster": {
+          "type": "string",
+          "description": "A picture that stands in for the iframe in print, previews and while it loads."
+        },
+        "posterUrl": {
+          "type": "string",
+          "description": "Capture the poster from this address instead of `url`."
+        },
+        "posterWait": {
+          "type": "number",
+          "description": "Milliseconds to let the page settle before the poster capture (default 5000)."
+        },
+        "terms": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "false: link no glossary terms automatically on this slide; { skip: [GIS] } leaves some out."
+        },
+        "src": {
+          "type": "string",
+          "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+        },
+        "author": {
+          "type": "string",
+          "description": "Who gives the talk.",
+          "default": ""
+        },
+        "info": {
+          "type": "string",
+          "description": "A line about the deck (Markdown).",
+          "default": ""
+        },
+        "width": {
+          "type": "number",
+          "description": "The authored size; the stage scales uniformly to fit any viewport.",
+          "default": 1920
+        },
+        "height": {
+          "type": "number",
+          "description": "The authored height in px; with width, the stage every screen scales.",
+          "default": 1080
+        },
+        "margin": {
+          "type": "number",
+          "description": "Fraction of the viewport left empty around the stage. 0 by default: a 16:9 window shows the slide edge to edge, any other shape gets bars on two sides — the content never reflows.",
+          "default": 0
+        },
+        "minScale": {
+          "type": "number",
+          "description": "Smallest scale the stage may shrink to.",
+          "default": 0.2
+        },
+        "maxScale": {
+          "type": "number",
+          "description": "Largest scale the stage may grow to.",
+          "default": 2
+        },
+        "center": {
+          "type": "boolean",
+          "description": "Vertically centre each slide's content.",
+          "default": true
+        },
+        "controls": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "speaker"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "Show the navigation arrows; \"speaker\" shows them only in the presenter view.",
+          "default": true
+        },
+        "controlsLayout": {
+          "type": "string",
+          "enum": [
+            "bottom-right",
+            "edges"
+          ],
+          "description": "Where the arrows sit.",
+          "default": "bottom-right"
+        },
+        "controlsTutorial": {
+          "type": "boolean",
+          "description": "Hint at vertical slides the first time.",
+          "default": true
+        },
+        "controlsBackArrows": {
+          "type": "string",
+          "enum": [
+            "faded",
+            "hidden",
+            "visible"
+          ],
+          "description": "How the back arrows look.",
+          "default": "faded"
+        },
+        "progress": {
+          "type": "boolean",
+          "description": "The progress bar along the bottom.",
+          "default": true
+        },
+        "slideNumber": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "h.v",
+                "h/v",
+                "c",
+                "c/t"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "Show slide numbers: true, or a format — \"h.v\", \"h/v\", \"c\" (current), \"c/t\" (current/total).",
+          "default": false
+        },
+        "showSlideNumber": {
+          "type": "string",
+          "enum": [
+            "all",
+            "speaker",
+            "print"
+          ],
+          "description": "Where slide numbers show.",
+          "default": "all"
+        },
+        "hash": {
+          "type": "boolean",
+          "description": "Keep the URL hash in step with the slide.",
+          "default": true
+        },
+        "hashOneBasedIndex": {
+          "type": "boolean",
+          "description": "1-based slide numbers in the hash.",
+          "default": false
+        },
+        "history": {
+          "type": "boolean",
+          "description": "Push a history entry per slide (Back walks the slides).",
+          "default": false
+        },
+        "keyboard": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "Keyboard navigation on.",
+          "default": true
+        },
+        "overview": {
+          "type": "boolean",
+          "description": "The overview grid (O / Esc).",
+          "default": true
+        },
+        "touch": {
+          "type": "boolean",
+          "description": "Swipe navigation.",
+          "default": true
+        },
+        "loop": {
+          "type": "boolean",
+          "description": "Wrap from the last slide to the first.",
+          "default": false
+        },
+        "rtl": {
+          "type": "boolean",
+          "description": "Right-to-left.",
+          "default": false
+        },
+        "navigationMode": {
+          "type": "string",
+          "enum": [
+            "grid",
+            "default",
+            "linear"
+          ],
+          "description": "\"default\", \"linear\" (arrows walk every slide) or \"grid\" (columns stay aligned).",
+          "default": "default"
+        },
+        "shuffle": {
+          "type": "boolean",
+          "description": "Shuffle the slides on load.",
+          "default": false
+        },
+        "fragments": {
+          "type": "boolean",
+          "description": "Clicks/fragments on; off shows every step at once.",
+          "default": true
+        },
+        "fragmentInURL": {
+          "type": "boolean",
+          "description": "Include the click step in the hash.",
+          "default": true
+        },
+        "embedded": {
+          "type": "boolean",
+          "description": "The deck lives inside another page.",
+          "default": false
+        },
+        "help": {
+          "type": "boolean",
+          "description": "The ? keyboard help.",
+          "default": true
+        },
+        "pause": {
+          "type": "boolean",
+          "description": "B / . blacks the screen out.",
+          "default": true
+        },
+        "showNotes": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "separate-page"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "Print notes with the slides: true (in a box) or \"separate-page\".",
+          "default": false
+        },
+        "autoPlayMedia": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Autoplay media on every slide (null = per element)."
+        },
+        "autoAnimateEasing": {
+          "type": "string",
+          "description": "CSS easing for auto-animate.",
+          "default": "ease"
+        },
+        "autoAnimateDuration": {
+          "type": "number",
+          "description": "Seconds.",
+          "default": 1
+        },
+        "autoAnimateUnmatched": {
+          "type": "boolean",
+          "description": "Fade in elements without a match.",
+          "default": true
+        },
+        "autoSlideStoppable": {
+          "type": "boolean",
+          "description": "Any input stops auto-slide.",
+          "default": true
+        },
+        "defaultTiming": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Seconds per slide for the pacing timer, or null."
+        },
+        "totalTime": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Total seconds for the pacing timer, or null."
+        },
+        "mouseWheel": {
+          "type": "boolean",
+          "description": "Scroll-wheel navigation.",
+          "default": false
+        },
+        "previewLinks": {
+          "type": "boolean",
+          "description": "Open links in an overlay.",
+          "default": false
+        },
+        "viewDistance": {
+          "type": "number",
+          "description": "Slides kept mounted on either side.",
+          "default": 3
+        },
+        "mobileViewDistance": {
+          "type": "number",
+          "description": "The same, on phones.",
+          "default": 2
+        },
+        "hideInactiveCursor": {
+          "type": "boolean",
+          "description": "Hide an idle cursor.",
+          "default": true
+        },
+        "hideCursorTime": {
+          "type": "number",
+          "description": "Milliseconds before it hides.",
+          "default": 5000
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "slide",
+            "scroll"
+          ],
+          "description": "\"slide\" (the stage) or \"scroll\" (a page).",
+          "default": "slide"
+        },
+        "scrollProgress": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "auto"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "The scroll view's progress bar.",
+          "default": "auto"
+        },
+        "scrollSnap": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "mandatory",
+                "proximity"
+              ]
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            }
+          ],
+          "description": "Scroll snapping in the scroll view.",
+          "default": "mandatory"
+        },
+        "scrollActivationWidth": {
+          "type": "number",
+          "description": "Viewport width under which the scroll view switches on by itself; 0 (the default) never does — a phone gets the same stage, letterboxed, and `?view=scroll` stays an explicit choice.",
+          "default": 0
+        },
+        "theme": {
+          "type": "string",
+          "examples": [
+            "minimal",
+            "rla",
+            "stack"
+          ],
+          "description": "The theme: minimal, rla, stack, or one your CSS defines as .theme-<name>.",
+          "default": "minimal"
+        },
+        "themes": {
+          "type": "array",
+          "description": "Themes this deck ships (their CSS is imported by main.tsx); the theme menu lists them."
+        },
+        "pdfSeparateFragments": {
+          "type": "boolean",
+          "description": "A page per click step in print/PDF.",
+          "default": true
+        },
+        "pdfMaxPagesPerSlide": {
+          "type": "number",
+          "description": "Pages a tall slide may spill onto.",
+          "default": 1
+        },
+        "jumpToSlide": {
+          "type": "boolean",
+          "description": "`:12` / g jumps.",
+          "default": true
+        },
+        "search": {
+          "type": "boolean",
+          "description": "/ searches the deck.",
+          "default": true
+        },
+        "wakeLock": {
+          "type": "boolean",
+          "description": "Keep the screen awake while presenting.",
+          "default": true
+        },
+        "selectable": {
+          "type": "boolean",
+          "description": "Text can be selected.",
+          "default": true
+        },
+        "lineNumbers": {
+          "type": "boolean",
+          "description": "Line numbers on every code block.",
+          "default": false
+        },
+        "autoFit": {
+          "type": "boolean",
+          "description": "Scale a slide whose content overflows so it fits (measured after render).",
+          "default": true
+        },
+        "magicMoveDuration": {
+          "type": "number",
+          "description": "Milliseconds per magic-move morph.",
+          "default": 800
+        },
+        "live": {
+          "type": "object",
+          "properties": {
+            "api": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "room": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "turnstile": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "description": "Live room: the backend base (same origin `/api` on the host), or null for an offline deck."
+        },
+        "drawings": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "persist": {
+              "type": "boolean"
+            },
+            "presenterOnly": {
+              "type": "boolean"
+            },
+            "syncAll": {
+              "type": "boolean"
+            }
+          },
+          "description": "Drawing: { enabled, persist, presenterOnly, syncAll }."
+        },
+        "glossary": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "src": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "repeat": {
+                  "type": "string",
+                  "enum": [
+                    "all",
+                    "first"
+                  ]
+                },
+                "headings": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "fallback"
+                      ]
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "skip": {
+                  "type": "array"
+                },
+                "delay": {
+                  "type": "number"
+                },
+                "sync": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            }
+          ],
+          "description": "Term cards. The runtime reads `delay` and `sync`; the rest steers the compiler, which sees the headmatter only — set those there. `glossary: false` or a path are shorthands."
+        },
+        "reactions": {
+          "type": "boolean",
+          "description": "Audience reactions in the live room.",
+          "default": true
+        },
+        "qa": {
+          "type": "boolean",
+          "description": "Audience questions in the live room.",
+          "default": true
+        },
+        "polls": {
+          "type": "boolean",
+          "description": "Polls and quizzes in the live room.",
+          "default": true
+        },
+        "audienceNotes": {
+          "type": "boolean",
+          "description": "Show every slide's notes to anyone on the audience page (after the talk, for instance).",
+          "default": false
+        },
+        "slug": {
+          "type": "string",
+          "description": "The deck's slug on the host, from the Vite base — decks/<slug>.",
+          "default": ""
+        },
+        "badge": {
+          "type": "boolean",
+          "description": "Show the \"Made with Kadal Deck\" link in the corner (set by the host, see `withHostOverride`).",
+          "default": false
+        },
+        "fonts": {
+          "type": "array",
+          "description": "Google Fonts families to load, e.g. [\"Inter:wght@400;600\"]."
+        },
+        "seoMeta": {
+          "type": "object",
+          "description": "Extra <meta> tags."
+        },
+        "aspectRatio": {
+          "type": "number",
+          "description": "Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…)."
+        },
+        "canvasWidth": {
+          "type": "number",
+          "description": "Slidev spelling: the stage width used with aspectRatio."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
