@@ -42,7 +42,8 @@ export function frontmatterSchema(catalog: Catalog): Schema {
   const deck = Object.fromEntries(catalog.deckFrontmatter.map((k) => [k.name, keySchema(k)]));
   return {
     $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: `https://unpkg.com/@kadal/deck@${catalog.version}/schema/frontmatter.json`,
+    // Unversioned, so the committed schema is the same file before and after a version bump.
+    $id: "https://unpkg.com/@kadal/deck/schema/frontmatter.json",
     title: "Kadal Deck frontmatter",
     description:
       "Frontmatter for deck.mdx. Validate the top block (headmatter) against #/$defs/headmatter and every other slide's block against #/$defs/slide.",

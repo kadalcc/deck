@@ -535,7 +535,7 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "mcp",
-    usage: "kadal-deck mcp [--dir path]",
+    usage: "kadal-deck mcp [--dir path] [--allow-outside]",
     summary: "A Model Context Protocol server on stdio, for AI agents.",
     json: false,
   },
@@ -547,7 +547,11 @@ export const EXIT_CODES = [
     code: 1,
     meaning: "The command failed (check found errors, a build failed, the host refused).",
   },
-  { code: 2, meaning: "Usage error: unknown command or flag, bad value." },
+  {
+    code: 2,
+    meaning:
+      "Usage error: unknown command or flag, bad value, `new` into a folder that is not empty.",
+  },
   { code: 3, meaning: "Not signed in, or the token was rejected: run `kadal-deck login`." },
   {
     code: 4,

@@ -164,3 +164,11 @@ describe("lookups", () => {
       expect(md).toContain(`<${c.name}>`);
   });
 });
+
+describe("releases", () => {
+  test("generated files do not depend on the version, so a version bump never makes them stale", () => {
+    const bumped = { ...catalog, version: "99.0.0" };
+    expect(frontmatterSchema(bumped)).toEqual(frontmatterSchema(catalog));
+    expect(catalogMarkdown(bumped)).toBe(catalogMarkdown(catalog));
+  });
+});

@@ -1,6 +1,6 @@
 <!-- Generated from the engine's catalog by packages/deck/tools/catalog.ts (REFERENCE.md). Do not edit: run `bun run catalog` in packages/deck. -->
 
-# Kadal Deck reference (v0.1.1)
+# Kadal Deck reference
 
 ## Layouts
 
@@ -1457,12 +1457,12 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `kadal-deck logout [--json]` — Forget the saved token. `--json`
 - `kadal-deck whoami [--json]` — Who is signed in (exit 3 when nobody). `--json`
 - `kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--json]` — Build and publish to a host; prints the URL. `--json`
-- `kadal-deck mcp [--dir path]` — A Model Context Protocol server on stdio, for AI agents.
+- `kadal-deck mcp [--dir path] [--allow-outside]` — A Model Context Protocol server on stdio, for AI agents.
 
 ## Exit codes
 
 - **0** — Success (check: no errors; warnings allowed).
 - **1** — The command failed (check found errors, a build failed, the host refused).
-- **2** — Usage error: unknown command or flag, bad value.
+- **2** — Usage error: unknown command or flag, bad value, `new` into a folder that is not empty.
 - **3** — Not signed in, or the token was rejected: run `kadal-deck login`.
 - **4** — Missing prerequisite: no deck.mdx here, dependencies not installed, or Playwright/Chromium missing.

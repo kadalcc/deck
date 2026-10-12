@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://unpkg.com/@kadal/deck@0.1.1/schema/frontmatter.json",
+  "$id": "https://unpkg.com/@kadal/deck/schema/frontmatter.json",
   "title": "Kadal Deck frontmatter",
   "description": "Frontmatter for deck.mdx. Validate the top block (headmatter) against #/$defs/headmatter and every other slide's block against #/$defs/slide.",
   "$ref": "#/$defs/slide",

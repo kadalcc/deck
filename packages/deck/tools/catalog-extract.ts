@@ -142,8 +142,11 @@ function componentsOf(prog: ts.Program): GeneratedComponent[] {
     const defaults = defaultsOf(decl);
     const props: PropInfo[] = [];
     const param = sig.parameters[0];
+    let open = false;
     if (param) {
       const pt = checker.getTypeOfSymbolAtLocation(param, decl);
+      // An index signature (`[key: string]: unknown`) passes any prop through.
+      open = checker.getIndexInfosOfType(pt).length > 0;
       for (const p of pt.getProperties()) {
         const pd = p.valueDeclaration ?? p.declarations?.[0];
         if (pd && /node_modules/.test(pd.getSourceFile().fileName)) continue;
@@ -164,6 +167,7 @@ function componentsOf(prog: ts.Program): GeneratedComponent[] {
       file: rel(decl.getSourceFile().fileName),
       props,
     };
+    if (open) c.openProps = true;
     if (sym.name !== exp.name && sym.name !== "default") c.aliasOf = sym.name;
     const doc = docOf(sym, checker);
     if (doc) c.description = doc;

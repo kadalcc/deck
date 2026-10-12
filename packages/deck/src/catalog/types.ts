@@ -41,6 +41,8 @@ export interface GeneratedComponent {
   aliasOf?: string;
   description?: string;
   props: PropInfo[];
+  /** The props type has an index signature: anything else is passed through. */
+  openProps?: boolean;
 }
 
 export interface GeneratedBackground {
@@ -98,6 +100,8 @@ export interface ComponentInfo {
   /** Needs a live room (publish the deck, or point `live.api` at a host). */
   live?: boolean;
   props: PropInfo[];
+  /** Accepts props beyond `props` (passed through to the element). */
+  openProps?: boolean;
   /** Engine file, for contributors. */
   source: string;
 }

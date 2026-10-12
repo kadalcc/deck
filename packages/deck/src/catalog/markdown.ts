@@ -192,7 +192,8 @@ export function sectionMarkdown(catalog: Catalog, section: CatalogSection, level
 export function catalogMarkdown(
   catalog: Catalog,
   sections?: CatalogSection[],
-  title = `Kadal Deck reference (v${catalog.version})`,
+  // No version in the text: generated files must not go stale when a release bumps it.
+  title = "Kadal Deck reference",
 ): string {
   const all = sections ?? (Object.keys(catalog).filter((k) => k !== "version") as CatalogSection[]);
   return `# ${title}\n\n${all.map((s) => sectionMarkdown(catalog, s)).join("\n")}`.replace(

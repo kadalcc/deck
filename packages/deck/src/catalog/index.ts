@@ -80,6 +80,8 @@ function components(): ComponentInfo[] {
     if (g.aliasOf) info.aliasOf = g.aliasOf;
     else if (g.name === "Fragment") info.aliasOf = "Click";
     if (meta.mapping) info.mapping = true;
+    if (g.openProps || (meta.propsFrom && byName.get(meta.propsFrom.name)?.openProps))
+      info.openProps = true;
     if (meta.live) info.live = true;
     return [info];
   });
