@@ -38,6 +38,10 @@
   ],
   "files": [
     "dist",
+    "schema",
+    "template",
+    "skill",
+    "REFERENCE.md",
     "LICENSE",
     "LICENSING.md",
     "README.md",
@@ -60,6 +64,14 @@
     "./compiler": {
       "types": "./dist/compiler/index.d.ts",
       "import": "./dist/compiler/index.js"
+    },
+    "./catalog": {
+      "types": "./dist/catalog/index.d.ts",
+      "import": "./dist/catalog/index.js"
+    },
+    "./authoring": {
+      "types": "./dist/authoring/index.d.ts",
+      "import": "./dist/authoring/index.js"
     },
     "./live": {
       "types": "./dist/live/index.d.ts",
@@ -99,6 +111,7 @@
     },
     "./styles.css": "./dist/themes/base.css",
     "./themes/*": "./dist/themes/*",
+    "./schema/frontmatter.json": "./schema/frontmatter.json",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -109,18 +122,20 @@
     "node": ">=20.19"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && node tools/sync-template.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
     "format": "oxfmt src",
     "test": "bun test",
     "verify:island": "node tools/verify-island.mjs",
-    "prepack": "tsdown"
+    "prepack": "tsdown && node tools/sync-template.mjs",
+    "catalog": "bun tools/catalog.ts"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "0.18.1",
     "@excalidraw/mermaid-to-excalidraw": "2.2.2",
     "@mdx-js/mdx": "^3.1.1",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "katex": "^0.16.22",
     "lucide-react": "^1.18.0",
     "mermaid": "^11.4.1",
@@ -133,7 +148,8 @@
     "shiki": "^3.13.0",
     "shiki-magic-move": "^1.1.0",
     "unist-util-visit": "^5.0.0",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/hast": "^3.0.5",
