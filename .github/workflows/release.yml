@@ -34,11 +34,14 @@ jobs:
       # Opens a "Version packages" PR while changesets are pending; once that PR is merged,
       # publishes every changed package to npm with provenance.
       - uses: changesets/action@v1
+        id: changesets
         with:
           version: bunx changeset version
           publish: bun run release
           title: "Version packages"
           commit: "Version packages"
+          # One release per version (the step below), not one per package.
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # tools/publish.mjs: `direct` (npm publish) unless the repo variable says `stage`.
@@ -48,3 +51,9 @@ jobs:
           # trusted publishing (OIDC) first whenever the package has a trusted publisher.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
+      # The GitHub release v<version>, with the changelog entry and the packages that went out.
+      - if: steps.changesets.outputs.published == 'true'
+        run: node tools/github-release.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
