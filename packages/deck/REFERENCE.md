@@ -1315,7 +1315,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `pdfMaxPagesPerSlide` | `number` | `1` | Pages a tall slide may spill onto. |
 | `jumpToSlide` | `boolean` | `true` | `:12` / g jumps. |
 | `search` | `boolean` | `true` | / searches the deck. |
-| `zoom` | `boolean` | `true` | Z zooms into a point. |
+| `zoom` | `boolean` | `true` | Alt+click zooms into a point; Esc zooms back out. |
 | `wakeLock` | `boolean` | `true` | Keep the screen awake while presenting. |
 | `selectable` | `boolean` | `true` | Text can be selected. |
 | `lineNumbers` | `boolean` | `false` | Line numbers on every code block. |

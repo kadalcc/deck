@@ -627,7 +627,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   pdfMaxPagesPerSlide: "Pages a tall slide may spill onto.",
   jumpToSlide: "`:12` / g jumps.",
   search: "/ searches the deck.",
-  zoom: "Z zooms into a point.",
+  zoom: "Alt+click zooms into a point; Esc zooms back out.",
   wakeLock: "Keep the screen awake while presenting.",
   selectable: "Text can be selected.",
   lineNumbers: "Line numbers on every code block.",

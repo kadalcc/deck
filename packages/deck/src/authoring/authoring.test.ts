@@ -315,6 +315,22 @@ describe("lint", () => {
     );
     expect(r.errors).toBe(0);
   });
+
+  // what the showcase taught the checker
+  test("a commented key in components is still a key", async () => {
+    const r = await lint(
+      "# A\n\n---\nlayout: spotlight\neyebrow: Mine\n---\n\n# B\n",
+      {},
+      'export const components: Record<string, C> = {\n  How: How as C,\n  // picks `layout: spotlight`\n  "layout:spotlight": S as unknown as C,\n};',
+    );
+    expect(r.errors).toBe(0);
+    expect(r.warnings).toBe(0); // `eyebrow` belongs to the deck's own layout
+  });
+
+  test("reveal.js's split transitions are known names", async () => {
+    const r = await lint("# A\n\n---\ntransition: zoom-in fade-out\n---\n\n# B\n");
+    expect(r.warnings).toBe(0);
+  });
 });
 
 describe("review regressions (PR #6)", () => {

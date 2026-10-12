@@ -7,7 +7,7 @@ import {
 import { parseCodeMeta } from "../compiler/code-meta.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
 import type { RawSlide } from "../compiler/split.ts";
-import { resolveBackground } from "../core/model.ts";
+import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
@@ -216,6 +216,10 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       const sk = slideKeys.get(key);
       const dk = deckKeys.get(key);
       const def = sk ?? dk;
+      // A layout of the deck's own is read from frontmatter by its author's code: its keys are
+      // the layout's business, not unknown.
+      const ownLayout = typeof s.frontmatter.layout === "string" && ext.layouts.includes(s.frontmatter.layout);
+      if (!def && ownLayout) continue;
       if (!def) {
         const near = closest(key, [...slideKeys.keys(), ...(head ? deckKeys.keys() : [])]);
         add({
@@ -276,7 +280,9 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
     }
     for (const key of ["transition", "backgroundTransition"]) {
       const t = s.frontmatter[key];
-      if (typeof t === "string" && !transitions.has(t))
+      // `zoom-in fade-out` (reveal.js's split form) is two known names, one for each half.
+      const halves = typeof t === "string" ? splitTransition(t, "none") : null;
+      if (typeof t === "string" && !(transitions.has(t) || (transitions.has(halves!.in) && transitions.has(halves!.out))))
         add({
           ...at,
           severity: "warning",
@@ -627,7 +633,11 @@ export function readExtensions(
         if (src[i] === "{") depth++;
         else if (src[i] === "}" && --depth === 0) break;
       }
-      const body = src.slice(start, i);
+      // Comments out: a comment line above a key became part of that key's text and hid it.
+      const body = src
+        .slice(start, i)
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/[^\n]*$/gm, "");
       // Top-level keys only: strip nested braces/brackets/parens first.
       let flat = body;
       for (let k = 0; k < 6; k++) flat = flat.replace(/\{[^{}]*\}|\[[^[\]]*\]|\([^()]*\)/g, "");
