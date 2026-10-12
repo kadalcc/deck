@@ -32,6 +32,7 @@
   "type": "module",
   "sideEffects": [
     "**/*.css",
+    "./src/backgrounds/*.tsx",
     "./dist/backgrounds/*.js",
     "./dist/renderers/index.js"
   ],
