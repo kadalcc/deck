@@ -19,6 +19,7 @@ import {
   titleOf,
 } from "../compiler/index.ts";
 import { parseCodeMeta, serialiseSteps } from "../compiler/code-meta.ts";
+import { DEFAULT_LANGS } from "../compiler/langs.ts";
 import { plainText } from "../compiler/plain-text.ts";
 import { rehypeGlossary } from "../compiler/rehype-glossary.ts";
 import {
@@ -78,32 +79,6 @@ const renderMath = (tex: string) => renderKatex(tex, { throwOnError: false });
 
 const VIRTUAL = "virtual:deck";
 const RESOLVED = "\0virtual:deck";
-
-const DEFAULT_LANGS = [
-  "ts",
-  "tsx",
-  "js",
-  "jsx",
-  "json",
-  "bash",
-  "sh",
-  "python",
-  "rust",
-  "go",
-  "html",
-  "css",
-  "md",
-  "yaml",
-  "sql",
-  "toml",
-  "diff",
-  "c",
-  "cpp",
-  "java",
-  "kotlin",
-  "swift",
-  "text",
-];
 
 export function deck(options: DeckPluginOptions = {}): Plugin {
   const entry = options.entry ?? "deck.mdx";

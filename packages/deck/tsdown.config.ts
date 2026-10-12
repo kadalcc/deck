@@ -10,6 +10,8 @@ export default defineConfig({
     index: "src/index.ts",
     "vite/index": "src/vite/index.ts",
     "compiler/index": "src/compiler/index.ts",
+    "catalog/index": "src/catalog/index.ts",
+    "authoring/index": "src/authoring/index.ts",
     "live/index": "src/live/index.ts",
     "live/protocol": "src/live/protocol.ts",
     "presenter/index": "src/presenter/index.tsx",

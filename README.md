@@ -166,6 +166,62 @@ framework island running on one slide. Press `?` for the keys.
 </tr>
 </table>
 
+## Use with AI agents
+
+Kadal Deck is built to be written by an agent as well as a person: a skill that teaches the
+format and the workflow, an MCP server that can edit slides precisely and **look at them**, and a
+CLI whose every command answers in JSON.
+
+**Claude Code plugin** (the skill and the MCP server together):
+
+```text
+/plugin marketplace add kadalcc/deck
+/plugin install kadal-deck@kadal-deck
+```
+
+(On Claude Code 2.1.275 or later, `/plugin install kadal-deck --marketplace kadalcc/deck` does both.)
+
+**The skill alone, for any agent** ([Agent Skills](https://agentskills.io) format, in
+[`skills/kadal-deck`](skills/kadal-deck)): `npx skills add kadalcc/deck`
+
+**The MCP server alone** — `kadal-deck mcp` speaks the Model Context Protocol on stdio. It works
+on the deck in the folder it starts in (or `--dir <path>`; every tool also takes a `dir` inside
+it). Tools never read or write outside that folder unless the server is started with
+`--allow-outside`.
+
+```sh
+claude mcp add kadal-deck -- npx -y @kadal/deck mcp          # Claude Code
+```
+
+```jsonc
+// Claude Desktop (claude_desktop_config.json) and Cursor (.cursor/mcp.json)
+{ "mcpServers": { "kadal-deck": { "command": "npx", "args": ["-y", "@kadal/deck", "mcp", "--dir", "/path/to/my-talk"] } } }
+
+// VS Code (.vscode/mcp.json)
+{ "servers": { "kadal-deck": { "type": "stdio", "command": "npx", "args": ["-y", "@kadal/deck", "mcp"] } } }
+```
+
+| tools | |
+| --- | --- |
+| `deck_reference`, `deck_frontmatter_schema` | every component, layout, background and option, from the engine's own catalog |
+| `deck_create`, `deck_outline`, `deck_read_slide`, `deck_check` | scaffold, read the deck as structure, lint it |
+| `slide_add`, `slide_update`, `slide_remove`, `slide_move`, `deck_update_frontmatter`, `notes_set` | edits that change only that slide's lines, linted on the spot |
+| `slide_render`, `deck_preview` | PNG pictures of slides from a dev server kept running between calls, and a live URL for you |
+| `deck_build`, `deck_export`, `deck_publish` | a static site, PDF/PNG/PPTX, and a published deck (with your saved `kadal-deck login`) |
+
+It also serves the catalog, the reference and the guides as resources, and two prompts:
+`draft_deck` (outline → finished deck) and `review_deck`. Rendering and export need Playwright
+in the deck: `npm i -D playwright && npx playwright install chromium`.
+
+**The CLI, for scripts and agents**: `kadal-deck check` (lint, exit 1 on errors),
+`kadal-deck screenshot` (PNGs), `kadal-deck info [topic]` (the reference), `kadal-deck new <dir>`
+(no questions asked); `--json` on every command prints one JSON object on stdout. Exit codes:
+0 ok · 1 failed · 2 usage · 3 not signed in · 4 missing prerequisite.
+
+Building your own tooling? `@kadal/deck/catalog` is everything a deck can use as data,
+`@kadal/deck/authoring` reads, lints and edits a deck as text (no Node APIs), and
+`@kadal/deck/schema/frontmatter.json` is the JSON Schema for frontmatter.
+
 ## Islands, in any framework
 
 Put a component from any of these on a slide. Each runtime is code-split and loads only when its
@@ -217,7 +273,7 @@ export and a static build. The **live room** needs a server that holds a WebSock
 | [Islands](https://deck.kadal.cc/docs/islands/) | Components from other frameworks |
 | [Presenter and keyboard](https://deck.kadal.cc/docs/presenter-and-keyboard/) | Every view and every key |
 | [Export](https://deck.kadal.cc/docs/export/) | PDF, PNG and PPTX |
-| [CLI](https://deck.kadal.cc/docs/cli/) | `dev`, `build`, `export`, `login`, `publish` |
+| [CLI](https://deck.kadal.cc/docs/cli/) | `new`, `dev`, `build`, `check`, `screenshot`, `export`, `login`, `publish`, `mcp` |
 | [Self-hosting the room](https://deck.kadal.cc/docs/self-hosting/) | The protocol and what the AGPL asks of you |
 
 The engine's own reference, with every component and option, is in

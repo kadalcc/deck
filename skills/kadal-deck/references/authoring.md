@@ -1,0 +1,127 @@
+# Authoring a Kadal Deck
+
+## The folder
+
+| file | what it is |
+| --- | --- |
+| `deck.mdx` | the slides |
+| `deck.config.ts` | `export const config: DeckConfigInput = {…}` — engine settings; **overrides the headmatter** |
+| `src/main.tsx` | mounts `<Deck>`; imports the theme stylesheets the deck can switch between |
+| `src/components.tsx` | `export const components = { Name: Component, "layout:name": Layout }` — usable in every slide without imports |
+| `src/styles.css` | the deck's own CSS (tokens, utility classes; Tailwind v4 is set up) |
+| `public/` | images, videos, `.excalidraw` files — referenced as `/file.png` |
+| `glossary.yaml` | optional: terms whose first mention per slide gets a definition card |
+| `AGENTS.md` | conventions for agents working in the deck |
+
+## Slides and frontmatter
+
+- A line `---` starts a new slide; `----` (four or more) starts a slide **beneath** the previous
+  one (a vertical stack — detail the presenter may skip).
+- YAML directly after a separator, closed by `---`, is that slide's frontmatter:
+
+  ```mdx
+  ---
+  layout: two-cols
+  background: { component: aurora, speed: 0.5 }
+  class: text-left
+  ---
+  ```
+
+- The YAML at the very top of the file is the **headmatter**: deck settings (`title`, `author`,
+  `theme`, `transition`, `slideNumber`, `colorScheme`, `fonts`, `glossary`…) *and* the first
+  slide's frontmatter (so `layout:`/`background:` there style the title slide).
+- Precedence: engine defaults < headmatter < `deck.config.ts`. A key set in `deck.config.ts`
+  cannot be changed from the headmatter (`kadal-deck check` warns).
+- `src: ./part.mdx` as the only content of a slide includes that file's slides there.
+- Every key, its type and default: `npx kadal-deck info slide`, `info deck`, or the JSON Schema
+  at `@kadal/deck/schema/frontmatter.json`.
+
+## MDX rules that bite
+
+- Leave a **blank line** between JSX tags and Markdown inside them, or the Markdown is not parsed:
+  `<Col>⏎⏎- a list⏎⏎</Col>`.
+- `{` `}` and `<` are syntax. In prose write them in backticks, or escape: `\{`, `&lt;`.
+- JSX attributes: `className` (not `class`), `style={{ fontSize: 48 }}`, numbers and arrays in
+  braces: `at={2}`, `options={["A", "B"]}`. Strings in quotes.
+- Close every tag; self-close empty ones (`<QrJoin />`).
+- HTML comments do not work; use `{/* comment */}`.
+- Components are Capitalised. Unknown names fail the slide — check `kadal-deck info components`.
+
+## Clicks (steps)
+
+- `<Click>…</Click>` reveals on the next click; `<After>` with the previous one; `<Clicks>`
+  around a list reveals item by item. `at="+2"`, `at={3}`, `at={[2, 4]}`, `hide`,
+  `effect="fade-up"` (see the click effects in references/components.md).
+- Code steps: ```` ```ts {1|2-3|all} ```` highlights those lines, one set per click.
+- `<Notes>` text with `[click]` markers: the presenter view shows the part for the current click.
+
+## Layouts and slots
+
+`layout: two-cols` splits at a line `::right::`. Image layouts read `image:`; iframe layouts read
+`url:`. All layouts: references/layouts-and-backgrounds.md. A custom layout is a component in
+`src/components.tsx` under the key `"layout:name"`, receiving `{ frontmatter, options, children }`.
+
+## Code, maths, diagrams
+
+- Fenced code is highlighted at build time (Shiki). Meta: `{lines:true}`, `[file.ts]` title,
+  `{2|4-6}` steps, `{maxHeight:'400px'}`. A ````md magic-move fence morphs between the code fences
+  it contains, one per click.
+- Maths: `$inline$` and `$$display$$` (KaTeX at build time).
+- Diagrams: `<Mermaid>{`flowchart LR; A --> B`}</Mermaid>`; hand-drawn `<Sketch>{`flowchart LR; A --> B`}</Sketch>`
+  or `<Sketch src="/diagram.excalidraw" />`.
+
+## Images, video, embeds
+
+- Put files in `public/` and write `![Alt text](/photo.jpg)` or `<Image src="/photo.jpg" alt="…" preview />`.
+  A path that is not in `public/` works in `dev` but is missing from the build (`check` flags it).
+- `background: /photo.jpg` (or a video `.mp4`) fills the slide; `layout: image-right` + `image:` splits it.
+- `<Iframe src="https://…" />` / `layout: iframe` embed pages; they load only near their slide and
+  print as a poster (`kadal-deck export --posters` captures them).
+
+## Look and feel
+
+- Themes: `theme: minimal | rla | stack` in the headmatter (the deck's `src/main.tsx` imports their
+  CSS). `colorScheme: dark` on one slide forces dark tokens there.
+- Theme tokens for your CSS: `--deck-bg`, `--deck-fg`, `--deck-muted`, `--deck-accent`,
+  `--deck-accent-2`, `--deck-surface`, `--deck-border`, `--deck-radius`, `--deck-pad`,
+  `--deck-base-size`, `--deck-heading-font`, `--deck-body-font`, `--deck-mono-font`. Use them
+  instead of hard-coded colours so dark mode and theme switching keep working.
+- The stage is 1920 × 1080 and scales to any screen; size things in px or em against that.
+  Overflowing content is shrunk to fit (`autoFit`), which makes text small — cut instead.
+
+## Glossary terms
+
+`glossary.yaml` beside `deck.mdx`:
+
+```yaml
+GNSS: Satellite positioning — GPS, NavIC, Galileo and the rest.
+UTM:
+  full: Universal Transverse Mercator
+  def: Sixty projections that turn latitude and longitude into **metres**.
+  aliases: [UTM zone 44N]
+```
+
+The first mention of each term on a slide becomes a hover card. `<Term>UTM</Term>` links one by
+hand; `terms: false` in a slide's frontmatter turns automatic linking off there.
+
+## Your own components
+
+```tsx
+// src/components.tsx
+import type { ComponentType } from "react";
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="deck-card">
+      <strong style={{ fontSize: "2.4em" }}>{value}</strong>
+      <div>{label}</div>
+    </div>
+  );
+}
+
+export const components: Record<string, ComponentType<any>> = { Stat };
+```
+
+Then `<Stat value="93%" label="coverage" />` in any slide. Hooks from `@kadal/deck`
+(`useSlide`, `useClick`, `useConfig`) give a component its slide, click step and settings.
+Components from other frameworks (Vue, Svelte, Solid…) go in as islands via `@kadal/deck-*`.

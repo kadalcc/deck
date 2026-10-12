@@ -3,7 +3,10 @@ export {
   type RawSlide,
   type SplitOptions,
   type SplitResult,
+  type SlideRange,
+  fencedRanges,
   levelOf,
+  notesBlocks,
   splitDeck,
   titleOf,
 } from "./split.ts";

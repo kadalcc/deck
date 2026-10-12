@@ -28,14 +28,41 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 
 | command | what |
 | --- | --- |
+| `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun]` | a deck from the starter, no questions asked |
 | `kadal-deck dev` | Vite dev server for the deck in this folder |
 | `kadal-deck build` | `dist/` for any static host |
-| `kadal-deck export [--png] [--pptx]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX) |
+| `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
+| `kadal-deck info [topic] [name] [--search words] [--markdown]` | the reference (components, layouts, backgrounds, themes, transitions, clicks, code, deck, slide, keys, routes, live, cli, exit) |
+| `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium) |
+| `kadal-deck export [--png] [--pptx] [--no-pdf] [--out dir] [--scale n] [--url u]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX) |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
-| `kadal-deck publish [--slug] [--workspace] [--title]` | build for the host and publish; only changed files are uploaded |
+| `kadal-deck publish [--slug] [--workspace] [--title] [--host]` | build for the host and publish; only changed files are uploaded |
+| `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |
+
+Every command takes `--dir <path>` (`-C`) and, except `dev`, `build` and `mcp`, `--json`: one JSON
+object on stdout, progress on stderr. Flags accept `--flag value` and `--flag=value`; switches
+take `--no-` to turn off. Exit codes: **0** ok (check: no errors) · **1** failed · **2** usage ·
+**3** not signed in · **4** missing prerequisite (no `deck.mdx`, dependencies or Chromium).
 
 `KADAL_DECK_TOKEN` (an API token from the dashboard) and `KADAL_DECK_HOST` override the saved
 login, which is how CI publishes.
+
+## For AI agents and tools
+
+- `kadal-deck mcp` — tools to read the reference, scaffold, outline, edit single slides (only
+  their lines change), lint, **render slides to PNG** for the agent to look at, preview, build,
+  export and publish; resources for the catalog, the reference and the guides; prompts
+  `draft_deck` and `review_deck`. Setup for each client: the repository README.
+- `skill/` in this package (and `skills/kadal-deck` in the repository) — the Agent Skill.
+- `@kadal/deck/catalog` — `catalog` (components with props/defaults/examples, layouts,
+  backgrounds, themes, transitions, click effects, code meta, deck/slide frontmatter, keys, routes,
+  live room, CLI, exit codes), `searchCatalog`, `findEntry`, `catalogMarkdown`,
+  `frontmatterSchema`. Pure data: works in a browser or a Worker. [REFERENCE.md](REFERENCE.md) is
+  the same catalog as Markdown.
+- `@kadal/deck/authoring` — `outlineDeck`, `lintDeck`, `addSlide` / `updateSlide` /
+  `removeSlide` / `moveSlide` / `setNotes` / `updateHeadmatter` over a `{ entry, read }` file
+  interface; edits return new file text and never touch bytes outside the slide.
+- `@kadal/deck/schema/frontmatter.json` — JSON Schema (`$defs.headmatter`, `$defs.slide`).
 
 ## Writing slides
 
@@ -174,3 +201,7 @@ share links (free plan included). Any static host also works: `npx kadal-deck bu
 - `src/backgrounds` — the background components
 - `src/themes` — base.css (engine), live.css, minimal / rla / stack
 - `src/export` — Playwright export to PDF, PNG, PPTX
+- `src/catalog` — `@kadal/deck/catalog`; `generated.ts` comes from `tools/catalog-extract.ts` (`bun run catalog`)
+- `src/authoring` — `@kadal/deck/authoring`: outline, lint and line-exact edits of a deck as text
+- `src/cli` — the `kadal-deck` CLI (commands, args, render, new, host/login/publish)
+- `src/mcp` — `kadal-deck mcp`, the MCP server

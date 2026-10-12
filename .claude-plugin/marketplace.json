@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "kadal-deck",
+  "owner": {
+    "name": "Kadal",
+    "email": "pmithunish@gmail.com",
+    "url": "https://kadal.cc"
+  },
+  "metadata": {
+    "description": "Kadal Deck for AI agents: write, check, look at and publish MDX presentations."
+  },
+  "plugins": [
+    {
+      "name": "kadal-deck",
+      "displayName": "Kadal Deck",
+      "source": "./",
+      "description": "Make presentations with Kadal Deck (MDX slides with clicks, layouts, backgrounds, notes and a live audience room): the kadal-deck skill (workflow, authoring and design guides, the full component reference) and the kadal-deck MCP server (outline, line-exact slide edits, lint, slide screenshots, export, publish).",
+      "category": "productivity",
+      "keywords": ["slides", "presentation", "mdx", "deck", "talk", "mcp"],
+      "homepage": "https://deck.kadal.cc",
+      "repository": "https://github.com/kadalcc/deck",
+      "license": "AGPL-3.0-or-later",
+      "author": { "name": "Mithunish Prabhakaran", "url": "https://github.com/pmithunish" },
+      "strict": false,
+      "skills": ["./skills/kadal-deck"],
+      "mcpServers": {
+        "kadal-deck": {
+          "command": "npx",
+          "args": ["-y", "@kadal/deck@latest", "mcp"]
+        }
+      }
+    }
+  ]
+}
