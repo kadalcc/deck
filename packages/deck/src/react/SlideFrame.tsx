@@ -13,6 +13,7 @@ import { createClickRegistry } from "../core/clicks.ts";
 import type { MagicMoveData, SlideMeta, SlideOptions } from "../core/model.ts";
 import { key as navKey, setTotal } from "../core/navigation.ts";
 import { SlideContext, type SlideContextValue, useDeck } from "./context.ts";
+import { useUi } from "./hooks.ts";
 import { layoutFor } from "./layouts.tsx";
 import { MDXProvider } from "./mdx.tsx";
 
@@ -39,6 +40,11 @@ export interface SlideFrameProps {
   frames?: "lazy" | "load";
   /** The slide a press lands on next: its embedded pages load now, hidden, and stay loaded. */
   prefetch?: boolean;
+  /**
+   * Report the slide's click total to the navigation store. The stage's slides do; previews do
+   * not — except the print view's, which is how it learns how many pages each slide needs.
+   */
+  reportTotal?: boolean;
   /**
    * Whether the slide's glossary terms answer to the pointer and to reveals from the room. On by
    * default wherever the slide is real; a preview is inert — except the audience's mirror, which
@@ -182,6 +188,9 @@ function startFrameWhenHostIsFree(
   timers.push(setTimeout(() => startFrameWhenHostIsFree(frame, src, timers, waited + 600), 600));
 }
 
+/** Elements a slide places at stage coordinates or behind its content; never what overflows it. */
+const PLACED = ".deck-slide-background, .deck-absolute, .deck-arrow";
+
 export function SlideFrame({
   meta,
   options,
@@ -192,6 +201,7 @@ export function SlideFrame({
   preview = false,
   frames = "lazy",
   prefetch = false,
+  reportTotal = !preview,
   terms = !preview,
   className,
   style,
@@ -231,14 +241,14 @@ export function SlideFrame({
 
   // Report the click total (the registry's, or the frontmatter override) to the nav store.
   useEffect(() => {
-    if (preview) return;
+    if (!reportTotal) return;
     const report = (total: number) => {
       const t = options.clicks ?? total;
       deck.nav.update((s) => setTotal(s, h, v, t));
     };
     report(registry.total());
     return registry.onChange(report);
-  }, [registry, deck.nav, h, v, options.clicks, preview]);
+  }, [registry, deck.nav, h, v, options.clicks, reportTotal]);
 
   // Media: autoplay on show, pause on hide; lazy sources (data-src) when mounted near the view.
   useEffect(() => {
@@ -312,7 +322,15 @@ export function SlideFrame({
     const fit = () => {
       el.classList.remove("is-fitted");
       el.style.removeProperty("--deck-fit");
+      // What is placed rather than flowed — a layer behind the slide, a block or an arrow at stage
+      // coordinates — is out of the measurement: a `<Background>` reaches a pad past every edge
+      // by design, and an `<Absolute>` near the bottom is where the author put it. Counting their
+      // boxes shrank every slide that used one, for overflow that was never there.
+      const placed = [...el.querySelectorAll<HTMLElement | SVGElement>(PLACED)];
+      const shown = placed.map((n) => n.style.display);
+      for (const n of placed) n.style.display = "none";
       const need = el.scrollHeight;
+      placed.forEach((n, i) => (n.style.display = shown[i]!));
       const have = el.clientHeight;
       if (need > have + 2) {
         el.style.setProperty("--deck-fit", Math.max(0.45, (have / need) * 0.985).toFixed(3));
@@ -344,6 +362,9 @@ export function SlideFrame({
   );
 
   const Layout = layoutFor(options.layout, deck.components);
+  // A slide that forces a scheme wears the theme's class too: the theme's tokens for that scheme
+  // are keyed `.theme-x[data-color-scheme]`, which only an element carrying both can match.
+  const theme = useUi((s) => s.theme);
   const stateClasses = options.state.map((s) => `state-${s}`).join(" ");
 
   return (
@@ -354,6 +375,7 @@ export function SlideFrame({
           "deck-slide",
           `layout-${options.layout}`,
           options.className,
+          options.colorScheme ? `theme-${theme}` : "",
           stateClasses,
           className,
         ]

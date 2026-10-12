@@ -1,51 +1,585 @@
 @import "tailwindcss";
 @source "../deck.mdx";
+@source "../slides";
 
-.feature {
-  display: grid;
-  gap: 0.2em;
-  padding: 0.7em 0.9em;
+/*
+ * The tour's own look, on top of whichever theme is worn. Everything reads the theme's tokens
+ * (--deck-fg, --deck-accent, --deck-surface…), so the theme menu and the dark scheme restyle all
+ * of it; the `sc-` prefix keeps the deck's classes apart from the engine's `deck-` ones.
+ */
+
+/* ── type ─────────────────────────────────────────────────────────────────── */
+.sc-eyebrow {
+  margin: 0 0 0.7em;
+  color: var(--deck-muted);
+  font: 600 0.62em/1.2 var(--deck-mono-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.deck-slide .sc-lede {
+  max-width: 46em;
+  margin-bottom: 0.9em;
+  color: var(--deck-muted);
+  font-size: 0.86em;
+}
+.deck-slide .sc-small {
+  margin: 0.6em 0 0;
+  color: var(--deck-muted);
+  font-size: 0.72em;
+  line-height: 1.5;
+}
+.deck-slide .sc-tight {
+  margin: 0;
+  font-size: 0.78em;
+}
+.deck-slide .sc-caption {
+  margin: -0.2em 0 0.8em;
+  color: var(--deck-muted);
+  font-size: 0.66em;
+}
+.deck-slide .sc-h3 {
+  margin: 0 0 0.5em;
+  font-size: 0.8em;
+}
+.sc-attribution {
+  color: var(--deck-muted);
+  font-size: 0.55em;
+  font-style: normal;
+}
+.sc-command code {
+  display: inline-block;
+  padding: 0.5em 1em;
   border: 1px solid var(--deck-border);
-  border-radius: var(--deck-radius);
+  border-radius: 999px;
   background: var(--deck-surface);
   font-size: 0.8em;
 }
-.feature-icon {
-  width: 1.4em;
-  height: 1.4em;
-  color: var(--deck-accent);
-}
-.feature span {
-  color: var(--deck-muted);
-  font-size: 0.85em;
-}
+
+/* the cover */
 .deck-slide.hero h1 {
-  font-size: 4em;
-  letter-spacing: -0.04em;
+  margin-bottom: 0.4em;
+  font-size: 3.4em;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
 }
-.big-number {
-  font-size: 5em;
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  line-height: 1;
+.deck-slide.hero .sc-eyebrow {
+  font-size: 0.66em;
+}
+.sc-keys {
+  color: var(--deck-muted);
+  font-size: 0.8em;
 }
 
-/* The islands slide. Two runtimes, one row, and the framework's name on each so the slide shows
-   what it claims rather than only saying it. */
-/* Three runtimes in a row, so the slide shows what it says rather than three stacked boxes. */
-.islands {
+/* the table of contents on the second slide */
+.deck-slide .sc-toc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: chapter;
+  column-gap: 2.5em;
+}
+.sc-toc li {
+  break-inside: avoid;
+  counter-increment: chapter;
+  margin: 0 0 0.35em;
+  font-size: 0.9em;
+}
+.sc-toc li::before {
+  content: counter(chapter);
+  display: inline-block;
+  width: 1.6em;
+  color: var(--deck-muted);
+  font: 500 0.6em var(--deck-mono-font);
+}
+.deck-slide .sc-toc a {
+  color: var(--deck-fg);
+  text-decoration: none;
+}
+.deck-slide .sc-toc a:hover {
+  color: var(--deck-accent);
+}
+
+/* ── "how it's written" ───────────────────────────────────────────────────── */
+.sc-how {
+  display: grid;
+  gap: 0.35em;
+  min-width: 0;
+}
+.sc-how + .sc-how {
+  margin-top: 0.6em;
+}
+.sc-how-label {
+  color: var(--deck-muted);
+  font: 600 0.62em var(--deck-mono-font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sc-how .deck-code-block {
+  margin: 0;
+  font-size: 1em;
+}
+.sc-how .deck-code-block + .deck-code-block {
+  margin-top: 0.6em;
+}
+
+/* steps that sit beside a stepped code block, lit one at a time */
+.sc-steps {
+  display: grid;
+  gap: 0.45em;
+}
+.sc-steps > .deck-click {
+  padding: 0.45em 0.8em;
+  border-inline-start: 3px solid var(--deck-border);
+  border-radius: 0 var(--deck-radius) var(--deck-radius) 0;
+  font-size: 0.8em;
+  line-height: 1.45;
+}
+.sc-steps > .deck-click.is-shown {
+  color: var(--deck-muted);
+}
+.sc-steps > .deck-click.is-current {
+  border-color: var(--deck-accent);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+}
+
+/* ── cards ────────────────────────────────────────────────────────────────── */
+.sc-card {
+  padding: 0.8em 1em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+  font-size: 0.85em;
+}
+.sc-card > :last-child {
+  margin-bottom: 0;
+}
+.sc-card .deck-callout {
+  margin: 0.35em 0;
+  padding: 0.35em 0.7em;
+  font-size: 0.85em;
+}
+
+/* the layout chips, the transition chips */
+.sc-layout-grid,
+.sc-chips {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5em;
+}
+.sc-chips {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.deck-slide :is(.sc-layout-grid, .sc-chips) a {
+  padding: 0.55em 0.4em;
+  border: 1px solid var(--deck-border);
+  border-radius: 999px;
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  font: 500 0.68em var(--deck-mono-font);
+  text-align: center;
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.deck-slide :is(.sc-layout-grid, .sc-chips) a:hover {
+  border-color: var(--deck-accent);
+  color: var(--deck-accent);
+}
+
+/* the custom layout */
+.deck-layout-spotlight {
+  display: grid;
+  grid-template-columns: 19% 1fr;
+  margin: calc(var(--deck-pad) * -1);
+  width: auto;
+  height: calc(100% + 2 * var(--deck-pad));
+}
+.sc-spotlight-band {
+  display: flex;
+  align-items: flex-end;
+  padding: var(--deck-pad) calc(var(--deck-pad) * 0.6);
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(255, 255, 255, 0.25), transparent 60%),
+    linear-gradient(160deg, #0ea5e9, #6366f1 55%, #a855f7);
+  color: #fff;
+}
+.sc-spotlight-band span {
+  font: 600 0.6em var(--deck-mono-font);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.sc-spotlight-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--deck-pad);
+  min-width: 0;
+}
+.sc-spotlight-body p {
+  max-width: 40em;
+  font-size: 0.85em;
+}
+
+/* layout demos */
+.sc-big-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+/* the fact layout makes every paragraph the fact; the eyebrow and the caption are not */
+.deck-layout-fact > p.sc-eyebrow {
+  font-size: 0.62em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+.deck-layout-fact > p.sc-fact-caption {
+  max-width: 24em;
+  margin-top: 0.3em;
+  color: var(--deck-muted);
+  font-size: 0.95em;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.sc-quote {
+  margin-bottom: 0.4em;
+  font-size: 1.35em;
+  line-height: 1.25;
+}
+.deck-layout-statement h1 {
+  font-size: 3.2em;
+}
+.sc-full-demo {
+  display: grid;
+  place-content: center;
+  height: 100%;
+  padding: 0 12%;
+  background:
+    radial-gradient(60% 80% at 15% 20%, rgba(14, 165, 233, 0.35), transparent 70%),
+    radial-gradient(50% 70% at 85% 80%, rgba(168, 85, 247, 0.3), transparent 70%),
+    var(--deck-surface);
+  text-align: center;
+}
+.sc-none-demo {
+  position: absolute;
+  top: 26%;
+  left: 18%;
+  width: 52%;
+  padding: 1.2em 1.4em;
+  border: 2px dashed var(--deck-accent);
+  border-radius: var(--deck-radius);
+  transform: rotate(-2deg);
+}
+
+/* ── clicks ───────────────────────────────────────────────────────────────── */
+.sc-effects {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6em;
+}
+.sc-effect {
+  display: grid;
+  gap: 0.5em;
+  justify-items: start;
+  padding: 0.7em 0.8em 0.8em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+}
+.deck-slide .sc-effect code {
+  color: var(--deck-muted);
+  font-size: 0.56em;
+  background: none;
+  padding: 0;
+}
+.sc-effect-word {
+  font-size: 0.95em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.sc-step-meter {
+  margin-left: 0.6em;
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-border);
+  font-family: var(--deck-mono-font);
+  white-space: nowrap;
+}
+.sc-step-meter b {
+  color: var(--deck-accent);
+}
+.sc-timeline {
+  display: grid;
+  gap: 0.55em;
+}
+.sc-timeline > div {
+  display: grid;
+  grid-template-columns: 8.5em 1fr;
+  align-items: center;
+  gap: 1em;
+  font-size: 0.8em;
+}
+.deck-slide .sc-timeline code {
+  color: var(--deck-muted);
+  font-size: 0.72em;
+  background: none;
+}
+.sc-pill {
+  justify-self: start;
+  padding: 0.3em 0.9em;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--deck-accent) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--deck-accent) 45%, transparent);
+  font-size: 0.85em;
+}
+.sc-pill.is-muted {
+  background: var(--deck-surface);
+  border-color: var(--deck-border);
+}
+.sc-type {
+  font: 500 0.82em var(--deck-mono-font);
+}
+.sc-words p {
+  font-size: 1.05em;
+}
+
+/* ── looks ────────────────────────────────────────────────────────────────── */
+.sc-themes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8em;
+}
+.sc-theme {
+  display: grid;
+  gap: 0.35em;
+}
+.sc-theme-face {
+  position: relative;
+  display: grid;
+  gap: 0.25em;
+  align-content: start;
+  height: 6.2em;
+  padding: 0.8em 1em;
+  overflow: hidden;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  font-family: var(--deck-body-font);
+}
+.sc-theme-face strong {
+  font: 700 1.2em/1.1 var(--deck-heading-font);
+  letter-spacing: -0.01em;
+}
+.sc-theme-face span {
+  color: var(--deck-muted);
+  font-size: 0.62em;
+}
+.sc-theme-face code {
+  justify-self: start;
+  padding: 0.15em 0.5em;
+  border-radius: 6px;
+  background: var(--deck-code-bg);
+  color: var(--deck-code-fg);
+  font: 0.5em var(--deck-mono-font);
+}
+.sc-theme-face i {
+  position: absolute;
+  right: 1em;
+  bottom: 1em;
+  width: 3.2em;
+  height: 0.5em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2));
+}
+.sc-theme-name {
+  color: var(--deck-muted);
+  font: 500 0.62em var(--deck-mono-font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sc-bg-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-auto-rows: 7.6em;
+  gap: 0.45em;
+  font-size: 0.56em;
+}
+.sc-bg-tile {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--deck-border);
+  border-radius: 10px;
+  background: var(--deck-bg);
+}
+.sc-bg-tile .deck-slide-background {
+  inset: 0;
+}
+.sc-bg-tile > span {
+  position: absolute;
+  left: 0.5em;
+  bottom: 0.45em;
+  padding: 0.1em 0.5em;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--deck-bg) 82%, transparent);
+  font: 600 0.9em var(--deck-mono-font);
+}
+.sc-over-frame {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  max-width: 34em;
+  padding: 0.9em 1.2em;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--deck-radius);
+  background: rgba(4, 18, 31, 0.72);
+  backdrop-filter: blur(10px);
+  color: #e0f2fe;
+}
+.sc-over-frame h2 {
+  margin-bottom: 0.3em;
+  font-size: 1.3em;
+}
+.sc-over-frame p:last-child {
+  margin: 0;
+  font-size: 0.7em;
+}
+.sc-gradient-title {
+  margin: 0 0 0.4em;
+  font-size: 1.7em !important;
+}
+.sc-halos {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.8em;
-  align-items: stretch;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0.8em 0 0.4em;
+  font-size: 0.72em;
+}
+.sc-bling-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 9em;
+}
+.sc-tilt-card {
+  position: relative;
+}
+.sc-stack {
+  height: 1.8em;
+  border: 1px dashed var(--deck-border);
+  border-radius: var(--deck-radius);
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+/* ── movement ─────────────────────────────────────────────────────────────── */
+.sc-aa-row {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  min-height: 3.2em;
+  margin-bottom: 0.6em;
+}
+.sc-aa-row.is-after {
+  justify-content: flex-end;
+  min-height: 5.4em;
+}
+.sc-aa-box {
+  padding: 0.4em 1em;
+  border-radius: 18px;
+  background: #0ea5e9;
+  color: #fff;
+  font-weight: 700;
+}
+.sc-aa-box.is-after {
+  padding: 0.8em 1.8em;
+  border-radius: 48px;
+  background: #6366f1;
+  font-size: 1.8em;
+}
+.sc-aa-dot {
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+.sc-aa-dot.is-after {
+  width: 2.4em;
+  height: 2.4em;
+  background: #ec4899;
+}
+.sc-countdown {
+  margin: 0.2em 0 0.4em;
+  font: 700 3em/1 var(--deck-mono-font);
+  letter-spacing: -0.04em;
+}
+
+/* ── media ────────────────────────────────────────────────────────────────── */
+.sc-thumbs {
+  display: flex;
+  gap: 0.6em;
+  margin: 0.4em 0;
+}
+.sc-thumbs img {
+  width: 8.4em;
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  cursor: zoom-in;
+}
+.sc-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--deck-radius);
+  background: #04121f;
+  object-fit: cover;
+}
+.deck-slide audio {
+  width: 100%;
+  margin: 0.4em 0 0.8em;
+}
+.sc-frame {
+  height: 15.5em;
+}
+.sc-frame.deck-frame,
+.deck-youtube.deck-frame {
+  overflow: hidden;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+}
+.deck-youtube {
+  aspect-ratio: 16 / 9;
+  height: auto;
+}
+.deck-tweet {
+  height: 15em;
+}
+.deck-tweet .deck-frame {
+  height: 100%;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  overflow: hidden;
+}
+
+/* ── islands ──────────────────────────────────────────────────────────────── */
+/* A row of runtimes, each named under its card, so the slide shows what it claims. */
+.islands {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6em;
+  margin-bottom: 0.4em;
 }
 .deck-island {
   display: flex;
-  flex: 0 1 auto;
   flex-direction: column;
+  min-width: 0;
 }
-/* The host grows so the framework labels below the cards share one baseline, whatever each
-   card happens to contain. */
+/* The host grows so the labels below the cards share one baseline, whatever each card holds. */
 .deck-island-host {
   flex: 1;
 }
@@ -55,16 +589,19 @@
 .deck-island::after {
   content: attr(data-framework);
   display: block;
-  margin-top: 0.3em;
+  margin-top: 0.35em;
   color: var(--deck-muted);
-  font-size: 0.6em;
-  letter-spacing: 0.08em;
+  font: 600 0.42em var(--deck-mono-font);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-/* Two islands on this slide share the `wasm` renderer — the hand-written module and the Leptos
-   one — which is the ABI doing its job and makes the renderer's name ambiguous as a label. */
+/* Two islands here share the `wasm` renderer — the hand-written module and the Leptos one —
+   which is the ABI doing its job and makes the renderer's name ambiguous as a label. */
 .deck-island.from-rust::after {
   content: "rust · leptos";
+}
+.deck-island[data-framework="web-components"]::after {
+  content: "custom element";
 }
 .deck-island-error {
   color: var(--deck-accent);
@@ -73,16 +610,15 @@
 .ticker {
   display: grid;
   gap: 0.1em;
-  min-width: 9em;
-  padding: 0.7em 0.9em;
+  padding: 0.6em 0.8em;
   border: 1px solid var(--deck-border);
   border-radius: var(--deck-radius);
   background: var(--deck-surface);
-  font-size: 0.8em;
+  font-size: 0.7em;
 }
 .ticker-label {
   color: var(--deck-muted);
-  font-size: 0.8em;
+  font-size: 0.85em;
 }
 .ticker-count {
   font-size: 1.6em;
@@ -92,6 +628,202 @@
 }
 .ticker-step {
   color: var(--deck-accent);
-  font-size: 0.75em;
+  font-size: 0.72em;
   font-style: normal;
+}
+
+/* ── live ─────────────────────────────────────────────────────────────────── */
+.sc-live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.3em 0.9em;
+  border: 1px solid var(--deck-border);
+  border-radius: 999px;
+  background: var(--deck-surface);
+  color: var(--deck-muted);
+  font: 500 0.6em var(--deck-mono-font);
+}
+.sc-live-status i {
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--deck-muted);
+}
+.sc-live-status.is-on i {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+}
+
+/* ── presenting ───────────────────────────────────────────────────────────── */
+.sc-keys-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5em;
+}
+.sc-keys-grid > div {
+  display: grid;
+  gap: 0.35em;
+  padding: 0.6em 0.8em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+  color: var(--deck-muted);
+  font-size: 0.74em;
+}
+.sc-keys-grid > div > span {
+  color: var(--deck-fg);
+  font-size: 1.15em;
+}
+.sc-draw-target {
+  display: grid;
+  place-items: center;
+  gap: 0.4em;
+  height: 9em;
+  border: 2px dashed var(--deck-border);
+  border-radius: var(--deck-radius);
+  color: var(--deck-muted);
+  font-size: 0.8em;
+}
+.sc-views {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6em;
+}
+.deck-slide .sc-views a {
+  display: grid;
+  gap: 0.2em;
+  padding: 0.7em 0.9em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.deck-slide .sc-views a:hover {
+  border-color: var(--deck-accent);
+}
+.sc-views b {
+  font: 600 0.74em var(--deck-mono-font);
+}
+.sc-views span {
+  color: var(--deck-muted);
+  font-size: 0.66em;
+}
+/* `state: calm` on a slide adds this class; the tour shows it is there by using it. */
+.deck-slide.state-calm .sc-eyebrow {
+  color: #0d9488;
+}
+.sc-stretch-demo {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  margin-top: 0.8em;
+  border: 1px dashed var(--deck-border);
+  border-radius: var(--deck-radius);
+  color: var(--deck-muted);
+  font-size: 0.62em;
+}
+.sc-framed {
+  display: block;
+  width: 7em;
+}
+
+/* the eighteen layouts, by what they are for */
+.sc-layout-groups {
+  display: grid;
+  gap: 0.55em;
+}
+.sc-layout-groups > div {
+  display: grid;
+  grid-template-columns: 7.2em 1fr;
+  align-items: center;
+  gap: 1em;
+}
+.sc-layout-groups > div > span {
+  color: var(--deck-muted);
+  font: 600 0.56em var(--deck-mono-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sc-layout-groups > div > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45em;
+}
+.deck-slide .sc-layout-groups a {
+  padding: 0.5em 1.1em;
+  border: 1px solid var(--deck-border);
+  border-radius: 999px;
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  font: 500 0.72em var(--deck-mono-font);
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.deck-slide .sc-layout-groups a:hover {
+  border-color: var(--deck-accent);
+  color: var(--deck-accent);
+}
+
+/* a transition's own slide: its name, large */
+.sc-transition h2 {
+  margin: 0 0 0.25em;
+  font-size: 3.4em;
+  letter-spacing: -0.04em;
+}
+.sc-transition p:not(.sc-eyebrow) {
+  max-width: 30em;
+  color: var(--deck-muted);
+}
+.sc-transition code {
+  font-size: 0.9em;
+}
+
+/* blocks */
+.sc-blocks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8em;
+}
+.sc-blocks .sc-card > strong:first-child {
+  display: block;
+  margin-bottom: 0.4em;
+}
+.sc-blocks .deck-badge {
+  margin: 0 0.15em 0.3em 0;
+  font-size: 0.8em;
+}
+.sc-placed {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1.2em;
+  margin-top: 0.9em;
+}
+.sc-pace .deck-pace {
+  font-size: 1.2em;
+}
+.sc-qr .deck-qr {
+  border-radius: var(--deck-radius);
+}
+.sc-gradient-title {
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+.sc-bling .deck-glass p {
+  font-size: 0.9em;
+}
+.sc-bling .sc-halos {
+  font-size: 0.9em;
+}
+.sc-bling .deck-shimmer {
+  font-size: 1.1em;
 }

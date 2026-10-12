@@ -162,7 +162,8 @@ export function Poll({
       <div className="deck-poll-head">
         <strong>{question}</strong>
         <span className="deck-poll-meta">
-          {open ? "open" : "closed"} · {total} {total === 1 ? "answer" : "answers"}
+          {/* Offline there is no one to open it: say so, rather than "closed" over live buttons. */}
+          {live ? (open ? "open" : "closed") : "offline"} · {total} {total === 1 ? "answer" : "answers"}
         </span>
         {role === "presenter" ? (
           <span className="deck-poll-controls">

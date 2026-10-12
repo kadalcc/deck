@@ -1,0 +1,156 @@
+---
+layout: section
+id: live
+background:
+  component: cells
+  color: "rgba(236,72,153,0.25)"
+  accent: "rgba(236,72,153,0.8)"
+---
+
+<p className="sc-eyebrow">Chapter 8</p>
+
+# The live room
+
+Phones join by QR. They follow along, react, ask, vote and play — nothing to install.
+
+<p><LiveStatus /></p>
+
+<Notes>
+Chapter eight: the room. Served by a host — `kadal-deck publish`, or your own Worker — the deck gets a room: one Durable Object per deck that every window and phone connects to. Without one, as in a local preview, every piece in this chapter still renders and works for a single screen; the badge above says which this copy is.
+</Notes>
+
+---
+id: join
+---
+
+<p className="sc-eyebrow">Live · join</p>
+
+## Join from a phone
+
+<Cols cols="auto 1fr" gap="3.5rem" align="center">
+<Col>
+
+<QrJoin size={300} />
+
+</Col>
+<Col>
+
+<Presence />
+
+The audience page follows the presenter — or wanders off and catches up with one press. It carries reactions, an ask box with upvotes, polls, the quiz, a pace dial, a raised hand, and the notes when you share them.
+
+<Reactions />
+
+</Col>
+</Cols>
+
+<Notes>
+`<QrJoin />` draws the code for this deck's audience page, `/join`. `<Presence />` counts who is watching, once there is a room. `<Reactions />` is the reaction bar — on a phone, the same buttons float emoji across the projector.
+</Notes>
+
+---
+id: poll
+---
+
+<p className="sc-eyebrow">Live · polls</p>
+
+## A poll
+
+<Poll id="tools" question="What do you present with today?" options={["Keynote or PowerPoint", "Google Slides", "reveal.js or Slidev", "Something else"]} />
+
+<Notes>
+A poll is defined by the slide and opened from the presenter view. Phones answer on the audience page; the bars move live. Offline, a vote here is remembered on this screen only.
+</Notes>
+
+----
+id: poll-kinds
+---
+
+<p className="sc-eyebrow">Live · polls</p>
+
+## More than one answer, and a scale
+
+<Cols n={2} gap="2.5rem" align="start">
+<Col>
+
+<Poll id="features" kind="multi" question="Which would you use first?" options={["Clicks", "The live room", "Islands", "Export"]} />
+
+</Col>
+<Col>
+
+<Poll id="pace-rating" kind="rating" scale={5} question="How is the pace so far?" />
+
+</Col>
+</Cols>
+
+<Notes>
+`kind="multi"` takes several answers, `kind="rating"` a score out of `scale`.
+</Notes>
+
+---
+id: word-cloud
+---
+
+<p className="sc-eyebrow">Live · word cloud</p>
+
+## One word each
+
+<WordCloud id="oneword" question="One word for this deck so far" />
+
+<Notes>
+A word cloud: each phone sends a word, and the more people send it, the larger it grows.
+</Notes>
+
+---
+id: quiz
+---
+
+<p className="sc-eyebrow">Live · quiz</p>
+
+## A timed quiz
+
+<Cols cols="1.4fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<Quiz id="separator" question="Which separator starts a vertical slide?" options={["---", "----", "***", "==="]} correct={1} seconds={20} />
+
+</Col>
+<Col>
+
+<h3 className="sc-h3">Leaderboard</h3>
+
+<Leaderboard top={5} />
+
+</Col>
+</Cols>
+
+<Notes>
+The presenter starts it; phones get twenty seconds, and points for being right and for being quick. The leaderboard adds up every quiz in the room.
+</Notes>
+
+---
+id: questions
+---
+
+<p className="sc-eyebrow">Live · questions</p>
+
+## Questions, and the pace
+
+<Cols n={2} gap="2.5rem" align="start">
+<Col>
+
+<Questions limit={5} />
+
+</Col>
+<Col>
+
+<div className="sc-pace"><Pace /></div>
+
+Phones vote *slower* or *faster*; the dial leans with them. Raised hands show in the presenter's room panel.
+
+</Col>
+</Cols>
+
+<Notes>
+Questions from the audience, most-voted first, answered ones dimmed — the presenter marks them from the room panel. The pace dial is the room's running vote on speed.
+</Notes>

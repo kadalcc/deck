@@ -119,6 +119,6 @@ export function layoutFor(
   name: string,
   components: Record<string, ComponentType<Record<string, unknown>>>,
 ): ComponentType<LayoutProps> {
-  const custom = components[`layout:`] as unknown as ComponentType<LayoutProps> | undefined;
+  const custom = components[`layout:${name}`] as unknown as ComponentType<LayoutProps> | undefined;
   return custom ?? LAYOUTS[name] ?? LAYOUTS.default!;
 }

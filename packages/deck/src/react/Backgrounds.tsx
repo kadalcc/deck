@@ -2,7 +2,7 @@ import { type ComponentType, useEffect, useState } from "react";
 
 import type { SlideBackground } from "../core/model.ts";
 import { useDeck } from "./context.ts";
-import { useLayout, useNav } from "./hooks.ts";
+import { useLayout, useNav, useUi } from "./hooks.ts";
 
 /**
  * Backgrounds sit behind the stage and cover exactly its box — a colour, a gradient, an image, a
@@ -46,6 +46,7 @@ export function BackgroundLayer({
   active: boolean;
   className?: string;
 }) {
+  const theme = useUi((s) => s.theme);
   if (!bg)
     return (
       <div
@@ -66,8 +67,16 @@ export function BackgroundLayer({
   const Comp = bg.component ? registry.get(bg.component) : null;
   return (
     <div
-      className={["deck-background", className].filter(Boolean).join(" ")}
+      className={[
+        "deck-background",
+        // A forced scheme reads the worn theme's tokens for it, as the slide itself does.
+        bg.scheme ? `theme-${theme}` : "",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
       data-active={active || undefined}
+      data-color-scheme={bg.scheme ?? undefined}
     >
       <div className="deck-background-fill" style={{ ...style, opacity: bg.opacity }} />
       {bg.video ? (

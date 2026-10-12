@@ -170,7 +170,6 @@ export function Li({ children, ...rest }: { children?: ReactNode; [key: string]:
   );
 }
 
-let liCounter = 0;
 function ClickLi({
   scope,
   children,
@@ -180,8 +179,11 @@ function ClickLi({
   children?: ReactNode;
   [key: string]: unknown;
 }) {
-  // Items share a step in groups of `every`: the first of each group registers a step, the rest ride along.
-  const index = liCounter++;
+  // Items share a step in groups of `every`: the first of each group registers a step, the rest
+  // ride along. The item's place in ITS list comes from the list (see `numberItems`); a counter
+  // kept across renders drifted with every list the page had drawn before, so `every={2}` paired
+  // the wrong items on any slide after a list with an odd number of them.
+  const index = Number(rest["data-item"] ?? 0);
   const at = index % scope.every === 0 ? undefined : "+0";
   const { shown, current, range, click } = useClick({ at });
   return (
@@ -203,13 +205,33 @@ function ClickLi({
   );
 }
 
+/** Inside `<Clicks>`, each item learns its place in its own list — what `every` groups by. */
+function numberItems(children: ReactNode): ReactNode {
+  let n = 0;
+  return Children.map(children, (child) =>
+    isValidElement(child)
+      ? cloneElement(child as React.ReactElement<Record<string, unknown>>, { "data-item": n++ })
+      : child,
+  );
+}
+
 /** Lists keep their markup. `<Clicks>` recognises these two by identity, so it leaves them to
  * step their own items; the class is for the stylesheet. */
 export function Ul(props: { children?: ReactNode; className?: string; [key: string]: unknown }) {
-  return <ul {...props} className={["deck-list", props.className].filter(Boolean).join(" ")} />;
+  const inClicks = useContext(ClicksContext) !== null;
+  return (
+    <ul {...props} className={["deck-list", props.className].filter(Boolean).join(" ")}>
+      {inClicks ? numberItems(props.children) : props.children}
+    </ul>
+  );
 }
 export function Ol(props: { children?: ReactNode; className?: string; [key: string]: unknown }) {
-  return <ol {...props} className={["deck-list", props.className].filter(Boolean).join(" ")} />;
+  const inClicks = useContext(ClicksContext) !== null;
+  return (
+    <ol {...props} className={["deck-list", props.className].filter(Boolean).join(" ")}>
+      {inClicks ? numberItems(props.children) : props.children}
+    </ol>
+  );
 }
 
 export { cloneElement };

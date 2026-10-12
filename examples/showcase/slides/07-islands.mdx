@@ -1,0 +1,111 @@
+---
+layout: section
+id: islands
+background:
+  component: constellation
+---
+
+<p className="sc-eyebrow">Chapter 7</p>
+
+# Any framework
+
+A slide is HTML, so nothing about it requires React. An island is a piece of another framework living inside one.
+
+<Notes>
+Chapter seven: islands. The engine renders with React, but a slide can hold a component from any framework.
+</Notes>
+
+---
+id: islands-row
+---
+
+<p className="sc-eyebrow">Islands</p>
+
+## Eleven runtimes, one slide
+
+<p className="sc-lede">Each card below is alive only while this slide is shown, and arrived with it — none was in the deck's first load. Press <Kbd>→</Kbd>: each is handed the new step and keeps counting.</p>
+
+<div className="islands">
+  <ElementIsland label="alive for" />
+  <VueIsland label="alive for" />
+  <SvelteIsland label="alive for" />
+  <SolidIsland label="alive for" />
+  <PreactIsland label="alive for" />
+  <QwikIsland label="alive for" />
+  <AngularIsland label="alive for" />
+  <FreshIsland label="alive for" />
+  <WasmIsland label="alive for" />
+  <RustIsland label="alive for" />
+  <PythonIsland label="alive for" />
+</div>
+
+<Click at={1}><p className="sc-small">Step 1 — every island got new props and none restarted: the counters kept their time.</p></Click>
+<Click at={2}><p className="sc-small">Step 2 — 195 bytes of hand-written WebAssembly, Leptos compiled from Rust, and CPython itself, beside eight JavaScript frameworks.</p></Click>
+
+<Notes>
+Measured on this deck, not asserted. A custom element, Vue, Svelte, Solid, Preact, Qwik, Angular and Fresh; 195 bytes of WebAssembly text; Leptos compiled from Rust; and CPython, via Pyodide — the one that needs the network, six megabytes from a pinned CDN.
+[click] Step: the deck hands every island the new click. They update instead of remounting — a chart would keep its animation, a half-typed form its text.
+[click] Each runtime arrives with the slide that uses it: a renderer is registered by name and a dynamic import, so Vue costs nothing on slide one.
+</Notes>
+
+----
+id: islands-how
+---
+
+<p className="sc-eyebrow">Islands · how</p>
+
+## A renderer is two functions
+
+<Cols n={2} gap="2rem" align="start">
+<Col>
+
+<How label="main.tsx — register by name, fetched on first use">
+
+```tsx
+registerLazyRenderer("vue", () =>
+  import("@kadal/deck-vue").then((m) => m.vueRenderer),
+);
+```
+
+</How>
+
+<How label="components.tsx — an island">
+
+```tsx
+<Island
+  framework="vue"
+  load={() => import("./vue-ticker.ts")}
+  client="slide"
+  props={{ step: useClickIndex() }}
+/>
+```
+
+</How>
+
+</Col>
+<Col>
+
+<How label="a renderer, for a framework the engine never heard of">
+
+```ts
+export const myRenderer: DeckRenderer = {
+  name: "mine",
+  mount(host, component, props) {
+    const app = create(component, props);
+    app.attach(host);
+    return {
+      update: (next) => app.set(next),
+      destroy: () => app.detach(),
+    };
+  },
+};
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+The whole extension point. A renderer puts a component into an element and takes it out again, with an optional update. `client="slide"` is the deck's own hydration rule: alive while the slide is up, gone when it is left — neighbours are mounted for smooth transitions, so hydrating all of them would be how a phone runs out of memory.
+</Notes>

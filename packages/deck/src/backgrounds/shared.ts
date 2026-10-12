@@ -64,7 +64,7 @@ export function useCanvas(
     window.addEventListener("resize", size);
     window.addEventListener("orientationchange", size);
     const tick = (t: number) => {
-      const dt = Math.min(0.05, (t - last) / 1000);
+      const dt = frameDelta(t, last);
       last = t;
       draw(ctx, w, h, t / 1000, dt);
       raf = requestAnimationFrame(tick);
@@ -79,6 +79,17 @@ export function useCanvas(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, ...deps]);
   return ref;
+}
+
+/**
+ * Seconds since the last frame, for a draw function: never more than a twentieth (a tab coming
+ * back must not jump), and never less than zero. The first frame's timestamp is when that frame
+ * STARTED, which can be before the `performance.now()` the loop was set up at — a negative step
+ * ran the starfield backwards, past its far plane, into a negative radius that threw inside the
+ * animation frame and froze the background for good.
+ */
+export function frameDelta(now: number, last: number): number {
+  return Math.max(0, Math.min(0.05, (now - last) / 1000));
 }
 
 export const asList = (v: unknown, fallback: string[]): string[] =>

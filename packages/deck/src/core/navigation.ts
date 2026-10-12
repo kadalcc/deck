@@ -266,3 +266,23 @@ export function formatSlideNumber(
         : String(state.h + offset);
   }
 }
+
+/** The interval `A` uses on a deck that configures none, so the key always does something. */
+export const DEFAULT_AUTO_SLIDE_MS = 5000;
+
+/**
+ * How long the current slide waits before auto-slide moves on, or null when it does not move.
+ *
+ * reveal.js's rule: a slide's own `autoSlide` wins — and `0` there means "this one waits for you"
+ * — then the deck's. A slide-level interval works on a deck that sets none, and a deck that sets
+ * nothing anywhere still steps every few seconds once the viewer turns it on with `A`.
+ */
+export function autoSlideDelay(
+  slideMs: number | null,
+  deckMs: number,
+  configuredAnywhere: boolean,
+): number | null {
+  if (slideMs !== null) return slideMs > 0 ? slideMs : null;
+  if (deckMs > 0) return deckMs;
+  return configuredAnywhere ? null : DEFAULT_AUTO_SLIDE_MS;
+}

@@ -89,7 +89,7 @@ Cards that share a row share a height: a `<Glass>` or `<Callout>` that is the on
 
 ## Keys
 
-`?` shows the sheet. Vim first: `j`/`k` next and previous step through everything, `h`/`l` previous and next column (steps first, then the column — reveal.js's arrows do the same), `gg`/`G` first and last, `/` search, `:12` jump, `f` **focus** — every link, button, glossary term, image preview and embedded page on the slide gets a home-row label; type it to use it (Vimium's f). Also Space/N, `↓`/`↑` for the vertical stack, `O` overview, `T` theme menu, `⇧F` fullscreen, `B` blackout, `D` dark/light, `C` draw, `X` laser, `S` presenter view, `Z` zoom, `Esc`.
+`?` shows the sheet. Vim first: `j`/`k` next and previous step through everything, `h`/`l` previous and next column (steps first, then the column — reveal.js's arrows do the same), `gg`/`G` first and last, `/` search, `:12` jump, `f` **focus** — every link, button, glossary term, image preview and embedded page on the slide gets a home-row label; type it to use it (Vimium's f). Also Space/N, `↓`/`↑` for the vertical stack, `O` overview, `T` theme menu, `⇧F` fullscreen, `B` blackout, `D` dark/light, `C` draw, `X` laser, `S` presenter view, `Alt`+click to zoom to a point, `Esc`.
 
 ## Themes and looks
 

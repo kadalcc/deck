@@ -772,10 +772,12 @@ export function Typewriter({
   cursor?: boolean;
 }) {
   const slide = useSlide();
-  const [n, setN] = useState(0);
+  // A thumbnail nobody is watching — print, the overview, the next-slide box — shows the line
+  // typed out, as `<Counter>` shows its last number: a blank there printed as a missing line.
+  const [n, setN] = useState(slide.preview && !slide.active ? text.length : 0);
   useEffect(() => {
     if (!slide.active) {
-      setN(0);
+      setN(slide.preview ? text.length : 0);
       return;
     }
     let i = 0;
@@ -785,7 +787,7 @@ export function Typewriter({
       if (i >= text.length) clearInterval(t);
     }, speed);
     return () => clearInterval(t);
-  }, [slide.active, text, speed]);
+  }, [slide.active, slide.preview, text, speed]);
   return (
     <span className={["deck-typewriter", className].filter(Boolean).join(" ")}>
       {text.slice(0, n)}
@@ -812,7 +814,12 @@ export function Encrypted({
   const [out, setOut] = useState(text);
   useEffect(() => {
     if (!slide.active) {
-      setOut(text.replace(/\S/g, () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!));
+      // Resolved in a thumbnail (print, the overview), noise on a slide still to be shown.
+      setOut(
+        slide.preview
+          ? text
+          : text.replace(/\S/g, () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!),
+      );
       return;
     }
     let frame = 0;
@@ -847,7 +854,7 @@ export function Encrypted({
       cancelAnimationFrame(raf);
       clearTimeout(raf);
     };
-  }, [slide.active, text, speed, delay]);
+  }, [slide.active, slide.preview, text, speed, delay]);
   return <span className={["deck-encrypted", className].filter(Boolean).join(" ")}>{out}</span>;
 }
 

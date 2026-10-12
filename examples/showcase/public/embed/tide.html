@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tide clock</title>
+    <!--
+      A page the showcase embeds: the iframe layouts, <Iframe> and `background: { iframe }` all
+      point here. It lives in public/ so the tour embeds something real without depending on the
+      network — and it is interactive, so "the frame is live" is something you can check by
+      pressing its button.
+    -->
+    <style>
+      :root {
+        --bg: #f0f9ff;
+        --fg: #0c4a6e;
+        --muted: #0369a1;
+        --water: #0ea5e9;
+        --line: rgba(12, 74, 110, 0.15);
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #04121f;
+          --fg: #e0f2fe;
+          --muted: #7dd3fc;
+          --water: #38bdf8;
+          --line: rgba(224, 242, 254, 0.14);
+        }
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      body {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 2vh;
+        padding: 5vh 5vw;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(20px, 5vw, 56px);
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0.3em 0 0;
+        color: var(--muted);
+        font-size: clamp(12px, 2.2vw, 24px);
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+      footer {
+        display: flex;
+        align-items: center;
+        gap: 1em;
+        font-size: clamp(12px, 2vw, 22px);
+      }
+      button {
+        font: inherit;
+        padding: 0.4em 1em;
+        border-radius: 999px;
+        border: 1px solid var(--water);
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 id="title">Tide clock</h1>
+      <p id="level">High water in …</p>
+    </header>
+    <canvas id="c"></canvas>
+    <footer>
+      <button id="wave" type="button">Make a wave</button>
+      <span id="count">0 waves</span>
+    </footer>
+    <script>
+      const c = document.getElementById("c");
+      const ctx = c.getContext("2d");
+      const level = document.getElementById("level");
+      const count = document.getElementById("count");
+      let waves = 0;
+      let kick = 0;
+      document.getElementById("wave").addEventListener("click", () => {
+        waves++;
+        kick = 1;
+        count.textContent = `${waves} wave${waves === 1 ? "" : "s"}`;
+      });
+      // A semidiurnal tide: two highs a day, 12 h 25 min apart.
+      const period = (12 * 60 + 25) * 60 * 1000;
+      function draw(now) {
+        const dpr = window.devicePixelRatio || 1;
+        const w = c.clientWidth;
+        const h = c.clientHeight;
+        if (c.width !== Math.round(w * dpr)) c.width = Math.round(w * dpr);
+        if (c.height !== Math.round(h * dpr)) c.height = Math.round(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        const styles = getComputedStyle(document.documentElement);
+        const water = styles.getPropertyValue("--water").trim();
+        const phase = ((Date.now() % period) / period) * Math.PI * 2;
+        const tide = Math.sin(phase);
+        kick *= 0.97;
+        for (let layer = 0; layer < 3; layer++) {
+          ctx.beginPath();
+          const base = h * (0.55 - tide * 0.18) + layer * h * 0.08;
+          for (let x = 0; x <= w; x += 4) {
+            const y =
+              base +
+              Math.sin(x / (60 + layer * 30) + now / (900 + layer * 400)) * (8 + kick * 40) +
+              Math.sin(x / 23 + now / 500) * 2;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.closePath();
+          ctx.globalAlpha = 0.22 + layer * 0.18;
+          ctx.fillStyle = water;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        const toHigh = ((Math.PI / 2 - phase + Math.PI * 4) % (Math.PI * 2)) / (Math.PI * 2);
+        const minutes = Math.round(toHigh * (period / 60000));
+        level.textContent = `High water in ${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+    </script>
+  </body>
+</html>

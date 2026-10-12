@@ -34,14 +34,19 @@ export function ScrollView() {
   const slideH = deck.config.height * scale;
   const flat = deck.columns.flatMap((c) => c.slides.map((meta, v) => ({ meta, h: c.h, v })));
 
-  // Each slide occupies one viewport height per click step, at least the slide's height.
-  const segment = (k: string) => Math.max(slideH, vh) + (totals[k] ?? 0) * vh * 0.6;
+  // Each slide occupies its own height, plus a stretch per click step to scroll its clicks
+  // through. It used to take at least a whole viewport: on a phone, where a slide is a fifth of
+  // the screen tall, that left four-fifths of every slide's stretch of page empty.
+  const stepH = Math.min(vh, slideH) * 0.6;
+  const segment = (k: string) => slideH + (totals[k] ?? 0) * stepH;
 
   useEffect(() => {
     const el = root.current;
     if (!el) return;
     const onScroll = () => {
       const top = el.scrollTop;
+      // The slide under the upper middle of what is in view is the current one.
+      const anchor = top + Math.min(vh, slideH) * 0.5;
       let y = 0;
       const next: Record<string, number> = {};
       let cur = 0;
@@ -49,11 +54,8 @@ export function ScrollView() {
         const k = navKey(s.h, s.v);
         const seg = segment(k);
         const t = totals[k] ?? 0;
-        if (top >= y - vh / 2 && top < y + seg - vh / 2) cur = i;
-        const progress = Math.min(
-          1,
-          Math.max(0, (top - y + vh * 0.35) / Math.max(1, seg - Math.max(slideH, vh) + vh * 0.6)),
-        );
+        if (anchor >= y && anchor < y + seg) cur = i;
+        const progress = Math.min(1, Math.max(0, (top - y + stepH * 0.6) / Math.max(1, seg - slideH + stepH)));
         next[k] = t ? Math.min(t, Math.floor(progress * (t + 1))) : 0;
         y += seg;
       });
@@ -63,7 +65,7 @@ export function ScrollView() {
     onScroll();
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
-  }, [flat.length, vh, slideH, totals]);
+  }, [flat.length, vh, slideH, stepH, totals]);
 
   useEffect(() => {
     const s = flat[current];

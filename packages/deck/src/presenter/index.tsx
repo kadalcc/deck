@@ -5,6 +5,7 @@ import * as N from "../core/navigation.ts";
 import { useStore } from "../core/store.ts";
 import { copyText, shareLink } from "../live/analytics.tsx";
 import { Pace, Presence, QrJoin } from "../live/components.tsx";
+import { isEditable } from "../core/keyboard.ts";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
 import { useLiveOptional, useRoomStatus } from "../live/context.ts";
 import { PointerLayer } from "../live/LiveProvider.tsx";
@@ -62,13 +63,19 @@ export function PresenterPage() {
   }, [layout, roomOpen]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "KeyL" && !e.metaKey && !e.ctrlKey)
-        setLayout((l) =>
-          l === "notes-right" ? "notes-left" : l === "notes-left" ? "next-big" : "notes-right",
-        );
+      if (e.code !== "KeyL" || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (isEditable(e.target)) return;
+      // L is also vim's "right" in the deck's own keymap. Here it is the layout, and only that:
+      // it used to change the layout AND move the deck on a step, every press.
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      setLayout((l) =>
+        l === "notes-right" ? "notes-left" : l === "notes-left" ? "next-big" : "notes-right",
+      );
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Capture: ahead of the deck's own key handler, whatever order the two were added in.
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
   if (live && gate.required && !gate.ok) return <PresenterLogin gate={gate} />;

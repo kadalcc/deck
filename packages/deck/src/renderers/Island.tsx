@@ -10,6 +10,17 @@ import {
   resolveRenderer,
   resolveRendererAsync,
 } from "./contract.ts";
+import { registerBuiltinRenderers } from "./builtins.ts";
+
+/*
+ * The built-in renderers are registered by the module every island is made of, not only by the
+ * `renderers` barrel. A production build links `import { Island } from "@kadal/deck"` straight to
+ * this file — the package's barrels are side-effect free — so a registration that lived only in
+ * the barrel was tree-shaken away, and every custom-element island in a built deck said "no
+ * renderer claimed it" while working in dev. Registering twice is harmless: a renderer replaces
+ * the one of the same name, in place.
+ */
+registerBuiltinRenderers();
 
 /**
  * When an island comes alive.

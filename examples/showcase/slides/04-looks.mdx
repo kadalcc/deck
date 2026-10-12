@@ -1,0 +1,415 @@
+---
+layout: section
+id: looks
+background:
+  component: aurora
+---
+
+<p className="sc-eyebrow">Chapter 4</p>
+
+# Looks
+
+Three themes, light and dark, thirty-odd backgrounds, and the small things that make a slide feel finished.
+
+<Notes>
+Chapter four: how a deck looks. The aurora behind this slide is `background: aurora`.
+</Notes>
+
+---
+id: themes
+---
+
+<p className="sc-eyebrow">Looks · themes</p>
+
+## Three themes, light and dark
+
+<div className="sc-themes">
+  <ThemeCard theme="minimal" scheme="light" />
+  <ThemeCard theme="rla" scheme="light" />
+  <ThemeCard theme="stack" scheme="light" />
+  <ThemeCard theme="minimal" scheme="dark" />
+  <ThemeCard theme="rla" scheme="dark" />
+  <ThemeCard theme="stack" scheme="dark" />
+</div>
+
+<p className="sc-small">Press <Kbd>T</Kbd> to wear one, <Kbd>D</Kbd> to flip light and dark. Each screen remembers its own choice. A theme is a class of CSS tokens — colours, type, radius, padding — so writing your own is one stylesheet.</p>
+
+<Notes>
+minimal is the default — black on white, one accent. rla is the dark, dot-matrix look with an accessible body face. stack is warm neutrals with an emerald accent. Each has a light and a dark scheme.
+
+These cards are the real themes: each wears the theme's class, so its tokens apply inside it. Press T for the menu — the choice is per screen and remembered per deck, so the projector and your laptop can differ.
+</Notes>
+
+----
+colorScheme: dark
+id: dark-slide
+background:
+  component: glows
+  colors: "#0ea5e9,#6366f1,#14b8a6"
+  opacity: 0.45
+---
+
+<p className="sc-eyebrow">Looks · colorScheme</p>
+
+## A dark slide in a light deck
+
+`colorScheme: dark` in one slide's frontmatter gives it the dark tokens, whatever the deck is wearing — for a background that needs light text.
+
+<How>
+
+```yaml
+---
+colorScheme: dark
+background:
+  component: glows
+  colors: "#0ea5e9,#6366f1,#14b8a6"
+---
+```
+
+</How>
+
+<Notes>
+Per-slide colour scheme. The deck may be light, but this slide is always dark, because its background asks for it. The reverse — `colorScheme: light` — works too.
+</Notes>
+
+---
+id: backgrounds
+---
+
+<p className="sc-eyebrow">Looks · backgrounds</p>
+
+## Every background, running
+
+<div className="sc-bg-grid">
+  <BgTile name="mesh" />
+  <BgTile name="aurora" />
+  <BgTile name="waves" />
+  <BgTile name="lines" />
+  <BgTile name="beams" />
+  <BgTile name="sparkles" />
+  <BgTile name="starfield" />
+  <BgTile name="grid" />
+  <BgTile name="dots" />
+  <BgTile name="noise" />
+  <BgTile name="spotlight" />
+  <BgTile name="topo" />
+  <BgTile name="glows" />
+  <BgTile name="graticule" />
+  <BgTile name="hex" />
+  <BgTile name="constellation" />
+  <BgTile name="vignette" />
+  <BgTile name="rays" />
+  <BgTile name="stripes" />
+  <BgTile name="sweep" />
+  <BgTile name="globe" />
+  <BgTile name="raster" />
+  <BgTile name="lattice" />
+  <BgTile name="thiessen" />
+  <BgTile name="cells" />
+  <BgTile name="compass" />
+  <BgTile name="neatline" />
+  <BgTile name="scan" />
+  <BgTile name="track" />
+  <BgTile name="plane" />
+  <BgTile name="signer" />
+  <BgTile name="variants" />
+  <BgTile name="handshapes" />
+  <BgTile name="trails" />
+  <BgTile name="window" />
+  <BgTile name="embedding" />
+</div>
+
+<p className="sc-small">Each is <code>background: name</code> for a whole slide, or <code>{'<Background name="…" />'}</code> inside one. <Kbd>↓</Kbd> for colours, gradients, pictures, video, pages and washes.</p>
+
+<Notes>
+Thirty-six component backgrounds, every one running in its own card. The first row is the classic set — mesh, aurora, waves, lines, beams, sparkles. Then the quieter ones: topo, glows, graticule, hex, constellation, vignette, rays, stripes, sweep. Then the map room — globe, raster, lattice, thiessen, cells, compass, neatline, scan, track, plane. And the sign-language set from the ISL talk: signer, variants, handshapes, trails, window, embedding.
+
+Each pauses when its slide is not shown and holds a still frame under reduced motion. Press down for the other kinds of background.
+</Notes>
+
+----
+background: "#0b1d33"
+colorScheme: dark
+id: bg-colour
+---
+
+<p className="sc-eyebrow">background: "#0b1d33"</p>
+
+## A colour
+
+Any CSS colour: a hex, `rgb()`, `oklch()`, or a name.
+
+<Notes>
+The plainest background: a colour, as a string. Named colours work too — `background: navy`.
+</Notes>
+
+----
+background: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 55%, #ec4899 100%)"
+colorScheme: dark
+id: bg-gradient
+---
+
+<p className="sc-eyebrow">background: linear-gradient(…)</p>
+
+## A gradient
+
+Any CSS gradient — linear, radial, conic — as the background string.
+
+<Notes>
+A gradient is recognised by its `gradient(` and laid behind the slide.
+</Notes>
+
+----
+background:
+  image: media/sea-wide.jpg
+  opacity: 0.9
+colorScheme: dark
+id: bg-image
+---
+
+<p className="sc-eyebrow">background: {"{ image }"}</p>
+
+## A picture
+
+`image`, with `size`, `position`, `repeat` and `opacity` as in reveal.js.
+
+<Notes>
+An image behind the slide. A string ending in an image extension works too: `background: media/sea-wide.jpg`. This sea was drawn for the tour, and ships in the deck's `public/` folder.
+</Notes>
+
+----
+background:
+  video: media/tide.webm
+  loop: true
+  muted: true
+colorScheme: dark
+id: bg-video
+---
+
+<p className="sc-eyebrow">background: {"{ video }"}</p>
+
+## A moving picture
+
+A looping, muted video behind the slide; it plays while the slide is shown and stops when you leave.
+
+<Notes>
+`video:` with `loop` and `muted`. The clip is four seconds of WebM, looping seamlessly.
+</Notes>
+
+----
+background:
+  iframe: embed/tide.html
+  interactive: false
+colorScheme: dark
+id: bg-iframe
+---
+
+<div className="sc-over-frame">
+  <p className="sc-eyebrow">background: {"{ iframe }"}</p>
+  <h2>A whole page, behind</h2>
+  <p>A live page as the background; <code>interactive: true</code> lets the pointer reach it.</p>
+</div>
+
+<Notes>
+A page as a background — here the tide clock from `public/embed/`. Without `interactive` it is decoration; with it, the page takes the pointer.
+</Notes>
+
+----
+background:
+  component: topo
+  color: "rgba(5,150,105,0.55)"
+  fill: "rgba(5,150,105,0.14)"
+id: bg-fill
+---
+
+<p className="sc-eyebrow">background: {"{ component, color, fill }"}</p>
+
+## A component, with a wash
+
+Props go beside `component`. With a component, `color` is its stroke and `fill` — or `tint` — washes the layer behind it in one colour, strongest top-left.
+
+<How>
+
+```yaml
+background:
+  component: topo
+  color: "rgba(5,150,105,0.55)"
+  fill: "rgba(5,150,105,0.14)"
+```
+
+</How>
+
+<Notes>
+Contour lines in emerald over an emerald wash. `fill` is never a flat block: a diagonal gradient of the one colour.
+</Notes>
+
+----
+background:
+  tint: "rgba(236,72,153,0.16)"
+id: bg-tint
+---
+
+<p className="sc-eyebrow">background: {"{ tint }"}</p>
+
+## A wash on its own
+
+`tint:` without a component: one colour, as a soft diagonal gradient instead of a flat fill.
+
+<Notes>
+The same wash, alone. Plain `color:` stays flat; `tint:` gives the gradient.
+</Notes>
+
+----
+background:
+  component: globe
+  fill: "rgba(5,150,105,0.08)"
+  color: "rgba(5,150,105,0.55)"
+  x: 0.8
+  y: 0.5
+  radius: 0.6
+id: bg-globe
+---
+
+<p className="sc-eyebrow">The map room</p>
+
+## Backgrounds for talks about places
+
+A wire globe turning about a tilted axis, with props for where it sits and how big it is: `x`, `y`, `radius`.
+
+<Notes>
+The map-room set was made for a GIS talk: the globe, lattice, thiessen polygons, cells, compass, neatline, scan, track, raster and plane. Every one takes props — this globe sits right of centre.
+</Notes>
+
+----
+background:
+  component: starfield
+  count: 500
+colorScheme: dark
+id: bg-props
+---
+
+<p className="sc-eyebrow">background: {"{ component: starfield, count: 500 }"}</p>
+
+## Props on any background
+
+<Background name="constellation" opacity={0.6} />
+
+Behind this text: a starfield of 500, from frontmatter, and a constellation layered inside the slide with `<Background name="constellation" />`.
+
+<Notes>
+Two layers: the slide's own background from frontmatter, and a second one placed inside the slide with the `<Background>` component — any registered background, at any opacity.
+</Notes>
+
+---
+id: bling
+background:
+  component: glows
+  colors: "#7c3aed,#0ea5e9,#f59e0b"
+  opacity: 0.25
+---
+
+<p className="sc-eyebrow">Looks · bling</p>
+
+## The small things
+
+<Cols cols="1.15fr 1fr" gap="2.5rem" align="start">
+<Col className="sc-bling">
+
+<p className="sc-gradient-title"><GradientText from="#7c3aed" to="#0ea5e9">Gradient text</GradientText></p>
+
+<Glass tone="purple" pad="0.7em 1em" glow>
+<p className="sc-tight"><Chip tone="purple" icon="sparkles">Glass</Chip> a frosted card, a tone, a glow. <Chip tone="good" icon="check">good</Chip> <Chip tone="warn">warn</Chip> <Chip tone="bad">bad</Chip> <Chip tone="info" icon="info">info</Chip></p>
+</Glass>
+
+<p className="sc-halos"><Halo tone="amber">1</Halo> <Halo tone="teal"><Icon name="map-pin" /></Halo> <Halo tone="pink"><Icon name="waves" /></Halo> any lucide icon by name: <Icon name="anchor" /> <Icon name="ship" /> <Icon name="compass" /></p>
+
+<Divider label="a divider, with a label" />
+
+<Shimmer as="strong">Shimmer runs a slow sheen over text.</Shimmer>
+
+</Col>
+<Col>
+
+<div className="sc-bling-stage">
+  <Blob color="#0ea5e9" x="62%" y="50%" size="70%" opacity={0.35} />
+  <Glow color="#f59e0b" x="30%" y="40%" size="50%" opacity={0.5} />
+  <Tilt>
+    <Glass tone="teal" pad="1em" className="sc-tilt-card">
+      <Ribbon tone="pink">live</Ribbon>
+      <p className="sc-tight">A <b>Tilt</b> card leaning toward the pointer, over a <b>Blob</b> and a <b>Glow</b>, with a corner <b>Ribbon</b>.</p>
+    </Glass>
+  </Tilt>
+</div>
+
+</Col>
+</Cols>
+
+<Notes>
+Bling: gradient text, a glass card with chips in five tones, halos for numbered steps and icons — any lucide icon by its name — a labelled divider and a shimmer. On the right, a card that tilts toward the pointer over a blob and a glow, with a ribbon in its corner. All of it reads the theme's tokens, so it changes with T.
+</Notes>
+
+---
+id: blocks
+---
+
+<p className="sc-eyebrow">Looks · building blocks</p>
+
+## Building blocks
+
+<div className="sc-blocks">
+<div className="sc-card">
+
+**Callouts**
+
+<Callout kind="info">info — for the room</Callout>
+<Callout kind="tip">tip — a shortcut</Callout>
+<Callout kind="warn">warn — mind this</Callout>
+<Callout kind="danger">danger — do not</Callout>
+<Callout kind="note">note — an aside</Callout>
+
+</div>
+<div className="sc-card">
+
+**Badges and keys**
+
+<Badge>neutral</Badge><Badge tone="accent">accent</Badge><Badge tone="good">good</Badge><Badge tone="warn">warn</Badge><Badge tone="bad">bad</Badge>
+
+<Kbd>⌘</Kbd> <Kbd>K</Kbd> · <Kbd>Shift</Kbd> <Kbd>F</Kbd>
+
+**Stack** — one spot, stepped
+
+<Stack className="sc-stack">
+<Click at={[0, 1]}><Center>one</Center></Click>
+<Click at={[1, 2]}><Center>two</Center></Click>
+<Click at={2}><Center>three</Center></Click>
+</Stack>
+
+</div>
+<div className="sc-card">
+
+**FitText** — as large as its box
+
+<FitText max={120}>as big as fits</FitText>
+
+**Frame** and **Transform**
+
+<Cols cols="auto 1fr" gap="1rem" align="center">
+<Frame><Image src="media/sea-thumb.jpg" alt="The sea, in a frame" className="sc-framed" /></Frame>
+<Transform scale={0.8} origin="left center"><Badge tone="accent">scale 0.8</Badge></Transform>
+</Cols>
+
+</div>
+</div>
+
+<p className="sc-small">`<Absolute>` and `<Arrow>` place things by the pixel, on the 1920 × 1080 stage.</p>
+
+<Absolute x={1240} y={800} w={480}><Badge tone="accent">absolute · x 1240, y 800</Badge></Absolute>
+
+<Arrow x1={820} y1={835} x2={1220} y2={818} width={3} color="var(--deck-accent)" />
+
+<Notes>
+The layout and annotation pieces. Callouts in five kinds, badges in five tones, keys. A `<Stack>` holds things in one place for clicks to step through — reveal.js's r-stack.
+[click] two
+[click] three.
+`<FitText>` is as large as fits its box. `<Transform>` scales a block; `<Absolute>` and `<Arrow>` place things in stage pixels, the 1920 by 1080 grid every slide is authored on.
+</Notes>

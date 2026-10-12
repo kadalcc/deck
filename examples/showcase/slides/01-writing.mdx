@@ -1,0 +1,398 @@
+---
+layout: section
+id: writing
+background:
+  component: grid
+  color: "rgba(100,116,139,0.18)"
+  size: 64
+---
+
+<p className="sc-eyebrow">Chapter 1</p>
+
+# Writing
+
+One MDX file. A line of dashes starts a slide; everything between is Markdown and components.
+
+<Notes>
+Chapter one: how a deck is written. This whole chapter is one included file — `slides/01-writing.mdx` — pulled into deck.mdx by a slide whose frontmatter is only `src:`. The grid behind this slide is `background: { component: grid }`.
+</Notes>
+
+---
+id: format
+---
+
+<p className="sc-eyebrow">Writing</p>
+
+## One file is the whole deck
+
+<Cols cols="1.05fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+```mdx {1-4|5-6|7-9|10-12|13-14|15-17} [deck.mdx]
+---
+title: My talk
+theme: minimal
+---
+# Hello, room
+<Notes>Say hi. [click] Then this.</Notes>
+---
+layout: two-cols
+---
+## Left
+::right::
+And right.
+----
+## Beneath, one ↓ away
+---
+src: ./chapters/more.mdx
+---
+```
+
+</Col>
+<Col>
+
+<div className="sc-steps">
+<Click at={0}>**Headmatter** configures the deck — any option, which `deck.config.ts` can override.</Click>
+<Click at={1}>**`---`** starts a slide. **`<Notes>`** are yours; each `[click]` lines them up with a step.</Click>
+<Click at={2}>**Frontmatter** right after a separator styles one slide: its layout, background, transition.</Click>
+<Click at={3}>**`::right::`** fills a layout's named slot.</Click>
+<Click at={4}>**`----`** puts a slide *beneath* the last: <Kbd>↓</Kbd> to read it, <Kbd>→</Kbd> to skip it.</Click>
+<Click at={5}>**`src:`** pulls in another file. Each chapter of this tour is one.</Click>
+</div>
+
+</Col>
+</Cols>
+
+<Notes>
+Six pieces of syntax, and that is the format. The headmatter at the top of the file configures the deck.
+[click] Three dashes start a slide; the notes you are reading now are a `<Notes>` block, and every `[click]` in them is a step marker — the presenter view highlights the part you are on.
+[click] A YAML block right after a separator is that slide's frontmatter.
+[click] Named slots split a slide for its layout: `::right::` is the second column of `two-cols`.
+[click] Four dashes make a vertical slide — a detail the audience can skip. Press down on any slide in this tour that has something beneath it.
+[click] And `src:` includes another file, which is how this tour is organised: one file per chapter.
+</Notes>
+
+----
+layout: two-cols
+id: slots
+---
+
+<p className="sc-eyebrow">Layouts · slots</p>
+
+## Two columns, one slot marker
+
+This slide is `layout: two-cols`. Everything above the marker lands in the left column — the default slot.
+
+<Callout kind="note" title="Any layout can take slots">A line `::name::` starts the slot called *name*; a layout places each slot by its `data-slot`.</Callout>
+
+::right::
+
+<How>
+
+```mdx
+---
+layout: two-cols
+---
+## Two columns, one slot marker
+
+This slide is `layout: two-cols`…
+
+::right::
+
+<How> … this panel … </How>
+```
+
+</How>
+
+<Notes>
+A layout with two named regions. The text before `::right::` is the default slot, the left column; after it, the right. Slots are a compile-time split: each becomes a `div` with `data-slot`, so a layout's stylesheet can place it.
+</Notes>
+
+----
+layout: spotlight
+eyebrow: Your layout
+id: custom-layout
+---
+
+## A layout of your own
+
+`layout: spotlight` is not built in. The deck registers it — one React component under the name `layout:spotlight` — and any slide can ask for it. Frontmatter reaches the layout as a prop: the band on the left reads `eyebrow:`.
+
+<How>
+
+```tsx [src/components.tsx]
+function SpotlightLayout({ frontmatter, children }: LayoutProps) {
+  return (
+    <div className="deck-layout deck-layout-spotlight">
+      <aside className="band">{frontmatter.eyebrow}</aside>
+      <div className="body">{children}</div>
+    </div>
+  );
+}
+export const components = { "layout:spotlight": SpotlightLayout };
+```
+
+</How>
+
+<Notes>
+Custom layouts are components the deck passes to `<Deck components>`, keyed `layout:` plus the name. They get the slide's frontmatter and options, so a layout can be driven by any key you invent — this one reads `eyebrow`. A built-in name can be replaced the same way.
+</Notes>
+
+---
+id: layouts
+---
+
+<p className="sc-eyebrow">Writing · layouts</p>
+
+## Eighteen layouts, picked by name
+
+<p className="sc-lede">`layout: name` in a slide's frontmatter. Each name is a link to a slide wearing it — most are one <Kbd>↓</Kbd> away.</p>
+
+<div className="sc-layout-groups">
+  <div><span>Words</span><div><Link to="layout-default">default</Link><Link to="layout-center">center</Link><Link to="layout-statement">statement</Link><Link to="layout-fact">fact</Link><Link to="layout-quote">quote</Link></div></div>
+  <div><span>Openings</span><div><Link to="1">cover</Link><Link to="layout-intro">intro</Link><Link to="writing">section</Link><Link to="the-end">end</Link></div></div>
+  <div><span>Columns</span><div><Link to="slots">two-cols</Link></div></div>
+  <div><span>Pictures</span><div><Link to="layout-image">image</Link><Link to="layout-image-left">image-left</Link><Link to="media-images">image-right</Link></div></div>
+  <div><span>Pages</span><div><Link to="layout-iframe">iframe</Link><Link to="layout-iframe-left">iframe-left</Link><Link to="other-pages">iframe-right</Link></div></div>
+  <div><span>Bare</span><div><Link to="layout-full">full</Link><Link to="layout-none">none</Link></div></div>
+  <div><span>Yours</span><div><Link to="custom-layout">spotlight</Link></div></div>
+</div>
+
+<Notes>
+Slidev's eighteen layouts, every one of them used somewhere in this tour. The chips are `<Link to="id">` — each slide that demonstrates a layout has an `id:` in its frontmatter, so the link survives slides being added or moved. Press down to walk through the ones that have no other home.
+</Notes>
+
+----
+id: layout-default
+---
+
+<p className="sc-eyebrow">layout: default</p>
+
+## The default: top-aligned, padded
+
+A heading, then the content, from the top. Any slide that names no layout gets this one — the first slide of a deck gets `cover`.
+
+<Cols n={3} gap="1.2rem">
+<div className="sc-card">**Markdown** — lists, tables, quotes, links</div>
+<div className="sc-card">**Components** — any of the engine's, or yours</div>
+<div className="sc-card">**HTML** — and Tailwind classes, in this deck</div>
+</Cols>
+
+<Stretch>
+<div className="sc-stretch-demo">`<Stretch>` takes the height that is left</div>
+</Stretch>
+
+<Notes>
+`default` is what you get without asking: content from the top, inside the theme's padding. The three cards sit in `<Cols n={3}>`; the band below is `<Stretch>`, reveal.js's r-stretch, which grows to fill the height that is left.
+</Notes>
+
+----
+layout: center
+id: layout-center
+---
+
+<p className="sc-eyebrow">layout: center</p>
+
+## Centred, both ways
+
+For one idea that should sit in the middle of the room.
+
+<Notes>
+`center` puts everything in the middle, horizontally and vertically.
+</Notes>
+
+----
+layout: intro
+id: layout-intro
+hideInToc: true
+---
+
+<p className="sc-eyebrow">layout: intro</p>
+
+# A talk's opening slide
+
+Your name, the date, where to find the slides — <Badge tone="accent">intro</Badge> sits it on the left, centred vertically.
+
+<Notes>
+`intro` is the cover's quieter sibling: left-aligned, vertically centred, for the speaker's introduction.
+</Notes>
+
+----
+layout: statement
+id: layout-statement
+hideInToc: true
+---
+
+<p className="sc-eyebrow">layout: statement</p>
+
+# Say one thing, and stop.
+
+<Notes>
+`statement`: one sentence, centred, large. The slide you use when a point needs room.
+</Notes>
+
+----
+layout: fact
+id: layout-fact
+---
+
+<p className="sc-eyebrow">layout: fact</p>
+
+<Counter value={18} className="sc-big-number" />
+
+<p className="sc-fact-caption">layouts built in — and a component away from your own</p>
+
+<Notes>
+`fact` makes the number the slide. It counts up when the slide arrives: `<Counter value={18}>`, with `from`, `duration`, `decimals`, a `prefix` and a `suffix` when you need them.
+</Notes>
+
+----
+layout: quote
+id: layout-quote
+---
+
+<p className="sc-eyebrow">layout: quote</p>
+
+<p className="sc-quote">“The slide is the unit of thought. Everything else is delivery.”</p>
+
+<p className="sc-attribution">— a note on the wall</p>
+
+<Notes>
+`quote` sets the slide in large italics with room on both sides.
+</Notes>
+
+----
+layout: image-left
+image: media/sea-portrait.jpg
+id: layout-image-left
+---
+
+<p className="sc-eyebrow">layout: image-left</p>
+
+## Picture on the left
+
+`image:` in frontmatter names the picture; `backgroundSize:` sets how it fits. The text keeps the other half.
+
+<Notes>
+`image-left`: half picture, half text. The picture is `public/media/sea-portrait.jpg`, named in frontmatter as `image: media/sea-portrait.jpg`.
+</Notes>
+
+----
+layout: image
+image: media/sea-wide.jpg
+id: layout-image
+---
+
+## Full bleed, words over it
+
+`layout: image` fills the slide; the content sits on a shade at the bottom.
+
+<Notes>
+`image`: the picture fills the slide and the content sits over a gradient at the bottom edge, so it stays readable on any picture.
+</Notes>
+
+----
+layout: full
+id: layout-full
+---
+
+<div className="sc-full-demo">
+  <p className="sc-eyebrow">layout: full</p>
+  <h2>No padding at all</h2>
+  <p>The content reaches every edge — for a picture, a map or a canvas of your own.</p>
+</div>
+
+<Notes>
+`full` removes the padding so the content can use the whole stage; this panel is a plain `div` stretched to the edges.
+</Notes>
+
+----
+layout: none
+id: layout-none
+---
+
+<div className="sc-none-demo">
+  <p className="sc-eyebrow">layout: none</p>
+  <h2>No layout wrapper</h2>
+  <p>The slide's markup and nothing else: you place everything yourself.</p>
+</div>
+
+<Notes>
+`none` renders the slide's MDX with no layout element around it at all — positioning is entirely yours.
+</Notes>
+
+----
+layout: iframe-left
+url: embed/tide.html
+poster: media/tide-poster-half.jpg
+id: layout-iframe-left
+---
+
+<p className="sc-eyebrow">layout: iframe-left</p>
+
+## A live page beside the text
+
+`url:` is the page. It loads when the slide is shown and unloads when you leave; click it — or press <Kbd>F</Kbd> — to use it.
+
+<Notes>
+`iframe-left` embeds a page in half the slide. This one is `public/embed/tide.html`, a small page shipped with the deck, so it works offline. `poster:` names the picture that stands in for it in print, in the overview and while it loads.
+</Notes>
+
+----
+layout: iframe
+url: embed/tide.html
+poster: media/tide-poster-full.jpg
+id: layout-iframe
+---
+
+<Notes>
+`iframe` gives the whole slide to the page. The shield over it keeps the arrow keys driving the deck until you click into the page; a Done button hands the keyboard back.
+</Notes>
+
+---
+id: glossary
+---
+
+<p className="sc-eyebrow">Writing · glossary</p>
+
+## Terms that explain themselves
+
+<Cols cols="1.1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+Rest the pointer on a dotted word: the cursor fills like a pie, then the definition opens. **Click** pins it, <Kbd>F</Kbd> reaches it from the keyboard, <Kbd>Esc</Kbd> closes it.
+
+Nothing on this slide was tagged. The compiler links each slide's first mention of an entry in `glossary.yaml` — MDX, a Durable Object, KaTeX.
+
+By hand: <Term id="mdx">other words for an entry</Term>, or a <Term def="Written where it is used, with **Markdown** and $e^{i\pi} = -1$." tag="One-off">one-off definition</Term>.
+
+</Col>
+<Col>
+
+<How>
+
+```yaml [glossary.yaml]
+Durable Object:
+  def: One addressable instance of a class…
+  more: A deck's room is one.
+  aliases: [Durable Objects]
+  tag: Cloudflare
+  see: [WebSocket hibernation, D1]
+D1: Cloudflare's serverless SQLite.
+```
+
+```mdx
+<Term id="mdx">other words</Term>
+<Term def="…">one-off definition</Term>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+The glossary is a YAML file beside deck.mdx. At build time the compiler finds the first mention of each entry on every slide and links it; `terms: false` in a slide's frontmatter turns that off.
+
+`<Term>` does it by hand, for other wording or for a definition written in place. Cards are private to whoever hovers until the presenter view turns on Share terms — then they open on the projector and every phone.
+</Notes>

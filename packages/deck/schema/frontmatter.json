@@ -471,7 +471,7 @@
         },
         "zoom": {
           "type": "boolean",
-          "description": "Z zooms into a point.",
+          "description": "Alt+click zooms into a point; Esc zooms back out.",
           "default": true
         },
         "background": {
