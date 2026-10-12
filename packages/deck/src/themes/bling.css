@@ -147,7 +147,10 @@
   background: var(--tone, var(--deck-muted));
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--tone, var(--deck-muted)) 25%, transparent);
 }
+/* inline-block, said out loud: Tailwind's preflight makes every svg a block, which stacked a
+   sentence's icons one per line in any deck that uses Tailwind. */
 .deck-icon {
+  display: inline-block;
   vertical-align: -0.15em;
   flex: none;
 }

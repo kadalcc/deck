@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { splitTransition } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
 import { animateFrom, snapshot, type Snapshot } from "./AutoAnimate.ts";
 import { transitionMs } from "./Backgrounds.tsx";
@@ -39,7 +40,14 @@ export function Stage() {
   const lastOptions = useRef(deck.options.get(navKey(h, v)) ?? null);
 
   const current = deck.options.get(navKey(h, v)) ?? null;
-  const transition = current?.transition ?? deck.config.transition;
+  // The way in is the arriving slide's; the way out is the leaving slide's own `-out` when it names
+  // one (`transition: zoom-in fade-out`), and otherwise the same as the way in, as it always was.
+  const transition = splitTransition(current?.transition, deck.config.transition).in;
+  const leavingSpec = leaving ? deck.options.get(navKey(leaving.h, leaving.v))?.transition : null;
+  const transitionOut =
+    leavingSpec && /(^|\s)\S+-out(\s|$)/.test(leavingSpec)
+      ? splitTransition(leavingSpec, deck.config.transition).out
+      : transition;
   const speed = current?.transitionSpeed ?? deck.config.transitionSpeed;
   const isMobile = typeof window !== "undefined" && window.innerWidth < 600;
   const distance = isMobile ? deck.config.mobileViewDistance : deck.config.viewDistance;
@@ -137,6 +145,7 @@ export function Stage() {
       className="deck-stage"
       style={stageStyle}
       data-transition={autoAnimating || seq === 0 ? "none" : transition}
+      data-transition-out={autoAnimating || seq === 0 ? "none" : transitionOut}
       data-speed={speed}
       data-direction={direction}
       data-overview={overview || undefined}

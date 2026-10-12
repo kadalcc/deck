@@ -49,20 +49,12 @@ export { Island, type ClientStrategy, type IslandLoader, type IslandOwnProps } f
 export { reactRenderer } from "./react.tsx";
 export { webComponentsRenderer } from "./web-components.ts";
 
-import { registerRenderer } from "./contract.ts";
-import { reactRenderer } from "./react.tsx";
-import { webComponentsRenderer } from "./web-components.ts";
+import { registerBuiltinRenderers } from "./builtins.ts";
 
-/**
- * The two that ship with the engine, in `owns()` order: custom elements can recognise their own
- * (a hyphenated tag is unambiguous), React cannot and does not try.
- */
-export function registerBuiltinRenderers(): void {
-  registerRenderer(webComponentsRenderer);
-  registerRenderer(reactRenderer);
-}
+export { registerBuiltinRenderers };
 
-// Importing this module registers them. The side effect is deliberate and is why it lives in the
-// barrel rather than in `Island`: a deck that never mentions an island never imports this file, and
-// a deck that does should not have to remember a setup call before its first slide renders.
+// Importing this module registers them, for code that reaches the renderers without `Island`.
+// `Island` registers them as well (see Island.tsx): `@kadal/deck` re-exports `Island` through this
+// barrel, and a bundler links a side-effect-free barrel through rather than evaluating it — so a
+// registration that lived only here never ran in a production build.
 registerBuiltinRenderers();

@@ -226,3 +226,17 @@ describe("a renderer that arrives later", () => {
     expect((await loadRenderer("vue"))?.name).toBe("vue");
   });
 });
+
+describe("the built-in renderers", () => {
+  /*
+   * A production build links `import { Island } from "@kadal/deck"` straight to Island.tsx and
+   * never evaluates the side-effect-free `renderers` barrel, so the island module has to register
+   * the built-ins itself. A fresh instance of it (the query makes one) must leave both registered.
+   */
+  test("are registered by the island module alone, without the barrel", async () => {
+    clearRenderers();
+    await import("./Island.tsx?standalone");
+    expect(resolveRenderer("showcase-ticker").renderer?.name).toBe("web-components");
+    expect(registeredRenderers().map((r) => r.name)).toEqual(["web-components", "react"]);
+  });
+});

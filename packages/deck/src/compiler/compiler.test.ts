@@ -65,6 +65,26 @@ layout: center
     expect(slides[0]!.content).toContain("not a slide");
   });
 
+  test("leaves a <Notes> example in code alone", () => {
+    const text = [
+      "# Writing notes",
+      "",
+      "A `<Notes>` block holds them:",
+      "",
+      "```mdx",
+      "<Notes>Say hi. [click] Then this.</Notes>",
+      "```",
+      "",
+      "<Notes>",
+      "The real notes, with `<Notes>` in them.",
+      "</Notes>",
+    ].join("\n");
+    const { slides } = splitDeck(text, { file: "deck.mdx" });
+    expect(slides[0]!.notes).toBe("The real notes, with `<Notes>` in them.");
+    expect(slides[0]!.content).toContain("<Notes>Say hi. [click] Then this.</Notes>");
+    expect(slides[0]!.content).toContain("A `<Notes>` block holds them:");
+  });
+
   test("extracts <Notes> as speaker notes", () => {
     const { slides } = splitDeck("# A\n\n<Notes>\nSay **hello**.\n</Notes>\n\nBody", {
       file: "deck.mdx",
@@ -155,6 +175,21 @@ describe("magic move", () => {
     expect(blocks[0]!.title).toBe("app.js");
     expect(blocks[0]!.steps.map((s) => s.lang)).toEqual(["js", "ts"]);
     expect(blocks[0]!.steps[1]!.meta).toBe("{1}");
+  });
+
+  test("leaves the syntax alone when a longer fence is showing it", () => {
+    const example = [
+      "`````mdx",
+      "````md magic-move",
+      "```ts",
+      "let a = 1",
+      "```",
+      "````",
+      "`````",
+    ].join("\n");
+    const { text: out, blocks } = findMagicMoves(`before\n\n${example}\n\nafter`);
+    expect(blocks).toHaveLength(0);
+    expect(out).toContain(example);
   });
 });
 

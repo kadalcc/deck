@@ -28,6 +28,7 @@ import {
   withHostOverride,
   resolveSlideOptions,
   type SlideOptions,
+  splitTransition,
 } from "../core/model.ts";
 import * as N from "../core/navigation.ts";
 import { createStore } from "../core/store.ts";
@@ -227,9 +228,12 @@ export function Deck({
        */
       const after =
         sync.source === null && moved.follow && !projector ? { ...moved, follow: false } : moved;
-      const opts = options.get(`${before.h},${before.v}`);
+      // The slide being ARRIVED AT decides, as it does for every other transition (see Stage):
+      // asking the slide being left meant a view-transition slide was entered with a cut and
+      // left with the browser's animation instead.
+      const target = options.get(`${after.h},${after.v}`);
       const useView =
-        (opts?.transition ?? config.transition) === "view-transition" &&
+        splitTransition(target?.transition, config.transition).in === "view-transition" &&
         "startViewTransition" in document;
       if (useView && (after.h !== before.h || after.v !== before.v)) {
         (
@@ -331,7 +335,13 @@ export function Deck({
         if (document.fullscreenElement) void document.exitFullscreen();
         else void el.requestFullscreen?.();
       },
-      toggleAutoSlide: () => nav.update((s) => ({ ...s, autoSliding: !s.autoSliding })),
+      toggleAutoSlide: () => {
+        nav.update((s) => ({ ...s, autoSliding: !s.autoSliding }));
+        // Nothing else on screen says auto-slide changed until a slide moves by itself.
+        const message = nav.get().autoSliding ? "Auto-slide on" : "Auto-slide paused";
+        ui.update((s) => ({ ...s, toast: message }));
+        setTimeout(() => ui.update((s) => (s.toast === message ? { ...s, toast: null } : s)), 1800);
+      },
       toggleDrawing: (force) => config.drawings.enabled && uiToggle("drawing", force),
       togglePointer: (force) => uiToggle("pointer", force),
       toggleColorScheme: () =>
@@ -995,17 +1005,21 @@ function useDeckEffects(
     };
   }, [ui, config.wakeLock, mode]);
 
-  // Auto-slide.
+  // Auto-slide. It runs on any play window but a projector (which follows instead): on by itself
+  // when the deck or any slide sets an interval, and on `A` otherwise — see `autoSlideDelay`.
   useEffect(() => {
-    if (!config.autoSlide || mode !== "play") return;
-    nav.update((s) => ({ ...s, autoSliding: true }));
+    if (mode !== "play" || deck.projector) return;
+    const configured =
+      config.autoSlide > 0 || [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0);
+    if (configured) nav.update((s) => ({ ...s, autoSliding: true }));
     let timer: ReturnType<typeof setTimeout> | null = null;
     const schedule = () => {
       if (timer) clearTimeout(timer);
       const s = nav.get();
       if (!s.autoSliding || s.paused || s.overview) return;
       const opts = deck.options.get(`${s.h},${s.v}`);
-      const ms = opts?.autoSlide ?? config.autoSlide;
+      const ms = N.autoSlideDelay(opts?.autoSlide ?? null, config.autoSlide, configured);
+      if (ms === null) return;
       timer = setTimeout(() => {
         const before = nav.get();
         // The deck advancing itself is not the viewer choosing to leave the presenter.
@@ -1030,7 +1044,7 @@ function useDeckEffects(
       if (timer) clearTimeout(timer);
       window.removeEventListener("pointerdown", stop);
     };
-  }, [config, nav, actions, mode, deck.options]);
+  }, [config, nav, actions, mode, deck.options, deck.projector]);
 
   // Cross-window sync: the presenter window and the play window mirror each other.
   useEffect(() => {

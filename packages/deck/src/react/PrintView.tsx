@@ -12,6 +12,7 @@ import { loadSlide, SlideFrame } from "./SlideFrame.tsx";
  */
 export function PrintView() {
   const deck = useDeck();
+  const [settled, setSettled] = useState(false);
   const [ready, setReady] = useState(false);
   const [totals, setTotals] = useState<Record<string, number>>({});
   // On screen the pages are zoomed to the window's width (the print stylesheet pins zoom to 1).
@@ -24,16 +25,16 @@ export function PrintView() {
   }, [deck.config.width]);
   const flat = deck.columns.flatMap((c) => c.slides.map((meta, v) => ({ meta, h: c.h, v })));
 
-  // Mount everything once (to learn click totals), then render the pages.
+  // Every slide's first page mounts at once and reports its click total (`reportTotal`); a slide
+  // with steps then gains a page per step. Ready once every module has settled (a broken slide
+  // prints its error) and the page count has stopped changing — or after a grace period.
   useEffect(() => {
     let alive = true;
-    // Ready when every module has settled (a broken slide prints its error), or after a grace period.
-    const grace = setTimeout(() => alive && setReady(true), 15_000);
+    const grace = setTimeout(() => alive && setSettled(true), 15_000);
     Promise.allSettled(flat.map((s) => loadSlide(s.meta))).then(() => {
       if (!alive) return;
       clearTimeout(grace);
-      // One more frame so fonts, KaTeX and diagrams have painted.
-      setTimeout(() => alive && setReady(true), 300);
+      setSettled(true);
     });
     return () => {
       alive = false;
@@ -52,22 +53,16 @@ export function PrintView() {
     };
   }, [deck.config.width, deck.config.height]);
 
-  const pages: { key: string; h: number; v: number; click: number }[] = [];
-  for (const s of flat) {
-    const k = navKey(s.h, s.v);
-    const total = Math.min(
-      totals[k] ?? 0,
-      deck.config.pdfSeparateFragments ? Number.POSITIVE_INFINITY : 0,
-    );
-    const steps = deck.config.pdfSeparateFragments ? total + 1 : 1;
-    for (let c = 0; c < steps; c++)
-      pages.push({
-        key: `${k}:${c}`,
-        h: s.h,
-        v: s.v,
-        click: deck.config.pdfSeparateFragments ? c : (totals[k] ?? 0),
-      });
-  }
+  const pages = printPages(flat, totals, deck.config.pdfSeparateFragments);
+
+  // One more beat after the last change of page count, so the newest pages, fonts, KaTeX and
+  // diagrams have painted.
+  useEffect(() => {
+    if (!settled) return;
+    setReady(false);
+    const t = setTimeout(() => setReady(true), 400);
+    return () => clearTimeout(t);
+  }, [settled, pages.length]);
 
   return (
     <div
@@ -93,7 +88,9 @@ export function PrintView() {
               active={false}
               click={p.click}
               preview
-              className="is-print"
+              reportTotal={!deck.config.pdfSeparateFragments || p.click === 0}
+              // A page per step shows each step as it is; one page per slide shows everything.
+              className={deck.config.pdfSeparateFragments ? "is-print" : "is-print is-print-all"}
             />
             {deck.config.showNotes === true && meta.hasNotes ? <PrintNotes meta={meta} /> : null}
           </div>
@@ -114,6 +111,36 @@ export function PrintView() {
         : null}
     </div>
   );
+}
+
+export interface PrintPage {
+  key: string;
+  h: number;
+  v: number;
+  click: number;
+}
+
+/**
+ * The pages of the printed deck: with `separate` (`pdfSeparateFragments`, on by default), one per
+ * click step of every slide — step 0 to its total — and otherwise one per slide, at its last step.
+ * `totals` are the click totals the slides reported; a slide yet to report counts as having none.
+ */
+export function printPages(
+  slides: { h: number; v: number }[],
+  totals: Record<string, number>,
+  separate: boolean,
+): PrintPage[] {
+  const pages: PrintPage[] = [];
+  for (const s of slides) {
+    const k = navKey(s.h, s.v);
+    const total = totals[k] ?? 0;
+    if (!separate) {
+      pages.push({ key: `${k}:0`, h: s.h, v: s.v, click: total });
+      continue;
+    }
+    for (let c = 0; c <= total; c++) pages.push({ key: `${k}:${c}`, h: s.h, v: s.v, click: c });
+  }
+  return pages;
 }
 
 function PrintNotes({

@@ -253,14 +253,34 @@ export function fencedRanges(text: string): Array<[number, number]> {
   return out;
 }
 
-/** The `<Notes>…</Notes>` blocks of a slide that are not inside fenced code. */
-export function notesBlocks(content: string): Array<{ start: number; end: number; inner: string }> {
-  const fences = fencedRanges(content);
-  const out: Array<{ start: number; end: number; inner: string }> = [];
-  for (const m of content.matchAll(NOTES)) {
+/** Fenced code plus inline code spans (`…`) outside the fences. */
+function codeRanges(text: string): Array<[number, number]> {
+  const fences = fencedRanges(text);
+  const out = [...fences];
+  for (const m of text.matchAll(/(`+)(?:(?!\1)[^\n])+?\1/g)) {
     const start = m.index!;
     if (fences.some(([a, b]) => start >= a && start < b)) continue;
-    out.push({ start, end: start + m[0].length, inner: m[1]! });
+    out.push([start, start + m[0].length]);
+  }
+  return out;
+}
+
+/**
+ * The `<Notes>…</Notes>` blocks of a slide that are not code. Code is blanked out before
+ * matching, not just skipped after: an inline `<Notes>` in a sentence followed by the real block
+ * would otherwise match from the inline one to the real closing tag, and swallow both.
+ */
+export function notesBlocks(content: string): Array<{ start: number; end: number; inner: string }> {
+  let masked = content;
+  for (const [a, b] of codeRanges(content)) {
+    masked = masked.slice(0, a) + masked.slice(a, b).replace(/[^\n]/g, "\uE000") + masked.slice(b);
+  }
+  const out: Array<{ start: number; end: number; inner: string }> = [];
+  for (const m of masked.matchAll(NOTES)) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    const open = m[0].indexOf(">") + 1;
+    out.push({ start, end, inner: content.slice(start + open, end - "</Notes>".length) });
   }
   return out;
 }

@@ -12,6 +12,8 @@ import {
   fromFlat,
   resolveBackground,
   resolveConfig,
+  resolveSlideOptions,
+  splitTransition,
 } from "./model.ts";
 import {
   availableRoutes,
@@ -23,6 +25,8 @@ import {
   prev,
   right,
   setTotal,
+  autoSlideDelay,
+  DEFAULT_AUTO_SLIDE_MS,
 } from "./navigation.ts";
 import { createSwipeTracker } from "./touch.ts";
 
@@ -209,5 +213,59 @@ describe("click registry under StrictMode", () => {
     expect(r.allocate("a", {})).toBe(a);
     expect(r.allocate("b", {})).toBe(b);
     expect(r.total()).toBe(2);
+  });
+});
+
+describe("autoSlideDelay", () => {
+  test("a slide's own interval wins, and 0 there means it waits", () => {
+    expect(autoSlideDelay(3000, 8000, true)).toBe(3000);
+    expect(autoSlideDelay(0, 8000, true)).toBeNull();
+  });
+  test("then the deck's", () => {
+    expect(autoSlideDelay(null, 8000, true)).toBe(8000);
+  });
+  test("a slide interval on a deck without one leaves the other slides alone", () => {
+    expect(autoSlideDelay(null, 0, true)).toBeNull();
+  });
+  test("nothing configured anywhere: `A` still steps, at the default", () => {
+    expect(autoSlideDelay(null, 0, false)).toBe(DEFAULT_AUTO_SLIDE_MS);
+  });
+});
+
+describe("splitTransition", () => {
+  test("one name is both ways", () => {
+    expect(splitTransition("zoom", "slide")).toEqual({ in: "zoom", out: "zoom" });
+    expect(splitTransition("view-transition", "slide")).toEqual({
+      in: "view-transition",
+      out: "view-transition",
+    });
+  });
+  test("reveal.js's -in / -out name each half", () => {
+    expect(splitTransition("zoom-in fade-out", "slide")).toEqual({ in: "zoom", out: "fade" });
+    expect(splitTransition("fade-in slide-out", "none")).toEqual({ in: "fade", out: "slide" });
+  });
+  test("an unnamed half is the deck's", () => {
+    expect(splitTransition("convex-in", "slide")).toEqual({ in: "convex", out: "slide" });
+    expect(splitTransition("concave-out", "fade")).toEqual({ in: "fade", out: "concave" });
+    expect(splitTransition(null, "fade")).toEqual({ in: "fade", out: "fade" });
+  });
+});
+
+describe("a slide that forces a colour scheme", () => {
+  // Its background layer paints that scheme's page: a dark slide in a light deck used to show
+  // light text on the deck's white page whenever its background was translucent, or absent.
+  test("carries the scheme into its background, with or without one of its own", () => {
+    const bare = resolveSlideOptions({ colorScheme: "dark" }, DEFAULT_CONFIG, false);
+    expect(bare.background?.scheme).toBe("dark");
+    const glows = resolveSlideOptions(
+      { colorScheme: "light", background: { component: "glows", opacity: 0.4 } },
+      DEFAULT_CONFIG,
+      false,
+    );
+    expect(glows.background?.component).toBe("glows");
+    expect(glows.background?.scheme).toBe("light");
+  });
+  test("and a slide that forces none has no layer it did not ask for", () => {
+    expect(resolveSlideOptions({}, DEFAULT_CONFIG, false).background).toBeNull();
   });
 });

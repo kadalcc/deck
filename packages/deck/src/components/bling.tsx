@@ -1,4 +1,4 @@
-import { icons } from "lucide-react";
+import * as lucide from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
 /**
@@ -148,17 +148,18 @@ export function Icon({
   className?: string;
 }) {
   const pascal = name.replace(/(^|[-_ ])(\w)/g, (_m, _s, c: string) => c.toUpperCase());
-  const Cmp = (
-    icons as Record<
-      string,
-      ComponentType<{
-        size?: string | number;
-        color?: string;
-        strokeWidth?: number;
-        className?: string;
-      }>
-    >
-  )[pascal];
+  type IconCmp = ComponentType<{
+    size?: string | number;
+    color?: string;
+    strokeWidth?: number;
+    className?: string;
+  }>;
+  // `icons` holds the current names only. A name lucide has since renamed (`waves` is now
+  // `waves-horizontal`) is still a named export of the package — an alias — so it is looked up
+  // there next, and the names in older decks and older docs keep drawing.
+  const Cmp =
+    (lucide.icons as Record<string, IconCmp>)[pascal] ??
+    ((lucide as unknown as Record<string, IconCmp | undefined>)[pascal] || undefined);
   if (!Cmp)
     return (
       <span className="deck-icon-missing" title={`No icon "${name}"`}>

@@ -21,12 +21,36 @@ export interface MagicMoveBlock {
   steps: MagicMoveStep[];
 }
 
-const OUTER = /^([ \t]*)````+\s*md\s+magic-move([^\n]*)\n([\s\S]*?)\n\1````+[ \t]*$/gm;
 const INNER = /```([\w+-]*)([^\n]*)\n([\s\S]*?)\n```/g;
+const OPEN = /^[ \t]*(`{3,}|~{3,})(.*)$/;
 
+/**
+ * Fences are walked in order, so a block is only lifted when it is a fence of its own. A slide
+ * that SHOWS the magic-move syntax — inside a longer fence, as this engine's own tour does — keeps
+ * it as text; a pattern matched anywhere in the slide turned that example into a live block.
+ */
 export function findMagicMoves(text: string): { text: string; blocks: MagicMoveBlock[] } {
   const blocks: MagicMoveBlock[] = [];
-  const replaced = text.replace(OUTER, (_m, _indent: string, header: string, body: string) => {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const open = OPEN.exec(lines[i]!);
+    if (!open) {
+      out.push(lines[i]!);
+      continue;
+    }
+    const mark = open[1]!;
+    const closing = new RegExp(`^[ \\t]*\\${mark[0]}{${mark.length},}[ \\t]*$`);
+    let j = i + 1;
+    while (j < lines.length && !closing.test(lines[j]!)) j++;
+    const magic = mark[0] === "`" && mark.length >= 4 && /^\s*md\s+magic-move/.exec(open[2]!);
+    if (!magic || j >= lines.length) {
+      out.push(...lines.slice(i, j + 1));
+      i = j;
+      continue;
+    }
+    const header = open[2]!.replace(/^\s*md\s+magic-move/, "");
+    const body = lines.slice(i + 1, j).join("\n");
     const options: Record<string, string> = {};
     const braces = /\{([^}]*)\}/.exec(header);
     if (braces) {
@@ -42,7 +66,8 @@ export function findMagicMoves(text: string): { text: string; blocks: MagicMoveB
     }
     const id = blocks.length;
     blocks.push({ options, title: title ? title[1]!.trim() : null, steps });
-    return `\n<MagicMove block={${id}} />\n`;
-  });
-  return { text: replaced, blocks };
+    out.push("", `<MagicMove block={${id}} />`, "");
+    i = j;
+  }
+  return { text: out.join("\n"), blocks };
 }

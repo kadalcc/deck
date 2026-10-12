@@ -145,7 +145,11 @@ export function MagicMove({ block }: { block: number }) {
           steps={steps}
           step={step}
           animate={slide.active}
-          options={{ duration, lineNumbers: data.steps[step]?.lines }}
+          // `{lines: true}` on the outer fence numbers every step; an inner fence can ask for itself.
+          options={{
+            duration,
+            lineNumbers: data.options.lines === "true" || !!data.steps[step]?.lines,
+          }}
         />
       </div>
     </div>

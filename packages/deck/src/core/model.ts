@@ -352,6 +352,12 @@ export interface SlideBackground {
   /** A registered component background, by name, with its props. */
   component: string | null;
   props: Record<string, unknown>;
+  /**
+   * The slide's own `colorScheme`, when it forces one. The layer then paints that scheme's
+   * `--deck-bg` under everything else, so a dark slide in a light deck is dark behind a
+   * translucent background too — not light text on the deck's white page.
+   */
+  scheme: "dark" | "light" | null;
 }
 
 function str(v: unknown): string | null {
@@ -390,6 +396,7 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
     tint: null,
     component: null,
     props: {},
+    scheme: null,
   };
   let any = false;
   const apply = (obj: Record<string, unknown>) => {
@@ -533,6 +540,7 @@ export function resolveSlideOptions(
   const visibility = str(fm.visibility);
   const transition = str(fm.transition);
   const transitionSpeed = str(fm.transitionSpeed) as TransitionSpeed | null;
+  const colorScheme = fm.colorScheme === "dark" || fm.colorScheme === "light" ? fm.colorScheme : null;
   return {
     layout: str(fm.layout) ?? (isFirst ? "cover" : "default"),
     className: Array.isArray(fm.class) ? fm.class.join(" ") : (str(fm.class) ?? ""),
@@ -556,9 +564,11 @@ export function resolveSlideOptions(
     preload: bool(fm.preload, true),
     timing: num(fm.timing) ?? config.defaultTiming,
     state: Array.isArray(state) ? state.map(String) : str(state) ? [str(state)!] : [],
-    colorScheme: fm.colorScheme === "dark" || fm.colorScheme === "light" ? fm.colorScheme : null,
+    colorScheme,
     zoom: num(fm.zoom) ?? 1,
-    background: resolveBackground(fm),
+    background: colorScheme
+      ? { ...(resolveBackground(fm) ?? resolveBackground({ background: "transparent" })!), scheme: colorScheme }
+      : resolveBackground(fm),
   };
 }
 
@@ -670,4 +680,29 @@ export function withHostOverride(config: DeckConfig, override: HostOverride | nu
  */
 export function roomIdOf(config: Pick<DeckConfig, "live" | "slug">): string {
   return config.live.room || config.slug || "deck";
+}
+
+/**
+ * A slide's `transition`, split into its way in and its way out.
+ *
+ * `slide` is both. reveal.js's `zoom-in fade-out` names each half; a half left unnamed (`zoom-in`
+ * alone) takes `fallback`, which is the deck's transition. Unknown words are kept as written — the
+ * stylesheet simply has no animation for them.
+ */
+export function splitTransition(
+  spec: string | null | undefined,
+  fallback: string,
+): { in: string; out: string } {
+  const words = (spec ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return { in: fallback, out: fallback };
+  let into: string | null = null;
+  let out: string | null = null;
+  let both: string | null = null;
+  for (const w of words) {
+    const m = /^(.+)-(in|out)$/.exec(w);
+    if (m && m[2] === "in") into = m[1]!;
+    else if (m && m[2] === "out") out = m[1]!;
+    else both = w;
+  }
+  return { in: into ?? both ?? fallback, out: out ?? both ?? fallback };
 }

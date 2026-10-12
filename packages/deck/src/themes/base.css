@@ -362,6 +362,11 @@ body {
   inset: auto 0 0 0;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
   color: #fff;
+  /* The words sit on a dark shade whatever the theme, so they take dark-on-light's opposite:
+     a light theme's pale surface put white inline code on a white chip. */
+  --deck-surface: rgba(255, 255, 255, 0.16);
+  --deck-border: rgba(255, 255, 255, 0.28);
+  --deck-muted: rgba(255, 255, 255, 0.78);
 }
 
 /* ── slide transitions (the incoming slide animates in, the leaving one out) ── */
@@ -377,69 +382,100 @@ body {
   animation: var(--deck-anim-in, none) var(--deck-transition) cubic-bezier(0.26, 0.86, 0.44, 0.985)
     both;
 }
-.deck-stage:not([data-transition="none"]) .deck-slide.is-leaving {
+.deck-stage:not([data-transition-out="none"]) .deck-slide.is-leaving {
   animation: var(--deck-anim-out, none) var(--deck-transition) cubic-bezier(0.26, 0.86, 0.44, 0.985)
     both;
 }
+/* No way out is an instant cut: the slide that left must not sit under the arriving one. */
+.deck-stage[data-transition-out="none"] .deck-slide.is-leaving {
+  visibility: hidden;
+}
+/* The way in is the arriving slide's (`data-transition`), the way out the leaving one's
+   (`data-transition-out`): the same name for a plain `transition: slide`, two for reveal.js's
+   `transition: zoom-in fade-out`. */
 .deck-stage[data-transition="fade"] {
   --deck-anim-in: deck-fade-in;
+}
+.deck-stage[data-transition-out="fade"] {
   --deck-anim-out: deck-fade-out;
 }
-.deck-stage[data-transition="slide"][data-direction="forward"],
-.deck-stage[data-transition="slide"][data-direction="none"] {
+.deck-stage[data-transition="slide"]:is([data-direction="forward"], [data-direction="none"]) {
   --deck-anim-in: deck-slide-in-right;
+}
+.deck-stage[data-transition-out="slide"]:is([data-direction="forward"], [data-direction="none"]) {
   --deck-anim-out: deck-slide-out-left;
 }
 .deck-stage[data-transition="slide"][data-direction="back"] {
   --deck-anim-in: deck-slide-in-left;
+}
+.deck-stage[data-transition-out="slide"][data-direction="back"] {
   --deck-anim-out: deck-slide-out-right;
 }
 .deck-stage[data-transition="slide"][data-direction="down"] {
   --deck-anim-in: deck-slide-in-bottom;
+}
+.deck-stage[data-transition-out="slide"][data-direction="down"] {
   --deck-anim-out: deck-slide-out-top;
 }
 .deck-stage[data-transition="slide"][data-direction="up"] {
   --deck-anim-in: deck-slide-in-top;
+}
+.deck-stage[data-transition-out="slide"][data-direction="up"] {
   --deck-anim-out: deck-slide-out-bottom;
 }
-.deck-stage[data-transition="convex"][data-direction="forward"],
-.deck-stage[data-transition="convex"][data-direction="none"] {
+.deck-stage[data-transition="convex"]:is([data-direction="forward"], [data-direction="none"]) {
   --deck-anim-in: deck-convex-in-right;
+}
+.deck-stage[data-transition-out="convex"]:is([data-direction="forward"], [data-direction="none"]) {
   --deck-anim-out: deck-convex-out-left;
 }
 .deck-stage[data-transition="convex"][data-direction="back"] {
   --deck-anim-in: deck-convex-in-left;
+}
+.deck-stage[data-transition-out="convex"][data-direction="back"] {
   --deck-anim-out: deck-convex-out-right;
 }
-.deck-stage[data-transition="convex"][data-direction="down"],
-.deck-stage[data-transition="convex"][data-direction="up"] {
-  --deck-anim-in: deck-fade-in;
-  --deck-anim-out: deck-fade-out;
-}
-.deck-stage[data-transition="concave"][data-direction="forward"],
-.deck-stage[data-transition="concave"][data-direction="none"] {
+.deck-stage[data-transition="concave"]:is([data-direction="forward"], [data-direction="none"]) {
   --deck-anim-in: deck-concave-in-right;
+}
+.deck-stage[data-transition-out="concave"]:is([data-direction="forward"], [data-direction="none"]) {
   --deck-anim-out: deck-concave-out-left;
 }
 .deck-stage[data-transition="concave"][data-direction="back"] {
   --deck-anim-in: deck-concave-in-left;
+}
+.deck-stage[data-transition-out="concave"][data-direction="back"] {
   --deck-anim-out: deck-concave-out-right;
 }
-.deck-stage[data-transition="concave"][data-direction="down"],
-.deck-stage[data-transition="concave"][data-direction="up"] {
+/* Convex and concave are horizontal ideas; down a stack they fade. */
+.deck-stage:is([data-transition="convex"], [data-transition="concave"]):is(
+    [data-direction="down"],
+    [data-direction="up"]
+  ) {
   --deck-anim-in: deck-fade-in;
+}
+.deck-stage:is([data-transition-out="convex"], [data-transition-out="concave"]):is(
+    [data-direction="down"],
+    [data-direction="up"]
+  ) {
   --deck-anim-out: deck-fade-out;
 }
 .deck-stage[data-transition="zoom"] {
   --deck-anim-in: deck-zoom-in;
+}
+.deck-stage[data-transition-out="zoom"] {
   --deck-anim-out: deck-zoom-out;
 }
 .deck-stage[data-transition="zoom"][data-direction="back"] {
   --deck-anim-in: deck-zoom-in-back;
+}
+.deck-stage[data-transition-out="zoom"][data-direction="back"] {
   --deck-anim-out: deck-zoom-out-back;
 }
 .deck-stage[data-transition="view-transition"] {
   --deck-anim-in: none;
+}
+.deck-stage[data-transition-out="view-transition"] {
   --deck-anim-out: none;
 }
 @keyframes deck-fade-in {
@@ -648,11 +684,13 @@ body {
 .deck-click.effect-blur.is-shown {
   filter: none;
 }
-/* In print and the overview, everything is shown: a thumbnail of a slide is of the whole slide.
+/* In the overview, and in print with one page per slide (`pdfSeparateFragments: false`),
+   everything is shown: a thumbnail of a slide is of the whole slide. Print with a page per step
+   shows each step as it is — revealing everything there printed every step's page identical.
    `.is-mirror` is deliberately not in this list — the audience's mirror and the presenter's
    next-STEP box are live views of one moment in a slide, and showing them revealed would be
    showing the room the answer before it is given. */
-.is-print .deck-click,
+.is-print-all .deck-click,
 .is-tile .deck-click {
   opacity: 1 !important;
   transform: none !important;
@@ -848,8 +886,12 @@ pre.deck-code.has-lines .line::before {
 .deck-code-block:hover .deck-code-copy {
   opacity: 1;
 }
+/* The same type as a plain block (`pre.deck-code`): the wrap is a div, so without its own font the
+   morphing code came out in the slide's body face, at body size. */
 .shiki-magic-move-wrap {
   padding: 0.7em 1.2em;
+  font: 0.6em/1.6 var(--deck-mono-font);
+  tab-size: 2;
 }
 .shiki-magic-move-container {
   font: inherit;
@@ -1656,6 +1698,10 @@ pre.deck-code.has-lines .line::before {
    resolved with the root's tokens, so it has to be re-read here */
 .deck-slide[data-color-scheme] {
   color: var(--deck-fg);
+}
+/* …and its background layer paints that scheme's page under whatever it shows */
+.deck-background[data-color-scheme] {
+  background-color: var(--deck-bg);
 }
 
 /* named slots (`::right::` in a slide): the two-cols layout places them, others stack them */
