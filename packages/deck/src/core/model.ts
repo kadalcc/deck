@@ -157,8 +157,18 @@ export interface DeckConfig {
   /** Scale a slide whose content overflows so it fits (measured after render). */
   autoFit: boolean;
   magicMoveDuration: number;
-  /** Live room: the backend base (same origin `/api` on the host), or null for an offline deck. */
-  live: { api: string | null; room: string | null; turnstile: string | null };
+  /**
+   * Live room: the backend base (same origin `/api` on the host), or null for an offline deck.
+   * `verify` is a host page that checks a viewer (Turnstile) and sends them back with a pass —
+   * how a host that serves decks sandboxed keeps the check, since Turnstile can't run in an
+   * opaque origin. Set by the host (`window.__KADAL_DECK__.verify`), never by a deck.
+   */
+  live: {
+    api: string | null;
+    room: string | null;
+    turnstile: string | null;
+    verify?: string | null;
+  };
   drawings: { enabled: boolean; persist: boolean; presenterOnly: boolean; syncAll: boolean };
   /**
    * Term cards. The runtime reads `delay` and `sync`; the rest steers the compiler, which sees
@@ -646,6 +656,8 @@ export interface HostOverride {
   room?: string;
   api?: string;
   badge?: boolean;
+  /** The host's viewer-verification page (a same-site path), see `DeckConfig.live.verify`. */
+  verify?: string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -657,18 +669,24 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (typeof o.room === "string" && /^[a-z0-9][a-z0-9-]{0,63}$/.test(o.room)) out.room = o.room;
   if (typeof o.api === "string" && o.api.length > 0) out.api = o.api;
   if (typeof o.badge === "boolean") out.badge = o.badge;
+  if (typeof o.verify === "string" && /^\/(?!\/)[\w./-]*$/.test(o.verify)) out.verify = o.verify;
   return out;
 }
 
 /** The config with the host's word laid over it. Returns the same object when there is none. */
 export function withHostOverride(config: DeckConfig, override: HostOverride | null): DeckConfig {
-  if (!override || (!override.room && !override.api && override.badge === undefined)) return config;
+  if (
+    !override ||
+    (!override.room && !override.api && !override.verify && override.badge === undefined)
+  )
+    return config;
   return {
     ...config,
     live: {
       ...config.live,
       ...(override.room ? { room: override.room } : {}),
       ...(override.api ? { api: override.api } : {}),
+      ...(override.verify ? { verify: override.verify } : {}),
     },
     ...(override.badge !== undefined ? { badge: override.badge } : {}),
   };

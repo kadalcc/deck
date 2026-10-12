@@ -1004,9 +1004,19 @@
                   "type": "null"
                 }
               ]
+            },
+            "verify": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
-          "description": "Live room: the backend base (same origin `/api` on the host), or null for an offline deck."
+          "description": "Live room: the backend base (same origin `/api` on the host), or null for an offline deck. `verify` is a host page that checks a viewer (Turnstile) and sends them back with a pass — how a host that serves decks sandboxed keeps the check, since Turnstile can't run in an opaque origin. Set by the host (`window.__KADAL_DECK__.verify`), never by a deck."
         },
         "drawings": {
           "type": "object",

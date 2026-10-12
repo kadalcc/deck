@@ -11,7 +11,8 @@ import { useActions, useLayout, useNav, useUi } from "../react/hooks.ts";
 import { closeTerm, openTerm } from "../react/terms.ts";
 import { Analytics } from "./analytics.tsx";
 import { RoomClient, viewerId } from "./client.ts";
-import { turnstileToken } from "./turnstile.ts";
+import { presenterTicket, viewerPass } from "./ticket.ts";
+import { turnstileToken, viewerCheck } from "./turnstile.ts";
 import { LiveContext, type LiveValue, useLiveOptional } from "./context.ts";
 import { EMPTY_ROOM, type Role, type RoomState, type ServerMessage } from "./protocol.ts";
 
@@ -32,23 +33,43 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
   const value = useMemo<LiveValue | null>(() => {
     if (!api || deck.mode === "print") return null;
     const siteKey = deck.config.live.turnstile;
+    const verify = deck.config.live.verify ?? null;
+    const presenting = deck.mode === "presenter";
     const client = new RoomClient({
       api,
       room,
-      role: deck.mode === "presenter" ? "presenter" : "viewer",
+      role: presenting ? "presenter" : "viewer",
       viewer: viewerId(),
-      token: siteKey && deck.mode !== "presenter" ? () => turnstileToken(siteKey) : undefined,
+      token: presenting
+        ? undefined
+        : verify
+          ? () => viewerCheck(verify)
+          : siteKey
+            ? () => turnstileToken(siteKey)
+            : undefined,
+      credentials: (): Record<string, string> => {
+        const ticket = presenterTicket.get();
+        const pass = viewerPass.get();
+        if (presenting) return ticket ? { ticket } : {};
+        return pass ? { pass } : {};
+      },
     });
     const joinUrl =
       typeof window === "undefined" ? "" : `${window.location.origin}${deck.base}join`;
     return { client, joinUrl };
-  }, [api, room, deck.mode, deck.base, deck.config.live.turnstile]);
+  }, [api, room, deck.mode, deck.base, deck.config.live.turnstile, deck.config.live.verify]);
 
   useEffect(() => {
     if (!value) return;
     value.client.connect();
-    return () => value.client.close();
-  }, [value]);
+    // A presenter who signs in on this page (a ticket arrives) is a presenter from the next connection.
+    const unsub =
+      deck.mode === "presenter" ? presenterTicket.subscribe(() => value.client.reconnect()) : null;
+    return () => {
+      unsub?.();
+      value.client.close();
+    };
+  }, [value, deck.mode]);
 
   // Without a room the pen and the laser still belong to this window: C and X used to switch
   // themselves on with nothing mounted to draw or point.

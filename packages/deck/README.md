@@ -186,6 +186,27 @@ a deck that never exports never downloads a browser.
 share links (free plan included). Any static host also works: `npx kadal-deck build` and upload
 `dist/` — everything except the live room runs without a server.
 
+### Sandboxed hosting (opaque origins)
+
+deck.kadal.cc serves every published deck with `Content-Security-Policy: sandbox` and without
+`allow-same-origin`, so a deck keeps its `/@handle/slug/` address but runs in an *opaque origin*:
+it can't read the visitor's cookies, storage or account on the host. Any host may do the same, and
+the engine is built for it:
+
+- `localStorage` and `sessionStorage` throw there; the deck's preferences, drawings, bookmarks
+  and nickname fall back to memory for the page (`src/core/storage.ts`). Guard storage the same
+  way in your own components.
+- Every request the deck makes to its host is cross-origin and carries no cookies: serve the
+  deck's files with `Access-Control-Allow-Origin: *` (module scripts and fonts are CORS requests),
+  and give the presenter a ticket instead of a cookie — `#ticket=…` in the URL, or
+  `window.__KADAL_DECK__.ticket` (`src/live/ticket.ts`).
+- Windows of one deck no longer share a BroadcastChannel; the play window, presenter view and
+  share window keep in step through the windows they opened (`src/core/windows.ts`) and the room.
+- Turnstile can't run in an opaque origin; a host that wants it names its own verification page
+  (`window.__KADAL_DECK__.verify`).
+
+`node tools/opaque-check/run.mjs` drives a published deck through all of this against a local host.
+
 ## Layout of this package
 
 - `src/compiler` — splitting, frontmatter, code meta, magic-move, slots, plain text for search, the glossary pass
