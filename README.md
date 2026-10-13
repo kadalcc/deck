@@ -21,7 +21,7 @@
   <a href="https://www.npmjs.com/package/@kadal/deck"><img alt="Node version" src="https://img.shields.io/node/v/@kadal/deck?color=0e7490"></a>
   <br>
   <a href="https://deck.kadal.cc"><img alt="deck.kadal.cc status" src="https://img.shields.io/website?url=https%3A%2F%2Fdeck.kadal.cc%2Fapi%2Fhealth&label=deck.kadal.cc&up_message=online&down_message=down"></a>
-  <a href="https://deck.kadal.cc/tour/"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-the%20tour-5eead4"></a>
+  <a href="https://decks.kadal.cc/@pmithunish/tour/"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-the%20tour-5eead4"></a>
   <a href="https://deck.kadal.cc/docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-deck.kadal.cc-7dd3fc"></a>
   <a href="https://github.com/sponsors/pmithunish"><img alt="Sponsor Kadal Deck" src="https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white"></a>
 </p>
@@ -29,7 +29,7 @@
 <p align="center">
   <a href="https://deck.kadal.cc/docs/getting-started/">Get started</a> ·
   <a href="https://deck.kadal.cc/docs/">Docs</a> ·
-  <a href="https://deck.kadal.cc/tour/">Live demo</a> ·
+  <a href="https://decks.kadal.cc/@pmithunish/tour/">Live demo</a> ·
   <a href="https://deck.kadal.cc/showcase/">Showcase</a> ·
   <a href="https://deck.kadal.cc/changelog/">Changelog</a> ·
   <a href="https://deck.kadal.cc/sponsor/">Sponsor</a>
@@ -110,7 +110,7 @@ npx kadal-deck publish       # deck.kadal.cc/@you/my-talk/ with a live room (fre
 </tr>
 </table>
 
-**[Open the tour →](https://deck.kadal.cc/tour/)**: the engine's own feature deck, nine chapters
+**[Open the tour →](https://decks.kadal.cc/@pmithunish/tour/)**: the engine's own feature deck, nine chapters
 showing every layout, component, background, transition and view, with every framework island
 running on one slide. Press `?` for the keys. Its source is [`examples/showcase`](examples/showcase),
 and `node tools/showcase-check.mjs` drives every slide and view of it in a headless browser.
