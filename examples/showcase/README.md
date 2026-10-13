@@ -21,7 +21,10 @@ carries speaker notes.
 | `slides/09-presenting.mdx` | the presenter view, the keys, pen and laser, every view, per-slide options, export |
 
 Its pictures, video, sound and the page it embeds are in `public/`, so the tour works offline
-except for the YouTube and X embeds and the Python island (Pyodide comes from a CDN).
+except for the YouTube and X embeds and the Python island (Pyodide comes from a CDN). Those two
+embeds still print and preview offline: `public/posters/` holds the stills `bun run export
+--posters` captured of them. The video is *Big Buck Bunny* (© Blender Foundation, CC BY 3.0,
+peach.blender.org); its poster is a frame of the film as YouTube's player shows it.
 
 ```sh
 bun run dev        # http://localhost:5300/showcase/

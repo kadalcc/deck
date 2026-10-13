@@ -1,6 +1,7 @@
 import katex from "katex";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
+import { TWEET_POSTER_SIZE, tweetEmbedUrl, tweetId, youtubeEmbedUrl } from "../core/embeds.ts";
 import { burstConfetti } from "../react/ConfettiLayer.tsx";
 import { FrameShell } from "../react/Frame.tsx";
 import { useDeck, useSlide, useSlideOptional } from "../react/context.ts";
@@ -353,49 +354,52 @@ export function Iframe({
   );
 }
 
+/** A YouTube video, through the privacy-enhanced player. `deck export` captures its poster. */
 export function Youtube({
   id,
   url,
   autoplay,
   start,
   className,
+  poster,
 }: {
   id?: string;
   url?: string;
   autoplay?: boolean;
   start?: number;
   className?: string;
+  /** Stands in for the player in print, the overview and while it loads. */
+  poster?: string;
 }) {
-  const videoId = id ?? (url ? (/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/.exec(url)?.[1] ?? "") : "");
-  const params = new URLSearchParams({
-    rel: "0",
-    modestbranding: "1",
-    ...(autoplay ? { autoplay: "1", mute: "1" } : {}),
-    ...(start ? { start: String(start) } : {}),
-  });
   return (
     <Iframe
-      src={`https://www.youtube-nocookie.com/embed/${videoId}?${params}`}
+      src={youtubeEmbedUrl({ id, url, autoplay, start })}
       className={["deck-youtube", className].filter(Boolean).join(" ")}
+      poster={poster}
     />
   );
 }
 
+/** A post on X, in the deck's colour scheme. `deck export` captures a poster for each scheme. */
 export function Tweet({
   id,
   url,
   scale = 1,
+  poster,
 }: {
   id?: string | number;
   url?: string;
   scale?: number;
+  /** Stands in for the post in print, the overview and while it loads. */
+  poster?: string;
 }) {
-  const tweetId = String(id ?? (url ? (/status\/(\d+)/.exec(url)?.[1] ?? "") : ""));
   const scheme = useUi((s) => s.colorScheme);
   return (
     <div className="deck-tweet" style={{ zoom: scale }}>
       <Iframe
-        src={`https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=${scheme}&dnt=true`}
+        src={tweetEmbedUrl(tweetId({ id, url }), scheme)}
+        poster={poster}
+        posterSize={TWEET_POSTER_SIZE}
       />
     </div>
   );

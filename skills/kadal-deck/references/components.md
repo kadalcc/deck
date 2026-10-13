@@ -581,6 +581,7 @@ An embedded post from X/Twitter.
 | `id` | `string \| number` |  | Post id. |
 | `url` | `string` |  | Or the post URL. |
 | `scale` | `number` | `1` | Scale factor. |
+| `poster` | `string` |  | Stands in for the post in print, the overview and while it loads. |
 
 #### `<Video>`
 
@@ -612,6 +613,7 @@ A YouTube embed by id or URL.
 | `url` | `string` |  | Or the full URL. |
 | `autoplay` | `boolean` |  | Play on arrival. |
 | `start` | `number` |  | Start at second. |
+| `poster` | `string` |  | Stands in for the player in print, the overview and while it loads. |
 
 ### Background
 
