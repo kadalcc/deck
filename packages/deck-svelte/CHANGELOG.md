@@ -1,5 +1,12 @@
 # @kadal/deck-svelte
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [96d9a55]
+  - @kadal/deck@0.2.1
+
 ## 0.2.0
 
 ### Patch Changes

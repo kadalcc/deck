@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Kadal Deck: presentations written in MDX, with reveal.js and Slidev features, a live room for the audience, islands in any framework, and export to PDF, PNG and PPTX.",
   "keywords": [
     "presentation",
