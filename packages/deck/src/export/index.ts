@@ -2,6 +2,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { splitDeck } from "../compiler/index.ts";
+import {
+  TWEET_POSTER_SIZE,
+  tweetEmbedUrl,
+  tweetId,
+  youtubeEmbedUrl,
+  youtubeId,
+} from "../core/embeds.ts";
 import { POSTER_DEFAULT_SIZE, posterName } from "../core/poster.ts";
 
 /**
@@ -16,7 +23,7 @@ import { POSTER_DEFAULT_SIZE, posterName } from "../core/poster.ts";
  * Keynote and Google Slides looking exactly like the web.
  *
  * Embedded pages cannot be live on paper, so before the build the exporter captures a poster
- * for every iframe slide and `<Iframe>` that names none: a screenshot of the URL at the pane's
+ * for every iframe slide, `<Iframe>`, `<Youtube>` and `<Tweet>` that names none: a screenshot of the URL at the pane's
  * size, saved under `public/posters/` where the frame shell looks for it (see core/poster.ts).
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -32,9 +39,22 @@ export interface PosterJob {
   file: string;
   /** Milliseconds to let the page settle before the shot. */
   wait: number;
+  /** Device pixels per CSS pixel: small captures are taken sharper, since they're shown larger. */
+  scale?: number;
+  /**
+   * Paint the page in the colour of whatever it draws at the top: for a card on an empty page (a
+   * post), so the poster is the card rather than a card above a white band.
+   */
+  fill?: boolean;
 }
 
 const DEFAULT_POSTER_WAIT = 5000;
+
+/** An MDX attribute's value: `name="v"`, `name='v'`, `name={v}` or `name={"v"}`. */
+function attr(attrs: string, name: string): string | undefined {
+  const m = new RegExp(`\\b${name}=(?:"([^"]*)"|'([^']*)'|\\{["']?([^}"']*)["']?\\})`).exec(attrs);
+  return m ? (m[1] ?? m[2] ?? m[3]) : undefined;
+}
 
 /** Every embedded page in the deck that has no poster of its own, with the size to capture. */
 export function posterJobs(
@@ -58,9 +78,11 @@ export function posterJobs(
     height: number,
     capture = url,
     wait = DEFAULT_POSTER_WAIT,
+    extra: Pick<PosterJob, "scale" | "fill"> = {},
   ) => {
     const name = posterName(url, width, height);
-    if (!jobs.has(name)) jobs.set(name, { url, capture, width, height, file: name, wait });
+    if (!jobs.has(name))
+      jobs.set(name, { url, capture, width, height, file: name, wait, ...extra });
   };
   for (const s of split.slides) {
     const fm = s.frontmatter as Record<string, unknown>;
@@ -89,6 +111,28 @@ export function posterJobs(
           capture ?? src,
           wait ? Number(wait) : DEFAULT_POSTER_WAIT,
         );
+    }
+    // The two shorthands embed an address derived from their props (core/embeds.ts). A Tweet is
+    // drawn in the deck's colour scheme, so it gets a poster for each. Ids that can't be real —
+    // a placeholder in a code sample — are skipped.
+    for (const m of s.content.matchAll(/<(Youtube|Tweet)\b([^>]*)>/g)) {
+      const attrs = m[2] ?? "";
+      if (/\bposter=/.test(attrs)) continue;
+      const id = attr(attrs, "id");
+      const url = attr(attrs, "url");
+      if (m[1] === "Youtube") {
+        if (!/^[\w-]{6,}$/.test(youtubeId({ id, url }))) continue;
+        const start = Number(attr(attrs, "start")) || undefined;
+        const autoplay = /\bautoplay(?!=\{false\})/.test(attrs);
+        add(youtubeEmbedUrl({ id, url, autoplay, start }), ...POSTER_DEFAULT_SIZE);
+      } else {
+        const post = tweetId({ id, url });
+        if (!/^\d+$/.test(post)) continue;
+        for (const scheme of ["light", "dark"] as const) {
+          const embed = tweetEmbedUrl(post, scheme);
+          add(embed, ...TWEET_POSTER_SIZE, embed, DEFAULT_POSTER_WAIT, { scale: 2, fill: true });
+        }
+      }
     }
   }
   return [...jobs.values()];
@@ -121,15 +165,32 @@ export async function capturePosters(
       mkdirSync(dirname(target), { recursive: true });
       const context = await browser.newContext({
         viewport: { width: j.width, height: j.height },
-        deviceScaleFactor: 1,
+        deviceScaleFactor: j.scale ?? 1,
       });
       const page = await context.newPage();
       try {
         log(
           `poster ${j.capture} at ${j.width}×${j.height}${j.capture !== j.url ? ` (for ${j.url})` : ""}`,
         );
-        await page.goto(j.capture, { waitUntil: "domcontentloaded", timeout: 60_000 });
+        // Opened with no referrer, an embed can refuse to draw: YouTube's player shows "Error 153"
+        // instead of the video. In a deck it always has one, so it gets one here too.
+        await page.goto(j.capture, {
+          waitUntil: "domcontentloaded",
+          timeout: 60_000,
+          referer: `${new URL(j.capture).origin}/`,
+        });
         await page.waitForTimeout(j.wait);
+        if (j.fill)
+          await page.evaluate((x) => {
+            for (let el = document.elementFromPoint(x, 12); el; el = el.parentElement) {
+              const bg = getComputedStyle(el).backgroundColor;
+              if (bg && bg !== "transparent" && !/^rgba\(.*,\s*0\)$/.test(bg)) {
+                document.documentElement.style.background = bg;
+                document.body.style.background = bg;
+                return;
+              }
+            }
+          }, j.width / 2);
         await page.screenshot({ path: target, type: "jpeg", quality: 86 });
         log(`       → public/${j.file}`);
         done++;

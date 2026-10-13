@@ -76,7 +76,8 @@
   A path that is not in `public/` works in `dev` but is missing from the build (`check` flags it).
 - `background: /photo.jpg` (or a video `.mp4`) fills the slide; `layout: image-right` + `image:` splits it.
 - `<Iframe src="https://…" />` / `layout: iframe` embed pages; they load only near their slide and
-  print as a poster (`kadal-deck export --posters` captures them).
+  print as a poster (`kadal-deck export --posters` captures them, and those for `<Youtube>` and
+  `<Tweet>` too).
 
 ## Look and feel
 
