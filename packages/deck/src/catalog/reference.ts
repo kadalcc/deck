@@ -505,8 +505,9 @@ export const CLI: CliCommand[] = [
   {
     name: "export",
     usage:
-      "kadal-deck export [--png] [--pptx] [--no-pdf] [--out dir] [--scale n] [--url u] [--json]",
-    summary: "PDF/PNG/PPTX into export/.",
+      "kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u] [--json]",
+    summary:
+      "PDF/PNG/PPTX into export/. The PDF looks like the web in every viewer: each page is a picture of the slide with its text printed over it as text. --vector-pdf prints with the browser alone.",
     json: true,
   },
   {

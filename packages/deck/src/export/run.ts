@@ -6,6 +6,7 @@
  *   bun run export --url http://localhost:5300/showcase/     use a running dev server instead
  *   bun run export --upload https://deck.kadal.cc            archive on the host (DECK_ADMIN_KEY)
  *   bun run export --out dist-export --scale 1
+ *   bun run export --vector-pdf          print the PDF with the browser alone (all vector; CSS effects vary by viewer)
  *   bun run export --posters             only capture posters for the embedded pages (into public/posters/)
  *   bun run export --refresh-posters     capture them again even where one exists; --no-posters skips
  */
@@ -20,6 +21,7 @@ export const EXPORT_FLAGS: FlagSpecs = {
   png: { kind: "boolean" },
   pptx: { kind: "boolean" },
   pdf: { kind: "boolean" },
+  "vector-pdf": { kind: "boolean" },
   url: { kind: "string" },
   out: { kind: "string" },
   scale: { kind: "number" },
@@ -80,6 +82,7 @@ export async function runExport(
       outDir,
       slug: room,
       pdf: flags.pdf !== false,
+      vectorPdf: bool(flags["vector-pdf"]) ?? false,
       png: bool(flags.png) ?? false,
       pptx: bool(flags.pptx) ?? false,
       scale: num(flags.scale) ?? 2,
