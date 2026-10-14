@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+import type { Browser, Page } from "playwright";
+
 import { splitDeck } from "../compiler/index.ts";
 import {
   TWEET_POSTER_SIZE,
@@ -42,7 +44,10 @@ export interface PosterJob {
   file: string;
   /** Milliseconds to let the page settle before the shot. */
   wait: number;
-  /** Device pixels per CSS pixel: small captures are taken sharper, since they're shown larger. */
+  /**
+   * Device pixels per CSS pixel. 2 unless a job says otherwise: a poster is printed into the
+   * PDF at the export's scale, and a 1× poster is visibly soft beside the text around it.
+   */
   scale?: number;
   /**
    * Paint the page in the colour of whatever it draws at the top: for a card on an empty page (a
@@ -141,9 +146,87 @@ export function posterJobs(
   return [...jobs.values()];
 }
 
+const GPU_ARGS = [
+  "--enable-gpu",
+  "--ignore-gpu-blocklist",
+  "--use-gl=angle",
+  ...(process.platform === "darwin" ? ["--use-angle=metal"] : []),
+];
+const SOFTWARE_ARGS = [
+  "--use-gl=angle",
+  "--use-angle=swiftshader",
+  "--enable-unsafe-swiftshader",
+  "--ignore-gpu-blocklist",
+];
+
+/** The WebGL renderer a browser ends up with, or null when it has no WebGL at all. */
+async function webglRenderer(browser: Browser): Promise<string | null> {
+  const page = await browser.newPage();
+  try {
+    return await page.evaluate(() => {
+      const gl =
+        document.createElement("canvas").getContext("webgl2") ??
+        document.createElement("canvas").getContext("webgl");
+      if (!gl) return null;
+      const info = gl.getExtension("WEBGL_debug_renderer_info");
+      return info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : "unknown";
+    });
+  } finally {
+    await page.close();
+  }
+}
+
 /**
- * Capture the posters that are missing (or all of them with `refresh`). WebGL pages render
- * through SwiftShader; each page gets its job's `wait` after load for maps and fonts.
+ * A browser for posters: the machine's GPU when it has one, SwiftShader when it doesn't (CI).
+ * On SwiftShader a map is so slow that in ten seconds it has fetched almost none of its tiles,
+ * and its poster is the markers floating over an empty grid.
+ */
+async function posterBrowser(log: (line: string) => void): Promise<Browser> {
+  const { chromium } = await import("playwright");
+  const gpu = await chromium.launch({ args: GPU_ARGS });
+  const renderer = await webglRenderer(gpu).catch(() => null);
+  if (renderer && !/swiftshader|llvmpipe|software/i.test(renderer)) {
+    log(`webgl  ${renderer}`);
+    return gpu;
+  }
+  await gpu.close();
+  log(`webgl  no GPU here (${renderer ?? "none"}): SwiftShader, so maps draw slowly`);
+  return chromium.launch({ args: SOFTWARE_ARGS });
+}
+
+/**
+ * Counts the page's requests from the moment it is created. `quiet()` resolves once none has
+ * been in flight for `idle` ms, or after `max`: a map asks for its tiles only once it has drawn
+ * a frame, so the load event says nothing about them.
+ */
+function trackRequests(page: Page) {
+  let inflight = 0;
+  let last = Date.now();
+  page.on("request", () => {
+    inflight++;
+    last = Date.now();
+  });
+  const settle = () => {
+    inflight = Math.max(0, inflight - 1);
+    last = Date.now();
+  };
+  page.on("requestfinished", settle);
+  page.on("requestfailed", settle);
+  return {
+    async quiet(idle = 1500, max = 30_000): Promise<boolean> {
+      const end = Date.now() + max;
+      while (Date.now() < end) {
+        if (inflight === 0 && Date.now() - last >= idle) return true;
+        await page.waitForTimeout(100);
+      }
+      return false;
+    },
+  };
+}
+
+/**
+ * Capture the posters that are missing (or all of them with `refresh`). Each page is waited on
+ * until its network has gone quiet (tiles, fonts, data), then for its job's `wait` so it can draw.
  */
 export async function capturePosters(
   deckDir: string,
@@ -152,15 +235,7 @@ export async function capturePosters(
 ): Promise<number> {
   const todo = jobs.filter((j) => refresh || !existsSync(join(deckDir, "public", j.file)));
   if (!todo.length) return 0;
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({
-    args: [
-      "--use-gl=angle",
-      "--use-angle=swiftshader",
-      "--enable-unsafe-swiftshader",
-      "--ignore-gpu-blocklist",
-    ],
-  });
+  const browser = await posterBrowser(log);
   let done = 0;
   try {
     for (const j of todo) {
@@ -168,9 +243,10 @@ export async function capturePosters(
       mkdirSync(dirname(target), { recursive: true });
       const context = await browser.newContext({
         viewport: { width: j.width, height: j.height },
-        deviceScaleFactor: j.scale ?? 1,
+        deviceScaleFactor: j.scale ?? 2,
       });
       const page = await context.newPage();
+      const requests = trackRequests(page);
       try {
         log(
           `poster ${j.capture} at ${j.width}×${j.height}${j.capture !== j.url ? ` (for ${j.url})` : ""}`,
@@ -182,6 +258,8 @@ export async function capturePosters(
           timeout: 60_000,
           referer: `${new URL(j.capture).origin}/`,
         });
+        if (!(await requests.quiet()))
+          log("       still loading after 30 s; capturing what there is");
         await page.waitForTimeout(j.wait);
         if (j.fill)
           await page.evaluate((x) => {

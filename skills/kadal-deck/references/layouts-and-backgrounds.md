@@ -158,7 +158,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `url` | `string` |  | The page for the iframe, iframe-left and iframe-right layouts. |
 | `poster` | `string` |  | A picture that stands in for the iframe in print, previews and while it loads. |
 | `posterUrl` | `string` |  | Capture the poster from this address instead of `url`. |
-| `posterWait` | `number` |  | Milliseconds to let the page settle before the poster capture (default 5000). |
+| `posterWait` | `number` |  | Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000). |
 | `terms` | `boolean \| { skip: string[] }` |  | false: link no glossary terms automatically on this slide; { skip: [GIS] } leaves some out. |
 | `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). |
 

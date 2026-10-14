@@ -813,7 +813,7 @@ export const SLIDE_KEYS = [
   {
     name: "posterWait",
     type: N(),
-    description: "Milliseconds to let the page settle before the poster capture (default 5000).",
+    description: "Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000).",
   },
   {
     name: "terms",

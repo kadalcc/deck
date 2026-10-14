@@ -128,7 +128,9 @@ export async function showPrintPage(page: Page, i: number): Promise<void> {
             setTimeout(r, 2000);
             if (!("requestVideoFrameCallback" in v)) return r();
             v.requestVideoFrameCallback(() => r());
-            v.currentTime = v.currentTime;
+            // Seeking to where it already is makes the video present that frame again.
+            const at = v.currentTime;
+            v.currentTime = at;
           }),
       ),
     );
