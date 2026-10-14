@@ -1454,7 +1454,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `kadal-deck check [--json] [--no-compile]` — Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--json`
 - `kadal-deck info [topic] [--search q] [--json]` — Print the catalog: components, layouts, backgrounds, frontmatter… `--json`
 - `kadal-deck screenshot [--slide N|all] [--out dir] [--theme t] [--scheme light|dark] [--width px] [--url u] [--dev] [--json]` — PNG of slides, every click revealed (build + preview, headless Chromium). `--json`
-- `kadal-deck export [--png] [--pptx] [--no-pdf] [--out dir] [--scale n] [--url u] [--json]` — PDF/PNG/PPTX into export/. `--json`
+- `kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u] [--json]` — PDF/PNG/PPTX into export/. The PDF looks like the web in every viewer: each page is a picture of the slide with its text printed over it as text. --vector-pdf prints with the browser alone. `--json`
 - `kadal-deck login [--host url] [--json]` — Sign this machine in (opens the browser). `--json`
 - `kadal-deck logout [--json]` — Forget the saved token. `--json`
 - `kadal-deck whoami [--json]` — Who is signed in (exit 3 when nobody). `--json`

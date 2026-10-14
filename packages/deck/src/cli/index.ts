@@ -49,6 +49,7 @@ export const HELP = `kadal-deck <command> [options]
   screenshot  PNGs of slides into screenshots/   --slide <N|all> --out <dir> --theme <t>
               --scheme <light|dark> --width <px> --url <deck url> --dev
   export      PDF (and --png, --pptx) into export/   --out <dir> --scale <n> --url <deck url> --no-pdf
+              --vector-pdf (print with the browser alone: all vector, effects vary by viewer)
   login       sign in to a Kadal Deck host (opens the browser)   --host <url>
   logout      forget the saved token on this machine
   whoami      show the signed-in account and workspace

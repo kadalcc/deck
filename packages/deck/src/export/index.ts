@@ -10,6 +10,7 @@ import {
   youtubeId,
 } from "../core/embeds.ts";
 import { POSTER_DEFAULT_SIZE, posterName } from "../core/poster.ts";
+import { printFaithfulPdf, settleMedia, showPrintPage } from "./pdf.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -18,9 +19,11 @@ import { POSTER_DEFAULT_SIZE, posterName } from "../core/poster.ts";
  *
  * Drives a headless Chromium over the deck's print view (`?print-pdf`), which lays every slide
  * (and every click step when `pdfSeparateFragments` is on) out as a page at the authored size.
- * PDF comes from the browser's own printer; PNGs are element screenshots of each page; PPTX
- * wraps those PNGs one per slide with the notes attached, so the deck opens in PowerPoint,
- * Keynote and Google Slides looking exactly like the web.
+ * The PDF is two layers per page (see pdf.ts): a screenshot of the page with its text hidden, and
+ * the text itself printed over it, so it looks like the web in every viewer and its words are
+ * still words. `vectorPdf` prints with the browser alone instead. PNGs are element screenshots of
+ * each page; PPTX wraps those PNGs one per slide with the notes attached, so the deck opens in
+ * PowerPoint, Keynote and Google Slides looking exactly like the web.
  *
  * Embedded pages cannot be live on paper, so before the build the exporter captures a poster
  * for every iframe slide, `<Iframe>`, `<Youtube>` and `<Tweet>` that names none: a screenshot of the URL at the pane's
@@ -211,6 +214,11 @@ export interface ExportOptions {
   outDir: string;
   slug: string;
   pdf?: boolean;
+  /**
+   * Print the PDF with the browser alone: every shape is vector, but CSS effects (masks, blurred
+   * shadows, gradient text) come out differently in each PDF viewer. Off by default.
+   */
+  vectorPdf?: boolean;
   png?: boolean;
   pptx?: boolean;
   /** Device scale for PNG/PPTX captures. */
@@ -243,8 +251,9 @@ export async function exportDeck(options: ExportOptions): Promise<ExportResult> 
     log(`open  ${url}`);
     await page.goto(url.toString(), { waitUntil: "networkidle" });
     await page.waitForSelector(".deck-print-pages[data-ready]", { timeout: 120_000 });
-    // Let fonts, KaTeX, mermaid and lazy images settle.
+    // Let fonts, KaTeX, mermaid, lazy images and video frames settle.
     await page.evaluate(() => document.fonts.ready);
+    await settleMedia(page);
     await page.waitForTimeout(800);
     const dims = await page.evaluate(() => {
       const el = document.querySelector<HTMLElement>(".deck-print-page");
@@ -260,14 +269,16 @@ export async function exportDeck(options: ExportOptions): Promise<ExportResult> 
     if (options.pdf !== false) {
       const path = join(options.outDir, `${options.slug}.pdf`);
       await page.emulateMedia({ media: "print" });
-      await page.pdf({
-        path,
-        width: `${dims.width}px`,
-        height: `${dims.height}px`,
-        printBackground: true,
-        preferCSSPageSize: true,
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      });
+      if (options.vectorPdf)
+        await page.pdf({
+          path,
+          width: `${dims.width}px`,
+          height: `${dims.height}px`,
+          printBackground: true,
+          preferCSSPageSize: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        });
+      else await printFaithfulPdf(page, path, dims);
       await page.emulateMedia({ media: "screen" });
       result.files.push({ kind: "pdf", path, size: readFileSync(path).byteLength });
       log(`pdf   ${path}`);
@@ -280,7 +291,7 @@ export async function exportDeck(options: ExportOptions): Promise<ExportResult> 
       const shots: { path: string; notes: string }[] = [];
       for (let i = 0; i < pages.length; i++) {
         const el = pages[i]!;
-        await el.scrollIntoViewIfNeeded();
+        await showPrintPage(page, i);
         const path = join(pngDir, `${String(i + 1).padStart(3, "0")}.png`);
         await el.screenshot({ path, type: "png" });
         const notes = await el

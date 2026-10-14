@@ -34,7 +34,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
 | `kadal-deck info [topic] [name] [--search words] [--markdown]` | the reference (components, layouts, backgrounds, themes, transitions, clicks, code, deck, slide, keys, routes, live, cli, exit) |
 | `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium) |
-| `kadal-deck export [--png] [--pptx] [--no-pdf] [--out dir] [--scale n] [--url u]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX) |
+| `kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX). Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable; `--vector-pdf` prints with the browser alone |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
 | `kadal-deck publish [--slug] [--workspace] [--title] [--host]` | build for the host and publish; only changed files are uploaded |
 | `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |

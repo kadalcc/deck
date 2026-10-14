@@ -761,6 +761,19 @@ if (!flag("--no-export")) {
       const text = readFileSync(pdf).toString("latin1");
       const count = (text.match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
       expect(count === want, `the PDF has ${count} pages, expected ${want}`);
+      // Each page is its picture plus its text (export/pdf.ts): one full-page image (1920×1080 at
+      // --scale 1) per page, and nothing a viewer can draw its own way. A soft-mask group or a
+      // shading means an effect reached the printer — a blur, a mask, a gradient — and Preview
+      // paints those as grey slabs. (An emoji in the text is a bitmap glyph with an alpha channel;
+      // that is an image's own mask, not a group, and every viewer draws it.)
+      const n = (re) => (text.match(re) ?? []).length;
+      const art = (text.match(/<<[^<>]*\/Subtype\s*\/Image[^<>]*>>/g) ?? []).filter(
+        (d) => /\/Width\s+1920\b/.test(d) && /\/Height\s+1080\b/.test(d),
+      ).length;
+      expect(art === want, `the PDF has ${art} full-page pictures, expected one per page (${want})`);
+      expect(n(/\/Type\s*\/Mask/g) === 0, `the PDF has ${n(/\/Type\s*\/Mask/g)} soft-mask groups; effects were printed`);
+      expect(n(/\/ShadingType/g) === 0, `the PDF has ${n(/\/ShadingType/g)} shadings; gradients were printed`);
+      expect(n(/\/Type\s*\/Font/g) > 0, "the PDF has no fonts: its text was not printed as text");
     }
     const pngs = existsSync(join(dir, "png")) ? readdirSync(join(dir, "png")).filter((f) => f.endsWith(".png")) : [];
     expect(pngs.length === want, `${pngs.length} PNGs, expected ${want}`);
