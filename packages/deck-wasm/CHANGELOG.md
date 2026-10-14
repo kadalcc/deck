@@ -1,5 +1,13 @@
 # @kadal/deck-wasm
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [524ff4b]
+- Updated dependencies [2d5f6da]
+  - @kadal/deck@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes
