@@ -36,7 +36,7 @@ import { readItem, writeItem } from "../core/storage.ts";
 import { createStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
 import { createWindowBus, type WindowBus } from "../core/windows.ts";
-import { captureTicket, withTicket } from "../live/ticket.ts";
+import { captureTicket, presenterTicket, withTicket } from "../live/ticket.ts";
 import { Backgrounds } from "./Backgrounds.tsx";
 import { Chrome } from "./chrome.tsx";
 import {
@@ -427,6 +427,7 @@ export function Deck({
       components,
       actions,
       commands,
+      ticket: () => presenterTicket.get(),
       windowId,
       sync,
       isPresenter: mode === "presenter",

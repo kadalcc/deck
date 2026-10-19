@@ -142,6 +142,11 @@ export interface DeckRuntime {
    * and an agent all call. See core/commands.ts.
    */
   commands: CommandRegistry;
+  /**
+   * The presenter ticket this window holds (live/ticket.ts), or null: for a host's own extensions
+   * running in the page — a hosted assistant — to make presenter calls to the host. In memory only.
+   */
+  ticket: () => string | null;
   /** A window-scoped id, so a window ignores its own broadcast. */
   windowId: string;
   /** Set while a remote position is being applied (store listeners run synchronously). */
