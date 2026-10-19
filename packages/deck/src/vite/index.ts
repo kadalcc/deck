@@ -287,8 +287,10 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
       }
 
       if (id === RESOLVED) {
+        // A missing optional peer resolves too — to Vite's stub that throws on import — so the
+        // answer is "found a real file", not "resolved".
         kokoro ??= this.resolve("kokoro-js", kokoroWorkerFile(), { skipSelf: true }).then(
-          (r) => !!r && !r.external,
+          (r) => !!r && !r.external && !r.id.includes("optional-peer-dep") && !r.id.startsWith("\0"),
           () => false,
         );
         const hasKokoro = await kokoro;

@@ -2,7 +2,13 @@ import type { CommandResult } from "../core/commands.ts";
 import { createStore, type Store } from "../core/store.ts";
 import type { EngineChoice, EngineId, KokoroStatus, SpeakOptions, Utterance } from "./engine.ts";
 import type { Engine } from "./engine.ts";
-import { type NarratableSlide, type SilentPolicy, segmentAt, silentMs, slideSegments } from "./text.ts";
+import {
+  type NarratableSlide,
+  type SilentPolicy,
+  segmentPartsAt,
+  silentMs,
+  slideSegments,
+} from "./text.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -367,9 +373,9 @@ export class Narrator {
     return Math.max(0, this.segmentsOf(index).length - 1);
   }
 
-  /** The text for a step, "" for none. */
-  textAt(index: number, click: number): string {
-    return segmentAt(this.segmentsOf(index), click, this.clicksOf(index));
+  /** What to say at a step: usually one segment, none for a silent step, the rest on the last. */
+  partsAt(index: number, click: number): string[] {
+    return segmentPartsAt(this.segmentsOf(index), click, this.clicksOf(index));
   }
 
   private async sayHere(): Promise<void> {
@@ -381,8 +387,8 @@ export class Narrator {
     }
     const { slide, segment } = this.state.get();
     const segs = this.segmentsOf(slide);
-    const text = this.textAt(slide, segment);
-    if (!text) {
+    const parts = this.partsAt(slide, segment);
+    if (!parts.length) {
       // A silent slide dwells (once, on its first step); a silent step just pauses for the gap.
       const ms =
         !segs.length && segment === 0
@@ -392,34 +398,37 @@ export class Narrator {
       if (!(await this.wait(ms, token))) return;
       return this.advance(token);
     }
-    this.set({ phase: "loading", startedAt: this.now, expectedMs: this.host.estimate(text, s0.rate) });
-    let engine: Engine;
-    try {
-      engine = await this.host.engineFor(text, this.state.get());
-    } catch (err) {
-      return this.fail(err, token);
+    for (let i = 0; i < parts.length; i++) {
+      const text = parts[i]!;
+      this.set({ phase: "loading", startedAt: this.now, expectedMs: this.host.estimate(text, s0.rate) });
+      let engine: Engine;
+      try {
+        engine = await this.host.engineFor(text, this.state.get());
+      } catch (err) {
+        return this.fail(err, token);
+      }
+      if (token !== this.token) return;
+      const options = this.speakOptions();
+      const u = engine.speak(text, options);
+      this.utterance = u;
+      this.set({
+        phase: "speaking",
+        using: engine.id,
+        startedAt: this.now,
+        expectedMs: this.host.estimate(text, options.rate),
+      });
+      // While this plays, the next clip gets made.
+      const ahead = parts[i + 1] ?? this.lookAhead();
+      if (ahead && engine.prepare) engine.prepare(ahead, options);
+      let result: "ended" | "cancelled";
+      try {
+        result = await u.done;
+      } catch (err) {
+        return this.fail(err, token);
+      }
+      if (token !== this.token || result === "cancelled") return;
+      this.utterance = null;
     }
-    if (token !== this.token) return;
-    const options = this.speakOptions();
-    const u = engine.speak(text, options);
-    this.utterance = u;
-    this.set({
-      phase: "speaking",
-      using: engine.id,
-      startedAt: this.now,
-      expectedMs: this.host.estimate(text, options.rate),
-    });
-    // While this plays, the next step's clip gets made.
-    const ahead = this.lookAhead();
-    if (ahead && engine.prepare) engine.prepare(ahead, options);
-    let result: "ended" | "cancelled";
-    try {
-      result = await u.done;
-    } catch (err) {
-      return this.fail(err, token);
-    }
-    if (token !== this.token || result === "cancelled") return;
-    this.utterance = null;
     this.set({ phase: "gap", startedAt: this.now, expectedMs: this.host.gap });
     if (!(await this.wait(this.host.gap, token))) return;
     return this.advance(token);
@@ -439,9 +448,9 @@ export class Narrator {
   private lookAhead(): string {
     const { slide, segment } = this.state.get();
     const clicks = this.clicksOf(slide);
-    if (segment < clicks) return this.textAt(slide, segment + 1);
+    if (segment < clicks) return this.partsAt(slide, segment + 1)[0] ?? "";
     for (let i = slide + 1; i < this.host.slides.length && i < slide + 3; i++) {
-      const t = this.textAt(i, 0);
+      const t = this.partsAt(i, 0)[0];
       if (t) return t;
     }
     return "";

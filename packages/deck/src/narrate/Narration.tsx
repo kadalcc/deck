@@ -383,7 +383,9 @@ export default function Narration({
   const status =
     s.error ??
     (s.kokoro.state === "loading"
-      ? `Downloading voice ${Math.round(s.kokoro.progress * 100)}%`
+      ? s.kokoro.progress >= 0.999
+        ? "Preparing voice…"
+        : `Downloading voice ${Math.round(s.kokoro.progress * 100)}%`
       : s.using === "kokoro"
         ? `Kokoro${s.kokoro.device ? ` · ${s.kokoro.device === "webgpu" ? "WebGPU" : "WebAssembly"}` : ""}`
         : s.using === "baked"

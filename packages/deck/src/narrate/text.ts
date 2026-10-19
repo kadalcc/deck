@@ -122,14 +122,20 @@ export function timelineOf(
 }
 
 /**
- * What to say at `click` on a slide with these segments and `clicks` steps. On the slide's last
- * step every segment still unsaid is said, so notes with more `[click]`s than the slide has
- * steps lose no words.
+ * What to say at `click` on a slide with these segments and `clicks` steps, as the segments to say
+ * one after another. On the slide's last step every segment still unsaid is said, so notes with
+ * more `[click]`s than the slide has steps lose no words — and each is still its own clip.
  */
+export function segmentPartsAt(segments: string[], click: number, clicks: number): string[] {
+  if (!segments.length) return [];
+  if (click >= clicks) return segments.slice(click).filter(Boolean);
+  const one = segments[click];
+  return one ? [one] : [];
+}
+
+/** The same, as one string. */
 export function segmentAt(segments: string[], click: number, clicks: number): string {
-  if (!segments.length) return "";
-  if (click >= clicks) return segments.slice(click).filter(Boolean).join(" ");
-  return segments[click] ?? "";
+  return segmentPartsAt(segments, click, clicks).join(" ");
 }
 
 /** Whether a deck narrates: `narration.enabled`, where "auto" means "some slide has words to say". */

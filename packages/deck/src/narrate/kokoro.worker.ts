@@ -23,13 +23,21 @@ interface Tts {
 const scope = self as unknown as {
   postMessage(message: KokoroResponse, transfer?: Transferable[]): void;
   onmessage: ((e: MessageEvent<KokoroRequest>) => void) | null;
-  navigator: { gpu?: unknown };
+  navigator: { gpu?: { requestAdapter(): Promise<unknown> } };
 };
 const post = (m: KokoroResponse, transfer: Transferable[] = []) => scope.postMessage(m, transfer);
 
 let tts: Promise<Tts> | null = null;
 /** One synthesis at a time: the model is one session. */
 let queue: Promise<unknown> = Promise.resolve();
+
+async function hasAdapter(): Promise<boolean> {
+  try {
+    return !!(await scope.navigator.gpu?.requestAdapter());
+  } catch {
+    return false;
+  }
+}
 
 async function load(model: string, dtype: Dtype | "auto", device: Device | "auto"): Promise<Tts> {
   const files = new Map<string, { loaded: number; total: number }>();
@@ -48,7 +56,9 @@ async function load(model: string, dtype: Dtype | "auto", device: Device | "auto
     }
     post({ type: "progress", progress: total ? loaded / total : 0, file: p.file });
   };
-  const gpu = device === "webgpu" || (device === "auto" && !!scope.navigator.gpu);
+  // `navigator.gpu` alone promises nothing (headless Chromium has it and no adapter): ask for one,
+  // so a machine without a GPU never downloads the 300 MB fp32 weights only to fail on them.
+  const gpu = device === "webgpu" || (device === "auto" && (await hasAdapter()));
   const attempts: Array<{ device: Device; dtype: Dtype }> = gpu
     ? [
         { device: "webgpu", dtype: dtype === "auto" ? "fp32" : dtype },
