@@ -272,6 +272,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     frontmatter: ${JSON.stringify(s.frontmatter)},
     hasNotes: ${s.notes ? "true" : "false"},
     text: ${JSON.stringify(plainText(s.content))},
+    notesText: ${s.notes ? JSON.stringify(plainText(s.notes)) : "null"},
     source: ${JSON.stringify(s.source)},
     load: () => import("${VIRTUAL}/slide/${i}"),
     loadNotes: ${s.notes ? `() => import("${VIRTUAL}/notes/${i}")` : "null"},

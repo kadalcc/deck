@@ -14,6 +14,7 @@ import { flushSync } from "react-dom";
 
 import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
+import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
 import { actionFor, isEditable, type KeyAction } from "../core/keyboard.ts";
 import { computeLayout, type Layout, toStage } from "../core/layout.ts";
 import {
@@ -51,6 +52,7 @@ import { Overview } from "./Overview.tsx";
 import { PrintView } from "./PrintView.tsx";
 import { ScrollView } from "./ScrollView.tsx";
 import { Stage } from "./Stage.tsx";
+import { useBuiltinCommands } from "./commands.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 
@@ -197,6 +199,7 @@ export function Deck({
         zoom: null,
         drawing: false,
         pointer: false,
+        laser: null,
         spotlight: false,
         colorScheme:
           stored(config, "scheme", ["light", "dark"]) ?? resolveScheme(config.colorScheme),
@@ -394,6 +397,7 @@ export function Deck({
     };
   }, [nav, ui, columns, config, options, base, sync, projector, projectorWindow, related]);
 
+  const commands = useMemo(() => createCommandRegistry(), []);
   const terms = useMemo(() => createStore<TermReveal | null>(null), []);
   const glossary = useMemo(
     () => new Map((manifest.glossary ?? []).map((e) => [e.id, e])),
@@ -413,6 +417,7 @@ export function Deck({
       base,
       components,
       actions,
+      commands,
       windowId,
       sync,
       isPresenter: mode === "presenter",
@@ -432,6 +437,7 @@ export function Deck({
       base,
       components,
       actions,
+      commands,
       windowId,
       sync,
       projector,
@@ -440,6 +446,7 @@ export function Deck({
     ],
   );
 
+  useBuiltinCommands(runtime);
   useDeckEffects(runtime, flags, wantedAtLoad, related);
   useTermEffects(runtime);
   // A share window the viewer closed themselves: the button that opened it stops looking lit.
@@ -816,62 +823,11 @@ function useDeckEffects(
         actions.togglePause(false);
         return;
       }
+      // Every key runs a command, so a key, a button, the phone remote and an agent do the same thing.
+      const command = KEY_COMMANDS[action];
+      if (!command) return;
       e.preventDefault();
-      switch (action) {
-        case "next":
-        case "prev":
-        case "nextSlide":
-        case "prevSlide":
-        case "left":
-        case "right":
-        case "up":
-        case "down":
-        case "first":
-        case "last":
-          actions[action]();
-          break;
-        case "overview":
-          actions.toggleOverview();
-          break;
-        case "fullscreen":
-          actions.toggleFullscreen();
-          break;
-        case "pause":
-          actions.togglePause();
-          break;
-        case "presenter":
-          if (mode === "play") actions.openPresenter();
-          break;
-        case "help":
-          actions.toggleHelp();
-          break;
-        case "jump":
-          actions.toggleJump(true);
-          break;
-        case "search":
-          actions.toggleSearch(true);
-          break;
-        case "autoSlide":
-          actions.toggleAutoSlide();
-          break;
-        case "draw":
-          actions.toggleDrawing();
-          break;
-        case "pointer":
-          actions.togglePointer();
-          break;
-        case "colorScheme":
-          actions.toggleColorScheme();
-          break;
-        case "hints":
-          actions.toggleHints();
-          break;
-        case "themeMenu":
-          actions.toggleThemeMenu();
-          break;
-        default:
-          break;
-      }
+      void deck.commands.run(command, {}, "keyboard");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

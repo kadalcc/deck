@@ -1,6 +1,7 @@
 import { type ComponentType, createContext, useContext } from "react";
 
 import type { ClickRegistry } from "../core/clicks.ts";
+import type { CommandRegistry } from "../core/commands.ts";
 import type { Layout } from "../core/layout.ts";
 import type {
   Column,
@@ -29,6 +30,11 @@ export interface UiState {
   zoom: { x: number; y: number; scale: number } | null;
   drawing: boolean;
   pointer: boolean;
+  /**
+   * Where a command aimed the laser (the phone remote, an agent), 0–1 across the slide; null when
+   * nothing is aiming it and the mouse decides.
+   */
+  laser: { x: number; y: number } | null;
   spotlight: boolean;
   colorScheme: "light" | "dark";
   cursorHidden: boolean;
@@ -131,6 +137,11 @@ export interface DeckRuntime {
   base: string;
   components: Record<string, ComponentType<Record<string, unknown>>>;
   actions: DeckActions;
+  /**
+   * Everything a person can do here, as commands: what the keyboard, the toolbar, the phone remote
+   * and an agent all call. See core/commands.ts.
+   */
+  commands: CommandRegistry;
   /** A window-scoped id, so a window ignores its own broadcast. */
   windowId: string;
   /** Set while a remote position is being applied (store listeners run synchronously). */

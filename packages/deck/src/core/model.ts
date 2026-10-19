@@ -47,6 +47,13 @@ export interface SlideMeta {
   level: number;
   frontmatter: Frontmatter;
   hasNotes: boolean;
+  /** The slide's words as plain text: for search, the outline, and agents. */
+  text?: string;
+  /**
+   * The speaker notes as plain text, `[click]` markers kept, so the narrator and an agent can read
+   * them without rendering; null without notes. Absent in manifests built before 0.3.
+   */
+  notesText?: string | null;
   source: { file: string; line: number };
   load: () => Promise<SlideModule>;
   loadNotes: (() => Promise<SlideModule>) | null;
