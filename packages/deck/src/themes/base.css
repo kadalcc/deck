@@ -8,6 +8,7 @@
 @import "./bling.css";
 @import "./sketch.css";
 @import "./glossary.css";
+@import "./narrate.css";
 
 :root {
   --deck-bg: #ffffff;

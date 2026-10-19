@@ -407,6 +407,10 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
       "A look-only window for a second screen or a call: follows the presenter, ignores input.",
   },
   {
+    param: "?narrate",
+    summary: "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
+  },
+  {
     param: "?at",
     summary:
       "Marks a link as being ABOUT its slide (share links): lands there instead of following.",
@@ -535,6 +539,13 @@ export const CLI: CliCommand[] = [
     json: true,
   },
   {
+    name: "narrate",
+    usage: "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
+    summary:
+      "Bake the narration: every notes segment spoken by Kokoro into public/narration/ (MP3 or Opus with ffmpeg, else WAV) and public/narration.json; skips clips that exist. --setup installs kokoro-js.",
+    json: true,
+  },
+  {
     name: "mcp",
     usage: "kadal-deck mcp [--dir path] [--allow-outside]",
     summary: "A Model Context Protocol server on stdio, for AI agents.",
@@ -634,6 +645,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   lineNumbers: "Line numbers on every code block.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
   drawings: "Drawing: { enabled, persist, presenterOnly, syncAll }.",
+  narration:
+    'Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled ("auto" = when some slide has notes; false turns it off), engine ("auto" · "baked" · "kokoro" · "browser" · "silent"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: "estimate", "skip" or ms), model (Hugging Face id), dtype ("auto" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser\'s own voice reads. `kadal-deck narrate` bakes clips.',
   reactions: "Audience reactions in the live room.",
   qa: "Audience questions in the live room.",
   polls: "Polls and quizzes in the live room.",
@@ -829,6 +842,22 @@ export const SLIDE_KEYS = [
     type: S(),
     description: "Include the slides of another .mdx file here (a frontmatter-only slide).",
     example: "src: ./part-two.mdx",
+  },
+  {
+    name: "say",
+    type: S(),
+    description:
+      "What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent.",
+    example: 'say: "Here is the plan. [click] First, the data."',
+  },
+  {
+    name: "narration",
+    type: {
+      text: "false",
+      variants: [{ type: "boolean" as const }],
+    },
+    description:
+      "false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck.",
   },
 ];
 

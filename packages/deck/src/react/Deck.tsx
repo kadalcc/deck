@@ -48,6 +48,7 @@ import {
   type ViewMode,
 } from "./context.ts";
 import { Lightbox } from "./Lightbox.tsx";
+import { NarrationGate } from "./NarrationGate.tsx";
 import { Overview } from "./Overview.tsx";
 import { PrintView } from "./PrintView.tsx";
 import { ScrollView } from "./ScrollView.tsx";
@@ -522,6 +523,7 @@ function PlayView() {
         </>
       )}
       <Chrome />
+      <NarrationGate />
       <Lightbox />
     </>
   );

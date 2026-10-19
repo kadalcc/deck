@@ -3,6 +3,7 @@ import { renderToString as renderKatex } from "katex";
 import { cpSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -45,6 +46,9 @@ import { parseGlossary } from "../glossary/parse.ts";
  *   virtual:deck/slide/N     slide N's compiled MDX (default export: the component)
  *   virtual:deck/notes/N     slide N's notes, compiled MDX (default export)
  *   virtual:deck/magic/N     slide N's precomputed magic-move steps
+ *   virtual:deck/kokoro      the narrator's Kokoro worker — only when the deck has `kokoro-js`
+ *                            installed; otherwise the manifest says `kokoro: null` and nothing of
+ *                            it is built (it is an optional peer: ~400 MB of ONNX runtime)
  *
  * A `glossary.yaml` beside the deck file (or the headmatter's `glossary:` path) is read here too:
  * every slide's key terms are linked to it as the slide compiles (`compiler/rehype-glossary.ts`),
@@ -66,6 +70,15 @@ function excalidrawDist(): string | null {
 }
 
 const SKIP_FONTS = new Set(["Xiaolai"]);
+
+/**
+ * The Kokoro worker's file in this package (dist/narrate/kokoro.worker.js beside dist/vite/, or
+ * the source when the plugin itself runs from src/).
+ */
+function kokoroWorkerFile(): string {
+  const js = fileURLToPath(new URL("../narrate/kokoro.worker.js", import.meta.url));
+  return existsSync(js) ? js : fileURLToPath(new URL("../narrate/kokoro.worker.ts", import.meta.url));
+}
 
 export interface DeckPluginOptions {
   /** The deck file, relative to the Vite root. Default `deck.mdx`. */
@@ -97,6 +110,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   const included = new Set<string>();
   /** The glossary file the last build read (or looked for), watched like an included file. */
   let glossaryFile: string | null = null;
+  /** Whether `kokoro-js` resolves from this package (decided once, at the first manifest). */
+  let kokoro: Promise<boolean> | null = null;
 
   const getHighlighter = async () => {
     highlighter ??= await createHighlighter({
@@ -201,6 +216,12 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   return {
     name: "stack:deck",
     enforce: "pre",
+    config(user) {
+      // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
+      // only an ES-module worker can do. A deck that set its own worker format keeps it.
+      if (!user.worker?.format) return { worker: { format: "es" } };
+      return undefined;
+    },
     configResolved(config) {
       root = config.root;
       entryPath = resolve(root, entry);
@@ -259,7 +280,18 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       if (!id.startsWith(RESOLVED)) return null;
       const m = ensure();
 
+      if (id === `${RESOLVED}/kokoro`) {
+        return `import KokoroWorker from ${JSON.stringify(`${kokoroWorkerFile()}?worker`)};
+export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kokoro" }); }
+`;
+      }
+
       if (id === RESOLVED) {
+        kokoro ??= this.resolve("kokoro-js", kokoroWorkerFile(), { skipSelf: true }).then(
+          (r) => !!r && !r.external,
+          () => false,
+        );
+        const hasKokoro = await kokoro;
         const entries = m.slides.map((s, i) => {
           const title = titleOf(s);
           return `  {
@@ -284,7 +316,8 @@ export const slides = [
 ${entries.join(",\n")}
 ];
 export const glossary = ${JSON.stringify(m.glossary.entries)};
-export default { headmatter, slides, glossary };
+export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
+export default { headmatter, slides, glossary, kokoro };
 `;
       }
 

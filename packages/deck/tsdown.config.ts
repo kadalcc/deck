@@ -23,6 +23,8 @@ export default defineConfig({
     "export/index": "src/export/index.ts",
     "cli/index": "src/cli/index.ts",
     "cli/bin": "src/cli/bin.ts",
+    // Not imported by anything: the Vite plugin bundles it as a worker when kokoro-js is installed.
+    "narrate/kokoro.worker": "src/narrate/kokoro.worker.ts",
   },
   format: "esm",
   platform: "neutral",
