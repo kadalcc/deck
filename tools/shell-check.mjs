@@ -113,6 +113,16 @@ try {
   );
   const nav = await page.evaluate(() => window.msgs.filter((m) => m.type === "nav").at(-1));
   check("preview: it lands on the slide asked for and reports it", nav.index === 1, JSON.stringify(nav));
+  // An edit to the slide on screen: the recompiled slide must replace the old one, not a cache.
+  await page.evaluate((deckText) => {
+    const edited = deckText.replace(/\n---\n/, "\n---\n\n# Edited by the check\n\n---\n");
+    document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "source", text: edited, at: 0 }, "*");
+  }, deck);
+  const edited = page.frameLocator("iframe").getByRole("heading", { name: "Edited by the check" });
+  await edited.waitFor({ timeout: 20_000 }).then(
+    () => check("preview: a recompile shows the edited slide, not a cached one", true),
+    () => check("preview: a recompile shows the edited slide, not a cached one", false),
+  );
   check("no console errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 } finally {
   await browser.close();
