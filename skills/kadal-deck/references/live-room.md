@@ -39,6 +39,24 @@ Viewers start in step with the presenter. Any move of their own (key, swipe, ove
 following, and a pill offers to follow again. The presenter's drawings, confetti and shared term
 cards reach every screen; the laser and spotlight do not.
 
+## Phone remote
+
+The presenter view's **Phone remote** button shows a QR. The phone that scans it opens
+`/<slug>/remote` and drives that window: next/back, blackout, focus labels, a slide list, pen,
+zoom, a laser aimed by touching a live copy of the slide or by holding a button and moving the
+phone, the notes for the current step, the timer with pacing, and time-warning buzzes. Every
+button runs a command (`nav.next`, `present.laserAt`, `draw.pen` …) in the presenting window, so a
+remote can do what the keyboard can and nothing else.
+
+- The deck's `main.tsx` passes `remote: RemotePage` from `@kadal/deck/remote` in `<Deck pages>`.
+- Hosted deck: the QR is `remote#ticket=…`. The presenter ticket travels in the URL fragment, so
+  it never reaches a server log. The room relays the phone's commands to the presenter windows only.
+- `kadal-deck dev`: the dev server relays it with a 6-character code (`remote?pair=CODE`). Run
+  `kadal-deck dev --host` so the phone can reach the computer on the same Wi-Fi. Add `--https`
+  (a self-signed certificate) for the air pointer, because motion sensors need a secure page. On
+  plain http the phone points by touch instead.
+- **Disconnect** in the dialog drops every phone. On the dev server it also changes the code.
+
 ## A good interactive talk
 
 - Open with `<QrJoin />` and a warm-up poll so people join early.

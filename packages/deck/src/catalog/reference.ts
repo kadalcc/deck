@@ -385,6 +385,11 @@ export const ROUTES: RouteInfo[] = [
     path: "/<slug>/join",
     summary: "The audience page (also /audience): follow along, react, ask, vote.",
   },
+  {
+    path: "/<slug>/remote",
+    summary:
+      "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR: `remote#ticket=…` with a room, `remote?pair=CODE` on `kadal-deck dev`. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
+  },
   { path: "/<slug>/notes", summary: "Every speaker note on one page." },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
 ];
@@ -456,6 +461,12 @@ export const LIVE: LiveFeature[] = [
     components: ["Confetti", "Term"],
   },
   {
+    name: "Phone remote",
+    summary:
+      "The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). With a room it is a presenter socket holding the ticket; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).",
+    components: [],
+  },
+  {
     name: "Turning it on",
     summary:
       "`kadal-deck publish` gives a deck a room on deck.kadal.cc; self-hosted, set `live.api` (and run a room server against @kadal/deck/protocol). Offline decks render live components as placeholders.",
@@ -472,8 +483,9 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "dev",
-    usage: "kadal-deck dev [vite flags]",
-    summary: "The deck with live reload.",
+    usage: "kadal-deck dev [--https] [vite flags]",
+    summary:
+      "The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.",
     json: false,
   },
   {
