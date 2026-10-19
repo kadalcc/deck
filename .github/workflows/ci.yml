@@ -77,6 +77,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Every slide, click and view of the showcase, and its export
         run: node tools/showcase-check.mjs
+      - name: The prebuilt shell compiles a deck in the browser, published and as a preview
+        run: node tools/shell-check.mjs
       - name: Screenshots and exports, for looking at
         if: always()
         uses: actions/upload-artifact@v4

@@ -83,6 +83,11 @@ export interface DeckProps {
   pages?: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>;
   /** Wraps the runtime (the live provider, a theme provider). */
   children?: ReactNode;
+  /**
+   * The URL path the deck lives under, e.g. "/@you/talk/". Defaults to Vite's `BASE_URL`; a deck
+   * that was not built for its address (the prebuilt shell) works it out and passes it here.
+   */
+  base?: string;
 }
 
 function baseOf(): string {
@@ -109,8 +114,12 @@ export function Deck({
   components = {},
   pages = {},
   children,
+  base: baseIn,
 }: DeckProps) {
-  const base = useMemo(baseOf, []);
+  const base = useMemo(
+    () => (baseIn ? (baseIn.endsWith("/") ? baseIn : `${baseIn}/`) : baseOf()),
+    [baseIn],
+  );
   const slugFromBase = base.replace(/^\/|\/$/g, "");
   const config = useMemo(() => {
     // Before anything reads the fragment: a presenter ticket rides in it (live/ticket.ts).

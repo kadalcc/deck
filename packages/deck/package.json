@@ -73,6 +73,10 @@
       "types": "./dist/authoring/index.d.ts",
       "import": "./dist/authoring/index.js"
     },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js"
+    },
     "./live": {
       "types": "./dist/live/index.d.ts",
       "import": "./dist/live/index.js"

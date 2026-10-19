@@ -3,32 +3,20 @@ import { renderToString as renderKatex } from "katex";
 import { cpSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
-import rehypeKatex from "rehype-katex";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import { type Highlighter, createHighlighter } from "shiki";
-import { codeToKeyedTokens } from "shiki-magic-move/core";
 import type { Plugin, ViteDevServer } from "vite";
 
-import {
-  applySlots,
-  findMagicMoves,
-  levelOf,
-  rehypeDeckCode,
-  splitDeck,
-  titleOf,
-} from "../compiler/index.ts";
-import { parseCodeMeta, serialiseSteps } from "../compiler/code-meta.ts";
+import { levelOf, titleOf } from "../compiler/index.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
-import { plainText } from "../compiler/plain-text.ts";
-import { rehypeGlossary } from "../compiler/rehype-glossary.ts";
 import {
-  DEFAULT_GLOSSARY,
-  type GlossaryEntry,
-  buildMatcher,
-  glossaryOptions,
-} from "../glossary/model.ts";
-import { parseGlossary } from "../glossary/parse.ts";
+  deckGlossary,
+  magicMoveData,
+  mdxPlugins,
+  prepareDeck,
+  slideTerms,
+} from "../compiler/pipeline.ts";
+import { plainText } from "../compiler/plain-text.ts";
+import { DEFAULT_GLOSSARY } from "../glossary/model.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -109,7 +97,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   function build() {
     included.clear();
     const text = readFileSync(entryPath, "utf8");
-    const split = splitDeck(text, {
+    const { headmatter, slides } = prepareDeck(text, {
       file: entryPath,
       resolveInclude: (path, from) => {
         const file = resolve(dirname(from), path);
@@ -118,26 +106,22 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         return { file, text: readFileSync(file, "utf8") };
       },
     });
-    const slides = split.slides.map((s) => {
-      const { text: content, blocks } = findMagicMoves(applySlots(s.content));
-      return { ...s, content, magic: blocks };
-    });
-    return { headmatter: split.headmatter, slides, glossary: readGlossary(split.headmatter) };
+    return { headmatter, slides, glossary: readGlossary(headmatter) };
   }
 
   function readGlossary(headmatter: Record<string, unknown>) {
-    const opts = glossaryOptions(headmatter.glossary);
-    let entries: GlossaryEntry[] = [];
-    glossaryFile = opts.src ? resolve(dirname(entryPath), opts.src) : null;
-    if (glossaryFile && existsSync(glossaryFile)) {
-      const parsed = parseGlossary(readFileSync(glossaryFile, "utf8"), glossaryFile, renderMath);
-      entries = parsed.entries;
-      for (const w of parsed.warnings) console.warn(`[deck] glossary: ${w}`);
-      server?.watcher.add(glossaryFile);
-    } else if (glossaryFile && opts.src !== DEFAULT_GLOSSARY.src) {
-      console.warn(`[deck] glossary: ${glossaryFile} does not exist`);
-    }
-    return { options: opts, entries, matcher: buildMatcher(entries) };
+    const g = deckGlossary(
+      headmatter,
+      (src) => {
+        const file = resolve(dirname(entryPath), src);
+        glossaryFile = file;
+        return existsSync(file) ? { file, text: readFileSync(file, "utf8") } : null;
+      },
+      { math: renderMath, warn: (m) => console.warn(`[deck] ${m}`) },
+    );
+    if (!g.options.src) glossaryFile = null;
+    if (g.file) server?.watcher.add(g.file);
+    return g;
   }
 
   const ensure = () => {
@@ -160,38 +144,18 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
 
   /** `terms` is the slide's own frontmatter switch; null compiles without the glossary (notes). */
   async function compileMdx(source: string, file: string, terms: unknown = null) {
-    const hl = await getHighlighter();
-    const { options: g, matcher } = ensure().glossary;
-    const skipTerms =
-      terms && typeof terms === "object" && Array.isArray((terms as { skip?: unknown }).skip)
-        ? (terms as { skip: unknown[] }).skip
-        : [];
-    const glossaryPass =
-      terms === null
-        ? []
-        : [
-            [
-              rehypeGlossary,
-              {
-                matcher,
-                auto: terms !== false,
-                repeat: g.repeat,
-                headings: g.headings,
-                skip: g.skip,
-                exclude: new Set(
-                  skipTerms.map((t) => matcher.resolve(String(t))?.id).filter((id) => !!id),
-                ),
-                math: renderMath,
-                warn: (message: string) => console.warn(`[deck] ${file}: ${message}`),
-              },
-            ] as [typeof rehypeGlossary, Parameters<typeof rehypeGlossary>[0]],
-          ];
     const out = await compile(source, {
       jsx: false,
       jsxImportSource: "react",
       development: false,
-      remarkPlugins: [remarkGfm, remarkMath],
-      rehypePlugins: [rehypeKatex, [rehypeDeckCode, { highlighter: hl, themes }], ...glossaryPass],
+      ...mdxPlugins({
+        highlighter: await getHighlighter(),
+        themes,
+        glossary: ensure().glossary,
+        terms,
+        math: renderMath,
+        warn: (message) => console.warn(`[deck] ${file}: ${message}`),
+      }),
       providerImportSource: "@kadal/deck/mdx-provider",
       format: "mdx",
     });
@@ -299,30 +263,13 @@ export default { headmatter, slides, glossary };
         return compileMdx(
           s.content,
           `${s.source.file}:${s.source.line}`,
-          s.frontmatter.terms === undefined ? true : s.frontmatter.terms,
+          slideTerms(s),
         );
       if (kind === "notes")
         return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`);
 
       // magic: precompute keyed tokens for each step, plus that step's own line highlights.
-      const hl = await getHighlighter();
-      const blocks = s.magic.map((block) => ({
-        options: block.options,
-        title: block.title,
-        steps: block.steps.map((step) => {
-          const lang = hl.getLoadedLanguages().includes(step.lang) ? step.lang : "text";
-          const meta = parseCodeMeta(step.meta);
-          return {
-            lang: step.lang,
-            lines: meta.lines,
-            highlight: meta.steps ? serialiseSteps(meta.steps) : null,
-            tokens: {
-              light: codeToKeyedTokens(hl, step.code, { lang: lang as never, theme: themes.light }),
-              dark: codeToKeyedTokens(hl, step.code, { lang: lang as never, theme: themes.dark }),
-            },
-          };
-        }),
-      }));
+      const blocks = magicMoveData(s.magic, await getHighlighter(), themes);
       return `export default ${JSON.stringify(blocks)};`;
     },
   };

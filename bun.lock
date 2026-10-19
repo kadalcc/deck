@@ -74,14 +74,14 @@
     },
     "packages/create-deck": {
       "name": "@kadal/create-deck",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "bin": {
         "create-deck": "src/index.mjs",
       },
     },
     "packages/deck": {
       "name": "@kadal/deck",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "bin": {
         "kadal-deck": "dist/cli/bin.js",
       },
@@ -132,7 +132,7 @@
     },
     "packages/deck-angular": {
       "name": "@kadal/deck-angular",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@angular/compiler": "^22.2.1",
         "@angular/core": "^22.2.1",
@@ -144,12 +144,12 @@
         "@angular/compiler": "^20.0.0 || ^21.0.0 || ^22.0.0",
         "@angular/core": "^20.0.0 || ^21.0.0 || ^22.0.0",
         "@angular/platform-browser": "^20.0.0 || ^21.0.0 || ^22.0.0",
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
       },
     },
     "packages/deck-fresh": {
       "name": "@kadal/deck-fresh",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@kadal/deck-preact": "workspace:*",
@@ -157,96 +157,108 @@
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
-        "@kadal/deck-preact": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
+        "@kadal/deck-preact": "^0.2.2",
         "preact": "^10.0.0 || ^11.0.0",
       },
     },
     "packages/deck-preact": {
       "name": "@kadal/deck-preact",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "preact": "^11.0.0",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
         "preact": "^10.0.0 || ^11.0.0",
       },
     },
     "packages/deck-python": {
       "name": "@kadal/deck-python",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
       },
     },
     "packages/deck-qwik": {
       "name": "@kadal/deck-qwik",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@qwik.dev/core": "2.0.0-rc.0",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
         "@qwik.dev/core": "^2.0.0-rc.0",
+      },
+    },
+    "packages/deck-shell": {
+      "name": "@kadal/deck-shell",
+      "version": "0.2.2",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/node": "^25.9.3",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.0",
       },
     },
     "packages/deck-solid": {
       "name": "@kadal/deck-solid",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "solid-js": "^1.9.15",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
         "solid-js": "^1.9.0",
       },
     },
     "packages/deck-svelte": {
       "name": "@kadal/deck-svelte",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "svelte": "^5.57.1",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
         "svelte": "^5.0.0",
       },
     },
     "packages/deck-vue": {
       "name": "@kadal/deck-vue",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
         "vue": "^3.5.22",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
         "vue": "^3.5.0",
       },
     },
     "packages/deck-wasm": {
       "name": "@kadal/deck-wasm",
-      "version": "0.1.1",
+      "version": "0.2.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.1.1",
+        "@kadal/deck": "^0.2.2",
       },
     },
   },
@@ -398,6 +410,8 @@
     "@kadal/deck-python": ["@kadal/deck-python@workspace:packages/deck-python"],
 
     "@kadal/deck-qwik": ["@kadal/deck-qwik@workspace:packages/deck-qwik"],
+
+    "@kadal/deck-shell": ["@kadal/deck-shell@workspace:packages/deck-shell"],
 
     "@kadal/deck-solid": ["@kadal/deck-solid@workspace:packages/deck-solid"],
 
