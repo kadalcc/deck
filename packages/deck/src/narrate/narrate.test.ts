@@ -9,6 +9,7 @@ import { Narrator, type NarratorHost, type Position } from "./player.ts";
 import {
   dwellMs,
   segmentAt,
+  segmentPartsAt,
   segmentsOf,
   silentMs,
   slideSegments,
@@ -60,6 +61,8 @@ describe("text", () => {
     expect(segmentAt(segs, 2, 2)).toBe("c d");
     expect(segmentAt(segs, 0, 0)).toBe("a b c d");
     expect(segmentAt(["a"], 1, 3)).toBe("");
+    expect(segmentPartsAt(segs, 2, 2)).toEqual(["c", "d"]);
+    expect(segmentPartsAt(["a", "", "c"], 1, 2)).toEqual([]);
   });
 
   test("timeline: starts accumulate, silent slides dwell", () => {
@@ -300,6 +303,17 @@ describe("narrator", () => {
     expect(dwells).toContain(5);
   });
 
+  test("notes with more steps than the slide: the last step says the rest, clip by clip", async () => {
+    const { n, voice } = narrator([{ notesText: "a [click] b [click] c" }], [1]);
+    await n.play();
+    await until(() => voice.said.length === 1);
+    voice.finish();
+    await until(() => voice.said.length === 2);
+    voice.finish();
+    await until(() => voice.said.length === 3);
+    expect(voice.said).toEqual(["a", "b", "c"]);
+  });
+
   test("follow off reads on without moving the deck", async () => {
     const { n, deck, voice } = narrator([{ notesText: "a [click] b" }, { notesText: "c" }], [1, 0]);
     n.setFollow(false);
@@ -352,5 +366,57 @@ describe("narrator", () => {
     const v = e.speak("hello", { voice: "v", browserVoice: null, rate: 1, volume: 1, muted: false });
     v.cancel();
     expect(await v.done).toBe("cancelled");
+  });
+});
+
+describe("kadal-deck narrate", () => {
+  test("encodes 16-bit mono WAV", async () => {
+    const { encodeWav } = await import("./wav.ts");
+    const wav = encodeWav(new Float32Array([0, 1, -1, 0.5]), 24_000);
+    const v = new DataView(wav.buffer);
+    expect(new TextDecoder().decode(wav.slice(0, 4))).toBe("RIFF");
+    expect(v.getUint32(24, true)).toBe(24_000);
+    expect(v.getUint32(40, true)).toBe(8);
+    expect([v.getInt16(44, true), v.getInt16(46, true), v.getInt16(48, true)]).toEqual([0, 32767, -32768]);
+  });
+
+  test("lists the texts the deck will ask for: includes, say:, hidden and silent slides", async () => {
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { deckSegments } = await import("../cli/narrate.ts");
+    const dir = mkdtempSync(join(tmpdir(), "narrate-"));
+    writeFileSync(
+      join(dir, "deck.mdx"),
+      [
+        "---\ntitle: T\n---\n\n# One\n\n<Notes>\nHello **there**. [click] Next [link](https://a.b).\n</Notes>",
+        "---\nhide: true\n---\n\n# Hidden\n\n<Notes>Never said.</Notes>",
+        "---\nsay: Custom words.\n---\n\n# Two",
+        "---\nnarration: false\n---\n\n# Quiet\n\n<Notes>Not this.</Notes>",
+        "---\nsrc: ./more.mdx\n---\n",
+      ].join("\n\n---\n"),
+    );
+    writeFileSync(join(dir, "more.mdx"), "# Three\n\n<Notes>Included. [click] Hello there.</Notes>\n");
+    const { texts } = deckSegments(join(dir, "deck.mdx"));
+    expect(texts).toEqual(["Hello there.", "Next link.", "Custom words.", "Included."]);
+  });
+
+  test("without kokoro-js it says how to get it (exit 4)", async () => {
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { main } = await import("../cli/index.ts");
+    const dir = mkdtempSync(join(tmpdir(), "narrate-"));
+    writeFileSync(join(dir, "package.json"), "{}");
+    writeFileSync(join(dir, "deck.mdx"), "# One\n\n<Notes>Say this.</Notes>\n");
+    const errors: string[] = [];
+    const original = { log: console.log, error: console.error };
+    console.log = console.error = (...a: unknown[]) => void errors.push(a.join(" "));
+    try {
+      expect(await main(["narrate", "--json"], dir)).toBe(4);
+    } finally {
+      Object.assign(console, original);
+    }
+    expect(errors.join("\n")).toContain("kadal-deck narrate --setup");
   });
 });

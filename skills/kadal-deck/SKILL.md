@@ -40,7 +40,10 @@ and `slide_render` (pictures of slides).
    try to sign in yourself; if `kadal-deck whoami` exits 3, ask them to.
 
 `npx kadal-deck dev` serves the deck with live reload for the user (MCP `deck_preview` returns
-the URL). `?` in the browser lists keys; `S` opens the presenter view.
+the URL). `?` in the browser lists keys; `S` opens the presenter view; `R` narrates — reads each
+`[click]` part of the notes aloud and turns the pages, for rehearsal. `npx kadal-deck narrate`
+bakes that speech into `public/narration/` (it needs `kokoro-js`: run it with `--setup` first,
+which installs a few hundred MB — only when the user wants recorded narration).
 
 ## The format in one screen
 

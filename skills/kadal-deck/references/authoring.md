@@ -53,7 +53,11 @@
   around a list reveals item by item. `at="+2"`, `at={3}`, `at={[2, 4]}`, `hide`,
   `effect="fade-up"` (see the click effects in references/components.md).
 - Code steps: ```` ```ts {1|2-3|all} ```` highlights those lines, one set per click.
-- `<Notes>` text with `[click]` markers: the presenter view shows the part for the current click.
+- `<Notes>` text with `[click]` markers: the presenter view shows the part for the current click,
+  and the narrator (R, or the presenter's narration bar) reads that part aloud at that step. Write
+  notes as sentences meant to be heard. `say: "…"` in a slide's frontmatter replaces what is read;
+  `narration: false` keeps the slide quiet. `kadal-deck narrate` bakes the speech into
+  `public/narration/` (Kokoro; `--setup` installs `kokoro-js` first).
 
 ## Layouts and slots
 

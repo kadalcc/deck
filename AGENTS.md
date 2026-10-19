@@ -13,6 +13,7 @@ bun run typecheck
 bun run test         # bun test in every package
 bun run lint         # oxlint
 node tools/smoke.mjs # pack every package, scaffold a deck from the tarballs, npm install, build
+node tools/narration-check.mjs  # the narration bar and autoplay in headless Chromium (showcase)
 ```
 
 In `packages/deck`: `bun run catalog` regenerates the catalog and everything derived from it;
