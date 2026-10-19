@@ -17,6 +17,7 @@ import {
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
 import { DEFAULT_GLOSSARY } from "../glossary/model.ts";
+import { createRelay, type RelayPeer } from "../remote/relay.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -64,6 +65,31 @@ export interface DeckPluginOptions {
 
 /** Build-time KaTeX for the maths in a definition; the browser gets finished HTML. */
 const renderMath = (tex: string) => renderKatex(tex, { throwOnError: false });
+
+/**
+ * The phone remote's line to the dev server (src/remote/relay.ts), in the one module of the deck
+ * Vite always serves itself — so `import.meta.hot` is there however @kadal/deck was installed.
+ */
+const DEV_RELAY = `const hot = import.meta.hot;
+export const relay = hot
+  ? {
+      send: (m) => hot.send("kadal:remote", m),
+      on: (fn) => {
+        hot.on("kadal:remote", fn);
+        return () => hot.off("kadal:remote", fn);
+      },
+      onStatus: (fn) => {
+        const up = () => fn(true);
+        const down = () => fn(false);
+        hot.on("vite:ws:connect", up);
+        hot.on("vite:ws:disconnect", down);
+        return () => {
+          hot.off("vite:ws:connect", up);
+          hot.off("vite:ws:disconnect", down);
+        };
+      },
+    }
+  : null;`;
 
 const VIRTUAL = "virtual:deck";
 const RESOLVED = "\0virtual:deck";
@@ -172,8 +198,18 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       outDir = resolve(root, config.build.outDir);
       building = config.command === "build";
     },
+    async config(_config, env) {
+      // `kadal-deck dev --https`: a self-signed certificate, so a phone gets a secure context (the
+      // air pointer's motion sensors need one). The deck's own `server.https` wins.
+      if (env.command !== "serve" || process.env.KADAL_DECK_HTTPS !== "1") return;
+      if (_config.server?.https) return;
+      const { devCertificate } = await import("./https.ts");
+      const https = devCertificate(resolve(_config.root ?? process.cwd()));
+      return https ? { server: { https } } : undefined;
+    },
     configureServer(s) {
       server = s;
+      remoteRelay(s);
       const dist = excalidrawDist();
       s.middlewares.use((req, res, next) => {
         const url = (req.url ?? "").split("?")[0]!;
@@ -248,7 +284,8 @@ export const slides = [
 ${entries.join(",\n")}
 ];
 export const glossary = ${JSON.stringify(m.glossary.entries)};
-export default { headmatter, slides, glossary };
+${building ? "export const relay = null;" : DEV_RELAY}
+export default { headmatter, slides, glossary, relay };
 `;
       }
 
@@ -276,3 +313,29 @@ export default { headmatter, slides, glossary };
 }
 
 export default deck;
+
+/**
+ * The phone remote's relay on the dev server: pairing and routing (src/remote/relay.ts) over the
+ * HMR socket every page of the deck already holds, so it listens wherever Vite does — and nowhere
+ * Vite does not. Only `serve` has it; a build has no relay.
+ */
+function remoteRelay(s: ViteDevServer) {
+  const relay = createRelay({ urls: () => s.resolvedUrls?.network ?? [] });
+  const peers = new WeakMap<object, RelayPeer>();
+  type Client = { send(event: string, payload?: unknown): void };
+  const peerOf = (client: Client): RelayPeer => {
+    let peer = peers.get(client);
+    if (!peer) {
+      peer = { send: (m) => client.send("kadal:remote", m) };
+      peers.set(client, peer);
+    }
+    return peer;
+  };
+  // The channel hands listeners a wrapper without the socket, so guesses are counted per
+  // connection (and in all) rather than per address.
+  s.ws.on("kadal:remote", (data: unknown, client: Client) => relay.message(peerOf(client), data));
+  s.ws.on("vite:client:disconnect", (_data: unknown, client: Client) => {
+    const peer = peers.get(client);
+    if (peer) relay.leave(peer);
+  });
+}

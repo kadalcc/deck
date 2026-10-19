@@ -1422,6 +1422,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `/<slug>/` — The deck. `#/h/v/click` or `#/<slide-id>` addresses a slide and step.
 - `/<slug>/presenter` — Presenter view: current + next slide, notes with click markers, timer, tools, the room panel.
 - `/<slug>/join` — The audience page (also /audience): follow along, react, ask, vote.
+- `/<slug>/remote` — The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR: `remote#ticket=…` with a room, `remote?pair=CODE` on `kadal-deck dev`. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.
 - `/<slug>/notes` — Every speaker note on one page.
 - `/<slug>/stats` — Views, dwell per slide, sessions, questions, reactions.
 
@@ -1444,12 +1445,13 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - **Quizzes** — Timed questions with points for speed and a leaderboard. (`<Quiz>`, `<Leaderboard>`)
 - **Pace and hands** — Slower/faster feedback and raised hands in the presenter's room panel. (`<Pace>`)
 - **Shared ink** — The presenter's drawings, confetti and shared term cards reach every screen. (`<Confetti>`, `<Term>`)
+- **Phone remote** — The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). With a room it is a presenter socket holding the ticket; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).
 - **Turning it on** — `kadal-deck publish` gives a deck a room on deck.kadal.cc; self-hosted, set `live.api` (and run a room server against @kadal/deck/protocol). Offline decks render live components as placeholders.
 
 ## The CLI
 
 - `kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun]` — Scaffold a deck (non-interactive). `--json`
-- `kadal-deck dev [vite flags]` — The deck with live reload.
+- `kadal-deck dev [--https] [vite flags]` — The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.
 - `kadal-deck build [vite flags]` — dist/ for any static host.
 - `kadal-deck check [--json] [--no-compile]` — Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--json`
 - `kadal-deck info [topic] [--search q] [--json]` — Print the catalog: components, layouts, backgrounds, frontmatter… `--json`

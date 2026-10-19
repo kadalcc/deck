@@ -17,6 +17,7 @@ export default defineConfig({
     "live/protocol": "src/live/protocol.ts",
     "presenter/index": "src/presenter/index.tsx",
     "audience/index": "src/audience/index.tsx",
+    "remote/index": "src/remote/index.tsx",
     "backgrounds/index": "src/backgrounds/index.tsx",
     "renderers/index": "src/renderers/index.ts",
     "renderers/contract": "src/renderers/contract.ts",
