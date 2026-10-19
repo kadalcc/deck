@@ -65,6 +65,19 @@ export interface DeckManifest {
   slides: SlideMeta[];
   /** The deck's `glossary.yaml`, parsed at build time; absent in a deck without one. */
   glossary?: GlossaryEntry[];
+  /**
+   * The dev server's message channel for the phone remote (`kadal-deck dev` only: null or absent
+   * in a build). See src/remote/relay.ts.
+   */
+  relay?: DevRelay | null;
+}
+
+/** A line to the dev server: Vite's HMR socket, event "kadal:remote". */
+export interface DevRelay {
+  send(message: unknown): void;
+  on(listener: (message: unknown) => void): () => void;
+  /** Hears the connection to the dev server come back (true) or drop (false). */
+  onStatus(listener: (open: boolean) => void): () => void;
 }
 
 export type Transition =

@@ -1,0 +1,927 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { Icon } from "../components/bling.tsx";
+import { roomIdOf } from "../core/model.ts";
+import { key as navKey } from "../core/navigation.ts";
+import { readItem, writeItem } from "../core/storage.ts";
+import { useStore } from "../core/store.ts";
+import { createSwipeTracker } from "../core/touch.ts";
+import type { RemoteState } from "../live/protocol.ts";
+import { presenterTicket } from "../live/ticket.ts";
+import { BackgroundLayer } from "../react/Backgrounds.tsx";
+import { useDeck } from "../react/context.ts";
+import { useFit } from "../react/fit.ts";
+import { expectedElapsed, formatElapsed, formatPace, paceTone } from "../react/pacing.ts";
+import { SlideFrame } from "../react/SlideFrame.tsx";
+import {
+  type Aim,
+  createCoalescer,
+  createOneEuro,
+  notesSegment,
+  orientationToPoint,
+  readOrientation,
+} from "./air.ts";
+import { devRemote, type RemoteLink, roomRemote } from "./link.ts";
+
+export { RemoteHost, remoteState } from "./host.tsx";
+export { RemoteMirror, FORWARDED } from "./mirror.ts";
+export { createRelay, type Relay, type RelayIn, type RelayOut, type RelayPeer } from "./relay.ts";
+export {
+  createCoalescer,
+  createOneEuro,
+  notesSegment,
+  orientationToPoint,
+  readOrientation,
+  wrapDegrees,
+} from "./air.ts";
+export type { HostLink, RemoteLink, RemoteStatus } from "./link.ts";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * THE PHONE REMOTE  —  /<slug>/remote
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * A phone that drives the presenter view: next and back, blackout, the focus labels, an overview
+ * to jump from, the pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the
+ * phone (the "air pointer"), the notes for this step, the timer with pacing, a buzz at the times
+ * you choose, and the screen kept awake. Everything it does is a command run IN the presenting
+ * window (core/commands.ts), so it can do exactly what the keyboard can and nothing more.
+ *
+ * It is the deck app itself, so the slide it shows is rendered by the deck's own components —
+ * what the room sees, not a picture of it. Paired by the presenter view's "Phone remote" QR:
+ * `remote#ticket=…` on a hosted deck (the fragment never reaches a server), `remote?pair=CODE` on
+ * `kadal-deck dev`.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+export function RemotePage() {
+  const deck = useDeck();
+  const [pair] = useState(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("pair"),
+  );
+  const ticket = useStore(presenterTicket);
+  const api = deck.config.live.api;
+  const relay = deck.manifest.relay ?? null;
+  const pairable = !!(api && ticket) || !!(pair && relay);
+  // Made in an effect: what opens the socket closes it (StrictMode mounts twice in dev).
+  const [link, setLink] = useState<RemoteLink | null>(null);
+  useEffect(() => {
+    let made: RemoteLink | null = null;
+    if (api && ticket) made = roomRemote({ api, room: roomIdOf(deck.config), ticket });
+    else if (pair && relay) made = devRemote(relay, pair.toUpperCase());
+    setLink(made);
+    return () => {
+      made?.close();
+      setLink(null);
+    };
+  }, [api, ticket, pair, relay, deck.config]);
+  useWakeLock();
+  return (
+    <div className="deck-remote">
+      {link ? (
+        <Console link={link} />
+      ) : pairable ? null : (
+        <Instructions pair={pair} hosted={!!api} dev={!!relay} />
+      )}
+    </div>
+  );
+}
+
+function Instructions({
+  pair,
+  hosted,
+  dev,
+}: {
+  pair: string | null;
+  hosted: boolean;
+  dev: boolean;
+}) {
+  const deck = useDeck();
+  return (
+    <div className="deck-remote-instructions">
+      <Icon name="smartphone" size={40} />
+      <h1>{deck.config.title}</h1>
+      <h2>Phone remote</h2>
+      {pair && !dev ? (
+        <p>
+          This pairing code is for a deck running on <code>kadal-deck dev</code>, and this page is a
+          built copy. Open the QR on the presenter view of the dev server instead.
+        </p>
+      ) : (
+        <>
+          <p>This page becomes a remote once it is paired with the presenting screen:</p>
+          <ol>
+            <li>
+              Open the presenter view on your computer
+              {hosted
+                ? " (from your host's dashboard, or press S on the deck)"
+                : " (press S on the deck)"}
+              .
+            </li>
+            <li>
+              Press <b>Phone remote</b> in its toolbar.
+            </li>
+            <li>Scan the QR with this phone's camera.</li>
+          </ol>
+          {!hosted && !dev ? (
+            <p className="deck-remote-muted">
+              This deck has no room, so a phone can reach it only while it runs on{" "}
+              <code>kadal-deck dev --host</code>.
+            </p>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── settings ────────────────────────────────────────────────────────────────
+
+interface Settings {
+  /** Degrees of turn from the slide's centre to its edge. */
+  range: number;
+  haptics: boolean;
+  /** Minutes into the talk to buzz at, "20, 25". */
+  warn: string;
+  notes: number;
+  point: "laser" | "spotlight";
+}
+
+function defaults(totalTime: number | null): Settings {
+  const total = totalTime ? Math.round(totalTime / 60) : 0;
+  return {
+    range: 20,
+    haptics: true,
+    warn: total > 6 ? `${total - 5}, ${total - 1}` : "",
+    notes: 18,
+    point: "laser",
+  };
+}
+
+function useSettings(): [Settings, (patch: Partial<Settings>) => void] {
+  const deck = useDeck();
+  const key = `deck.remote.${deck.config.slug || "deck"}`;
+  const [settings, setSettings] = useState<Settings>(() => {
+    const base = defaults(deck.config.totalTime || null);
+    try {
+      return { ...base, ...(JSON.parse(readItem(key) ?? "{}") as Partial<Settings>) };
+    } catch {
+      return base;
+    }
+  });
+  return [
+    settings,
+    (patch) =>
+      setSettings((s) => {
+        const next = { ...s, ...patch };
+        writeItem(key, JSON.stringify(next));
+        return next;
+      }),
+  ];
+}
+
+function useWakeLock() {
+  useEffect(() => {
+    type Lock = { release(): Promise<void> };
+    let lock: Lock | null = null;
+    let alive = true;
+    const acquire = async () => {
+      try {
+        const wl = (navigator as unknown as { wakeLock?: { request(t: "screen"): Promise<Lock> } })
+          .wakeLock;
+        const l = (await wl?.request("screen")) ?? null;
+        if (alive) lock = l;
+        else void l?.release();
+      } catch {
+        lock = null;
+      }
+    };
+    void acquire();
+    const onVis = () => document.visibilityState === "visible" && void acquire();
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      alive = false;
+      document.removeEventListener("visibilitychange", onVis);
+      void lock?.release();
+    };
+  }, []);
+}
+
+const buzz = (on: boolean, pattern: number | number[] = 8) => {
+  if (on && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(pattern);
+};
+
+// ── the console ─────────────────────────────────────────────────────────────
+
+type Mode = "point" | "pen" | "zoom";
+
+function Console({ link }: { link: RemoteLink }) {
+  const deck = useDeck();
+  const status = useStore(link.status);
+  const reason = useStore(link.reason);
+  const state = useStore(link.state);
+  const [settings, set] = useSettings();
+  const [mode, setMode] = useState<Mode>("point");
+  const [sheet, setSheet] = useState<"overview" | "settings" | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const flash = (m: string) => {
+    setMessage(m);
+    setTimeout(() => setMessage((x) => (x === m ? null : x)), 2200);
+  };
+
+  // The slide on show follows the presenter's colour scheme and theme, so it looks as theirs does.
+  useEffect(() => {
+    if (!state) return;
+    deck.ui.update((u) =>
+      u.colorScheme === state.colorScheme && u.theme === state.theme
+        ? u
+        : { ...u, colorScheme: state.colorScheme, theme: state.theme },
+    );
+  }, [state?.colorScheme, state?.theme, deck.ui]);
+
+  /** A tap: run it, tick, and say so if it did not work. */
+  const run = (id: string, params?: Record<string, unknown>) => {
+    buzz(settings.haptics);
+    void link.run(id, params).then((a) => {
+      if (!a.ok) flash(a.error ?? "That did not work.");
+    });
+  };
+
+  if (status === "denied")
+    return (
+      <div className="deck-remote-instructions">
+        <Icon name="unplug" size={40} />
+        <h2>Not paired</h2>
+        <p>{reason ?? "This phone is not paired."}</p>
+      </div>
+    );
+
+  return (
+    <>
+      <Header state={state} status={status} settings={settings} />
+      <div className="deck-remote-body">
+        <section className="deck-remote-view">
+          <MiniSlide state={state} link={link} mode={mode} settings={settings} run={run} />
+          <div className="deck-remote-modes" role="radiogroup" aria-label="What a touch does">
+            <ModeButton
+              mode="point"
+              current={mode}
+              set={setMode}
+              icon={settings.point === "spotlight" ? "flashlight" : "mouse-pointer-2"}
+              label={settings.point === "spotlight" ? "Spotlight" : "Laser"}
+              onAgain={() => set({ point: settings.point === "laser" ? "spotlight" : "laser" })}
+            />
+            <ModeButton mode="pen" current={mode} set={setMode} icon="pencil" label="Pen" />
+            <ModeButton mode="zoom" current={mode} set={setMode} icon="zoom-in" label="Zoom" />
+          </div>
+          {mode === "pen" ? (
+            <div className="deck-remote-row">
+              <button type="button" onClick={() => run("draw.undo")}>
+                <Icon name="undo-2" /> Undo
+              </button>
+              <button type="button" onClick={() => run("draw.clear")}>
+                <Icon name="eraser" /> Clear
+              </button>
+            </div>
+          ) : null}
+          <Notes state={state} size={settings.notes} setSize={(notes) => set({ notes })} />
+        </section>
+        <section className="deck-remote-controls">
+          <AirButton link={link} settings={settings} flash={flash} />
+          <div className="deck-remote-nav">
+            <button
+              type="button"
+              className="deck-remote-prev"
+              onClick={() => run("nav.prev")}
+              aria-label="Back"
+            >
+              <Icon name="chevron-left" size={36} />
+            </button>
+            <button
+              type="button"
+              className="deck-remote-next"
+              onClick={() => run("nav.next")}
+              aria-label="Next"
+            >
+              <Icon name="chevron-right" size={44} />
+              <span>Next</span>
+            </button>
+          </div>
+          <div className="deck-remote-tools">
+            <button
+              type="button"
+              className={state?.blackout ? "is-on" : ""}
+              aria-pressed={!!state?.blackout}
+              onClick={() => run("present.blackout", { on: !state?.blackout })}
+            >
+              <Icon name="monitor-off" /> Blackout
+            </button>
+            <button
+              type="button"
+              className={state?.hints ? "is-on" : ""}
+              aria-pressed={!!state?.hints}
+              onClick={() => run("view.hints", { on: !state?.hints })}
+            >
+              <Icon name="scan-text" /> Focus
+            </button>
+            <button type="button" onClick={() => setSheet("overview")}>
+              <Icon name="layout-grid" /> Slides
+            </button>
+            <button type="button" onClick={() => setSheet("settings")} aria-label="Settings">
+              <Icon name="settings-2" />
+            </button>
+          </div>
+        </section>
+      </div>
+      {sheet === "overview" ? (
+        <Overview state={state} run={run} close={() => setSheet(null)} />
+      ) : sheet === "settings" ? (
+        <SettingsSheet settings={settings} set={set} close={() => setSheet(null)} />
+      ) : null}
+      <div className="deck-remote-toast" data-on={message ? "true" : undefined} role="status">
+        {message}
+      </div>
+    </>
+  );
+}
+
+function ModeButton({
+  mode,
+  current,
+  set,
+  icon,
+  label,
+  onAgain,
+}: {
+  mode: Mode;
+  current: Mode;
+  set: (m: Mode) => void;
+  icon: string;
+  label: string;
+  /** Pressing the chosen mode again (laser ⇄ spotlight). */
+  onAgain?: () => void;
+}) {
+  const on = mode === current;
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={on}
+      className={on ? "is-on" : ""}
+      data-mode={mode}
+      onClick={() => (on ? onAgain?.() : set(mode))}
+    >
+      <Icon name={icon} /> {label}
+    </button>
+  );
+}
+
+const STATUS: Record<string, string> = {
+  connecting: "Connecting…",
+  open: "Connected",
+  waiting: "Waiting for the presenter view",
+  closed: "Reconnecting…",
+};
+
+function Header({
+  state,
+  status,
+  settings,
+}: {
+  state: RemoteState | null;
+  status: string;
+  settings: Settings;
+}) {
+  const deck = useDeck();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(t);
+  }, []);
+  const elapsed = state?.startedAt ? (now - state.startedAt) / 1000 : null;
+  const expected = state ? expectedElapsed(deck, state.slide) : null;
+  const pace = elapsed === null || expected === null ? null : elapsed - expected;
+
+  // The buzz at each chosen minute, once, as the timer passes it.
+  const fired = useRef(new Set<number>());
+  const [alarm, setAlarm] = useState(false);
+  useEffect(() => {
+    if (elapsed === null) return;
+    const marks = settings.warn
+      .split(/[,\s]+/)
+      .map(Number)
+      .filter((n) => Number.isFinite(n) && n > 0);
+    for (const m of marks) {
+      if (elapsed >= m * 60 && elapsed < m * 60 + 30 && !fired.current.has(m)) {
+        fired.current.add(m);
+        buzz(true, [220, 120, 220, 120, 420]);
+        setAlarm(true);
+        setTimeout(() => setAlarm(false), 4000);
+      }
+    }
+  }, [elapsed === null ? null : Math.floor(elapsed), settings.warn]);
+
+  return (
+    <header className="deck-remote-header">
+      <div className="deck-remote-title">
+        <span className={`deck-remote-status is-${status}`} title={STATUS[status] ?? status}>
+          <i />
+          <span className="deck-remote-status-text">{STATUS[status] ?? status}</span>
+        </span>
+        <strong>{deck.config.title}</strong>
+      </div>
+      <div className="deck-remote-meta">
+        <span className="deck-remote-count" data-testid="remote-position">
+          {state ? `${state.slide.index + 1} / ${state.total}` : "– / –"}
+          {state && state.slide.clicks ? (
+            <small>
+              {" "}
+              · step {state.slide.click}/{state.slide.clicks}
+            </small>
+          ) : null}
+        </span>
+        <span className={["deck-remote-timer", paceTone(pace), alarm ? "is-alarm" : ""].join(" ")}>
+          {elapsed === null ? "--:--:--" : formatElapsed(elapsed)}
+          {pace !== null ? <small>{formatPace(pace)}</small> : null}
+        </span>
+      </div>
+      <div className="deck-remote-slide-title">{state?.slide.title ?? " "}</div>
+    </header>
+  );
+}
+
+/** The current slide, live, and the touchpad over it. */
+function MiniSlide({
+  state,
+  link,
+  mode,
+  settings,
+  run,
+}: {
+  state: RemoteState | null;
+  link: RemoteLink;
+  mode: Mode;
+  settings: Settings;
+  run: (id: string, params?: Record<string, unknown>) => void;
+}) {
+  const deck = useDeck();
+  const { width: W, height: H } = deck.config;
+  const box = useRef<HTMLDivElement>(null);
+  const pad = useRef<HTMLDivElement>(null);
+  const fit = useFit(box, W, H);
+  const [dot, setDot] = useState<{ x: number; y: number } | null>(null);
+  const [ink, setInk] = useState<[number, number][] | null>(null);
+  const laser = useMemo(
+    () => createCoalescer<{ x: number; y: number }>((p) => link.fire("present.laserAt", p)),
+    [link],
+  );
+  const pen = useMemo(
+    () =>
+      createCoalescer<{ x: number; y: number }>((p) =>
+        link.fire("draw.pen", { phase: "move", ...p }),
+      ),
+    [link],
+  );
+  const touch = useRef<{
+    x: number;
+    y: number;
+    moved: boolean;
+    swipe: ReturnType<typeof createSwipeTracker>;
+  } | null>(null);
+  useEffect(
+    () => () => {
+      laser.cancel();
+      pen.cancel();
+    },
+    [laser, pen],
+  );
+
+  const norm = (e: React.PointerEvent) => {
+    const r = pad.current!.getBoundingClientRect();
+    const c = (n: number) => Math.min(1, Math.max(0, n));
+    return { x: c((e.clientX - r.left) / r.width), y: c((e.clientY - r.top) / r.height) };
+  };
+
+  const onDown = (e: React.PointerEvent) => {
+    if (!state || e.button > 0) return;
+    e.preventDefault();
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    const p = norm(e);
+    const swipe = createSwipeTracker(60, 450);
+    swipe.start(e.clientX, e.clientY, e.timeStamp);
+    touch.current = { ...p, moved: false, swipe };
+    buzz(settings.haptics, 6);
+    if (mode === "point") {
+      if (settings.point === "spotlight") link.fire("present.spotlight", { on: true });
+      laser.push(p);
+      laser.flush();
+      setDot(p);
+    } else if (mode === "pen") {
+      link.fire("draw.pen", { phase: "start", ...p });
+      setInk([[p.x, p.y]]);
+    }
+  };
+  const onMove = (e: React.PointerEvent) => {
+    const t = touch.current;
+    if (!t) return;
+    const p = norm(e);
+    if (Math.abs(p.x - t.x) + Math.abs(p.y - t.y) > 0.01) t.moved = true;
+    if (mode === "point") {
+      laser.push(p);
+      setDot(p);
+    } else if (mode === "pen") {
+      pen.push(p);
+      setInk((pts) => (pts ? [...pts, [p.x, p.y]] : pts));
+    }
+  };
+  const onUp = (e: React.PointerEvent) => {
+    const t = touch.current;
+    if (!t) return;
+    touch.current = null;
+    const p = norm(e);
+    const dir = t.swipe.end(e.clientX, e.clientY, e.timeStamp);
+    if (mode === "point") {
+      laser.cancel();
+      link.fire("present.laserOff");
+      setDot(null);
+      if (dir === "left") run("nav.next");
+      else if (dir === "right") run("nav.prev");
+    } else if (mode === "pen") {
+      pen.flush();
+      link.fire("draw.pen", { phase: "end", ...p });
+      setInk(null);
+    } else if (mode === "zoom" && !t.moved) {
+      run(state?.zoomed ? "view.zoomOut" : "view.zoom", state?.zoomed ? {} : p);
+    } else if (mode === "zoom" && dir) {
+      if (dir === "left") run("nav.next");
+      else if (dir === "right") run("nav.prev");
+    }
+  };
+
+  const meta = state ? deck.columns[state.slide.h]?.slides[state.slide.v] : null;
+  const options = state ? deck.options.get(navKey(state.slide.h, state.slide.v)) : null;
+  return (
+    <div
+      ref={box}
+      className="deck-remote-stage"
+      data-mode={mode}
+      style={{ aspectRatio: `${W} / ${H}`, ["--remote-ratio" as string]: W / H }}
+    >
+      {meta && options && state ? (
+        <div
+          className="deck-remote-canvas"
+          style={{
+            width: W,
+            height: H,
+            transform: `translate(${fit.left}px, ${fit.top}px) scale(${fit.scale})`,
+          }}
+          aria-hidden
+        >
+          <BackgroundLayer bg={options.background} active={false} />
+          <SlideFrame
+            key={`${state.slide.h},${state.slide.v}`}
+            meta={meta}
+            options={options}
+            h={state.slide.h}
+            v={state.slide.v}
+            active={false}
+            click={state.slide.click}
+            preview
+            className="is-mirror"
+          />
+        </div>
+      ) : (
+        <div className="deck-remote-empty">{state ? "" : "Waiting for the presenter view…"}</div>
+      )}
+      <div
+        ref={pad}
+        className="deck-remote-pad"
+        style={{ left: fit.left, top: fit.top, width: W * fit.scale, height: H * fit.scale }}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
+        aria-label={
+          mode === "pen" ? "Draw on the slide" : mode === "zoom" ? "Tap to zoom" : "Touch to point"
+        }
+      >
+        {dot ? (
+          <span
+            className="deck-remote-dot"
+            style={{ left: `${dot.x * 100}%`, top: `${dot.y * 100}%` }}
+          />
+        ) : null}
+        {ink && ink.length > 1 ? (
+          <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="deck-remote-ink">
+            <polyline points={ink.map(([x, y]) => `${x},${y}`).join(" ")} />
+          </svg>
+        ) : null}
+      </div>
+      {state?.blackout ? <div className="deck-remote-blackout">Blacked out</div> : null}
+    </div>
+  );
+}
+
+/**
+ * THE AIR POINTER: hold the button, point the phone. The aim when the button goes down is the
+ * slide's centre; turning `range` degrees reaches an edge. Orientation events (with iOS's
+ * permission prompt, asked on the press itself) or, where the Generic Sensor API has one, the
+ * gyroscope — whichever speaks first — through a One Euro filter, sent at most 30 times a second.
+ */
+function AirButton({
+  link,
+  settings,
+  flash,
+}: {
+  link: RemoteLink;
+  settings: Settings;
+  flash: (m: string) => void;
+}) {
+  const [holding, setHolding] = useState(false);
+  const secure = typeof window !== "undefined" && window.isSecureContext;
+  const supported = typeof window !== "undefined" && "DeviceOrientationEvent" in window;
+  const session = useRef<null | (() => void)>(null);
+  const permission = useRef<"unknown" | "granted" | "denied">("unknown");
+
+  const pressed = useRef(false);
+  const stop = () => {
+    pressed.current = false;
+    session.current?.();
+    session.current = null;
+    setHolding(false);
+  };
+  useEffect(() => stop, []);
+
+  const start = async (e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    if (session.current) return;
+    pressed.current = true;
+    buzz(settings.haptics, 10);
+    // iOS: the prompt must come from the press itself.
+    const DOE = (
+      window as unknown as {
+        DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
+      }
+    ).DeviceOrientationEvent;
+    if (DOE?.requestPermission && permission.current !== "granted") {
+      try {
+        permission.current = (await DOE.requestPermission()) === "granted" ? "granted" : "denied";
+      } catch {
+        permission.current = "denied";
+      }
+      if (permission.current !== "granted") {
+        flash("Motion access was not allowed. Touch the slide to point instead.");
+        return;
+      }
+      // Let go while the prompt was up: nothing to point.
+      if (!pressed.current) return;
+    }
+    const fx = createOneEuro();
+    const fy = createOneEuro();
+    const out = createCoalescer<{ x: number; y: number }>((p) => link.fire("present.laserAt", p));
+    let center: Aim | null = null;
+    let gyroAim: Aim | null = null;
+    const aimAt = (aim: Aim, t: number) => {
+      center ??= aim;
+      const p = orientationToPoint(center, aim, settings.range);
+      out.push({ x: fx.filter(p.x, t), y: fy.filter(p.y, t) });
+    };
+    const onOrientation = (ev: DeviceOrientationEvent) => {
+      if (gyroAim) return; // the gyroscope is speaking; it is the better of the two
+      const angle = screen.orientation?.angle ?? 0;
+      const aim = readOrientation(ev, angle);
+      if (aim) aimAt(aim, ev.timeStamp || performance.now());
+    };
+    window.addEventListener("deviceorientation", onOrientation);
+    // The bonus: a gyroscope's turn rates, added up — no compass, so nothing to swing near magnets.
+    let gyro: {
+      start(): void;
+      stop(): void;
+      x?: number | null;
+      z?: number | null;
+      addEventListener(t: string, fn: () => void): void;
+    } | null = null;
+    const Gyro = (
+      window as unknown as { Gyroscope?: new (o: { frequency: number }) => typeof gyro }
+    ).Gyroscope;
+    if (Gyro && secure) {
+      try {
+        gyro = new Gyro({ frequency: 60 });
+        let last = 0;
+        gyro!.addEventListener("reading", () => {
+          const t = performance.now();
+          const dt = last ? (t - last) / 1000 : 0;
+          last = t;
+          const deg = 180 / Math.PI;
+          gyroAim ??= { yaw: 0, pitch: 0 };
+          gyroAim = {
+            yaw: gyroAim.yaw + (gyro!.z ?? 0) * dt * deg,
+            pitch: gyroAim.pitch + (gyro!.x ?? 0) * dt * deg,
+          };
+          if (!dt) center = gyroAim;
+          aimAt(gyroAim, t);
+        });
+        gyro!.addEventListener("error", () => {
+          gyro = null;
+          gyroAim = null;
+        });
+        gyro!.start();
+      } catch {
+        gyro = null;
+      }
+    }
+    if (settings.point === "spotlight") link.fire("present.spotlight", { on: true });
+    session.current = () => {
+      window.removeEventListener("deviceorientation", onOrientation);
+      try {
+        gyro?.stop();
+      } catch {
+        /* already */
+      }
+      out.cancel();
+      link.fire("present.laserOff");
+    };
+    setHolding(true);
+  };
+
+  const off = !supported || !secure;
+  return (
+    <button
+      type="button"
+      className={["deck-remote-air", holding ? "is-on" : ""].join(" ")}
+      disabled={off}
+      onPointerDown={off ? undefined : start}
+      onPointerUp={stop}
+      onPointerCancel={stop}
+      onContextMenu={(e) => e.preventDefault()}
+      data-holding={holding ? "true" : undefined}
+    >
+      <Icon name={settings.point === "spotlight" ? "flashlight" : "wand-sparkles"} size={22} />
+      <span>
+        {off
+          ? !secure
+            ? "Air pointer needs HTTPS — touch the slide to point"
+            : "No motion sensor — touch the slide to point"
+          : holding
+            ? "Pointing — move the phone"
+            : `Hold to ${settings.point === "spotlight" ? "spotlight" : "point"} · move the phone`}
+      </span>
+    </button>
+  );
+}
+
+function Notes({
+  state,
+  size,
+  setSize,
+}: {
+  state: RemoteState | null;
+  size: number;
+  setSize: (n: number) => void;
+}) {
+  const deck = useDeck();
+  const meta = state ? deck.columns[state.slide.h]?.slides[state.slide.v] : null;
+  const text = notesSegment(meta?.notesText ?? null, state?.slide.click ?? 0);
+  return (
+    <div className="deck-remote-notes">
+      <div className="deck-remote-notes-tools">
+        <span>Notes{state && state.slide.clicks ? ` · step ${state.slide.click}` : ""}</span>
+        <button
+          type="button"
+          onClick={() => setSize(Math.max(12, size - 2))}
+          aria-label="Smaller notes"
+        >
+          A−
+        </button>
+        <button
+          type="button"
+          onClick={() => setSize(Math.min(40, size + 2))}
+          aria-label="Larger notes"
+        >
+          A+
+        </button>
+      </div>
+      <p style={{ fontSize: size }} className={text ? "" : "deck-remote-muted"}>
+        {text ?? (meta?.hasNotes ? "No note for this step." : "No notes for this slide.")}
+      </p>
+    </div>
+  );
+}
+
+function Overview({
+  state,
+  run,
+  close,
+}: {
+  state: RemoteState | null;
+  run: (id: string, params?: Record<string, unknown>) => void;
+  close: () => void;
+}) {
+  const deck = useDeck();
+  const all = deck.columns.flatMap((c) => c.slides);
+  const current = useRef<HTMLButtonElement>(null);
+  useEffect(() => current.current?.scrollIntoView({ block: "center" }), []);
+  return (
+    <div className="deck-remote-sheet" role="dialog" aria-label="Slides">
+      <header>
+        <strong>Slides</strong>
+        <button
+          type="button"
+          className={state?.overview ? "is-on" : ""}
+          onClick={() => run("view.overview", { on: !state?.overview })}
+        >
+          <Icon name="layout-grid" /> {state?.overview ? "Hide" : "Show"} on screen
+        </button>
+        <button type="button" onClick={close} aria-label="Close">
+          <Icon name="x" />
+        </button>
+      </header>
+      <ol>
+        {all.map((s, index) => {
+          const here = state?.slide.index === index;
+          return (
+            <li key={index}>
+              <button
+                type="button"
+                ref={here ? current : undefined}
+                className={here ? "is-on" : ""}
+                onClick={() => {
+                  run("nav.goto", { index });
+                  close();
+                }}
+              >
+                <b>{index + 1}</b> {s.title ?? `Slide ${index + 1}`}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function SettingsSheet({
+  settings,
+  set,
+  close,
+}: {
+  settings: Settings;
+  set: (patch: Partial<Settings>) => void;
+  close: () => void;
+}) {
+  return (
+    <div className="deck-remote-sheet" role="dialog" aria-label="Settings">
+      <header>
+        <strong>Settings</strong>
+        <button type="button" onClick={close} aria-label="Close">
+          <Icon name="x" />
+        </button>
+      </header>
+      <label>
+        <span>
+          Air pointer reach: <b>±{settings.range}°</b> to the edge
+        </span>
+        <input
+          type="range"
+          min={8}
+          max={45}
+          step={1}
+          value={settings.range}
+          onChange={(e) => set({ range: Number(e.target.value) })}
+        />
+      </label>
+      <label>
+        <span>Pointer</span>
+        <select
+          value={settings.point}
+          onChange={(e) => set({ point: e.target.value as Settings["point"] })}
+        >
+          <option value="laser">Laser dot</option>
+          <option value="spotlight">Spotlight</option>
+        </select>
+      </label>
+      <label>
+        <span>Buzz at (minutes into the talk)</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="e.g. 15, 19"
+          value={settings.warn}
+          onChange={(e) => set({ warn: e.target.value })}
+        />
+      </label>
+      <label className="deck-remote-check">
+        <input
+          type="checkbox"
+          checked={settings.haptics}
+          onChange={(e) => set({ haptics: e.target.checked })}
+        />
+        <span>Tick on every press</span>
+      </label>
+      <p className="deck-remote-muted">
+        The air pointer needs a secure page (https) for the phone's motion sensors; on plain http,
+        touch the slide to point.
+      </p>
+    </div>
+  );
+}

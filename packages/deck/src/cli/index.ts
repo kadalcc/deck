@@ -41,6 +41,7 @@ export const HELP = `kadal-deck <command> [options]
 
   new <dir>   create a deck from the starter      --title <t> --yes --no-install --pm <npm|pnpm|yarn|bun>
   dev         run the deck locally with live reload (Vite flags pass through)
+              --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
   build       build the deck into dist/ (any static host can serve it)
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
@@ -189,9 +190,14 @@ async function run(
         positionals,
       } = parseArgs(rest, { dir: GLOBAL.dir! }, { passthrough: true });
       const dir = resolve(cwd, str(flags.dir) ?? ".");
+      // `dev --https`: Vite dropped its own flag, so the deck's plugin makes a certificate
+      // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
+      const https = command === "dev" && vite.includes("--https");
+      if (https) process.env.KADAL_DECK_HTTPS = "1";
+      const passed = vite.filter((a) => a !== "--https");
       await runVite(
         dir,
-        command === "build" ? ["build", ...positionals, ...vite] : [...positionals, ...vite],
+        command === "build" ? ["build", ...positionals, ...passed] : [...positionals, ...passed],
       );
       return EXIT.ok;
     }

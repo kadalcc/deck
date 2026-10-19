@@ -28,6 +28,15 @@ import { HintLayer } from "../react/Hints.tsx";
 import { ThemeMenu } from "../react/ThemeMenu.tsx";
 import { loadSlide, SlideFrame } from "../react/SlideFrame.tsx";
 import { Stage } from "../react/Stage.tsx";
+import { useFit } from "../react/fit.ts";
+import {
+  expectedElapsed,
+  formatElapsed,
+  formatPace,
+  paceTone,
+  presenterClock,
+} from "../react/pacing.ts";
+import { RemoteHost } from "../remote/host.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -202,28 +211,6 @@ function PresenterLogin({ gate }: { gate: Gate }) {
   );
 }
 
-/** Fit the authored canvas into a box: scale to the shorter side, centre the rest. */
-function useFit(box: React.RefObject<HTMLDivElement | null>, width: number, height: number) {
-  const [fit, setFit] = useState({ scale: 0.2, left: 0, top: 0 });
-  useEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const measure = () => {
-      const scale = Math.min(el.clientWidth / width, el.clientHeight / height);
-      setFit({
-        scale,
-        left: (el.clientWidth - width * scale) / 2,
-        top: (el.clientHeight - height * scale) / 2,
-      });
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [box, width, height]);
-  return fit;
-}
-
 /* ── the pieces ─────────────────────────────────────────────────────────── */
 
 function LiveStage() {
@@ -240,7 +227,6 @@ function LiveStage() {
 /** The real stage, scaled into a box: it is the same runtime the audience sees. */
 function ScaledStage() {
   const deck = useDeck();
-  const live = useLiveOptional();
   const box = useRef<HTMLDivElement>(null);
   const fit = useFit(box, deck.config.width, deck.config.height);
   const { h, v } = useNav((s) => ({ h: s.h, v: s.v }));
@@ -257,14 +243,9 @@ function ScaledStage() {
       >
         <BackgroundLayer bg={bg} active />
         <PresenterInnerStage />
-        {live ? (
-          <>
-            <DrawingLayer inCanvas />
-            <PointerLayer inCanvas />
-          </>
-        ) : (
-          <DrawingLayer inCanvas />
-        )}
+        {/* Without a room this window's laser was nowhere to be seen; a phone remote aims it here. */}
+        <DrawingLayer inCanvas />
+        <PointerLayer inCanvas />
         <ConfettiLayer inCanvas />
       </div>
     </div>
@@ -474,6 +455,11 @@ function PresenterTimer() {
     writeItem(startKey, String(at), "session");
     setStart(at);
   };
+  // The phone remote shows the same clock.
+  useEffect(() => {
+    presenterClock.set(start);
+    return () => presenterClock.set(null);
+  }, [start]);
   const [now, setNow] = useState(Date.now());
   const nav = useNav((s) => ({ h: s.h, v: s.v }));
   useEffect(() => {
@@ -481,35 +467,17 @@ function PresenterTimer() {
     return () => clearInterval(t);
   }, []);
   const elapsed = Math.floor((now - start) / 1000);
-  const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
-  const flat = N.progressOf({ ...N.initialNav(), ...nav }, deck.columns) * (total - 1);
-  // Expected elapsed at this slide, from per-slide timings or the total time.
-  let expected: number | null = null;
-  if (deck.config.totalTime) expected = (deck.config.totalTime / total) * flat;
-  else if (deck.config.defaultTiming) {
-    let sum = 0;
-    let i = 0;
-    for (const c of deck.columns)
-      for (let v = 0; v < c.slides.length; v++) {
-        if (i >= flat) break;
-        sum += deck.options.get(navKey(c.h, v))?.timing ?? deck.config.defaultTiming;
-        i++;
-      }
-    expected = sum;
-  }
+  const expected = expectedElapsed(deck, nav);
   const pace = expected === null ? null : elapsed - expected;
-  const tone = pace === null ? "" : pace > 30 ? "is-behind" : pace < -30 ? "is-ahead" : "is-ok";
   return (
     <button
       type="button"
-      className={["deck-presenter-timer", tone].join(" ")}
+      className={["deck-presenter-timer", paceTone(pace)].join(" ")}
       onClick={() => restart(Date.now())}
       title="Click to reset"
     >
-      {pad(Math.floor(elapsed / 3600))}:{pad(Math.floor((elapsed % 3600) / 60))}:{pad(elapsed % 60)}
-      {pace !== null ? (
-        <small>{pace > 0 ? `+${Math.round(pace / 60)}m` : `${Math.round(pace / 60)}m`}</small>
-      ) : null}
+      {formatElapsed(elapsed)}
+      {pace !== null ? <small>{formatPace(pace)}</small> : null}
     </button>
   );
 }
@@ -723,6 +691,7 @@ function PresenterTools({
       >
         <Icon name="link" /> Link
       </button>
+      <RemoteHost />
       <a
         className="deck-presenter-link"
         href={`${deck.base}stats${ticket ? withTicket("") : ""}`}

@@ -16,7 +16,14 @@ import type { Store } from "../core/store.ts";
 import type { GlossaryEntry } from "../glossary/model.ts";
 
 /** Which page of the deck app is showing. */
-export type ViewMode = "play" | "presenter" | "audience" | "print" | "stats" | "notes";
+export type ViewMode =
+  | "play"
+  | "presenter"
+  | "audience"
+  | "print"
+  | "stats"
+  | "notes"
+  | "remote";
 
 /** What the lightbox can show; "sketch" is an Excalidraw canvas keyed by its sketch. */
 export type LightboxKind = "image" | "video" | "iframe" | "sketch";

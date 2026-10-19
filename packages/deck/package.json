@@ -89,6 +89,10 @@
       "types": "./dist/audience/index.d.ts",
       "import": "./dist/audience/index.js"
     },
+    "./remote": {
+      "types": "./dist/remote/index.d.ts",
+      "import": "./dist/remote/index.js"
+    },
     "./backgrounds": {
       "types": "./dist/backgrounds/index.d.ts",
       "import": "./dist/backgrounds/index.js"

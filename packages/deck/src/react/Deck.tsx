@@ -70,6 +70,7 @@ import { ZoomLayer } from "./Zoom.tsx";
  *   /<slug>/join           the audience page   (follow along, react, ask, vote)
  *   /<slug>/notes          every note on one page
  *   /<slug>/stats          the deck's numbers
+ *   /<slug>/remote         the phone remote    (#ticket=… hosted, ?pair=CODE on `kadal-deck dev`)
  *
  * Extra pages plug in through `pages` so the presenter, audience and stats modules stay optional
  * imports; a deck that never goes live ships without them.
@@ -99,6 +100,7 @@ function modeFromLocation(base: string): ViewMode {
   if (first === "join" || first === "audience") return "audience";
   if (first === "notes") return "notes";
   if (first === "stats") return "stats";
+  if (first === "remote") return "remote";
   if (parseFlags(window.location.search).print) return "print";
   return "play";
 }
@@ -681,7 +683,7 @@ function useDeckEffects(
 
   // Hash ↔ navigation.
   useEffect(() => {
-    if (!config.hash || mode === "print") return;
+    if (!config.hash || mode === "print" || mode === "remote") return;
     const write = (s: N.NavState) => {
       const meta = columns[s.h]?.slides[s.v];
       const id = meta && typeof meta.frontmatter.id === "string" ? meta.frontmatter.id : null;
@@ -765,7 +767,15 @@ function useDeckEffects(
   useEffect(() => {
     // A projector takes no input: a key pressed on a window that is only being looked at — the one
     // being shared on a call — must not move it off the presenter's slide.
-    if (!config.keyboard || deck.projector || mode === "print" || mode === "audience") return;
+    // The remote is a phone: its keys (if any) are its own buttons', not the deck's.
+    if (
+      !config.keyboard ||
+      deck.projector ||
+      mode === "print" ||
+      mode === "audience" ||
+      mode === "remote"
+    )
+      return;
     let pendingG = 0;
     const onKey = (e: KeyboardEvent) => {
       if (isEditable(e.target)) return;
@@ -1019,8 +1029,9 @@ function useDeckEffects(
   }, [config, nav, actions, mode, deck.options, deck.projector]);
 
   // Cross-window sync: the presenter window and the play window mirror each other (core/windows.ts).
+  // A phone remote shows the presenter's slide; it is nobody's window to follow.
   useEffect(() => {
-    if (typeof window === "undefined" || mode === "print") return;
+    if (typeof window === "undefined" || mode === "print" || mode === "remote") return;
     const bus = createWindowBus<NavMessage>(config.slug || base);
     related.bus = bus;
     for (const child of related.children) bus.adopt(child);

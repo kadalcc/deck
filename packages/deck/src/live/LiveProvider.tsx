@@ -11,6 +11,7 @@ import { z } from "zod";
 import { useCommand } from "../react/commands.ts";
 import { useActions, useLayout, useNav, useUi } from "../react/hooks.ts";
 import { closeTerm, openTerm } from "../react/terms.ts";
+import { RemoteMirror } from "../remote/mirror.ts";
 import { Analytics } from "./analytics.tsx";
 import { RoomClient, viewerId } from "./client.ts";
 import { presenterTicket, viewerPass } from "./ticket.ts";
@@ -33,7 +34,8 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
   const api = deck.config.live.api;
   const room = roomIdOf(deck.config);
   const value = useMemo<LiveValue | null>(() => {
-    if (!api || deck.mode === "print") return null;
+    // The phone remote opens its own presenter socket (src/remote/link.ts); it is not a viewer.
+    if (!api || deck.mode === "print" || deck.mode === "remote") return null;
     const siteKey = deck.config.live.turnstile;
     const verify = deck.config.live.verify ?? null;
     const presenting = deck.mode === "presenter";
@@ -83,6 +85,8 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
           <>
             <DrawingLayer />
             <PointerLayer />
+            {/* The presenter view's phone remote reaches this screen through the window bus. */}
+            <RemoteMirror />
           </>
         ) : null}
       </>
