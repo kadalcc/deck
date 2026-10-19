@@ -206,6 +206,7 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
       .optional()
       .describe("keep the stroke; by default it fades a few seconds after it is drawn"),
   });
+  const penStroke = useRef<Stroke | null>(null);
   const strokeOf = (p: z.infer<typeof style>) =>
     newStroke(p.tool ?? tool, p.color ?? color, p.size ?? size, !(p.keep ?? keep));
   useCommand(
@@ -247,21 +248,25 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
             y: z.number().min(0).max(1),
           }),
           run: (p) => {
+            // The stroke in progress lives in a ref: committing from inside a state updater ran
+            // twice under StrictMode and left two strokes with one id.
             if (p.phase === "start") {
               const s = strokeOf(p);
               s.points.push(at(p.x, p.y));
+              penStroke.current = s;
               setCurrent(s);
               return null;
             }
-            setCurrent((c) => {
-              if (!c) return c;
-              const next = { ...c, points: [...c.points, at(p.x, p.y)] };
-              if (p.phase === "end") {
-                queueMicrotask(() => commit(next));
-                return null;
-              }
-              return next;
-            });
+            const c = penStroke.current;
+            if (!c) return null;
+            const next = { ...c, points: [...c.points, at(p.x, p.y)] };
+            if (p.phase === "end") {
+              penStroke.current = null;
+              setCurrent(null);
+              return commit(next);
+            }
+            penStroke.current = next;
+            setCurrent(next);
             return null;
           },
         }
