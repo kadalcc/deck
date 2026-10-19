@@ -44,6 +44,7 @@
     "REFERENCE.md",
     "LICENSE",
     "LICENSING.md",
+    "THIRD_PARTY_NOTICES.md",
     "README.md",
     "tools/verify-island.mjs"
   ],
@@ -177,13 +178,17 @@
     "react-dom": "^19.2.0",
     "vite": "^7.0.0 || ^8.0.0",
     "playwright": "^1.50.0",
-    "pptxgenjs": "^3.12.0"
+    "pptxgenjs": "^3.12.0",
+    "kokoro-js": "^1.2.1"
   },
   "peerDependenciesMeta": {
     "playwright": {
       "optional": true
     },
     "pptxgenjs": {
+      "optional": true
+    },
+    "kokoro-js": {
       "optional": true
     }
   }

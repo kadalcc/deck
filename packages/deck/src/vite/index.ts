@@ -3,6 +3,7 @@ import { renderToString as renderKatex } from "katex";
 import { cpSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { type Highlighter, createHighlighter } from "shiki";
 import type { Plugin, ViteDevServer } from "vite";
 
@@ -34,6 +35,9 @@ import { createRelay, type RelayPeer } from "../remote/relay.ts";
  *   virtual:deck/slide/N     slide N's compiled MDX (default export: the component)
  *   virtual:deck/notes/N     slide N's notes, compiled MDX (default export)
  *   virtual:deck/magic/N     slide N's precomputed magic-move steps
+ *   virtual:deck/kokoro      the narrator's Kokoro worker — only when the deck has `kokoro-js`
+ *                            installed; otherwise the manifest says `kokoro: null` and nothing of
+ *                            it is built (it is an optional peer: ~400 MB of ONNX runtime)
  *
  * A `glossary.yaml` beside the deck file (or the headmatter's `glossary:` path) is read here too:
  * every slide's key terms are linked to it as the slide compiles (`compiler/rehype-glossary.ts`),
@@ -55,6 +59,15 @@ function excalidrawDist(): string | null {
 }
 
 const SKIP_FONTS = new Set(["Xiaolai"]);
+
+/**
+ * The Kokoro worker's file in this package (dist/narrate/kokoro.worker.js beside dist/vite/, or
+ * the source when the plugin itself runs from src/).
+ */
+function kokoroWorkerFile(): string {
+  const js = fileURLToPath(new URL("../narrate/kokoro.worker.js", import.meta.url));
+  return existsSync(js) ? js : fileURLToPath(new URL("../narrate/kokoro.worker.ts", import.meta.url));
+}
 
 export interface DeckPluginOptions {
   /** The deck file, relative to the Vite root. Default `deck.mdx`. */
@@ -111,6 +124,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   const included = new Set<string>();
   /** The glossary file the last build read (or looked for), watched like an included file. */
   let glossaryFile: string | null = null;
+  /** Whether `kokoro-js` resolves from this package (decided once, at the first manifest). */
+  let kokoro: Promise<boolean> | null = null;
 
   const getHighlighter = async () => {
     highlighter ??= await createHighlighter({
@@ -198,14 +213,19 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       outDir = resolve(root, config.build.outDir);
       building = config.command === "build";
     },
-    async config(_config, env) {
+    async config(user, env) {
+      const out: { worker?: { format: "es" }; server?: { https: object } } = {};
+      // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
+      // only an ES-module worker can do. A deck that set its own worker format keeps it.
+      if (!user.worker?.format) out.worker = { format: "es" };
       // `kadal-deck dev --https`: a self-signed certificate, so a phone gets a secure context (the
       // air pointer's motion sensors need one). The deck's own `server.https` wins.
-      if (env.command !== "serve" || process.env.KADAL_DECK_HTTPS !== "1") return;
-      if (_config.server?.https) return;
-      const { devCertificate } = await import("./https.ts");
-      const https = devCertificate(resolve(_config.root ?? process.cwd()));
-      return https ? { server: { https } } : undefined;
+      if (env.command === "serve" && process.env.KADAL_DECK_HTTPS === "1" && !user.server?.https) {
+        const { devCertificate } = await import("./https.ts");
+        const https = devCertificate(resolve(user.root ?? process.cwd()));
+        if (https) out.server = { https };
+      }
+      return Object.keys(out).length ? out : undefined;
     },
     configureServer(s) {
       server = s;
@@ -259,7 +279,20 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       if (!id.startsWith(RESOLVED)) return null;
       const m = ensure();
 
+      if (id === `${RESOLVED}/kokoro`) {
+        return `import KokoroWorker from ${JSON.stringify(`${kokoroWorkerFile()}?worker`)};
+export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kokoro" }); }
+`;
+      }
+
       if (id === RESOLVED) {
+        // A missing optional peer resolves too — to Vite's stub that throws on import — so the
+        // answer is "found a real file", not "resolved".
+        kokoro ??= this.resolve("kokoro-js", kokoroWorkerFile(), { skipSelf: true }).then(
+          (r) => !!r && !r.external && !r.id.includes("optional-peer-dep") && !r.id.startsWith("\0"),
+          () => false,
+        );
+        const hasKokoro = await kokoro;
         const entries = m.slides.map((s, i) => {
           const title = titleOf(s);
           return `  {
@@ -285,7 +318,8 @@ ${entries.join(",\n")}
 ];
 export const glossary = ${JSON.stringify(m.glossary.entries)};
 ${building ? "export const relay = null;" : DEV_RELAY}
-export default { headmatter, slides, glossary, relay };
+export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
+export default { headmatter, slides, glossary, relay, kokoro };
 `;
       }
 

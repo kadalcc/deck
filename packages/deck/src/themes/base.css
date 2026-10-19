@@ -9,6 +9,7 @@
 @import "./sketch.css";
 @import "./glossary.css";
 @import "./remote.css";
+@import "./narrate.css";
 
 :root {
   --deck-bg: #ffffff;

@@ -66,6 +66,14 @@ export interface DeckManifest {
   /** The deck's `glossary.yaml`, parsed at build time; absent in a deck without one. */
   glossary?: GlossaryEntry[];
   /**
+   * The in-browser Kokoro voice, when the deck has `kokoro-js` installed: a lazy import of the
+   * module that starts its Web Worker. Null (or absent) without it — the narrator then uses the
+   * browser's own voice and baked clips. The Vite plugin decides, so a deck without the package
+   * builds without it.
+   */
+  kokoro?: (() => Promise<{ createWorker: () => Worker }>) | null;
+
+  /**
    * The dev server's message channel for the phone remote (`kadal-deck dev` only: null or absent
    * in a build). See src/remote/relay.ts.
    */
@@ -79,6 +87,40 @@ export interface DevRelay {
   /** Hears the connection to the dev server come back (true) or drop (false). */
   onStatus(listener: (open: boolean) => void): () => void;
 }
+
+/** `narration`: the autoplay rehearsal — notes read aloud, the deck turning its own pages. */
+export interface NarrationConfig {
+  /** The narration bar and the R key. "auto" (the default): on when any slide has notes. */
+  enabled: boolean | "auto";
+  /**
+   * Which voice: "auto" = a baked clip when `kadal-deck narrate` made one, else Kokoro once it has
+   * downloaded (it starts downloading at the first play, never on load), else the browser's own.
+   */
+  engine: "auto" | "kokoro" | "browser" | "baked" | "silent";
+  /** Kokoro voice id (baked clips are keyed by it too). */
+  voice: string;
+  /** Speaking speed, 0.5–3. */
+  rate: number;
+  /** Milliseconds of quiet between one step and the next. */
+  gap: number;
+  /** A slide with nothing to say: "estimate" (time to read it), "skip", or milliseconds. */
+  silent: "estimate" | "skip" | number;
+  /** The Kokoro model on the Hugging Face Hub. */
+  model: string;
+  /** Kokoro weights' precision; "auto" = fp32 on WebGPU, q8 on WebAssembly. */
+  dtype: "auto" | "fp32" | "fp16" | "q8" | "q4" | "q4f16";
+}
+
+export const DEFAULT_NARRATION: NarrationConfig = {
+  enabled: "auto",
+  engine: "auto",
+  voice: "af_heart",
+  rate: 1,
+  gap: 600,
+  silent: "estimate",
+  model: "onnx-community/Kokoro-82M-v1.0-ONNX",
+  dtype: "auto",
+};
 
 export type Transition =
   | "none"
@@ -190,6 +232,8 @@ export interface DeckConfig {
     verify?: string | null;
   };
   drawings: { enabled: boolean; persist: boolean; presenterOnly: boolean; syncAll: boolean };
+  // Described in catalog/reference.ts (DECK_KEY_DOCS), where the long form fits.
+  narration: NarrationConfig;
   /**
    * Term cards. The runtime reads `delay` and `sync`; the rest steers the compiler, which sees
    * the headmatter only — set those there. `glossary: false` or a path are shorthands.
@@ -279,6 +323,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   magicMoveDuration: 800,
   live: { api: "/api", room: null, turnstile: null },
   drawings: { enabled: true, persist: true, presenterOnly: false, syncAll: true },
+  narration: DEFAULT_NARRATION,
   glossary: DEFAULT_GLOSSARY,
   reactions: true,
   qa: true,
@@ -293,11 +338,12 @@ export const DEFAULT_CONFIG: DeckConfig = {
 /** Headmatter and deck.config.ts both layer over the defaults; nested objects merge one level. */
 /** What a deck.config.ts or headmatter may set: any option, with the nested groups partial too. */
 export type DeckConfigInput = Partial<
-  Omit<DeckConfig, "live" | "drawings" | "seoMeta" | "glossary">
+  Omit<DeckConfig, "live" | "drawings" | "seoMeta" | "glossary" | "narration">
 > & {
   glossary?: Partial<GlossaryOptions> | string | false;
   live?: Partial<DeckConfig["live"]>;
   drawings?: Partial<DeckConfig["drawings"]>;
+  narration?: Partial<NarrationConfig> | boolean;
   seoMeta?: Partial<DeckConfig["seoMeta"]>;
 };
 
@@ -308,14 +354,18 @@ export function resolveConfig(
     ...DEFAULT_CONFIG,
     live: { ...DEFAULT_CONFIG.live },
     drawings: { ...DEFAULT_CONFIG.drawings },
+    narration: { ...DEFAULT_CONFIG.narration },
   };
   for (const layer of layers) {
     if (!layer) continue;
     for (const [key, value] of Object.entries(layer)) {
       if (value === undefined) continue;
       if (key === "glossary") out.glossary = glossaryOptions(value, out.glossary);
+      // `narration: false` (or true) in the headmatter is the switch alone.
+      else if (key === "narration" && typeof value === "boolean")
+        out.narration = { ...out.narration, enabled: value };
       else if (
-        (key === "live" || key === "drawings" || key === "seoMeta") &&
+        (key === "live" || key === "drawings" || key === "seoMeta" || key === "narration") &&
         value &&
         typeof value === "object"
       ) {

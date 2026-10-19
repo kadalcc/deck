@@ -130,6 +130,11 @@ function deckFrontmatter(): FrontmatterKey[] {
         text: "GlossaryOptions | string | false",
         variants: [...f.type.variants, { type: "string" }, { type: "boolean", enum: [false] }],
       };
+    if (f.name === "narration")
+      type = {
+        text: "NarrationConfig | boolean",
+        variants: [...f.type.variants, { type: "boolean" }],
+      };
     if (f.name === "theme") type = withSuggest(type, SUGGEST.theme);
     if (f.name === "transition" || f.name === "backgroundTransition")
       type = withSuggest(type, GENERATED.transitions);

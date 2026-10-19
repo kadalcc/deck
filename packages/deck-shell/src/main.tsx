@@ -11,6 +11,7 @@ import "@kadal/deck/backgrounds";
 import { AudiencePage } from "@kadal/deck/audience";
 import { LiveProvider } from "@kadal/deck/live";
 import { NotesPage, PresenterPage, StatsPage } from "@kadal/deck/presenter";
+import { RemotePage } from "@kadal/deck/remote";
 import { startShell } from "@kadal/deck/runtime";
 
 startShell({
@@ -24,6 +25,12 @@ startShell({
     // The host turns the room on by injecting window.__KADAL_DECK__ ({ api, room, base, files }).
     live: { api: null, room: null },
   },
-  pages: { presenter: PresenterPage, audience: AudiencePage, notes: NotesPage, stats: StatsPage },
+  pages: {
+    presenter: PresenterPage,
+    audience: AudiencePage,
+    notes: NotesPage,
+    stats: StatsPage,
+    remote: RemotePage,
+  },
   providers: LiveProvider,
 });

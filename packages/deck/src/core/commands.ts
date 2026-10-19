@@ -240,4 +240,5 @@ export const KEY_COMMANDS = {
   zoomOut: "view.zoomOut",
   hints: "view.hints",
   themeMenu: "view.themeMenu",
+  narrate: "narrate.toggle",
 } as const;

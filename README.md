@@ -139,6 +139,8 @@ and `node tools/showcase-check.mjs` drives every slide and view of it in a headl
 - Presenter view with notes, timer, next slide and tools
 - A frameless share window for video calls; a projector mode that ignores stray input
 - Overview, search, jump to slide, zoom, drawing, laser, spotlight, blackout
+- Narration for rehearsal: the notes read aloud click by click (Kokoro TTS in the browser,
+  baked clips, or the system voice) while the deck turns its own pages
 - Vim keys and Vimium-style `f` hints for everything clickable
 - The same slide at any window size: authored at 1920 × 1080 and scaled, never reflowed
 

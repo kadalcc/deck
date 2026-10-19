@@ -1,4 +1,4 @@
-import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
+import { type ComponentType, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
@@ -37,6 +37,10 @@ import {
   presenterClock,
 } from "../react/pacing.ts";
 import { RemoteHost } from "../remote/host.tsx";
+import { useNarrationOn } from "../react/NarrationGate.tsx";
+
+/** The narration bar is its own chunk, fetched when the presenter view opens on a deck with notes. */
+const Narration = lazy(() => import("../narrate/Narration.tsx"));
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -60,6 +64,7 @@ export function PresenterPage() {
   );
   const [mirror, setMirror] = useState(false);
   const [roomOpen, setRoomOpen] = useState(() => readItem("deck.presenter.room") !== "closed");
+  const narrate = useNarrationOn();
   useEffect(() => {
     writeItem("deck.presenter.layout", layout);
     writeItem("deck.presenter.room", roomOpen ? "open" : "closed");
@@ -109,6 +114,11 @@ export function PresenterPage() {
           <RoomPanel open={roomOpen} setOpen={setRoomOpen} />
         </aside>
       </main>
+      {narrate ? (
+        <Suspense fallback={null}>
+          <Narration />
+        </Suspense>
+      ) : null}
       <Toast />
       <HintLayer />
     </div>

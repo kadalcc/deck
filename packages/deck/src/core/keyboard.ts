@@ -30,7 +30,8 @@ export type KeyAction =
   | "escape"
   | "zoomOut"
   | "hints"
-  | "themeMenu";
+  | "themeMenu"
+  | "narrate";
 
 export interface KeyBinding {
   keys: string[];
@@ -137,6 +138,12 @@ export const KEY_BINDINGS: KeyBinding[] = [
   },
   { keys: ["KeyD"], action: "colorScheme", label: "D", description: "Dark or light" },
   { keys: ["KeyT"], action: "themeMenu", label: "T", description: "Theme and light or dark" },
+  {
+    keys: ["KeyR"],
+    action: "narrate",
+    label: "R",
+    description: "Read the notes aloud and turn the pages (narration), or pause it",
+  },
 ];
 
 const MODIFIERS = ["Ctrl", "Shift", "Alt", "Meta"] as const;

@@ -60,6 +60,8 @@ export interface Flags {
    * be made to stop, and takes no navigation input of its own.
    */
   projector: boolean;
+  /** `?narrate` — show the narration bar on the deck (rehearse on the main screen). */
+  narrate: boolean;
 }
 
 export function parseFlags(search: string): Flags {
@@ -72,5 +74,6 @@ export function parseFlags(search: string): Flags {
     embedded: q.has("embedded"),
     at: q.has("at"),
     projector: q.has("projector"),
+    narrate: q.has("narrate"),
   };
 }
