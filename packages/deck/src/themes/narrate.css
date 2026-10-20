@@ -5,8 +5,8 @@
   --deck-narration-fg: var(--deck-fg);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 12px 10px;
+  gap: 8px;
+  padding: 10px 14px 10px;
   border-top: 1px solid var(--deck-border);
   background: color-mix(in oklab, var(--deck-bg) 94%, var(--deck-fg));
   color: var(--deck-narration-fg);
@@ -36,66 +36,151 @@
   display: none;
 }
 
+/* The timeline: a thin rail with a point at each chapter; hover says where a click lands. */
 .deck-narration-track {
   position: relative;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--deck-surface);
-  box-shadow: inset 0 0 0 1px var(--deck-border);
+  height: 18px;
+  margin: 0 7px;
   cursor: pointer;
+  touch-action: none;
+}
+.deck-narration-rail {
+  position: absolute;
+  inset: 7px 0 auto;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--deck-fg) 14%, transparent);
+  transition: height 0.15s ease, top 0.15s ease;
+}
+.deck-narration-track:hover .deck-narration-rail,
+.deck-narration-track:focus-visible .deck-narration-rail {
+  top: 6px;
+  height: 6px;
 }
 .deck-narration-fill {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
   background: var(--deck-accent);
-  opacity: 0.85;
   transition: width 0.25s linear;
   pointer-events: none;
 }
-.deck-narration-marker {
+.deck-narration-hover {
   position: absolute;
   top: -3px;
+  bottom: -3px;
   width: 2px;
-  height: 16px;
   margin-left: -1px;
   border-radius: 1px;
-  background: color-mix(in oklab, var(--deck-fg) 45%, transparent);
+  background: color-mix(in oklab, var(--deck-fg) 55%, transparent);
   pointer-events: none;
 }
-.deck-narration-marker.is-silent {
-  background: color-mix(in oklab, var(--deck-fg) 20%, transparent);
+.deck-narration-point {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--deck-bg);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--deck-fg) 38%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.deck-narration-marker.is-current {
-  background: var(--deck-fg);
-  width: 3px;
+.deck-narration-point.is-past {
+  background: var(--deck-accent);
+  box-shadow: 0 0 0 2px var(--deck-bg);
 }
-.deck-narration-track:hover .deck-narration-marker {
-  pointer-events: auto;
+.deck-narration-point.is-current {
+  background: var(--deck-accent);
+  box-shadow:
+    0 0 0 2px var(--deck-bg),
+    0 0 0 4px color-mix(in oklab, var(--deck-accent) 45%, transparent);
+  transform: scale(1.15);
+}
+.deck-narration-point.is-hover {
+  transform: scale(1.35);
+}
+/* A wider, invisible target than the dot itself. */
+.deck-narration-point::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+.deck-narration-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 6px 10px;
+  border: 1px solid var(--deck-border);
+  border-radius: 8px;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.deck-narration-tip strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.deck-narration-tip span {
+  color: var(--deck-muted);
+  font-variant-numeric: tabular-nums;
 }
 
+/* The controls: transport and where we are on the left, the settings on the right. */
 .deck-narration-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 6px 12px;
 }
-.deck-narration-controls button,
-.deck-narration-controls select {
+.deck-narration-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.deck-narration-settings {
+  margin-left: auto;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.deck-narration-controls button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  min-height: 30px;
-  padding: 4px 8px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
   border-radius: 8px;
-  border: 1px solid var(--deck-border);
-  background: var(--deck-surface);
+  border: 1px solid transparent;
+  background: transparent;
   color: inherit;
   font: inherit;
   cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
-.deck-narration-controls select {
-  max-width: 14em;
+.deck-narration-controls button:hover {
+  background: color-mix(in oklab, var(--deck-fg) 8%, transparent);
+}
+.deck-narration-controls .deck-listbox-button,
+.deck-narration-follow {
+  border-color: var(--deck-border) !important;
+  background: var(--deck-surface) !important;
+}
+.deck-narration-controls .deck-listbox-button:hover,
+.deck-narration-follow:hover {
+  background: color-mix(in oklab, var(--deck-surface) 85%, var(--deck-fg)) !important;
 }
 .deck-narration-controls button.is-on,
 .deck-narration-play {
@@ -103,22 +188,46 @@
   border-color: var(--deck-accent) !important;
   color: var(--deck-bg) !important;
 }
+.deck-narration-play {
+  width: 36px;
+  height: 36px !important;
+  border-radius: 50% !important;
+}
 .deck-narration-controls .deck-icon {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   flex: none;
 }
 .deck-narration-controls button:focus-visible,
-.deck-narration-controls select:focus-visible,
 .deck-narration-volume:focus-visible,
 .deck-narration-track:focus-visible {
   outline: 2px solid var(--deck-accent);
   outline-offset: 2px;
 }
+.deck-narration-track:focus-visible {
+  border-radius: 6px;
+}
+.deck-narration-where {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 200px;
+}
 .deck-narration-time {
   font: 12px var(--deck-mono-font);
   font-variant-numeric: tabular-nums;
-  padding: 0 4px;
+  white-space: nowrap;
+}
+.deck-narration-time span {
+  color: var(--deck-muted);
+}
+.deck-narration-chapter {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
 }
 .deck-narration-status {
   color: var(--deck-muted);
@@ -126,36 +235,110 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 22em;
+  max-width: 18em;
 }
-.deck-narration-spacer {
-  flex: 1;
+.deck-narration-voice .deck-listbox-value {
+  max-width: 11em;
 }
-.deck-narration-field {
+.deck-narration-loud {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-}
-.deck-narration-label {
-  color: var(--deck-muted);
-  font-size: 12px;
-}
-.deck-narration-volume {
-  width: 84px;
-  accent-color: var(--deck-accent);
+  gap: 2px;
 }
 
-@media (max-width: 720px) {
-  .deck-narration-label,
+/* The volume: a slim rail filled to the level, a round thumb. */
+.deck-narration-volume {
+  --deck-range-fill: 100%;
+  width: 84px;
+  height: 20px;
+  margin: 0 4px 0 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.deck-narration-volume::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--deck-accent) var(--deck-range-fill),
+    color-mix(in oklab, var(--deck-fg) 16%, transparent) var(--deck-range-fill)
+  );
+}
+.deck-narration-volume::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--deck-fg) 16%, transparent);
+}
+.deck-narration-volume::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--deck-accent);
+}
+.deck-narration-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--deck-bg);
+  background: var(--deck-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.deck-narration-volume::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--deck-bg);
+  background: var(--deck-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Narrower: the labels go first, then the volume rail; the settings take a row of their own. */
+@media (max-width: 1180px) {
+  .deck-narration-controls .deck-listbox-prefix,
+  .deck-narration-follow-label {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
   .deck-narration-status {
     display: none;
   }
-  .deck-narration-spacer {
-    flex-basis: 100%;
+}
+@media (max-width: 720px) {
+  .deck-narration-settings {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .deck-narration-volume {
+    display: none;
+  }
+  .deck-narration-voice .deck-listbox-value {
+    max-width: 8em;
+  }
+}
+@media (max-width: 480px) {
+  .deck-narration-settings {
+    gap: 4px;
+  }
+  .deck-narration-controls .deck-listbox-button {
+    padding: 0 6px 0 8px;
+  }
+  .deck-narration-voice .deck-listbox-value {
+    max-width: 5.5em;
+  }
+  /* A phone has volume keys of its own. */
+  .deck-narration-loud {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .deck-narration-fill {
+  .deck-narration-fill,
+  .deck-narration-rail,
+  .deck-narration-point {
     transition: none;
   }
 }

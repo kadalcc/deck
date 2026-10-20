@@ -1,18 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
 import { Icon } from "../components/bling.tsx";
-import { flatIndex } from "../core/model.ts";
+import { flatIndex, resolveSlideOptions } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
 import { readItem, writeItem } from "../core/storage.ts";
 import { useStore } from "../core/store.ts";
 import { cmd, useCommand } from "../react/commands.ts";
 import { type DeckRuntime, useDeck } from "../react/context.ts";
+import { Listbox, type ListboxGroup } from "../react/Listbox.tsx";
+import { type Chapter, chapterOfSlide, chaptersOf, clock, slideAtTime, slideRange } from "./chapters.ts";
 import { chooseEngine, ENGINE_CHOICES, type EngineChoice, silentEngine } from "./engine.ts";
 import { BakedClips, browserEngine, browserVoices, hasSpeechSynthesis, KokoroClient } from "./engines.ts";
 import { isKokoroVoice, KOKORO_VOICES } from "./kokoro-protocol.ts";
 import { type NarrationState, Narrator, type NarratorHost, RATES } from "./player.ts";
-import { speechMs, timelineOf } from "./text.ts";
+import { speechMs, type Timeline, timelineOf } from "./text.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -321,12 +323,6 @@ function useNarrateCommands(narrator: Narrator, slideCount: number, total: () =>
   );
 }
 
-function clock(ms: number) {
-  const s = Math.max(0, Math.round(ms / 1000));
-  const m = Math.floor(s / 60);
-  return `${m}:${String(s % 60).padStart(2, "0")}`;
-}
-
 /** The bar. `onClose` (the play view) adds a close button. */
 export default function Narration({
   autoplay = false,
@@ -345,6 +341,18 @@ export default function Narration({
   const timeline = useMemo(
     () => timelineOf(slides, { rate: s.rate, gap: c.gap, silent: c.silent }),
     [slides, s.rate, c.gap, c.silent],
+  );
+  const chapters = useMemo(
+    () =>
+      chaptersOf(
+        slides.map((x) => ({
+          h: x.h,
+          title: x.title,
+          section: resolveSlideOptions(x.frontmatter, rt.config, x.index === 0).layout === "section",
+        })),
+        timeline,
+      ),
+    [slides, timeline, rt.config],
   );
   const totalRef = useRef(timeline.total);
   totalRef.current = timeline.total;
@@ -379,6 +387,8 @@ export default function Narration({
       : 0;
   const elapsed = Math.min(timeline.total, before + within);
   const pct = timeline.total ? (elapsed / timeline.total) * 100 : 0;
+  const chapterNow = chapterOfSlide(chapters, s.slide);
+  const current = chapters[chapterNow];
 
   const status =
     s.error ??
@@ -400,24 +410,34 @@ export default function Narration({
                   ? "The end"
                   : "Ready");
 
-  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const box = e.currentTarget.getBoundingClientRect();
-    const at = ((e.clientX - box.left) / box.width) * timeline.total;
-    const hit = [...timeline.slides].reverse().find((x) => x.start <= at) ?? timeline.slides[0];
-    if (hit) run("narrate.play", { from: hit.index });
-  };
-  const onTrackKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-    if (e.key === "Home" || e.key === "End" || step) {
-      e.preventDefault();
-      e.stopPropagation();
-      const target =
-        e.key === "Home" ? 0 : e.key === "End" ? slides.length - 1 : Math.min(slides.length - 1, Math.max(0, s.slide + step));
-      run("narrate.play", { from: target });
-    }
-  };
-
   const voiceValue = s.engine === "browser" ? `browser:${s.browserVoice ?? ""}` : s.voice;
+  const voiceGroups = useMemo<ListboxGroup[]>(
+    () => [
+      {
+        label: "Kokoro",
+        options: KOKORO_VOICES.map((v) => ({
+          value: v.id,
+          label: v.name,
+          detail: `${v.lang === "en-gb" ? "UK" : "US"} ${v.gender}`,
+        })),
+      },
+      ...(voices.length
+        ? [
+            {
+              label: "This browser",
+              options: voices.map((v) => ({ value: `browser:${v.name}`, label: v.name, detail: v.lang })),
+            },
+          ]
+        : []),
+    ],
+    [voices],
+  );
+  const voiceShown = (() => {
+    if (voiceValue.startsWith("browser:")) return voiceValue.slice(8) || "Browser default";
+    const k = KOKORO_VOICES.find((v) => v.id === voiceValue);
+    return k ? `${k.name} (${k.lang === "en-gb" ? "UK" : "US"} ${k.gender})` : voiceValue;
+  })();
+  const rates = [...new Set([...RATES, s.rate])].sort((a, b) => a - b);
 
   return (
     <div
@@ -430,161 +450,293 @@ export default function Narration({
         if ((e.key === " " || e.key === "Enter") && t.closest("button, select, input")) e.stopPropagation();
       }}
     >
-      <div
-        className="deck-narration-track"
-        role="slider"
-        tabIndex={0}
-        aria-label="Narration position"
-        aria-valuemin={1}
-        aria-valuemax={slides.length}
-        aria-valuenow={s.slide + 1}
-        aria-valuetext={`Slide ${s.slide + 1} of ${slides.length}${entry?.title ? `: ${entry.title}` : ""}`}
-        onClick={seek}
-        onKeyDown={onTrackKey}
-      >
-        <div className="deck-narration-fill" style={{ width: `${pct}%` }} />
-        {timeline.total
-          ? timeline.slides.map((x) => (
-              <span
-                key={x.index}
-                className={[
-                  "deck-narration-marker",
-                  x.index === s.slide ? "is-current" : "",
-                  x.segments.length ? "" : "is-silent",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                style={{ left: `${(x.start / timeline.total) * 100}%` }}
-                title={`${x.index + 1}. ${x.title ?? "Untitled"}`}
-              />
-            ))
-          : null}
-      </div>
+      <Track
+        timeline={timeline}
+        chapters={chapters}
+        slide={s.slide}
+        count={slides.length}
+        pct={pct}
+        titleOf={(i) => timeline.slides[i]?.title ?? null}
+        go={(from) => run("narrate.play", { from })}
+      />
       <div className="deck-narration-controls">
-        <button type="button" onClick={() => run("narrate.prev")} aria-label="Previous step" title="Previous step">
-          <Icon name="skip-back" />
-        </button>
-        <button
-          type="button"
-          className="deck-narration-play"
-          onClick={() => run("narrate.toggle")}
-          aria-label={s.playing ? "Pause narration (R)" : "Narrate (R)"}
-          aria-pressed={s.playing}
-          title={s.playing ? "Pause (R)" : "Narrate (R)"}
-        >
-          <Icon name={s.playing ? "pause" : "play"} />
-        </button>
-        <button type="button" onClick={() => run("narrate.next")} aria-label="Next step" title="Next step">
-          <Icon name="skip-forward" />
-        </button>
-        <button type="button" onClick={() => run("narrate.stop")} aria-label="Stop narration" title="Stop">
-          <Icon name="square" />
-        </button>
-        <span className="deck-narration-time" aria-label="Elapsed and estimated total">
-          {clock(elapsed)} / {clock(timeline.total)}
-        </span>
-        <span className="deck-narration-status" role="status" aria-live="polite">
-          {status}
-        </span>
-        <span className="deck-narration-spacer" />
-        <label className="deck-narration-field">
-          <span className="deck-narration-label">Speed</span>
-          <select
-            value={String(s.rate)}
-            onChange={(e) => run("narrate.rate", { rate: Number(e.target.value) })}
-            aria-label="Speed"
-          >
-            {[...new Set([...RATES, s.rate])]
-              .sort((a, b) => a - b)
-              .map((r) => (
-                <option key={r} value={String(r)}>
-                  {r}×
-                </option>
-              ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={() => run("narrate.volume", { volume: s.volume, muted: !s.muted })}
-          aria-label={s.muted ? "Unmute" : "Mute"}
-          aria-pressed={s.muted}
-          title={s.muted ? "Unmute" : "Mute"}
-        >
-          <Icon name={s.muted || s.volume === 0 ? "volume-x" : s.volume < 0.5 ? "volume-1" : "volume-2"} />
-        </button>
-        <input
-          className="deck-narration-volume"
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={s.muted ? 0 : s.volume}
-          onChange={(e) => run("narrate.volume", { volume: Number(e.target.value), muted: false })}
-          aria-label="Volume"
-        />
-        <label className="deck-narration-field">
-          <span className="deck-narration-label">Voice</span>
-          <select
-            value={voiceValue}
-            onChange={(e) => {
-              const v = e.target.value;
-              run("narrate.voice", { voice: v.startsWith("browser:") ? v.slice(8) || "default" : v });
-            }}
-            aria-label="Voice"
-          >
-            <optgroup label="Kokoro">
-              {KOKORO_VOICES.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} ({v.lang === "en-gb" ? "UK" : "US"} {v.gender})
-                </option>
-              ))}
-            </optgroup>
-            {voices.length ? (
-              <optgroup label="This browser">
-                {voices.map((v) => (
-                  <option key={v.voiceURI} value={`browser:${v.name}`}>
-                    {v.name}
-                  </option>
-                ))}
-              </optgroup>
-            ) : null}
-          </select>
-        </label>
-        <label className="deck-narration-field">
-          <span className="deck-narration-label">Engine</span>
-          <select value={s.engine} onChange={(e) => run("narrate.engine", { engine: e.target.value })} aria-label="Engine">
-            <option value="auto">Auto</option>
-            <option value="baked">Recorded</option>
-            <option value="kokoro" disabled={s.kokoro.state === "unavailable"}>
-              Kokoro{s.kokoro.state === "unavailable" ? " (not installed)" : ""}
-            </option>
-            <option value="browser">Browser</option>
-            <option value="silent">Silent</option>
-          </select>
-        </label>
-        <button
-          type="button"
-          className={s.follow ? "is-on" : ""}
-          onClick={() => run("narrate.follow", { on: !s.follow })}
-          aria-pressed={s.follow}
-          title="Follow the narrator: let it turn the pages"
-        >
-          <Icon name="footprints" /> Follow
-        </button>
-        {onClose ? (
+        <div className="deck-narration-group">
+          <button type="button" onClick={() => run("narrate.prev")} aria-label="Previous step" title="Previous step">
+            <Icon name="skip-back" />
+          </button>
           <button
             type="button"
-            onClick={() => {
-              narrator.pause();
-              onClose();
-            }}
-            aria-label="Close narration"
-            title="Close"
+            className="deck-narration-play"
+            onClick={() => run("narrate.toggle")}
+            aria-label={s.playing ? "Pause narration (R)" : "Narrate (R)"}
+            aria-pressed={s.playing}
+            title={s.playing ? "Pause (R)" : "Narrate (R)"}
           >
-            <Icon name="x" />
+            <Icon name={s.playing ? "pause" : "play"} />
           </button>
-        ) : null}
+          <button type="button" onClick={() => run("narrate.next")} aria-label="Next step" title="Next step">
+            <Icon name="skip-forward" />
+          </button>
+          <button type="button" onClick={() => run("narrate.stop")} aria-label="Stop narration" title="Stop">
+            <Icon name="square" />
+          </button>
+        </div>
+        <div className="deck-narration-where">
+          <span className="deck-narration-time" aria-label="Elapsed and estimated total">
+            {clock(elapsed)} <span aria-hidden="true">/</span> {clock(timeline.total)}
+          </span>
+          <span className="deck-narration-chapter" title={current?.title ?? undefined}>
+            {current && chapters.length > 1
+              ? `${chapterNow + 1}/${chapters.length} · ${current.title ?? "Untitled"}`
+              : `Slide ${s.slide + 1} of ${slides.length}`}
+          </span>
+          <span className="deck-narration-status" role="status" aria-live="polite">
+            {status}
+          </span>
+        </div>
+        <div className="deck-narration-group deck-narration-settings">
+          <Listbox
+            label="Speed"
+            prefix="Speed"
+            className="deck-narration-speed"
+            minWidth={110}
+            value={String(s.rate)}
+            display={`${s.rate}×`}
+            onChange={(v) => run("narrate.rate", { rate: Number(v) })}
+            groups={[{ options: rates.map((r) => ({ value: String(r), label: `${r}×` })) }]}
+          />
+          <span className="deck-narration-loud">
+            <button
+              type="button"
+              onClick={() => run("narrate.volume", { volume: s.volume, muted: !s.muted })}
+              aria-label={s.muted ? "Unmute" : "Mute"}
+              aria-pressed={s.muted}
+              title={s.muted ? "Unmute" : "Mute"}
+            >
+              <Icon name={s.muted || s.volume === 0 ? "volume-x" : s.volume < 0.5 ? "volume-1" : "volume-2"} />
+            </button>
+            <input
+              className="deck-narration-volume"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={s.muted ? 0 : s.volume}
+              style={{ "--deck-range-fill": `${(s.muted ? 0 : s.volume) * 100}%` } as React.CSSProperties}
+              onChange={(e) => run("narrate.volume", { volume: Number(e.target.value), muted: false })}
+              aria-label="Volume"
+            />
+          </span>
+          <Listbox
+            label="Voice"
+            prefix="Voice"
+            className="deck-narration-voice"
+            minWidth={240}
+            value={voiceValue}
+            display={voiceShown}
+            onChange={(v) => run("narrate.voice", { voice: v.startsWith("browser:") ? v.slice(8) || "default" : v })}
+            groups={voiceGroups}
+          />
+          <Listbox
+            label="Engine"
+            prefix="Engine"
+            className="deck-narration-engine"
+            minWidth={200}
+            value={s.engine}
+            onChange={(v) => run("narrate.engine", { engine: v })}
+            groups={[
+              {
+                options: [
+                  { value: "auto", label: "Auto", detail: "best available" },
+                  { value: "baked", label: "Recorded", detail: "pre-recorded clips" },
+                  {
+                    value: "kokoro",
+                    label: "Kokoro",
+                    detail: s.kokoro.state === "unavailable" ? "not installed" : "neural, in the browser",
+                    disabled: s.kokoro.state === "unavailable",
+                  },
+                  { value: "browser", label: "Browser", detail: "system voice" },
+                  { value: "silent", label: "Silent", detail: "timing only" },
+                ],
+              },
+            ]}
+          />
+          <button
+            type="button"
+            className={["deck-narration-follow", s.follow ? "is-on" : ""].filter(Boolean).join(" ")}
+            onClick={() => run("narrate.follow", { on: !s.follow })}
+            aria-pressed={s.follow}
+            title="Follow the narrator: let it turn the pages"
+          >
+            <Icon name="footprints" /> <span className="deck-narration-follow-label">Follow</span>
+          </button>
+          {onClose ? (
+            <button
+              type="button"
+              onClick={() => {
+                narrator.pause();
+                onClose();
+              }}
+              aria-label="Close narration"
+              title="Close"
+            >
+              <Icon name="x" />
+            </button>
+          ) : null}
+        </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The timeline: a thin progress line with a point at each chapter. Hovering says where a click
+ * would land (the slide, its title, its time) and, over a point, the chapter; a click plays from
+ * there. As a slider: arrows step a slide, Page keys (or Shift+arrows) a chapter, Home/End the ends.
+ */
+function Track({
+  timeline,
+  chapters,
+  slide,
+  count,
+  pct,
+  titleOf,
+  go,
+}: {
+  timeline: Timeline;
+  chapters: Chapter[];
+  slide: number;
+  count: number;
+  pct: number;
+  titleOf: (i: number) => string | null;
+  go: (from: number) => void;
+}) {
+  const track = useRef<HTMLDivElement>(null);
+  const tip = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<{ x: number; slide: number; chapter: number | null } | null>(null);
+  const [shift, setShift] = useState(0);
+  const total = timeline.total;
+  const at = (ms: number) => (total ? (ms / total) * 100 : 0);
+  const chapterNow = chapterOfSlide(chapters, slide);
+
+  const locate = (clientX: number, target: EventTarget | null) => {
+    const box = track.current?.getBoundingClientRect();
+    if (!box || !total) return null;
+    const x = Math.min(box.width, Math.max(0, clientX - box.left));
+    const point = (target as HTMLElement | null)?.closest?.("[data-chapter]");
+    const chapter = point ? Number(point.getAttribute("data-chapter")) : null;
+    const hit = chapter != null ? chapters[chapter]!.first : slideAtTime(timeline, (x / box.width) * total);
+    return { x: chapter != null ? (at(chapters[chapter]!.start) / 100) * box.width : x, slide: hit, chapter };
+  };
+
+  // Keep the tooltip inside the window: measured after it renders, nudged back from either edge.
+  useLayoutEffect(() => {
+    const el = tip.current;
+    const box = track.current?.getBoundingClientRect();
+    if (!el || !box || !hover) return setShift(0);
+    const w = el.offsetWidth;
+    const left = box.left + hover.x - w / 2;
+    const min = 8;
+    const max = window.innerWidth - 8 - w;
+    setShift(left < min ? min - left : left > max ? max - left : 0);
+  }, [hover]);
+
+  const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const byChapter = e.key === "PageUp" || e.key === "PageDown" || (e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"));
+    const dir = e.key === "ArrowRight" || e.key === "PageDown" ? 1 : e.key === "ArrowLeft" || e.key === "PageUp" ? -1 : 0;
+    let target: number | null = null;
+    if (e.key === "Home") target = 0;
+    else if (e.key === "End") target = count - 1;
+    else if (dir && byChapter) {
+      // Back from inside a chapter goes to its start first, as a media player's "previous" does.
+      const c = chapters[chapterNow];
+      const to = dir < 0 && c && slide > c.first ? chapterNow : chapterNow + dir;
+      target = chapters[Math.min(chapters.length - 1, Math.max(0, to))]?.first ?? null;
+    } else if (dir) target = Math.min(count - 1, Math.max(0, slide + dir));
+    if (target == null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    go(target);
+  };
+
+  const hc = hover?.chapter != null ? chapters[hover.chapter] : null;
+  const hs = hover ? timeline.slides[hover.slide] : null;
+  const title = titleOf(slide);
+
+  return (
+    <div
+      ref={track}
+      className="deck-narration-track"
+      role="slider"
+      tabIndex={0}
+      aria-label="Narration position"
+      aria-valuemin={1}
+      aria-valuemax={count}
+      aria-valuenow={slide + 1}
+      aria-valuetext={`Slide ${slide + 1} of ${count}${title ? `: ${title}` : ""}${
+        chapters.length > 1 ? `, chapter ${chapterNow + 1} of ${chapters.length}` : ""
+      }`}
+      data-deck-own-keys=""
+      onPointerMove={(e) => setHover(locate(e.clientX, e.target))}
+      onPointerLeave={() => setHover(null)}
+      onClick={(e) => {
+        const l = locate(e.clientX, e.target);
+        if (l) go(l.slide);
+      }}
+      onKeyDown={onKey}
+    >
+      <div className="deck-narration-rail" aria-hidden="true">
+        <div className="deck-narration-fill" style={{ width: `${pct}%` }} />
+        {hover ? <div className="deck-narration-hover" style={{ left: hover.x }} /> : null}
+      </div>
+      {total && chapters.length > 1
+        ? chapters.map((c) => (
+            <span
+              key={c.n}
+              data-chapter={c.n}
+              aria-hidden="true"
+              className={[
+                "deck-narration-point",
+                c.n < chapterNow ? "is-past" : c.n === chapterNow ? "is-current" : "",
+                hover?.chapter === c.n ? "is-hover" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              style={{ left: `${at(c.start)}%` }}
+            />
+          ))
+        : null}
+      {hover && hs ? (
+        <div
+          ref={tip}
+          className="deck-narration-tip"
+          role="presentation"
+          style={{ left: hover.x, transform: `translateX(calc(-50% + ${shift}px))` }}
+        >
+          {hc ? (
+            <>
+              <strong>
+                Chapter {hc.n + 1} · {hc.title ?? "Untitled"}
+              </strong>
+              <span>
+                {slideRange(hc)} · starts {clock(hc.start)}
+              </span>
+            </>
+          ) : (
+            <>
+              <strong>
+                {hs.index + 1}. {hs.title ?? "Untitled"}
+              </strong>
+              <span>
+                {clock(hs.start)}
+                {chapters.length > 1
+                  ? ` · ${chapters[chapterOfSlide(chapters, hs.index)]!.title ?? `chapter ${chapterOfSlide(chapters, hs.index) + 1}`}`
+                  : ""}
+              </span>
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

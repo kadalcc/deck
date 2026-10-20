@@ -122,9 +122,23 @@ await step("presenter: the bar renders, with its commands", async (expect) => {
   const ids = await page.evaluate(() => window.__deck.commands.list().map((c) => c.id).filter((id) => id.startsWith("narrate.")));
   for (const id of ["narrate.play", "narrate.pause", "narrate.toggle", "narrate.stop", "narrate.next", "narrate.prev", "narrate.rate", "narrate.volume", "narrate.voice", "narrate.state"])
     expect(ids.includes(id), `missing command ${id}`);
-  const markers = await page.locator(".deck-narration-marker").count();
-  const total = await page.evaluate(() => window.__deck.columns.flatMap((c) => c.slides).length);
-  expect(markers === total, `${markers} markers for ${total} slides`);
+  // A point per chapter (the showcase's nine sections and its opening), not a mark per slide.
+  const points = await page.locator(".deck-narration-point").count();
+  const sections = await page.evaluate(
+    () => window.__deck.columns.flatMap((c) => c.slides).filter((s) => s.frontmatter.layout === "section").length,
+  );
+  expect(points === sections + 1, `${points} points for ${sections} sections and the opening`);
+  // Hovering a point says which chapter it is.
+  await page.locator(".deck-narration-point").nth(2).hover();
+  const tip = await page.locator(".deck-narration-tip").innerText();
+  expect(/^Chapter 3 · /.test(tip) && /slides \d+–\d+ · starts \d+:\d\d/.test(tip), `chapter tooltip: ${tip}`);
+  // Hovering the track elsewhere names the slide under the pointer, inside the window.
+  const t = await page.locator(".deck-narration-track").boundingBox();
+  await page.mouse.move(t.x + t.width - 2, t.y + t.height / 2);
+  const tipBox = await page.locator(".deck-narration-tip").boundingBox();
+  const vw = page.viewportSize().width;
+  expect(tipBox.x >= 0 && tipBox.x + tipBox.width <= vw, `tooltip off screen: ${JSON.stringify(tipBox)}`);
+  expect(/^\d+\. /.test(await page.locator(".deck-narration-tip").innerText()), "no slide tooltip on the track");
   expect(!problems.length, problems.join("; "));
   await context.close();
 });
@@ -152,8 +166,32 @@ await step("presenter: play advances clicks, then the slide; pause stops", async
 await step("presenter: speed, volume, mute and the timeline", async (expect) => {
   const { page, context, problems } = await open(`${base}presenter#/0`);
   await page.waitForSelector(".deck-narration");
-  await page.getByLabel("Speed", { exact: true }).selectOption("1.5");
-  expect((await state(page)).rate === 1.5, "speed select did not set the rate");
+  // The selects are the engine's own listboxes: by mouse …
+  await page.getByLabel("Speed", { exact: true }).click();
+  await page.getByRole("option", { name: "1.5×" }).click();
+  expect((await state(page)).rate === 1.5, "speed list did not set the rate");
+  expect(!(await page.getByRole("listbox").count()), "the list stayed open after a choice");
+  // … and by keyboard: open with ArrowDown, type to find, Enter to choose; the deck never moves.
+  const before = await where(page);
+  await page.getByLabel("Engine", { exact: true }).focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.type("si");
+  await page.keyboard.press("Enter");
+  expect((await state(page)).engine === "silent", `engine by keyboard: ${(await state(page)).engine}`);
+  await page.getByLabel("Speed", { exact: true }).focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  expect((await state(page)).rate === 2, `End + Enter picked rate ${(await state(page)).rate}`);
+  await page.getByLabel("Voice", { exact: true }).click();
+  await page.keyboard.press("Escape");
+  expect(!(await page.getByRole("listbox").count()), "Escape did not close the list");
+  const after = await where(page);
+  expect(after.index === before.index && after.click === before.click, "keys in a list moved the deck");
+  // Kokoro is not installed in the showcase: offered, but not choosable.
+  await page.getByLabel("Engine", { exact: true }).click();
+  expect((await page.getByRole("option", { name: /Kokoro/ }).getAttribute("aria-disabled")) === "true", "Kokoro not disabled");
+  await page.keyboard.press("Escape");
   await page.getByLabel("Volume", { exact: true }).fill("0.3");
   expect(Math.abs((await state(page)).volume - 0.3) < 0.01, "volume slider did not set the volume");
   await page.getByLabel("Mute", { exact: true }).click();
@@ -169,6 +207,17 @@ await step("presenter: speed, volume, mute and the timeline", async (expect) => 
   await page.mouse.click(box.x + box.width * 0.6, box.y + box.height / 2);
   await until(page, () => window.__deck.commands.run("deck.state").then((r) => r.value.slide.index > 3));
   expect((await state(page)).playing, "seeking did not play");
+  await page.evaluate(() => window.__deck.commands.run("narrate.stop"));
+  // The timeline from the keyboard: Home, then PageDown a chapter, ArrowRight a slide.
+  const firstOfChapter2 = await page.evaluate(
+    () => window.__deck.columns.flatMap((c) => c.slides).findIndex((s) => s.frontmatter.layout === "section"),
+  );
+  await page.locator(".deck-narration-track").focus();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("PageDown");
+  await until(page, (i) => window.__deck.commands.run("narrate.state").then((r) => r.value.slide === i), firstOfChapter2);
+  await page.keyboard.press("ArrowRight");
+  await until(page, (i) => window.__deck.commands.run("narrate.state").then((r) => r.value.slide === i + 1), firstOfChapter2);
   await page.evaluate(() => window.__deck.commands.run("narrate.stop"));
   expect(!problems.length, problems.join("; "));
   await context.close();

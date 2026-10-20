@@ -1,0 +1,132 @@
+/* ── listbox ─────────────────────────────────────────────────────────────────
+   The engine's own select (react/Listbox.tsx): a button and a list of options, made of the deck's
+   tokens so every theme and both schemes dress it. The phone remote recolours it (remote.css). */
+.deck-listbox {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+.deck-listbox-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.deck-listbox-prefix {
+  color: var(--deck-muted);
+  font-size: 12px;
+}
+.deck-listbox-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-listbox .deck-listbox-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+.deck-listbox.is-open .deck-listbox-chevron {
+  transform: rotate(180deg);
+}
+.deck-listbox-button:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+.deck-listbox-list {
+  position: fixed;
+  z-index: 1000;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--deck-border);
+  border-radius: 10px;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  font: 13px/1.3 var(--deck-body-font);
+  outline: none;
+  animation: deck-listbox-in 0.12s ease-out;
+}
+.deck-listbox-list[data-side="top"] {
+  transform-origin: bottom;
+}
+@keyframes deck-listbox-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+.deck-listbox-group {
+  padding: 8px 8px 4px;
+  color: var(--deck-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.deck-listbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.deck-listbox-option.is-active {
+  background: color-mix(in oklab, var(--deck-accent) 16%, transparent);
+}
+.deck-listbox-option[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.deck-listbox-option .deck-listbox-check {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--deck-accent);
+  visibility: hidden;
+}
+.deck-listbox-option.is-selected .deck-listbox-check {
+  visibility: visible;
+}
+.deck-listbox-option.is-selected .deck-listbox-label {
+  font-weight: 600;
+}
+.deck-listbox-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-listbox-detail {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+  padding-left: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--deck-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-listbox-list {
+    animation: none;
+  }
+}

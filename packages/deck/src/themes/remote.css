@@ -415,6 +415,36 @@
   flex-direction: column;
   gap: 6px;
 }
+.deck-remote-sheet .deck-remote-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* The listbox on the phone: as tall as the other fields, the remote's own colours. */
+.deck-remote .deck-listbox,
+.deck-remote .deck-listbox-button {
+  width: 100%;
+}
+.deck-remote .deck-listbox-button {
+  height: 44px;
+  justify-content: space-between;
+  border-radius: 10px;
+  border-color: var(--r-line);
+  background: var(--r-raised);
+  color: var(--r-fg);
+  font-size: 16px;
+}
+.deck-remote .deck-listbox-list {
+  --deck-bg: var(--r-panel);
+  --deck-fg: var(--r-fg);
+  --deck-border: var(--r-line);
+  --deck-muted: var(--r-muted);
+  --deck-accent: var(--r-accent);
+  font-size: 16px;
+}
+.deck-remote .deck-listbox-option {
+  min-height: 44px;
+}
 .deck-remote-sheet input[type="text"],
 .deck-remote-sheet select {
   min-height: 44px;

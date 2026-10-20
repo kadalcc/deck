@@ -10,6 +10,7 @@ import type { RemoteState } from "../live/protocol.ts";
 import { presenterTicket, splitFromHash } from "../live/ticket.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { useDeck } from "../react/context.ts";
+import { Listbox } from "../react/Listbox.tsx";
 import { useFit } from "../react/fit.ts";
 import { expectedElapsed, formatElapsed, formatPace, paceTone } from "../react/pacing.ts";
 import { SlideFrame } from "../react/SlideFrame.tsx";
@@ -994,16 +995,22 @@ function SettingsSheet({
           onChange={(e) => set({ range: Number(e.target.value) })}
         />
       </label>
-      <label>
+      <div className="deck-remote-field">
         <span>Pointer</span>
-        <select
+        <Listbox
+          label="Pointer"
           value={settings.point}
-          onChange={(e) => set({ point: e.target.value as Settings["point"] })}
-        >
-          <option value="laser">Laser dot</option>
-          <option value="spotlight">Spotlight</option>
-        </select>
-      </label>
+          onChange={(point) => set({ point })}
+          groups={[
+            {
+              options: [
+                { value: "laser", label: "Laser dot", detail: "a red point" },
+                { value: "spotlight", label: "Spotlight", detail: "dims the rest" },
+              ],
+            },
+          ]}
+        />
+      </div>
       <label>
         <span>Buzz at (minutes into the talk)</span>
         <input
