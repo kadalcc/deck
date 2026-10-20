@@ -132,8 +132,23 @@ interface Gate {
   ok: boolean;
   checking: boolean;
   error: string | null;
+  /** Whether a passcode can open it at all (a host may say none is set). */
+  passcode: boolean;
+  /** Where the deck's author signs in instead, when the host offers that (an http(s) URL). */
+  signIn: string | null;
   login: (passcode: string) => Promise<void>;
 }
+
+/** Only an http(s) link from the host is followed. */
+const safeLink = (v: unknown): string | null => {
+  if (typeof v !== "string") return null;
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+};
 
 function usePresenterGate(): Gate {
   const deck = useDeck();
@@ -143,7 +158,9 @@ function usePresenterGate(): Gate {
     required: boolean;
     checking: boolean;
     error: string | null;
-  }>({ ok: false, required: !!api, checking: !!api, error: null });
+    passcode: boolean;
+    signIn: string | null;
+  }>({ ok: false, required: !!api, checking: !!api, error: null, passcode: true, signIn: null });
   const url = `${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/presenter`;
   // A ticket that arrives later (the passcode form, another window) is asked about again.
   const ticket = useStore(presenterTicket);
@@ -155,11 +172,34 @@ function usePresenterGate(): Gate {
     // credential there; on an ordinary same-origin host the default still sends the cookie.
     fetch(url, { headers: ticketHeaders() })
       .then(async (r) => {
-        const j = (await r.json().catch(() => ({}))) as { ok?: boolean; required?: boolean };
+        const j = (await r.json().catch(() => ({}))) as {
+          ok?: boolean;
+          required?: boolean;
+          passcode?: boolean;
+          signIn?: unknown;
+        };
         if (alive)
-          setState({ ok: !!j.ok, required: j.required !== false, checking: false, error: null });
+          setState({
+            ok: !!j.ok,
+            required: j.required !== false,
+            checking: false,
+            error: null,
+            passcode: j.passcode !== false,
+            signIn: safeLink(j.signIn),
+          });
       })
-      .catch(() => alive && setState({ ok: true, required: false, checking: false, error: null }));
+      .catch(
+        () =>
+          alive &&
+          setState({
+            ok: true,
+            required: false,
+            checking: false,
+            error: null,
+            passcode: true,
+            signIn: null,
+          }),
+      );
     return () => {
       alive = false;
     };
@@ -173,7 +213,7 @@ function usePresenterGate(): Gate {
     }).catch(() => null);
     if (r?.ok) {
       const j = (await r.json().catch(() => ({}))) as { ticket?: unknown };
-      setState({ ok: true, required: true, checking: false, error: null });
+      setState((s) => ({ ...s, ok: true, required: true, checking: false, error: null }));
       // A host that answers with a ticket: keep it and carry on (the room reconnects as presenter).
       // One that only set a cookie: reload, so every request from here on carries it.
       if (isTicket(j.ticket)) setTicket(j.ticket);
@@ -192,6 +232,24 @@ function usePresenterGate(): Gate {
 
 function PresenterLogin({ gate }: { gate: Gate }) {
   const [code, setCode] = useState("");
+  const author = gate.signIn ? (
+    <a className="deck-gate-signin" href={gate.signIn}>
+      Sign in as the author
+    </a>
+  ) : null;
+  if (!gate.passcode)
+    return (
+      <div className="deck-gate">
+        <div className="deck-gate-card">
+          <h1>Presenter</h1>
+          <p>
+            This deck has no presenter passcode yet. Sign in as its author (with Google or GitHub) to
+            present it — you can set a passcode there for next time.
+          </p>
+          {author ?? <p className="deck-gate-error">Ask the deck's owner how to present it.</p>}
+        </div>
+      </div>
+    );
   return (
     <div className="deck-gate">
       <form
@@ -202,7 +260,8 @@ function PresenterLogin({ gate }: { gate: Gate }) {
       >
         <h1>Presenter</h1>
         <p>
-          This deck's presenter view is protected. Enter the passcode set for the deck on the host.
+          This deck's presenter view is protected. Enter its presenter passcode
+          {gate.signIn ? ", or sign in as its author." : "."}
         </p>
         <input
           type="password"
@@ -216,6 +275,7 @@ function PresenterLogin({ gate }: { gate: Gate }) {
           {gate.checking ? "Checking…" : "Open the presenter view"}
         </button>
         {gate.error ? <p className="deck-gate-error">{gate.error}</p> : null}
+        {author ? <p className="deck-gate-or">or {author}</p> : null}
       </form>
     </div>
   );

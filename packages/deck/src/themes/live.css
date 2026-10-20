@@ -880,7 +880,8 @@
   background: var(--deck-bg);
   color: var(--deck-fg);
 }
-.deck-gate form {
+.deck-gate form,
+.deck-gate-card {
   width: min(420px, 90vw);
   display: flex;
   flex-direction: column;
@@ -914,6 +915,23 @@
 }
 .deck-gate-error {
   color: #ef4444 !important;
+}
+/* "Sign in as the author": a button on its own, a link after "or" below the passcode form. */
+.deck-gate-card > .deck-gate-signin {
+  font: 16px var(--deck-body-font);
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+  text-align: center;
+  text-decoration: none;
+}
+.deck-gate-or .deck-gate-signin {
+  color: var(--deck-accent);
+}
+.deck-gate-signin:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 3px;
 }
 
 /* notes and stats pages */
