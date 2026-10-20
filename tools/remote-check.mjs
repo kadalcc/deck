@@ -421,9 +421,9 @@ await step("zoom: a tap zooms the play window in, another zooms out", async () =
   await phone.locator("[data-mode='zoom']").tap();
   const pad = await boxOf(phone, ".deck-remote-pad");
   await phone.touchscreen.tap(pad.x + pad.width * 0.25, pad.y + pad.height * 0.25);
-  // Zoom is not shared through a room: there the presenter view zooms, and the play window only
-  // follows on the dev relay (its window bus).
-  const zoomed = roomApi ? presenter : play;
+  // The play window zooms with the presenter view: through the room with one, over the window bus
+  // on the dev relay.
+  const zoomed = play;
   const z = await until(async () => (await ui(zoomed)).zoom);
   expect(z && near(z.x / (await zoomed.evaluate(() => window.__deck.config.width)), 0.25), `zoom ${JSON.stringify(z)}`);
   await until(() => phone.evaluate(() => true));
@@ -432,6 +432,22 @@ await step("zoom: a tap zooms the play window in, another zooms out", async () =
   expect(await until(async () => !(await ui(zoomed)).zoom && !(await ui(presenter)).zoom), "did not zoom out");
   await phone.locator("[data-mode='point']").tap();
 });
+
+if (roomApi)
+  await step("with a room: a screen reading on its own keeps its zoom; following again catches up", async () => {
+    await play.evaluate(() => window.__deck.nav.update((s) => ({ ...s, follow: false })));
+    await phone.locator("[data-mode='zoom']").tap();
+    const pad = await boxOf(phone, ".deck-remote-pad");
+    await phone.touchscreen.tap(pad.x + pad.width * 0.75, pad.y + pad.height * 0.25);
+    expect(await until(async () => (await ui(presenter)).zoom), "the presenter view did not zoom");
+    await new Promise((r) => setTimeout(r, 500));
+    expect(!(await ui(play)).zoom, "a screen that is not following was zoomed");
+    await play.evaluate(() => window.__deck.nav.update((s) => ({ ...s, follow: true })));
+    expect(await until(async () => (await ui(play)).zoom), "following again did not catch up with the zoom");
+    await phone.touchscreen.tap(pad.x + pad.width * 0.5, pad.y + pad.height * 0.5);
+    expect(await until(async () => !(await ui(play)).zoom && !(await ui(presenter)).zoom), "did not zoom out");
+    await phone.locator("[data-mode='point']").tap();
+  });
 
 await step("notes follow the step; landscape still fits", async () => {
   const notes = await phone.locator(".deck-remote-notes p").innerText();

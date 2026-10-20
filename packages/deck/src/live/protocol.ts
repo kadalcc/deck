@@ -130,6 +130,11 @@ export interface RoomState {
   /** The term card the presenter has open for everyone, or null. Absent in older rooms' state. */
   term?: RoomTerm | null;
   spotlight: boolean;
+  /**
+   * The presenter's zoom: the point it centres on, as a fraction of the slide, and how far in.
+   * Following screens zoom with it. Absent in older rooms' state.
+   */
+  zoom?: RoomZoom | null;
   blackout: boolean;
   /** Whether the presenter has made the notes visible to the audience page. */
   notesPublic: boolean;
@@ -137,6 +142,25 @@ export interface RoomState {
   startedAt: number | null;
   /** Reaction totals for the session, by emoji. */
   reactions: Record<string, number>;
+}
+
+export interface RoomZoom {
+  /** 0–1 across the slide. */
+  x: number;
+  /** 0–1 down the slide. */
+  y: number;
+  /** 1.2–6. */
+  scale: number;
+}
+
+/** A zoom as the room accepts it: a point on the slide and a sane scale, or null for none. */
+export function parseZoom(z: unknown): RoomZoom | null | undefined {
+  if (z === null) return null;
+  if (!z || typeof z !== "object") return undefined;
+  const { x, y, scale } = z as Record<string, unknown>;
+  const ok = (n: unknown, lo: number, hi: number): n is number =>
+    typeof n === "number" && Number.isFinite(n) && n >= lo && n <= hi;
+  return ok(x, 0, 1) && ok(y, 0, 1) && ok(scale, 1.2, 6) ? { x, y, scale } : undefined;
 }
 
 export const EMPTY_ROOM: RoomState = {
@@ -310,6 +334,7 @@ export type ClientMessage =
   | ({ type: "term" } & RoomTerm)
   | { type: "term:off" }
   | { type: "spotlight"; on: boolean }
+  | { type: "zoom"; zoom: RoomZoom | null }
   | { type: "blackout"; on: boolean }
   | { type: "draw"; slide: string; stroke: Stroke }
   | { type: "draw:undo"; slide: string }

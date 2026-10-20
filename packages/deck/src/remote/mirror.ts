@@ -6,7 +6,7 @@ import { type DeckRuntime, useDeck } from "../react/context.ts";
 /**
  * WITHOUT A ROOM, the phone remote drives the presenter view, and the presenter view's position
  * and blackout already reach the play window over the window bus. Its laser, ink, zoom and labels
- * never did — with a room they travel through it — so a remote's command for one of those is
+ * never did — with a room the laser, ink and zoom travel through it — so a remote's command for one of those is
  * passed on, as the same command, to this browser's play windows. A toggle always arrives as
  * on/off (the remote never sends a bare toggle), so running it twice is running it once.
  */
