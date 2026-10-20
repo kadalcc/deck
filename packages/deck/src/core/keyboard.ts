@@ -178,7 +178,9 @@ export function isEditable(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
   const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  // A control that handles its own keys (react/Listbox.tsx: arrows, typeahead).
+  return !!target.closest?.("[data-deck-own-keys]");
 }
 
 export { MODIFIERS };
