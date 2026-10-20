@@ -1,6 +1,6 @@
 {
   "name": "@kadal/create-deck",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Start a Kadal Deck: npm create @kadal/deck@latest my-talk",
   "keywords": [
     "kadal-deck",
