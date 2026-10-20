@@ -1,5 +1,17 @@
 # @kadal/deck-preact
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [1af5183]
+- Updated dependencies [e960d13]
+- Updated dependencies [2473f77]
+- Updated dependencies [71ad8e8]
+- Updated dependencies [2d862df]
+- Updated dependencies [ac41497]
+  - @kadal/deck@0.3.0
+
 ## 0.2.2
 
 ### Patch Changes
