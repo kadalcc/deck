@@ -4,6 +4,11 @@
  *
  *   node tools/remote-check.mjs                 the starter deck
  *   node tools/remote-check.mjs --deck showcase the showcase deck
+ *   node tools/remote-check.mjs --room http://127.0.0.1:8797
+ *                                               the same, through a deck host's room (a local
+ *                                               deck-worker, proxied at /api as the starter's
+ *                                               vite.config does) instead of the dev server's relay
+ *   TRACE=1 node tools/remote-check.mjs …       also print every socket and pairing message
  *   node tools/remote-check.mjs --out <dir>     where the phone's screenshots go
  *                                               (default <deck>/check-output, gitignored)
  *
@@ -12,7 +17,10 @@
  * remote" dialog shows. Then: Next moves the presenter and the play window, a touch on the phone's
  * slide puts the laser on the same spot of both, blackout goes on and off, the pen draws a stroke
  * both show, the air pointer follows simulated deviceorientation events, zoom zooms the play
- * window, Disconnect un-pairs the phone. No console error anywhere.
+ * window. Then one phone at a time: the code on the QR changes once used, a second phone (an
+ * "iPhone", whose motion sensors open only from a tap, as WebKit's do) takes over and the first is
+ * told, the iPhone allows motion with a tap and points, a reload keeps it paired (its lease), and
+ * Disconnect un-pairs it for good. No console error anywhere.
  *
  * Needs the engine built (`bun run build`) and Playwright's Chromium.
  */
@@ -31,6 +39,18 @@ const deckDir = join(root, "examples", deckName);
 const out = resolve(val("--out", join(deckDir, "check-output")));
 mkdirSync(out, { recursive: true });
 const port = Number(val("--port", 5391));
+const roomApi = val("--room", null);
+// The host's word (window.__KADAL_DECK__), as a deck host writes it into the page it serves.
+const roomName = `remote-check-${Date.now().toString(36)}`;
+const hostWord = (ctx) =>
+  roomApi
+    ? ctx.addInitScript(
+        (room) => {
+          window.__KADAL_DECK__ = { api: "/api", room };
+        },
+        roomName,
+      )
+    : null;
 
 const results = [];
 let current = null;
@@ -72,7 +92,7 @@ const bin = join(root, "packages/deck/dist/cli/bin.js");
 const server = spawn(process.execPath, [bin, "dev", "--port", String(port), "--strictPort", "--host", "127.0.0.1"], {
   cwd: deckDir,
   stdio: ["ignore", "pipe", "pipe"],
-  env: { ...process.env, KADAL_DECK_API: "" },
+  env: { ...process.env, KADAL_DECK_API: roomApi ?? "" },
   // Its own process group: the CLI runs Vite as a child, and both must go when we do.
   detached: true,
 });
@@ -113,6 +133,8 @@ const phoneCtx = await browser.newContext({
   isMobile: true,
   hasTouch: true,
 });
+await hostWord(desk);
+await hostWord(phoneCtx);
 const errors = [];
 const watch = (page, name) => {
   page.on("console", (m) => {
@@ -126,6 +148,48 @@ watch(presenter, "presenter");
 const play = await desk.newPage();
 watch(play, "play");
 const phone = await phoneCtx.newPage();
+// An iPhone, as far as the motion sensors go: WebKit's requestPermission() prompts only from a tap
+// (a click or touchend); from the press that starts a hold (touchstart/pointerdown) it refuses
+// without showing anything — which is what the remote used to do. Chromium is more generous
+// (a touch's pointerdown already counts as activation), so the event is checked instead.
+const iosCtx = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+  deviceScaleFactor: 3,
+  isMobile: true,
+  hasTouch: true,
+});
+await iosCtx.addInitScript(() => {
+  if (typeof DeviceOrientationEvent === "undefined") return;
+  window.__motionAsks = [];
+  DeviceOrientationEvent.requestPermission = () => {
+    const tapped = ["click", "touchend", "pointerup"].includes(window.event?.type ?? "");
+    window.__motionAsks.push(tapped ? "asked" : "refused");
+    return tapped
+      ? Promise.resolve("granted")
+      : Promise.reject(new DOMException("requires a user gesture to prompt", "NotAllowedError"));
+  };
+});
+await hostWord(iosCtx);
+const ios = await iosCtx.newPage();
+watch(ios, "iphone");
+const tap = (name, page) =>
+  page.on("websocket", (ws) => {
+    const sock = Math.random().toString(36).slice(2, 6);
+    console.log(`[${name} open ${sock}] ${ws.url().slice(0, 120)}`);
+    ws.on("close", () => console.log(`[${name} close ${sock}]`));
+    const log = (dir) => (f) => {
+      const d = String(f.payload);
+      if (d.includes("kadal:remote") || /"type":"(hello|welcome|command|remote:[a-z]+)"/.test(d)) console.log(`[${name} ${sock} ${dir}] ${d.slice(0, 220)}`);
+    };
+    ws.on("framesent", log("→"));
+    ws.on("framereceived", log("←"));
+  });
+if (process.env.TRACE) {
+  tap("presenter", presenter);
+  tap("phone", phone);
+  tap("play", play);
+  tap("iphone", ios);
+}
 watch(phone, "phone");
 const touch = await phoneCtx.newCDPSession(phone);
 
@@ -173,18 +237,35 @@ await step("the Phone remote dialog shows a QR and a pairing URL", async () => {
   await presenter.getByRole("button", { name: /Phone remote/ }).click();
   await presenter.waitForSelector(".deck-remote-dialog img.deck-qr", { timeout: 10_000 });
   pairUrl = await until(() => presenter.locator("[data-remote-url]").getAttribute("data-remote-url"));
-  expect(pairUrl && /\/remote\?pair=[A-Z2-9]{6}$/.test(pairUrl), `pair url: ${pairUrl}`);
+  const shape = roomApi ? /\/remote#pair=[A-Z2-9]{20}$/ : /\/remote\?pair=[A-Z2-9]{6}$/;
+  expect(pairUrl && shape.test(pairUrl), `pair url: ${pairUrl}`);
 });
 
 await step("the phone pairs, and the presenter hears it", async () => {
   await phone.goto(pairUrl, { waitUntil: "networkidle" });
-  await phone.waitForSelector(".deck-remote-status.is-open", { timeout: 10_000 });
+  await phone.waitForSelector(".deck-remote-status.is-open", { timeout: 10_000 }).catch(async (e) => {
+    current.detail.push(`phone shows: ${(await phone.locator("body").innerText()).slice(0, 300)}`);
+    current.detail.push(`phone url: ${phone.url()}`);
+    throw e;
+  });
   const count = await until(() =>
     presenter.locator(".deck-remote-dialog [data-remotes='1']").count(),
   );
   expect(count, "the dialog does not count the phone");
   const toast = await presenter.locator(".deck-toast").innerText();
   expect(/Phone remote connected/.test(toast), `toast: ${toast}`);
+  // The code on screen worked once: the QR shows the next one, and says when it changes.
+  const next = await until(async () => {
+    const u = await presenter.locator("[data-remote-url]").getAttribute("data-remote-url");
+    return u && u !== pairUrl ? u : null;
+  });
+  expect(next, "the QR still shows the code the phone used");
+  expect(
+    await presenter.locator(".deck-remote-countdown").count(),
+    "no countdown to the next code",
+  );
+  await presenter.locator(".deck-remote-dialog-panel").screenshot({ path: join(out, "presenter-dialog.png") });
+  expect(!/[?&]pair=/.test(phone.url()), `the used code stayed in the phone's URL: ${phone.url()}`);
   await presenter.keyboard.press("Escape");
   await phone.waitForSelector(".deck-remote-canvas .deck-slide", { timeout: 10_000 });
   await phone.screenshot({ path: join(out, "remote-portrait.png") });
@@ -230,7 +311,9 @@ await step("a finger on the phone's slide is the laser, on the same spot, on bot
   const x = pad.x + pad.width * fx;
   const y = pad.y + pad.height * fy;
   await finger("touchStart", [[x, y]]);
-  for (const [name, page] of [["presenter", presenter], ["play", play]]) {
+  // With a room the play window draws the ROOM's pointer (not its own laser state): its dot is
+  // checked below.
+  for (const [name, page] of roomApi ? [["presenter", presenter]] : [["presenter", presenter], ["play", play]]) {
     const u = await until(async () => {
       const s = await ui(page);
       return s.pointer && s.laser ? s : null;
@@ -246,7 +329,7 @@ await step("a finger on the phone's slide is the laser, on the same spot, on bot
     return { x: (d.left + d.width / 2 - canvas.left) / canvas.width, y: (d.top + d.height / 2 - canvas.top) / canvas.height };
   });
   expect(near(at.x, fx, 0.05) && near(at.y, fy, 0.05), `the presenter's dot is drawn at ${JSON.stringify(at)}`);
-  expect((await play.locator(".deck-pointer").count()) === 1, "no laser dot on the play window");
+  expect(await until(async () => (await play.locator(".deck-pointer").count()) === 1), "no laser dot on the play window");
   // A drag moves it.
   await finger("touchMove", [[x + pad.width * 0.3, y - pad.height * 0.3]]);
   const moved = await until(async () => {
@@ -338,12 +421,15 @@ await step("zoom: a tap zooms the play window in, another zooms out", async () =
   await phone.locator("[data-mode='zoom']").tap();
   const pad = await boxOf(phone, ".deck-remote-pad");
   await phone.touchscreen.tap(pad.x + pad.width * 0.25, pad.y + pad.height * 0.25);
-  const z = await until(async () => (await ui(play)).zoom);
-  expect(z && near(z.x / (await play.evaluate(() => window.__deck.config.width)), 0.25), `zoom ${JSON.stringify(z)}`);
+  // Zoom is not shared through a room: there the presenter view zooms, and the play window only
+  // follows on the dev relay (its window bus).
+  const zoomed = roomApi ? presenter : play;
+  const z = await until(async () => (await ui(zoomed)).zoom);
+  expect(z && near(z.x / (await zoomed.evaluate(() => window.__deck.config.width)), 0.25), `zoom ${JSON.stringify(z)}`);
   await until(() => phone.evaluate(() => true));
   await new Promise((r) => setTimeout(r, 300));
   await phone.touchscreen.tap(pad.x + pad.width * 0.5, pad.y + pad.height * 0.5);
-  expect(await until(async () => !(await ui(play)).zoom && !(await ui(presenter)).zoom), "did not zoom out");
+  expect(await until(async () => !(await ui(zoomed)).zoom && !(await ui(presenter)).zoom), "did not zoom out");
   await phone.locator("[data-mode='point']").tap();
 });
 
@@ -373,16 +459,98 @@ await step("notes follow the step; landscape still fits", async () => {
   await phone.setViewportSize({ width: 390, height: 844 });
 });
 
-await step("Disconnect un-pairs the phone and retires the code", async () => {
+const currentUrl = async () => {
   await presenter.getByRole("button", { name: /Phone remote/ }).click();
+  const u = await until(() => presenter.locator("[data-remote-url]").getAttribute("data-remote-url"));
+  await presenter.keyboard.press("Escape");
+  return u;
+};
+
+await step("a second phone takes over; the first is told and cannot drive", async () => {
+  await ios.goto(await currentUrl(), { waitUntil: "networkidle" });
+  await ios.waitForSelector(".deck-remote-status.is-open", { timeout: 10_000 });
+  expect(
+    await until(() => phone.locator(".deck-remote-instructions", { hasText: "Another phone" }).count()),
+    "the first phone was not told it was replaced",
+  );
+  await phone.screenshot({ path: join(out, "remote-taken-over.png") });
+  const count = await presenter.locator("[data-remotes]").first().getAttribute("data-remotes");
+  expect(count === "1", `the presenter counts ${count} phones`);
+});
+
+await step("on an iPhone, motion is allowed with a tap, then the hold points", async () => {
+  const air = ios.locator(".deck-remote-air");
+  expect(
+    await until(() => ios.locator(".deck-remote-air[data-motion='unknown']").count()),
+    `the air button does not ask first: ${await air.innerText()}`,
+  );
+  await ios.screenshot({ path: join(out, "remote-iphone-allow-motion.png") });
+  await air.tap();
+  expect(
+    await until(() => ios.locator(".deck-remote-air:not([data-motion])").count()),
+    `the tap did not allow motion: ${await air.innerText()}`,
+  );
+  const asks = await ios.evaluate(() => window.__motionAsks);
+  expect(asks.join() === "asked", `requestPermission calls: ${asks.join() || "none"}`);
+  const box = await air.boundingBox();
+  const cdp = await iosCtx.newCDPSession(ios);
+  const point = [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }];
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: point });
+  await until(() => ios.locator(".deck-remote-air[data-holding]").count());
+  const tilt = (alpha, beta) =>
+    ios.evaluate(
+      ([a, b]) => window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { alpha: a, beta: b, gamma: 0, absolute: false })),
+      [alpha, beta],
+    );
+  await tilt(100, 10);
+  for (let i = 0; i < 25; i++) {
+    await tilt(90, 15);
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  const u = await until(async () => {
+    const s = await ui(presenter);
+    return s.laser && near(s.laser.x, 0.75, 0.04) ? s : null;
+  }, 3000);
+  expect(u, `the iPhone's laser is at ${JSON.stringify((await ui(presenter)).laser)}`);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  expect(await until(async () => !(await ui(presenter)).pointer), "letting go left the laser on");
+  const after = await ios.evaluate(() => window.__motionAsks);
+  expect(after.length === 1, `the hold asked again: ${after.join()}`);
+});
+
+await step("a reload keeps the phone paired (its lease), with no code in the URL", async () => {
+  await ios.reload({ waitUntil: "networkidle" });
+  await ios.waitForSelector(".deck-remote-status.is-open", { timeout: 10_000 });
+  const before = await pos(presenter);
+  await ios.locator(".deck-remote-next").tap();
+  expect(
+    await until(async () => {
+      const p = await pos(presenter);
+      return p.h !== before.h || p.click !== before.click || p.v !== before.v;
+    }),
+    "the reloaded phone cannot drive",
+  );
+});
+
+await step("Disconnect un-pairs the phone for good and changes the code", async () => {
+  await presenter.getByRole("button", { name: /Phone remote/ }).click();
+  const shown = await until(() => presenter.locator("[data-remote-url]").getAttribute("data-remote-url"));
   await presenter.locator(".deck-remote-dialog button", { hasText: "Disconnect" }).click();
-  expect(await until(() => phone.locator(".deck-remote-instructions", { hasText: "Not paired" }).count()), "the phone was not told");
+  expect(await until(() => ios.locator(".deck-remote-instructions", { hasText: "Not paired" }).count()), "the phone was not told");
   const next = await until(async () => {
     const u = await presenter.locator("[data-remote-url]").getAttribute("data-remote-url");
-    return u && u !== pairUrl ? u : null;
+    return u && u !== shown ? u : null;
   });
   expect(next, "the code did not change");
+  expect(
+    await until(async () => (await presenter.locator("[data-remotes]").first().getAttribute("data-remotes")) === "0"),
+    "the presenter still counts a phone",
+  );
   await presenter.keyboard.press("Escape");
+  // Its lease is void: a reload does not bring it back.
+  await ios.reload({ waitUntil: "networkidle" });
+  await new Promise((r) => setTimeout(r, 800));
+  expect(!(await ios.locator(".deck-remote-status.is-open").count()), "the disconnected phone came back");
 });
 
 await step("no console errors", async () => {

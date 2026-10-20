@@ -34,6 +34,11 @@ export interface RoomClientOptions {
    * hello sets the room's position, and a phone joining must not move the room.
    */
   client?: "remote";
+  /**
+   * A phone remote that pairs by code (live/protocol.ts, PAIRING): read at each connection, its
+   * `pair` or `lease` goes in the hello — never on the URL — and the socket asks for `role=remote`.
+   */
+  pairing?: () => { pair?: string; lease?: string; device?: string };
 }
 
 type Listener = (message: ServerMessage) => void;
@@ -83,7 +88,7 @@ export class RoomClient {
     const base = this.options.api.startsWith("http")
       ? this.options.api.replace(/^http/, "ws")
       : `${proto}//${window.location.host}${this.options.api}`;
-    const q = new URLSearchParams({ role: this.options.role });
+    const q = new URLSearchParams({ role: this.options.pairing ? "remote" : this.options.role });
     if (token) q.set("t", token);
     for (const [k, v] of Object.entries(this.options.credentials?.() ?? {})) q.set(k, v);
     return `${base}/rooms/${encodeURIComponent(this.options.room)}/ws?${q}`;
@@ -113,7 +118,11 @@ export class RoomClient {
       return;
     }
     this.ws = ws;
+    // Every handler checks it still speaks for the client's CURRENT socket: a socket closed by
+    // close() or replaced by a quick close-and-connect (a remount) fires its close later, and must
+    // not null the new socket or schedule another — two live sockets would deliver everything twice.
     ws.onopen = () => {
+      if (this.ws !== ws) return;
       this.attempts = 0;
       this.status.set("open");
       this.raw(
@@ -123,6 +132,7 @@ export class RoomClient {
               role: this.options.role,
               viewer: this.options.viewer,
               client: "remote",
+              ...this.options.pairing?.(),
             }
           : {
               type: "hello",
@@ -136,6 +146,7 @@ export class RoomClient {
       this.heartbeat = setInterval(() => this.raw({ type: "ping" }), 25_000);
     };
     ws.onmessage = (e) => {
+      if (this.ws !== ws) return;
       let m: ServerMessage;
       try {
         m = JSON.parse(String(e.data)) as ServerMessage;
@@ -186,6 +197,7 @@ export class RoomClient {
       for (const l of this.listeners) l(m);
     };
     ws.onclose = () => {
+      if (this.ws !== ws) return;
       this.ws = null;
       if (this.heartbeat) clearInterval(this.heartbeat);
       this.heartbeat = null;

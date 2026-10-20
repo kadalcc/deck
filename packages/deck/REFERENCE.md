@@ -1426,7 +1426,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `/<slug>/` — The deck. `#/h/v/click` or `#/<slide-id>` addresses a slide and step.
 - `/<slug>/presenter` — Presenter view: current + next slide, notes with click markers, timer, tools, the room panel.
 - `/<slug>/join` — The audience page (also /audience): follow along, react, ask, vote.
-- `/<slug>/remote` — The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR: `remote#ticket=…` with a room, `remote?pair=CODE` on `kadal-deck dev`. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.
+- `/<slug>/remote` — The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev`. One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.
 - `/<slug>/notes` — Every speaker note on one page.
 - `/<slug>/stats` — Views, dwell per slide, sessions, questions, reactions.
 
@@ -1450,7 +1450,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - **Quizzes** — Timed questions with points for speed and a leaderboard. (`<Quiz>`, `<Leaderboard>`)
 - **Pace and hands** — Slower/faster feedback and raised hands in the presenter's room panel. (`<Pace>`)
 - **Shared ink** — The presenter's drawings, confetti and shared term cards reach every screen. (`<Confetti>`, `<Term>`)
-- **Phone remote** — The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). With a room it is a presenter socket holding the ticket; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).
+- **Phone remote** — The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). One phone at a time: the QR's code works once and changes every 30 seconds, the newest phone to scan takes over, and a paired phone reconnects with its lease. With a room the room pairs it; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).
 - **Turning it on** — `kadal-deck publish` gives a deck a room on deck.kadal.cc; self-hosted, set `live.api` (and run a room server against @kadal/deck/protocol). Offline decks render live components as placeholders.
 
 ## The CLI

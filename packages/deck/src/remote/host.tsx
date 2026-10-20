@@ -14,6 +14,7 @@ import { type DeckRuntime, useDeck } from "../react/context.ts";
 import { presenterClock } from "../react/pacing.ts";
 import { createCoalescer } from "./air.ts";
 import { devHost, type HostLink, roomHost } from "./link.ts";
+import { ROTATE_MS } from "./relay.ts";
 import { FORWARDED, remoteBus } from "./mirror.ts";
 
 /**
@@ -26,6 +27,9 @@ import { FORWARDED, remoteBus } from "./mirror.ts";
  * registry the keyboard uses (origin "remote"), and its answer goes back to that phone. While a
  * phone is connected, what it shows (slide, step, blackout, laser, the timer) is pushed to it as
  * it changes. With a room the wire is the room; on `kadal-deck dev` it is the dev server's relay.
+ *
+ * One phone at a time. The QR holds a code that works once and changes every 30 seconds while the
+ * dialog is open (link.ts); the newest phone to scan becomes the remote and any other is let go.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -57,15 +61,15 @@ export function remoteState(rt: DeckRuntime): RemoteState {
   };
 }
 
-const codeKey = (rt: DeckRuntime) => `deck.remote.code.${rt.config.slug || "deck"}`;
+const placeKey = (rt: DeckRuntime) => `deck.remote.place.${rt.config.slug || "deck"}`;
 
 export function RemoteHost() {
   const deck = useDeck();
   const live = useLiveOptional();
   const relay = deck.manifest.relay ?? null;
   const [open, setOpen] = useState(false);
-  // On the dev relay a code is only asked for once someone wants one — or a reload had one.
-  const [wanted, setWanted] = useState(() => !!readItem(codeKey(deck), "session"));
+  // On the dev relay a place is only asked for once someone wants one — or a reload had one.
+  const [wanted, setWanted] = useState(() => !!readItem(placeKey(deck), "session"));
   // Made in an effect, not a memo: a link holds a socket's attention (and, on the dev relay, a
   // code), so whatever makes one must be what closes it.
   const [link, setLink] = useState<HostLink | null>(null);
@@ -81,8 +85,8 @@ export function RemoteHost() {
       made = devHost(relay, {
         path: `${deck.base}remote`,
         remember: {
-          get: () => readItem(codeKey(deck), "session"),
-          set: (code) => writeItem(codeKey(deck), code, "session"),
+          get: () => readItem(placeKey(deck), "session"),
+          set: (id) => writeItem(placeKey(deck), id, "session"),
         },
       });
     setLink(made);
@@ -94,7 +98,16 @@ export function RemoteHost() {
 
   const remotes = useStore(link?.remotes ?? zero);
   const url = useStore(link?.url ?? none);
+  const expires = useStore(link?.expires ?? never);
   const problem = useStore(link?.problem ?? none);
+
+  // A code is asked for only while the QR is on screen, and kept fresh until it is closed.
+  useEffect(() => {
+    if (!link) return;
+    link.showing(open);
+    return () => link.showing(false);
+  }, [link, open]);
+  useEffect(() => link?.onPaired(() => deck.actions.toast("Phone remote connected")), [link, deck]);
 
   // Run what the phones send, and answer.
   const laserByRemote = useRef(false);
@@ -127,10 +140,6 @@ export function RemoteHost() {
   useEffect(() => {
     const before = lastCount.current;
     lastCount.current = remotes;
-    if (remotes > before)
-      deck.actions.toast(
-        remotes > 1 ? `${remotes} phone remotes connected` : "Phone remote connected",
-      );
     if (remotes === 0 && before > 0 && laserByRemote.current) {
       laserByRemote.current = false;
       void deck.commands.run("present.laserOff", {}, "remote");
@@ -190,9 +199,9 @@ export function RemoteHost() {
     link
       ? {
           id: "remote.disconnect",
-          title: "Disconnect phones",
+          title: "Disconnect the phone",
           description:
-            "Disconnect every phone remote (on the dev server the pairing code changes too).",
+            "Disconnect the phone remote; it cannot reconnect without scanning a new code.",
           group: "room",
           run: () => link.kick(),
         }
@@ -217,6 +226,7 @@ export function RemoteHost() {
         ? createPortal(
             <RemoteDialog
               url={url}
+              expires={expires}
               problem={
                 problem ??
                 (!live && !relay
@@ -237,6 +247,7 @@ export function RemoteHost() {
 
 function RemoteDialog({
   url,
+  expires,
   problem,
   remotes,
   kind,
@@ -244,6 +255,7 @@ function RemoteDialog({
   onClose,
 }: {
   url: string | null;
+  expires: number | null;
   problem: string | null;
   remotes: number;
   kind: "room" | "dev" | null;
@@ -289,8 +301,11 @@ function RemoteDialog({
               </p>
             ) : null}
             <p className="deck-muted">
-              Anyone who scans this code can drive the deck — keep it off a shared screen.
+              One phone at a time: the newest phone to scan becomes the remote and any other is
+              disconnected. The code works once and changes every 30 seconds — still, keep it off a
+              shared screen.
             </p>
+            {expires ? <Countdown until={expires} /> : null}
           </>
         ) : (
           <p className="deck-remote-problem">{problem ?? "Getting a pairing code…"}</p>
@@ -298,11 +313,7 @@ function RemoteDialog({
         <footer>
           <span className="deck-remote-count" data-remotes={remotes}>
             <i className={remotes ? "is-on" : ""} />
-            {remotes === 0
-              ? "No phone connected"
-              : remotes === 1
-                ? "1 phone connected"
-                : `${remotes} phones connected`}
+            {remotes === 0 ? "No phone connected" : "Phone connected"}
           </span>
           {url ? (
             <button
@@ -318,18 +329,11 @@ function RemoteDialog({
           {kind ? (
             <button
               type="button"
-              disabled={!remotes && kind === "room"}
               onClick={() => {
                 onKick();
-                deck.actions.toast(
-                  kind === "dev" ? "Phones disconnected · new code" : "Phones disconnected",
-                );
+                deck.actions.toast("Phone disconnected · new code");
               }}
-              title={
-                kind === "dev"
-                  ? "Disconnect every phone and change the code"
-                  : "Disconnect every phone"
-              }
+              title="Disconnect the phone (even one that is offline right now) and change the code"
             >
               <Icon name="unplug" /> Disconnect
             </button>
@@ -340,6 +344,23 @@ function RemoteDialog({
   );
 }
 
+/** "New code in 23 s", ticking. */
+function Countdown({ until }: { until: number }) {
+  const [t, setT] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setT(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  // A new code arrives ROTATE_MS before this one stops working.
+  const left = Math.max(0, Math.round((until - ROTATE_MS - t) / 1000));
+  return (
+    <p className="deck-muted deck-remote-countdown" aria-live="off">
+      {left > 0 ? `New code in ${left} s` : "New code…"}
+    </p>
+  );
+}
+
 import { createStore } from "../core/store.ts";
 const zero = createStore(0);
 const none = createStore<string | null>(null);
+const never = createStore<number | null>(null);

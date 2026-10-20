@@ -388,7 +388,7 @@ export const ROUTES: RouteInfo[] = [
   {
     path: "/<slug>/remote",
     summary:
-      "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR: `remote#ticket=…` with a room, `remote?pair=CODE` on `kadal-deck dev`. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
+      "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev`. One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
   },
   { path: "/<slug>/notes", summary: "Every speaker note on one page." },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
@@ -467,7 +467,7 @@ export const LIVE: LiveFeature[] = [
   {
     name: "Phone remote",
     summary:
-      "The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). With a room it is a presenter socket holding the ticket; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).",
+      "The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). One phone at a time: the QR's code works once and changes every 30 seconds, the newest phone to scan takes over, and a paired phone reconnects with its lease. With a room the room pairs it; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).",
     components: [],
   },
   {

@@ -177,6 +177,14 @@ export const EMPTY_ROOM: RoomState = {
  * to the remotes only. `remote:kick` (presenter windows only) closes every remote socket after a
  * `remote:bye`.
  *
+ * PAIRING (rooms that support it, e.g. deck.kadal.cc): the QR holds a one-time CODE, not the
+ * presenter's ticket. A presenting window asks with `remote:offer` and hears `remote:code` (the
+ * code and how long it works); it asks again as the code nears its end, so the QR keeps changing.
+ * A phone connects with `role=remote` and nothing else on the URL, and says the code in its hello
+ * (`pair`); the room answers `remote:paired` with a LEASE the phone keeps to reconnect (`lease` in
+ * a later hello). One phone at a time: pairing a new one closes every other remote with a
+ * `remote:bye`, and its lease stops working. `remote:kick` drops the lease and every code.
+ *
  * The same messages travel over the dev server's relay when there is no room (src/remote/relay.ts).
  */
 export interface RemoteState {
@@ -224,7 +232,9 @@ const jsonSize = (v: unknown) => {
 };
 
 /** A `command` as a remote may send it, or null: a dotted id, a seq, small object params. */
-export function parseCommand(m: unknown): { id: string; params: Record<string, unknown>; seq: number } | null {
+export function parseCommand(
+  m: unknown,
+): { id: string; params: Record<string, unknown>; seq: number } | null {
   if (!isRecord(m) || m.type !== "command") return null;
   if (typeof m.id !== "string" || m.id.length > 64 || !COMMAND_ID.test(m.id)) return null;
   if (!isSeq(m.seq)) return null;
@@ -257,8 +267,7 @@ export function parseRemoteState(m: unknown): RemoteState | null {
   const s = m.state;
   const slide = s.slide;
   if (!isRecord(slide)) return null;
-  for (const k of ["index", "h", "v", "click", "clicks"])
-    if (!isSeq(slide[k])) return null;
+  for (const k of ["index", "h", "v", "click", "clicks"]) if (!isSeq(slide[k])) return null;
   if (!isSeq(s.total)) return null;
   for (const k of ["blackout", "overview", "pointer", "spotlight", "drawing", "hints", "zoomed"])
     if (typeof s[k] !== "boolean") return null;
@@ -276,6 +285,12 @@ export type ClientMessage =
       position?: RoomPosition;
       /** "remote": a phone remote (no position; not counted as the presenter). */
       client?: "remote";
+      /** A phone pairing: the code from the presenter view's QR … */
+      pair?: string;
+      /** … or the lease the room gave it, to come back after a dropped connection. */
+      lease?: string;
+      /** The phone's random id for this page: saying a used code again from it gets the same lease. */
+      device?: string;
     }
   | { type: "command"; id: string; params?: Record<string, unknown>; seq: number }
   | {
@@ -288,6 +303,7 @@ export type ClientMessage =
     }
   | { type: "remote:state"; state: RemoteState }
   | { type: "remote:kick" }
+  | { type: "remote:offer" }
   | { type: "nav"; position: RoomPosition }
   | { type: "pointer"; x: number; y: number }
   | { type: "pointer:off" }
@@ -351,6 +367,10 @@ export type ServerMessage =
   | { type: "command:result"; seq: number; ok: boolean; value?: unknown; error?: string }
   | { type: "remote:state"; state: RemoteState }
   | { type: "remote:bye"; reason: string }
+  /** To presenting windows: the code a QR shows now, good for `ttl` ms; `paired` when it replaces one a phone just used. */
+  | { type: "remote:code"; code: string; ttl: number; paired?: boolean }
+  /** To a phone that paired: what it says in its hello to come back. */
+  | { type: "remote:paired"; lease: string }
   | { type: "pong" };
 
 export const REACTIONS = ["👏", "🔥", "❤️", "😂", "🤯", "👀", "🙋", "💡"] as const;
