@@ -21,3 +21,7 @@ Slides compiled this way cannot `import`: they use the engine's components. Deck
 `kadal-deck build` do not need this package.
 
 AGPL-3.0-or-later.
+
+**Not on npm yet** (`"private": true`): a new @kadal package needs the one-time npm bootstrap
+(stage a placeholder, add the trusted publisher, publish). Hosts build it from this repo
+(`bun run build` here → `dist/`) until then; remove `private` once bootstrapped.
