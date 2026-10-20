@@ -96,6 +96,11 @@ export interface Presence {
   pace: { slower: number; faster: number; total: number };
   /** Hands raised. */
   hands: number;
+  /**
+   * Phone remotes connected (presenter sockets that said `client: "remote"` in their hello). They
+   * are not viewers and do not make `presenter` true. Absent in older rooms.
+   */
+  remotes?: number;
 }
 
 /**
@@ -156,8 +161,133 @@ export const EMPTY_ROOM: RoomState = {
   reactions: {},
 };
 
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * THE PHONE REMOTE  —  commands from a phone, run in the presenting window
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * A remote is a presenter-role socket (it holds the presenter's ticket) whose hello says
+ * `client: "remote"` and carries no position, so joining never moves the room. It sends
+ * `command`s; the room hands each one to the presenter's OTHER sockets — never to a viewer — as a
+ * ServerMessage `command` stamped with `from`, the sender's connection id. The presenting window
+ * runs it through its command registry (core/commands.ts, origin "remote") and answers with
+ * `command:result` addressed `to` that id; the room delivers the answer to that one socket only,
+ * because `seq` is the sender's own counter and means nothing to anyone else. The presenting
+ * window pushes `remote:state` whenever something a remote shows changes, and the room relays it
+ * to the remotes only. `remote:kick` (presenter windows only) closes every remote socket after a
+ * `remote:bye`.
+ *
+ * The same messages travel over the dev server's relay when there is no room (src/remote/relay.ts).
+ */
+export interface RemoteState {
+  slide: {
+    index: number;
+    h: number;
+    v: number;
+    id: string | null;
+    title: string | null;
+    click: number;
+    /** Click steps on this slide. */
+    clicks: number;
+  };
+  total: number;
+  blackout: boolean;
+  overview: boolean;
+  pointer: boolean;
+  spotlight: boolean;
+  drawing: boolean;
+  hints: boolean;
+  zoomed: boolean;
+  colorScheme: "light" | "dark";
+  theme: string;
+  /** When the presenter's timer started, epoch ms; null when it is not running. */
+  startedAt: number | null;
+}
+
+/** A command id: dotted words, "nav.next", "present.laserAt". */
+const COMMAND_ID = /^[a-z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*){1,3}$/;
+/** Parameters bigger than this are not a remote's (a stroke goes point by point). */
+export const MAX_COMMAND_PARAMS = 4096;
+/** A result value bigger than this is sent without its value. */
+export const MAX_RESULT_VALUE = 16_384;
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v);
+const isSeq = (v: unknown): v is number =>
+  typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 2_147_483_647;
+const jsonSize = (v: unknown) => {
+  try {
+    return JSON.stringify(v ?? null).length;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+};
+
+/** A `command` as a remote may send it, or null: a dotted id, a seq, small object params. */
+export function parseCommand(m: unknown): { id: string; params: Record<string, unknown>; seq: number } | null {
+  if (!isRecord(m) || m.type !== "command") return null;
+  if (typeof m.id !== "string" || m.id.length > 64 || !COMMAND_ID.test(m.id)) return null;
+  if (!isSeq(m.seq)) return null;
+  if (m.params !== undefined && !isRecord(m.params)) return null;
+  if (jsonSize(m.params) > MAX_COMMAND_PARAMS) return null;
+  return { id: m.id, params: (m.params as Record<string, unknown> | undefined) ?? {}, seq: m.seq };
+}
+
+/** A `command:result`, or null. `to` is required from a presenting window, absent once delivered. */
+export function parseCommandResult(
+  m: unknown,
+): { to?: string; seq: number; ok: boolean; value?: unknown; error?: string } | null {
+  if (!isRecord(m) || m.type !== "command:result") return null;
+  if (!isSeq(m.seq) || typeof m.ok !== "boolean") return null;
+  if (m.to !== undefined && (typeof m.to !== "string" || m.to.length > 64)) return null;
+  if (m.error !== undefined && typeof m.error !== "string") return null;
+  const out: { to?: string; seq: number; ok: boolean; value?: unknown; error?: string } = {
+    seq: m.seq,
+    ok: m.ok,
+  };
+  if (m.to !== undefined) out.to = m.to as string;
+  if (m.error !== undefined) out.error = (m.error as string).slice(0, 500);
+  if (m.value !== undefined && jsonSize(m.value) <= MAX_RESULT_VALUE) out.value = m.value;
+  return out;
+}
+
+/** A `remote:state`'s state, or null when it is not one. */
+export function parseRemoteState(m: unknown): RemoteState | null {
+  if (!isRecord(m) || m.type !== "remote:state" || !isRecord(m.state)) return null;
+  const s = m.state;
+  const slide = s.slide;
+  if (!isRecord(slide)) return null;
+  for (const k of ["index", "h", "v", "click", "clicks"])
+    if (!isSeq(slide[k])) return null;
+  if (!isSeq(s.total)) return null;
+  for (const k of ["blackout", "overview", "pointer", "spotlight", "drawing", "hints", "zoomed"])
+    if (typeof s[k] !== "boolean") return null;
+  if (s.startedAt !== null && typeof s.startedAt !== "number") return null;
+  if (jsonSize(s) > MAX_COMMAND_PARAMS) return null;
+  return s as unknown as RemoteState;
+}
+
 export type ClientMessage =
-  | { type: "hello"; role: Role; viewer: string; name?: string; position?: RoomPosition }
+  | {
+      type: "hello";
+      role: Role;
+      viewer: string;
+      name?: string;
+      position?: RoomPosition;
+      /** "remote": a phone remote (no position; not counted as the presenter). */
+      client?: "remote";
+    }
+  | { type: "command"; id: string; params?: Record<string, unknown>; seq: number }
+  | {
+      type: "command:result";
+      to: string;
+      seq: number;
+      ok: boolean;
+      value?: unknown;
+      error?: string;
+    }
+  | { type: "remote:state"; state: RemoteState }
+  | { type: "remote:kick" }
   | { type: "nav"; position: RoomPosition }
   | { type: "pointer"; x: number; y: number }
   | { type: "pointer:off" }
@@ -210,6 +340,17 @@ export type ServerMessage =
   | { type: "draw:clear"; slide: string }
   | { type: "confetti" }
   | { type: "error"; message: string }
+  | {
+      type: "command";
+      id: string;
+      params?: Record<string, unknown>;
+      seq: number;
+      /** The sending socket's connection id, for the answer's `to`. */
+      from: string;
+    }
+  | { type: "command:result"; seq: number; ok: boolean; value?: unknown; error?: string }
+  | { type: "remote:state"; state: RemoteState }
+  | { type: "remote:bye"; reason: string }
   | { type: "pong" };
 
 export const REACTIONS = ["👏", "🔥", "❤️", "😂", "🤯", "👀", "🙋", "💡"] as const;

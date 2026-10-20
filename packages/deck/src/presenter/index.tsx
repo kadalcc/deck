@@ -1,4 +1,4 @@
-import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
+import { type ComponentType, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
@@ -28,6 +28,19 @@ import { HintLayer } from "../react/Hints.tsx";
 import { ThemeMenu } from "../react/ThemeMenu.tsx";
 import { loadSlide, SlideFrame } from "../react/SlideFrame.tsx";
 import { Stage } from "../react/Stage.tsx";
+import { useFit } from "../react/fit.ts";
+import {
+  expectedElapsed,
+  formatElapsed,
+  formatPace,
+  paceTone,
+  presenterClock,
+} from "../react/pacing.ts";
+import { RemoteHost } from "../remote/host.tsx";
+import { useNarrationOn } from "../react/NarrationGate.tsx";
+
+/** The narration bar is its own chunk, fetched when the presenter view opens on a deck with notes. */
+const Narration = lazy(() => import("../narrate/Narration.tsx"));
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -51,6 +64,7 @@ export function PresenterPage() {
   );
   const [mirror, setMirror] = useState(false);
   const [roomOpen, setRoomOpen] = useState(() => readItem("deck.presenter.room") !== "closed");
+  const narrate = useNarrationOn();
   useEffect(() => {
     writeItem("deck.presenter.layout", layout);
     writeItem("deck.presenter.room", roomOpen ? "open" : "closed");
@@ -100,6 +114,11 @@ export function PresenterPage() {
           <RoomPanel open={roomOpen} setOpen={setRoomOpen} />
         </aside>
       </main>
+      {narrate ? (
+        <Suspense fallback={null}>
+          <Narration />
+        </Suspense>
+      ) : null}
       <Toast />
       <HintLayer />
     </div>
@@ -113,8 +132,23 @@ interface Gate {
   ok: boolean;
   checking: boolean;
   error: string | null;
+  /** Whether a passcode can open it at all (a host may say none is set). */
+  passcode: boolean;
+  /** Where the deck's author signs in instead, when the host offers that (an http(s) URL). */
+  signIn: string | null;
   login: (passcode: string) => Promise<void>;
 }
+
+/** Only an http(s) link from the host is followed. */
+const safeLink = (v: unknown): string | null => {
+  if (typeof v !== "string") return null;
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+};
 
 function usePresenterGate(): Gate {
   const deck = useDeck();
@@ -124,7 +158,9 @@ function usePresenterGate(): Gate {
     required: boolean;
     checking: boolean;
     error: string | null;
-  }>({ ok: false, required: !!api, checking: !!api, error: null });
+    passcode: boolean;
+    signIn: string | null;
+  }>({ ok: false, required: !!api, checking: !!api, error: null, passcode: true, signIn: null });
   const url = `${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/presenter`;
   // A ticket that arrives later (the passcode form, another window) is asked about again.
   const ticket = useStore(presenterTicket);
@@ -136,11 +172,34 @@ function usePresenterGate(): Gate {
     // credential there; on an ordinary same-origin host the default still sends the cookie.
     fetch(url, { headers: ticketHeaders() })
       .then(async (r) => {
-        const j = (await r.json().catch(() => ({}))) as { ok?: boolean; required?: boolean };
+        const j = (await r.json().catch(() => ({}))) as {
+          ok?: boolean;
+          required?: boolean;
+          passcode?: boolean;
+          signIn?: unknown;
+        };
         if (alive)
-          setState({ ok: !!j.ok, required: j.required !== false, checking: false, error: null });
+          setState({
+            ok: !!j.ok,
+            required: j.required !== false,
+            checking: false,
+            error: null,
+            passcode: j.passcode !== false,
+            signIn: safeLink(j.signIn),
+          });
       })
-      .catch(() => alive && setState({ ok: true, required: false, checking: false, error: null }));
+      .catch(
+        () =>
+          alive &&
+          setState({
+            ok: true,
+            required: false,
+            checking: false,
+            error: null,
+            passcode: true,
+            signIn: null,
+          }),
+      );
     return () => {
       alive = false;
     };
@@ -154,7 +213,7 @@ function usePresenterGate(): Gate {
     }).catch(() => null);
     if (r?.ok) {
       const j = (await r.json().catch(() => ({}))) as { ticket?: unknown };
-      setState({ ok: true, required: true, checking: false, error: null });
+      setState((s) => ({ ...s, ok: true, required: true, checking: false, error: null }));
       // A host that answers with a ticket: keep it and carry on (the room reconnects as presenter).
       // One that only set a cookie: reload, so every request from here on carries it.
       if (isTicket(j.ticket)) setTicket(j.ticket);
@@ -173,6 +232,24 @@ function usePresenterGate(): Gate {
 
 function PresenterLogin({ gate }: { gate: Gate }) {
   const [code, setCode] = useState("");
+  const author = gate.signIn ? (
+    <a className="deck-gate-signin" href={gate.signIn}>
+      Sign in as the author
+    </a>
+  ) : null;
+  if (!gate.passcode)
+    return (
+      <div className="deck-gate">
+        <div className="deck-gate-card">
+          <h1>Presenter</h1>
+          <p>
+            This deck has no presenter passcode yet. Sign in as its author (with Google or GitHub) to
+            present it — you can set a passcode there for next time.
+          </p>
+          {author ?? <p className="deck-gate-error">Ask the deck's owner how to present it.</p>}
+        </div>
+      </div>
+    );
   return (
     <div className="deck-gate">
       <form
@@ -183,7 +260,8 @@ function PresenterLogin({ gate }: { gate: Gate }) {
       >
         <h1>Presenter</h1>
         <p>
-          This deck's presenter view is protected. Enter the passcode set for the deck on the host.
+          This deck's presenter view is protected. Enter its presenter passcode
+          {gate.signIn ? ", or sign in as its author." : "."}
         </p>
         <input
           type="password"
@@ -197,31 +275,10 @@ function PresenterLogin({ gate }: { gate: Gate }) {
           {gate.checking ? "Checking…" : "Open the presenter view"}
         </button>
         {gate.error ? <p className="deck-gate-error">{gate.error}</p> : null}
+        {author ? <p className="deck-gate-or">or {author}</p> : null}
       </form>
     </div>
   );
-}
-
-/** Fit the authored canvas into a box: scale to the shorter side, centre the rest. */
-function useFit(box: React.RefObject<HTMLDivElement | null>, width: number, height: number) {
-  const [fit, setFit] = useState({ scale: 0.2, left: 0, top: 0 });
-  useEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const measure = () => {
-      const scale = Math.min(el.clientWidth / width, el.clientHeight / height);
-      setFit({
-        scale,
-        left: (el.clientWidth - width * scale) / 2,
-        top: (el.clientHeight - height * scale) / 2,
-      });
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [box, width, height]);
-  return fit;
 }
 
 /* ── the pieces ─────────────────────────────────────────────────────────── */
@@ -240,7 +297,6 @@ function LiveStage() {
 /** The real stage, scaled into a box: it is the same runtime the audience sees. */
 function ScaledStage() {
   const deck = useDeck();
-  const live = useLiveOptional();
   const box = useRef<HTMLDivElement>(null);
   const fit = useFit(box, deck.config.width, deck.config.height);
   const { h, v } = useNav((s) => ({ h: s.h, v: s.v }));
@@ -257,14 +313,9 @@ function ScaledStage() {
       >
         <BackgroundLayer bg={bg} active />
         <PresenterInnerStage />
-        {live ? (
-          <>
-            <DrawingLayer inCanvas />
-            <PointerLayer inCanvas />
-          </>
-        ) : (
-          <DrawingLayer inCanvas />
-        )}
+        {/* Without a room this window's laser was nowhere to be seen; a phone remote aims it here. */}
+        <DrawingLayer inCanvas />
+        <PointerLayer inCanvas />
         <ConfettiLayer inCanvas />
       </div>
     </div>
@@ -474,6 +525,11 @@ function PresenterTimer() {
     writeItem(startKey, String(at), "session");
     setStart(at);
   };
+  // The phone remote shows the same clock.
+  useEffect(() => {
+    presenterClock.set(start);
+    return () => presenterClock.set(null);
+  }, [start]);
   const [now, setNow] = useState(Date.now());
   const nav = useNav((s) => ({ h: s.h, v: s.v }));
   useEffect(() => {
@@ -481,35 +537,17 @@ function PresenterTimer() {
     return () => clearInterval(t);
   }, []);
   const elapsed = Math.floor((now - start) / 1000);
-  const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
-  const flat = N.progressOf({ ...N.initialNav(), ...nav }, deck.columns) * (total - 1);
-  // Expected elapsed at this slide, from per-slide timings or the total time.
-  let expected: number | null = null;
-  if (deck.config.totalTime) expected = (deck.config.totalTime / total) * flat;
-  else if (deck.config.defaultTiming) {
-    let sum = 0;
-    let i = 0;
-    for (const c of deck.columns)
-      for (let v = 0; v < c.slides.length; v++) {
-        if (i >= flat) break;
-        sum += deck.options.get(navKey(c.h, v))?.timing ?? deck.config.defaultTiming;
-        i++;
-      }
-    expected = sum;
-  }
+  const expected = expectedElapsed(deck, nav);
   const pace = expected === null ? null : elapsed - expected;
-  const tone = pace === null ? "" : pace > 30 ? "is-behind" : pace < -30 ? "is-ahead" : "is-ok";
   return (
     <button
       type="button"
-      className={["deck-presenter-timer", tone].join(" ")}
+      className={["deck-presenter-timer", paceTone(pace)].join(" ")}
       onClick={() => restart(Date.now())}
       title="Click to reset"
     >
-      {pad(Math.floor(elapsed / 3600))}:{pad(Math.floor((elapsed % 3600) / 60))}:{pad(elapsed % 60)}
-      {pace !== null ? (
-        <small>{pace > 0 ? `+${Math.round(pace / 60)}m` : `${Math.round(pace / 60)}m`}</small>
-      ) : null}
+      {formatElapsed(elapsed)}
+      {pace !== null ? <small>{formatPace(pace)}</small> : null}
     </button>
   );
 }
@@ -723,6 +761,7 @@ function PresenterTools({
       >
         <Icon name="link" /> Link
       </button>
+      <RemoteHost />
       <a
         className="deck-presenter-link"
         href={`${deck.base}stats${ticket ? withTicket("") : ""}`}

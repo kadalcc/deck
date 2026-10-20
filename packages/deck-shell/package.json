@@ -1,0 +1,57 @@
+{
+  "name": "@kadal/deck-shell",
+  "version": "0.2.2",
+  "private": true,
+  "description": "The prebuilt Kadal Deck shell: one static page that runs any deck from its deck.mdx, compiled in the browser. For hosts and editors; decks you build with the CLI do not need it.",
+  "keywords": [
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "mdx",
+    "shell"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/pmithunish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/deck-shell"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    "./*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "prepack": "vite build"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/node": "^25.9.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.0"
+  }
+}

@@ -29,6 +29,11 @@ export interface RoomClientOptions {
    * viewer's pass from the host's verification page (`pass`). See live/ticket.ts.
    */
   credentials?: () => Record<string, string>;
+  /**
+   * "remote": a phone remote (src/remote). Its hello carries no position — a presenter socket's
+   * hello sets the room's position, and a phone joining must not move the room.
+   */
+  client?: "remote";
 }
 
 type Listener = (message: ServerMessage) => void;
@@ -111,13 +116,22 @@ export class RoomClient {
     ws.onopen = () => {
       this.attempts = 0;
       this.status.set("open");
-      this.raw({
-        type: "hello",
-        role: this.options.role,
-        viewer: this.options.viewer,
-        name: this.options.name,
-        position: this.position,
-      });
+      this.raw(
+        this.options.client === "remote"
+          ? {
+              type: "hello",
+              role: this.options.role,
+              viewer: this.options.viewer,
+              client: "remote",
+            }
+          : {
+              type: "hello",
+              role: this.options.role,
+              viewer: this.options.viewer,
+              name: this.options.name,
+              position: this.position,
+            },
+      );
       for (const m of this.queue.splice(0)) this.raw(m);
       this.heartbeat = setInterval(() => this.raw({ type: "ping" }), 25_000);
     };
@@ -195,6 +209,16 @@ export class RoomClient {
   send(m: ClientMessage) {
     if (this.ws?.readyState === WebSocket.OPEN) this.raw(m);
     else if (m.type !== "pointer" && m.type !== "presence" && m.type !== "ping") this.queue.push(m);
+  }
+
+  /**
+   * Send now or not at all: for what is stale a moment later (a remote's "next", a laser move),
+   * which must not pile up while offline and all fire on reconnect.
+   */
+  sendNow(m: ClientMessage): boolean {
+    if (this.ws?.readyState !== WebSocket.OPEN) return false;
+    this.raw(m);
+    return true;
   }
 
   on(listener: Listener): () => void {

@@ -14,6 +14,7 @@ import { flushSync } from "react-dom";
 
 import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
+import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
 import { actionFor, isEditable, type KeyAction } from "../core/keyboard.ts";
 import { computeLayout, type Layout, toStage } from "../core/layout.ts";
 import {
@@ -35,7 +36,7 @@ import { readItem, writeItem } from "../core/storage.ts";
 import { createStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
 import { createWindowBus, type WindowBus } from "../core/windows.ts";
-import { captureTicket, withTicket } from "../live/ticket.ts";
+import { captureTicket, presenterTicket, withTicket } from "../live/ticket.ts";
 import { Backgrounds } from "./Backgrounds.tsx";
 import { Chrome } from "./chrome.tsx";
 import {
@@ -47,10 +48,12 @@ import {
   type ViewMode,
 } from "./context.ts";
 import { Lightbox } from "./Lightbox.tsx";
+import { NarrationGate } from "./NarrationGate.tsx";
 import { Overview } from "./Overview.tsx";
 import { PrintView } from "./PrintView.tsx";
 import { ScrollView } from "./ScrollView.tsx";
 import { Stage } from "./Stage.tsx";
+import { useBuiltinCommands } from "./commands.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 
@@ -68,6 +71,7 @@ import { ZoomLayer } from "./Zoom.tsx";
  *   /<slug>/join           the audience page   (follow along, react, ask, vote)
  *   /<slug>/notes          every note on one page
  *   /<slug>/stats          the deck's numbers
+ *   /<slug>/remote         the phone remote    (#ticket=… hosted, ?pair=CODE on `kadal-deck dev`)
  *
  * Extra pages plug in through `pages` so the presenter, audience and stats modules stay optional
  * imports; a deck that never goes live ships without them.
@@ -81,6 +85,11 @@ export interface DeckProps {
   pages?: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>;
   /** Wraps the runtime (the live provider, a theme provider). */
   children?: ReactNode;
+  /**
+   * The URL path the deck lives under, e.g. "/@you/talk/". Defaults to Vite's `BASE_URL`; a deck
+   * that was not built for its address (the prebuilt shell) works it out and passes it here.
+   */
+  base?: string;
 }
 
 function baseOf(): string {
@@ -97,6 +106,7 @@ function modeFromLocation(base: string): ViewMode {
   if (first === "join" || first === "audience") return "audience";
   if (first === "notes") return "notes";
   if (first === "stats") return "stats";
+  if (first === "remote") return "remote";
   if (parseFlags(window.location.search).print) return "print";
   return "play";
 }
@@ -107,8 +117,12 @@ export function Deck({
   components = {},
   pages = {},
   children,
+  base: baseIn,
 }: DeckProps) {
-  const base = useMemo(baseOf, []);
+  const base = useMemo(
+    () => (baseIn ? (baseIn.endsWith("/") ? baseIn : `${baseIn}/`) : baseOf()),
+    [baseIn],
+  );
   const slugFromBase = base.replace(/^\/|\/$/g, "");
   const config = useMemo(() => {
     // Before anything reads the fragment: a presenter ticket rides in it (live/ticket.ts).
@@ -197,6 +211,7 @@ export function Deck({
         zoom: null,
         drawing: false,
         pointer: false,
+        laser: null,
         spotlight: false,
         colorScheme:
           stored(config, "scheme", ["light", "dark"]) ?? resolveScheme(config.colorScheme),
@@ -394,6 +409,7 @@ export function Deck({
     };
   }, [nav, ui, columns, config, options, base, sync, projector, projectorWindow, related]);
 
+  const commands = useMemo(() => createCommandRegistry(), []);
   const terms = useMemo(() => createStore<TermReveal | null>(null), []);
   const glossary = useMemo(
     () => new Map((manifest.glossary ?? []).map((e) => [e.id, e])),
@@ -413,6 +429,8 @@ export function Deck({
       base,
       components,
       actions,
+      commands,
+      ticket: () => presenterTicket.get(),
       windowId,
       sync,
       isPresenter: mode === "presenter",
@@ -432,6 +450,7 @@ export function Deck({
       base,
       components,
       actions,
+      commands,
       windowId,
       sync,
       projector,
@@ -440,6 +459,7 @@ export function Deck({
     ],
   );
 
+  useBuiltinCommands(runtime);
   useDeckEffects(runtime, flags, wantedAtLoad, related);
   useTermEffects(runtime);
   // A share window the viewer closed themselves: the button that opened it stops looking lit.
@@ -515,6 +535,7 @@ function PlayView() {
         </>
       )}
       <Chrome />
+      <NarrationGate />
       <Lightbox />
     </>
   );
@@ -674,7 +695,7 @@ function useDeckEffects(
 
   // Hash ↔ navigation.
   useEffect(() => {
-    if (!config.hash || mode === "print") return;
+    if (!config.hash || mode === "print" || mode === "remote") return;
     const write = (s: N.NavState) => {
       const meta = columns[s.h]?.slides[s.v];
       const id = meta && typeof meta.frontmatter.id === "string" ? meta.frontmatter.id : null;
@@ -758,7 +779,15 @@ function useDeckEffects(
   useEffect(() => {
     // A projector takes no input: a key pressed on a window that is only being looked at — the one
     // being shared on a call — must not move it off the presenter's slide.
-    if (!config.keyboard || deck.projector || mode === "print" || mode === "audience") return;
+    // The remote is a phone: its keys (if any) are its own buttons', not the deck's.
+    if (
+      !config.keyboard ||
+      deck.projector ||
+      mode === "print" ||
+      mode === "audience" ||
+      mode === "remote"
+    )
+      return;
     let pendingG = 0;
     const onKey = (e: KeyboardEvent) => {
       if (isEditable(e.target)) return;
@@ -816,62 +845,11 @@ function useDeckEffects(
         actions.togglePause(false);
         return;
       }
+      // Every key runs a command, so a key, a button, the phone remote and an agent do the same thing.
+      const command = KEY_COMMANDS[action];
+      if (!command) return;
       e.preventDefault();
-      switch (action) {
-        case "next":
-        case "prev":
-        case "nextSlide":
-        case "prevSlide":
-        case "left":
-        case "right":
-        case "up":
-        case "down":
-        case "first":
-        case "last":
-          actions[action]();
-          break;
-        case "overview":
-          actions.toggleOverview();
-          break;
-        case "fullscreen":
-          actions.toggleFullscreen();
-          break;
-        case "pause":
-          actions.togglePause();
-          break;
-        case "presenter":
-          if (mode === "play") actions.openPresenter();
-          break;
-        case "help":
-          actions.toggleHelp();
-          break;
-        case "jump":
-          actions.toggleJump(true);
-          break;
-        case "search":
-          actions.toggleSearch(true);
-          break;
-        case "autoSlide":
-          actions.toggleAutoSlide();
-          break;
-        case "draw":
-          actions.toggleDrawing();
-          break;
-        case "pointer":
-          actions.togglePointer();
-          break;
-        case "colorScheme":
-          actions.toggleColorScheme();
-          break;
-        case "hints":
-          actions.toggleHints();
-          break;
-        case "themeMenu":
-          actions.toggleThemeMenu();
-          break;
-        default:
-          break;
-      }
+      void deck.commands.run(command, {}, "keyboard");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -1063,8 +1041,9 @@ function useDeckEffects(
   }, [config, nav, actions, mode, deck.options, deck.projector]);
 
   // Cross-window sync: the presenter window and the play window mirror each other (core/windows.ts).
+  // A phone remote shows the presenter's slide; it is nobody's window to follow.
   useEffect(() => {
-    if (typeof window === "undefined" || mode === "print") return;
+    if (typeof window === "undefined" || mode === "print" || mode === "remote") return;
     const bus = createWindowBus<NavMessage>(config.slug || base);
     related.bus = bus;
     for (const child of related.children) bus.adopt(child);

@@ -385,6 +385,11 @@ export const ROUTES: RouteInfo[] = [
     path: "/<slug>/join",
     summary: "The audience page (also /audience): follow along, react, ask, vote.",
   },
+  {
+    path: "/<slug>/remote",
+    summary:
+      "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR: `remote#ticket=…` with a room, `remote?pair=CODE` on `kadal-deck dev`. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
+  },
   { path: "/<slug>/notes", summary: "Every speaker note on one page." },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
 ];
@@ -405,6 +410,10 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
     param: "?projector",
     summary:
       "A look-only window for a second screen or a call: follows the presenter, ignores input.",
+  },
+  {
+    param: "?narrate",
+    summary: "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
   },
   {
     param: "?at",
@@ -456,6 +465,12 @@ export const LIVE: LiveFeature[] = [
     components: ["Confetti", "Term"],
   },
   {
+    name: "Phone remote",
+    summary:
+      "The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). With a room it is a presenter socket holding the ticket; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).",
+    components: [],
+  },
+  {
     name: "Turning it on",
     summary:
       "`kadal-deck publish` gives a deck a room on deck.kadal.cc; self-hosted, set `live.api` (and run a room server against @kadal/deck/protocol). Offline decks render live components as placeholders.",
@@ -472,8 +487,9 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "dev",
-    usage: "kadal-deck dev [vite flags]",
-    summary: "The deck with live reload.",
+    usage: "kadal-deck dev [--https] [vite flags]",
+    summary:
+      "The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.",
     json: false,
   },
   {
@@ -532,6 +548,13 @@ export const CLI: CliCommand[] = [
     name: "publish",
     usage: "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--json]",
     summary: "Build and publish to a host; prints the URL.",
+    json: true,
+  },
+  {
+    name: "narrate",
+    usage: "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
+    summary:
+      "Bake the narration: every notes segment spoken by Kokoro into public/narration/ (MP3 or Opus with ffmpeg, else WAV) and public/narration.json; skips clips that exist. --setup installs kokoro-js.",
     json: true,
   },
   {
@@ -634,6 +657,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   lineNumbers: "Line numbers on every code block.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
   drawings: "Drawing: { enabled, persist, presenterOnly, syncAll }.",
+  narration:
+    'Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled ("auto" = when some slide has notes; false turns it off), engine ("auto" · "baked" · "kokoro" · "browser" · "silent"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: "estimate", "skip" or ms), model (Hugging Face id), dtype ("auto" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser\'s own voice reads. `kadal-deck narrate` bakes clips.',
   reactions: "Audience reactions in the live room.",
   qa: "Audience questions in the live room.",
   polls: "Polls and quizzes in the live room.",
@@ -829,6 +854,22 @@ export const SLIDE_KEYS = [
     type: S(),
     description: "Include the slides of another .mdx file here (a frontmatter-only slide).",
     example: "src: ./part-two.mdx",
+  },
+  {
+    name: "say",
+    type: S(),
+    description:
+      "What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent.",
+    example: 'say: "Here is the plan. [click] First, the data."',
+  },
+  {
+    name: "narration",
+    type: {
+      text: "false",
+      variants: [{ type: "boolean" as const }],
+    },
+    description:
+      "false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck.",
   },
 ];
 

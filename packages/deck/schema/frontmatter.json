@@ -274,6 +274,14 @@
         "src": {
           "type": "string",
           "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+        },
+        "say": {
+          "type": "string",
+          "description": "What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent."
+        },
+        "narration": {
+          "type": "boolean",
+          "description": "false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck."
         }
       },
       "additionalProperties": true
@@ -567,6 +575,83 @@
         "src": {
           "type": "string",
           "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+        },
+        "say": {
+          "type": "string",
+          "description": "What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent."
+        },
+        "narration": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "auto"
+                      ]
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "engine": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "kokoro",
+                    "browser",
+                    "baked",
+                    "silent"
+                  ]
+                },
+                "voice": {
+                  "type": "string"
+                },
+                "rate": {
+                  "type": "number"
+                },
+                "gap": {
+                  "type": "number"
+                },
+                "silent": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "estimate",
+                        "skip"
+                      ]
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "model": {
+                  "type": "string"
+                },
+                "dtype": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "fp32",
+                    "fp16",
+                    "q8",
+                    "q4",
+                    "q4f16"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled (\"auto\" = when some slide has notes; false turns it off), engine (\"auto\" · \"baked\" · \"kokoro\" · \"browser\" · \"silent\"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: \"estimate\", \"skip\" or ms), model (Hugging Face id), dtype (\"auto\" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser's own voice reads. `kadal-deck narrate` bakes clips."
         },
         "author": {
           "type": "string",

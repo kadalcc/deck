@@ -1325,6 +1325,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `magicMoveDuration` | `number` | `800` | Milliseconds per magic-move morph. |
 | `live` | `{ api: string \| null; room: string \| null; turnstile: string \| null; verify?: string \| null; }` | `{"api":"/api","room":null,"turnstile":null}` | Live room: the backend base (same origin `/api` on the host), or null for an offline deck. `verify` is a host page that checks a viewer (Turnstile) and sends them back with a pass — how a host that serves decks sandboxed keeps the check, since Turnstile can't run in an opaque origin. Set by the host (`window.__KADAL_DECK__.verify`), never by a deck. |
 | `drawings` | `{ enabled: boolean; persist: boolean; presenterOnly: boolean; syncAll: boolean; }` | `{"enabled":true,"persist":true,"presenterOnly":false,"syncAll":true}` | Drawing: { enabled, persist, presenterOnly, syncAll }. |
+| `narration` | `NarrationConfig \| boolean` | `{"enabled":"auto","engine":"auto","voice":"af_heart","rate":1,"gap":600,"silent":"estimate","model":"onnx-community/Kokoro-82M-v1.0-ONNX","dtype":"auto"}` | Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled ("auto" = when some slide has notes; false turns it off), engine ("auto" · "baked" · "kokoro" · "browser" · "silent"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: "estimate", "skip" or ms), model (Hugging Face id), dtype ("auto" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser's own voice reads. `kadal-deck narrate` bakes clips. |
 | `glossary` | `GlossaryOptions \| string \| false` | `{"src":"glossary.yaml","repeat":"first","headings":"fallback","skip":[],"delay":700,"sync":false}` | Term cards. The runtime reads `delay` and `sync`; the rest steers the compiler, which sees the headmatter only — set those there. `glossary: false` or a path are shorthands. Values: `false` |
 | `reactions` | `boolean` | `true` | Audience reactions in the live room. |
 | `qa` | `boolean` | `true` | Audience questions in the live room. |
@@ -1388,6 +1389,8 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `posterWait` | `number` |  | Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000). |
 | `terms` | `boolean \| { skip: string[] }` |  | false: link no glossary terms automatically on this slide; { skip: [GIS] } leaves some out. |
 | `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). |
+| `say` | `string` |  | What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent. |
+| `narration` | `false` |  | false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck. |
 
 ## Keyboard
 
@@ -1416,12 +1419,14 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `Ctrl Z` — Undo the last stroke
 - `D` — Dark or light
 - `T` — Theme and light or dark
+- `R` — Read the notes aloud and turn the pages (narration), or pause it
 
 ## Routes
 
 - `/<slug>/` — The deck. `#/h/v/click` or `#/<slide-id>` addresses a slide and step.
 - `/<slug>/presenter` — Presenter view: current + next slide, notes with click markers, timer, tools, the room panel.
 - `/<slug>/join` — The audience page (also /audience): follow along, react, ask, vote.
+- `/<slug>/remote` — The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR: `remote#ticket=…` with a room, `remote?pair=CODE` on `kadal-deck dev`. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.
 - `/<slug>/notes` — Every speaker note on one page.
 - `/<slug>/stats` — Views, dwell per slide, sessions, questions, reactions.
 
@@ -1432,6 +1437,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `?presenter` — Open as presenter.
 - `?embedded` — Embedded mode: no global key handling.
 - `?projector` — A look-only window for a second screen or a call: follows the presenter, ignores input.
+- `?narrate` — Show the narration bar on the deck itself, to rehearse on the main screen (R does too).
 - `?at` — Marks a link as being ABOUT its slide (share links): lands there instead of following.
 
 ## The live room
@@ -1444,12 +1450,13 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - **Quizzes** — Timed questions with points for speed and a leaderboard. (`<Quiz>`, `<Leaderboard>`)
 - **Pace and hands** — Slower/faster feedback and raised hands in the presenter's room panel. (`<Pace>`)
 - **Shared ink** — The presenter's drawings, confetti and shared term cards reach every screen. (`<Confetti>`, `<Term>`)
+- **Phone remote** — The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). With a room it is a presenter socket holding the ticket; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).
 - **Turning it on** — `kadal-deck publish` gives a deck a room on deck.kadal.cc; self-hosted, set `live.api` (and run a room server against @kadal/deck/protocol). Offline decks render live components as placeholders.
 
 ## The CLI
 
 - `kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun]` — Scaffold a deck (non-interactive). `--json`
-- `kadal-deck dev [vite flags]` — The deck with live reload.
+- `kadal-deck dev [--https] [vite flags]` — The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.
 - `kadal-deck build [vite flags]` — dist/ for any static host.
 - `kadal-deck check [--json] [--no-compile]` — Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--json`
 - `kadal-deck info [topic] [--search q] [--json]` — Print the catalog: components, layouts, backgrounds, frontmatter… `--json`
@@ -1459,6 +1466,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `kadal-deck logout [--json]` — Forget the saved token. `--json`
 - `kadal-deck whoami [--json]` — Who is signed in (exit 3 when nobody). `--json`
 - `kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--json]` — Build and publish to a host; prints the URL. `--json`
+- `kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]` — Bake the narration: every notes segment spoken by Kokoro into public/narration/ (MP3 or Opus with ffmpeg, else WAV) and public/narration.json; skips clips that exist. --setup installs kokoro-js. `--json`
 - `kadal-deck mcp [--dir path] [--allow-outside]` — A Model Context Protocol server on stdio, for AI agents.
 
 ## Exit codes

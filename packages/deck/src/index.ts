@@ -82,6 +82,19 @@ export {
 } from "./glossary/model.ts";
 export { closeTerm, openTerm } from "./react/terms.ts";
 export { KEY_BINDINGS, type KeyAction } from "./core/keyboard.ts";
+export {
+  type CommandEvent,
+  type CommandGroup,
+  type CommandInfo,
+  type CommandOrigin,
+  type CommandRegistry,
+  type CommandResult,
+  type CommandSpec,
+  createCommandRegistry,
+  KEY_COMMANDS,
+  paramsSchema,
+} from "./core/commands.ts";
+export { cmd, deckState, useCommand, useCommandList } from "./react/commands.ts";
 export { formatHash, parseHash, parseFlags } from "./core/hash.ts";
 export { createStore, useStore, type Store } from "./core/store.ts";
 export * as navigation from "./core/navigation.ts";

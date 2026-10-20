@@ -12,10 +12,12 @@ export default defineConfig({
     "compiler/index": "src/compiler/index.ts",
     "catalog/index": "src/catalog/index.ts",
     "authoring/index": "src/authoring/index.ts",
+    "runtime/index": "src/runtime/index.ts",
     "live/index": "src/live/index.ts",
     "live/protocol": "src/live/protocol.ts",
     "presenter/index": "src/presenter/index.tsx",
     "audience/index": "src/audience/index.tsx",
+    "remote/index": "src/remote/index.tsx",
     "backgrounds/index": "src/backgrounds/index.tsx",
     "renderers/index": "src/renderers/index.ts",
     "renderers/contract": "src/renderers/contract.ts",
@@ -23,6 +25,10 @@ export default defineConfig({
     "export/index": "src/export/index.ts",
     "cli/index": "src/cli/index.ts",
     "cli/bin": "src/cli/bin.ts",
+    // Spawned by `kadal-deck narrate` (cli/narrate.ts), never imported.
+    "cli/kokoro-child": "src/cli/kokoro-child.ts",
+    // Not imported by anything: the Vite plugin bundles it as a worker when kokoro-js is installed.
+    "narrate/kokoro.worker": "src/narrate/kokoro.worker.ts",
   },
   format: "esm",
   platform: "neutral",

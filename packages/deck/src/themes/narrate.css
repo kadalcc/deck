@@ -1,0 +1,161 @@
+/* ── narration bar ───────────────────────────────────────────────────────────
+   The presenter view's bottom row, and (behind ?narrate or R) a dock over the deck. Built from
+   the deck's tokens only, so every theme and both schemes dress it. */
+.deck-narration {
+  --deck-narration-fg: var(--deck-fg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--deck-border);
+  background: color-mix(in oklab, var(--deck-bg) 94%, var(--deck-fg));
+  color: var(--deck-narration-fg);
+  font: 13px/1.3 var(--deck-body-font);
+}
+.deck-narration-dock {
+  position: absolute;
+  z-index: 50;
+  /* Clear of the theme pill (bottom left) and the arrows (bottom right). */
+  left: 16px;
+  right: 168px;
+  bottom: 56px;
+  max-width: 1180px;
+}
+.deck-narration-dock .deck-narration {
+  border: 1px solid var(--deck-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+@media (max-width: 720px) {
+  .deck-narration-dock {
+    right: 16px;
+    bottom: 148px;
+  }
+}
+.is-projector .deck-narration-dock {
+  display: none;
+}
+
+.deck-narration-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--deck-surface);
+  box-shadow: inset 0 0 0 1px var(--deck-border);
+  cursor: pointer;
+}
+.deck-narration-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--deck-accent);
+  opacity: 0.85;
+  transition: width 0.25s linear;
+  pointer-events: none;
+}
+.deck-narration-marker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 16px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: color-mix(in oklab, var(--deck-fg) 45%, transparent);
+  pointer-events: none;
+}
+.deck-narration-marker.is-silent {
+  background: color-mix(in oklab, var(--deck-fg) 20%, transparent);
+}
+.deck-narration-marker.is-current {
+  background: var(--deck-fg);
+  width: 3px;
+}
+.deck-narration-track:hover .deck-narration-marker {
+  pointer-events: auto;
+}
+
+.deck-narration-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.deck-narration-controls button,
+.deck-narration-controls select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.deck-narration-controls select {
+  max-width: 14em;
+}
+.deck-narration-controls button.is-on,
+.deck-narration-play {
+  background: var(--deck-accent) !important;
+  border-color: var(--deck-accent) !important;
+  color: var(--deck-bg) !important;
+}
+.deck-narration-controls .deck-icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.deck-narration-controls button:focus-visible,
+.deck-narration-controls select:focus-visible,
+.deck-narration-volume:focus-visible,
+.deck-narration-track:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+.deck-narration-time {
+  font: 12px var(--deck-mono-font);
+  font-variant-numeric: tabular-nums;
+  padding: 0 4px;
+}
+.deck-narration-status {
+  color: var(--deck-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22em;
+}
+.deck-narration-spacer {
+  flex: 1;
+}
+.deck-narration-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.deck-narration-label {
+  color: var(--deck-muted);
+  font-size: 12px;
+}
+.deck-narration-volume {
+  width: 84px;
+  accent-color: var(--deck-accent);
+}
+
+@media (max-width: 720px) {
+  .deck-narration-label,
+  .deck-narration-status {
+    display: none;
+  }
+  .deck-narration-spacer {
+    flex-basis: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-narration-fill {
+    transition: none;
+  }
+}

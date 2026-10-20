@@ -12,6 +12,7 @@
  *   kadal-deck logout                     forget the saved token
  *   kadal-deck whoami                     who and which workspace the token is for
  *   kadal-deck publish [--slug s] [--workspace handle] [--title t]
+ *   kadal-deck narrate [--voice v]        bake the notes as speech (Kokoro) into public/narration/
  *   kadal-deck mcp                        a Model Context Protocol server on stdio, for AI agents
  *
  * Every command but dev, build and mcp takes --json: one JSON object on stdout, everything else
@@ -41,6 +42,7 @@ export const HELP = `kadal-deck <command> [options]
 
   new <dir>   create a deck from the starter      --title <t> --yes --no-install --pm <npm|pnpm|yarn|bun>
   dev         run the deck locally with live reload (Vite flags pass through)
+              --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
   build       build the deck into dist/ (any static host can serve it)
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
@@ -55,6 +57,9 @@ export const HELP = `kadal-deck <command> [options]
   whoami      show the signed-in account and workspace
   publish     build and publish the deck; prints its URL
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
+  narrate     bake the narration: every notes segment spoken by Kokoro into public/narration/
+              --voice <id> (default af_heart)  --dtype <fp32|fp16|q8|q4|q4f16>  --force (redo all)
+              --setup  install kokoro-js into the deck first (an optional, ~400 MB dependency)
   mcp         serve the Model Context Protocol on stdio, for AI agents (Claude, Cursor, VS Code…)
               --allow-outside  let tools read and write outside --dir (off by default)
 
@@ -102,6 +107,13 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     host: { kind: "string" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
+  // Mirrors NARRATE_FLAGS in narrate.ts, which is imported only when the command runs.
+  narrate: {
+    voice: { kind: "string" },
+    dtype: { kind: "string" },
+    force: { kind: "boolean" },
+    setup: { kind: "boolean" },
+  },
 };
 
 /** Global options may come before the command (`kadal-deck -C talk check`); move them after it. */
@@ -189,9 +201,14 @@ async function run(
         positionals,
       } = parseArgs(rest, { dir: GLOBAL.dir! }, { passthrough: true });
       const dir = resolve(cwd, str(flags.dir) ?? ".");
+      // `dev --https`: Vite dropped its own flag, so the deck's plugin makes a certificate
+      // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
+      const https = command === "dev" && vite.includes("--https");
+      if (https) process.env.KADAL_DECK_HTTPS = "1";
+      const passed = vite.filter((a) => a !== "--https");
       await runVite(
         dir,
-        command === "build" ? ["build", ...positionals, ...vite] : [...positionals, ...vite],
+        command === "build" ? ["build", ...positionals, ...passed] : [...positionals, ...passed],
       );
       return EXIT.ok;
     }
@@ -272,6 +289,26 @@ async function run(
         });
       else say(formatDiagnostics(result, (f) => rel(project, f)));
       return result.ok ? EXIT.ok : EXIT.failed;
+    }
+    case "narrate": {
+      const { narrate, setupKokoro } = await import("./narrate.ts");
+      if (flags.setup) {
+        const { packageManager } = await setupKokoro(dir, json);
+        if (json) emit({ ok: true, setup: true, packageManager });
+        else say(`kokoro-js is installed. Now: kadal-deck narrate`);
+        return EXIT.ok;
+      }
+      const result = await narrate(
+        dir,
+        { voice: str(flags.voice), dtype: str(flags.dtype), force: flags.force === true },
+        say,
+      );
+      if (json) emit({ ok: true, ...result });
+      else
+        say(
+          `${result.made} made, ${result.skipped} already there (${result.segments} segments, ${result.voice}, ${result.format}). Index: ${result.index}`,
+        );
+      return EXIT.ok;
     }
     case "info":
       return info(positionals, flags, io);

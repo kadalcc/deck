@@ -7,8 +7,11 @@ import { DrawingLayer } from "../draw/DrawingLayer.tsx";
 import { roomIdOf } from "../core/model.ts";
 import { type DeckRuntime, useDeck } from "../react/context.ts";
 import { Icon } from "../components/bling.tsx";
+import { z } from "zod";
+import { useCommand } from "../react/commands.ts";
 import { useActions, useLayout, useNav, useUi } from "../react/hooks.ts";
 import { closeTerm, openTerm } from "../react/terms.ts";
+import { RemoteMirror } from "../remote/mirror.ts";
 import { Analytics } from "./analytics.tsx";
 import { RoomClient, viewerId } from "./client.ts";
 import { presenterTicket, viewerPass } from "./ticket.ts";
@@ -31,7 +34,8 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
   const api = deck.config.live.api;
   const room = roomIdOf(deck.config);
   const value = useMemo<LiveValue | null>(() => {
-    if (!api || deck.mode === "print") return null;
+    // The phone remote opens its own presenter socket (src/remote/link.ts); it is not a viewer.
+    if (!api || deck.mode === "print" || deck.mode === "remote") return null;
     const siteKey = deck.config.live.turnstile;
     const verify = deck.config.live.verify ?? null;
     const presenting = deck.mode === "presenter";
@@ -81,6 +85,8 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
           <>
             <DrawingLayer />
             <PointerLayer />
+            {/* The presenter view's phone remote reaches this screen through the window bus. */}
+            <RemoteMirror />
           </>
         ) : null}
       </>
@@ -286,6 +292,46 @@ export function PointerLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
   const remote = useStore(live?.client.state ?? OFFLINE_ROOM, (s) => s.pointer);
   const follow = useNav((s) => s.follow);
   const [local, setLocal] = useState<{ x: number; y: number } | null>(null);
+  const laser = useUi((s) => s.laser);
+
+  // Aimed by a command — the phone remote's gyro, an agent — rather than the mouse. Only the
+  // window that presents owns the laser; everywhere else shows the room's.
+  const owns = role === "presenter" && !deck.projector && (inCanvas || deck.mode === "play" || !live);
+  useCommand(
+    owns
+      ? {
+          id: "present.laserAt",
+          title: "Aim the laser",
+          description:
+            "Point the laser at a spot on the slide (0–1 from the top-left) and switch it on. Repeat to move it; present.laserOff to stop.",
+          group: "present",
+          params: z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).strict(),
+          run: (p) => {
+            deck.ui.update((u) => ({ ...u, pointer: true, laser: { x: p.x, y: p.y } }));
+            return null;
+          },
+        }
+      : null,
+  );
+  useCommand(
+    owns
+      ? {
+          id: "present.laserOff",
+          title: "Laser off",
+          description: "Switch the laser (and the spotlight) off.",
+          group: "present",
+          run: () => {
+            deck.ui.update((u) => ({ ...u, pointer: false, spotlight: false, laser: null }));
+            return null;
+          },
+        }
+      : null,
+  );
+  useEffect(() => {
+    if (!owns || !laser || !on) return;
+    setLocal(laser);
+    live?.client.send({ type: "pointer", x: laser.x, y: laser.y });
+  }, [owns, laser, on, live]);
 
   useEffect(() => {
     if (!on || role !== "presenter") {
@@ -295,6 +341,8 @@ export function PointerLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
     }
     let last = 0;
     const onMove = (e: PointerEvent) => {
+      // The mouse takes the laser back from whatever was aiming it.
+      if (deck.ui.get().laser) deck.ui.update((u) => ({ ...u, laser: null }));
       // Normalised stage coordinates, from the layer's own rectangle (the canvas or the viewport).
       const rect = host.current?.getBoundingClientRect();
       const l = deck.layout.get();

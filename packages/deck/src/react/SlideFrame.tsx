@@ -56,8 +56,15 @@ export interface SlideFrameProps {
   children?: ReactNode;
 }
 
-const modules = new Map<number, Promise<{ default: ComponentType<Record<string, unknown>> }>>();
-const magicModules = new Map<number, Promise<{ default: MagicMoveData[] }>>();
+/**
+ * Keyed by the manifest entry's own loader, not by the slide's index: a deck compiled again in
+ * the same page (the runtime compiler — an editor's live preview) hands out new loaders for new
+ * content, and an index-keyed cache kept showing the slide as it was first compiled.
+ */
+type Loader = SlideMeta["load"];
+type MagicLoader = NonNullable<SlideMeta["loadMagic"]>;
+const modules = new WeakMap<Loader, Promise<{ default: ComponentType<Record<string, unknown>> }>>();
+const magicModules = new WeakMap<MagicLoader, Promise<{ default: MagicMoveData[] }>>();
 
 /**
  * A slide's module, once.
@@ -69,13 +76,13 @@ const magicModules = new Map<number, Promise<{ default: MagicMoveData[] }>>();
  * across a deploy, which is the usual one.
  */
 export function loadSlide(meta: SlideMeta) {
-  const cached = modules.get(meta.index);
+  const cached = modules.get(meta.load);
   if (cached) return cached;
   const pending = meta.load().catch((error: unknown) => {
-    if (modules.get(meta.index) === pending) modules.delete(meta.index);
+    if (modules.get(meta.load) === pending) modules.delete(meta.load);
     throw error;
-  });
-  modules.set(meta.index, pending);
+  }) as Promise<{ default: ComponentType<Record<string, unknown>> }>;
+  modules.set(meta.load, pending);
   return pending;
 }
 
@@ -104,14 +111,15 @@ function recoverFromStaleBuild() {
 }
 
 export function loadMagic(meta: SlideMeta) {
-  if (!meta.loadMagic) return null;
-  const cached = magicModules.get(meta.index);
+  const load = meta.loadMagic;
+  if (!load) return null;
+  const cached = magicModules.get(load);
   if (cached) return cached;
-  const pending = meta.loadMagic().catch((error: unknown) => {
-    if (magicModules.get(meta.index) === pending) magicModules.delete(meta.index);
+  const pending = load().catch((error: unknown) => {
+    if (magicModules.get(load) === pending) magicModules.delete(load);
     throw error;
   });
-  magicModules.set(meta.index, pending);
+  magicModules.set(load, pending);
   return pending;
 }
 

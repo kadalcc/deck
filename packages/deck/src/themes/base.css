@@ -8,6 +8,8 @@
 @import "./bling.css";
 @import "./sketch.css";
 @import "./glossary.css";
+@import "./remote.css";
+@import "./narrate.css";
 
 :root {
   --deck-bg: #ffffff;
@@ -1750,4 +1752,37 @@ pre.deck-code.has-lines .line::before {
   .deck-made-with {
     display: none;
   }
+}
+
+/* The runtime compiler: a slide that did not compile, and the prebuilt shell's own status. */
+.deck-compile-error {
+  display: grid;
+  gap: 0.6em;
+  align-content: center;
+  height: 100%;
+  padding: 6%;
+  font-family: var(--deck-font-mono, ui-monospace, monospace);
+  color: #b91c1c;
+}
+.deck-compile-error strong {
+  font-family: var(--deck-font-sans, system-ui, sans-serif);
+  font-size: 1.6em;
+}
+.deck-compile-error code {
+  opacity: 0.7;
+}
+.deck-compile-error pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.8em;
+  color: inherit;
+}
+.deck-shell-status {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: system-ui, sans-serif;
+  color: #475569;
+  text-align: center;
 }

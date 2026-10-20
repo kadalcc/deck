@@ -44,6 +44,7 @@
     "REFERENCE.md",
     "LICENSE",
     "LICENSING.md",
+    "THIRD_PARTY_NOTICES.md",
     "README.md",
     "tools/verify-island.mjs"
   ],
@@ -73,6 +74,10 @@
       "types": "./dist/authoring/index.d.ts",
       "import": "./dist/authoring/index.js"
     },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js"
+    },
     "./live": {
       "types": "./dist/live/index.d.ts",
       "import": "./dist/live/index.js"
@@ -88,6 +93,10 @@
     "./audience": {
       "types": "./dist/audience/index.d.ts",
       "import": "./dist/audience/index.js"
+    },
+    "./remote": {
+      "types": "./dist/remote/index.d.ts",
+      "import": "./dist/remote/index.js"
     },
     "./backgrounds": {
       "types": "./dist/backgrounds/index.d.ts",
@@ -169,13 +178,17 @@
     "react-dom": "^19.2.0",
     "vite": "^7.0.0 || ^8.0.0",
     "playwright": "^1.50.0",
-    "pptxgenjs": "^3.12.0"
+    "pptxgenjs": "^3.12.0",
+    "kokoro-js": "^1.2.1"
   },
   "peerDependenciesMeta": {
     "playwright": {
       "optional": true
     },
     "pptxgenjs": {
+      "optional": true
+    },
+    "kokoro-js": {
       "optional": true
     }
   }

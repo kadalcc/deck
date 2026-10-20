@@ -7,6 +7,7 @@ import "@kadal/deck/backgrounds";
 import { AudiencePage } from "@kadal/deck/audience";
 import { LiveProvider } from "@kadal/deck/live";
 import { NotesPage, PresenterPage, StatsPage } from "@kadal/deck/presenter";
+import { RemotePage } from "@kadal/deck/remote";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import manifest from "virtual:deck";
@@ -26,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
         audience: AudiencePage,
         notes: NotesPage,
         stats: StatsPage,
+        remote: RemotePage,
       }}
     >
       <LiveProvider />

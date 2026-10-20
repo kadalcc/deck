@@ -1,0 +1,590 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   The phone remote (/<slug>/remote) and the presenter view's pairing dialog.
+   Mobile first, one hand, big targets, dark whatever the deck's scheme: it is held in a dim room.
+   The slide inside keeps the deck's own theme and scheme (the presenter's).
+   ───────────────────────────────────────────────────────────────────────────── */
+.deck-remote {
+  --r-bg: #0b0b0f;
+  --r-panel: #16161c;
+  --r-raised: #1f1f27;
+  --r-fg: #f4f4f5;
+  --r-muted: #a1a1aa;
+  --r-line: rgba(255, 255, 255, 0.12);
+  --r-accent: #60a5fa;
+  --r-on: #2563eb;
+  --r-warn: #f59e0b;
+  --r-bad: #ef4444;
+  --r-good: #22c55e;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--r-bg);
+  color: var(--r-fg);
+  font:
+    16px/1.35 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+.deck-remote button,
+.deck-remote select,
+.deck-remote input[type="text"] {
+  font: inherit;
+  color: inherit;
+}
+.deck-remote button {
+  min-height: 48px;
+  border: 1px solid var(--r-line);
+  border-radius: 14px;
+  background: var(--r-panel);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+.deck-remote button:active {
+  background: var(--r-raised);
+  transform: scale(0.98);
+}
+.deck-remote button.is-on {
+  background: var(--r-on);
+  border-color: var(--r-on);
+  color: #fff;
+}
+.deck-remote button:disabled {
+  opacity: 0.55;
+}
+.deck-remote code {
+  font:
+    0.9em ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+  background: var(--r-raised);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+.deck-remote-muted {
+  color: var(--r-muted);
+}
+
+/* ── header ── */
+.deck-remote-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 10px 14px 8px;
+}
+.deck-remote-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.deck-remote-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.deck-remote-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.deck-remote-status i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--r-warn);
+}
+.deck-remote-status.is-open i {
+  background: var(--r-good);
+}
+.deck-remote-status.is-closed i {
+  background: var(--r-bad);
+}
+.deck-remote-status-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.deck-remote-status:not(.is-open) .deck-remote-status-text {
+  position: static;
+  width: auto;
+  height: auto;
+  clip: auto;
+  font-size: 12px;
+  color: var(--r-muted);
+}
+.deck-remote-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.deck-remote-count small,
+.deck-remote-timer small {
+  color: var(--r-muted);
+  font-size: 12px;
+  margin-left: 4px;
+}
+.deck-remote-timer {
+  font:
+    600 15px ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+}
+.deck-remote-timer.is-behind small {
+  color: var(--r-bad);
+}
+.deck-remote-timer.is-ahead small {
+  color: var(--r-accent);
+}
+.deck-remote-timer.is-alarm {
+  color: var(--r-warn);
+  animation: deck-remote-pulse 0.6s ease-in-out 6;
+}
+@keyframes deck-remote-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.deck-remote-slide-title {
+  grid-column: 1 / -1;
+  color: var(--r-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── body ── */
+.deck-remote-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+.deck-remote-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.deck-remote-stage {
+  --remote-stage-h: 42vh;
+  position: relative;
+  /* The slide's own shape, as wide as fits under the height cap: no letterbox. */
+  width: min(100%, calc(var(--remote-stage-h) * var(--remote-ratio, 1.7778)));
+  align-self: center;
+  flex: none;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+  outline: 1px solid var(--r-line);
+}
+.deck-remote-stage[data-mode="pen"] {
+  outline: 2px solid var(--r-warn);
+}
+.deck-remote-stage[data-mode="zoom"] {
+  outline: 2px solid var(--r-accent);
+}
+.deck-remote-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+}
+.deck-remote-pad {
+  position: absolute;
+  touch-action: none;
+  cursor: crosshair;
+}
+.deck-remote-dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow:
+    0 0 0 4px rgba(239, 68, 68, 0.35),
+    0 0 16px 4px rgba(239, 68, 68, 0.6);
+  pointer-events: none;
+}
+.deck-remote-ink {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.deck-remote-ink polyline {
+  fill: none;
+  stroke: var(--r-warn);
+  stroke-width: 4px;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.deck-remote-blackout,
+.deck-remote-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--r-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+.deck-remote-blackout {
+  background: rgba(0, 0, 0, 0.82);
+  color: var(--r-fg);
+  font-weight: 600;
+}
+.deck-remote-modes,
+.deck-remote-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.deck-remote-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.deck-remote-notes {
+  flex: 1;
+  min-height: 64px;
+  overflow: auto;
+  background: var(--r-panel);
+  border: 1px solid var(--r-line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.deck-remote-notes-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--r-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.deck-remote-notes-tools span {
+  flex: 1;
+}
+.deck-remote .deck-remote-notes-tools button {
+  min-height: 36px;
+  min-width: 44px;
+  font-size: 14px;
+}
+.deck-remote-notes p {
+  margin: 6px 0 2px;
+  white-space: pre-wrap;
+}
+
+/* ── controls ── */
+.deck-remote-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: none;
+}
+.deck-remote .deck-remote-air {
+  min-height: 60px;
+  border-style: dashed;
+  font-size: 15px;
+}
+.deck-remote .deck-remote-air.is-on {
+  border-style: solid;
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+.deck-remote-nav {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+  height: clamp(76px, 14vh, 128px);
+}
+.deck-remote .deck-remote-nav button {
+  height: 100%;
+  border-radius: 18px;
+}
+.deck-remote .deck-remote-next {
+  background: var(--r-on);
+  border-color: var(--r-on);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+}
+.deck-remote-tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 52px;
+  gap: 8px;
+}
+.deck-remote .deck-remote-tools button,
+.deck-remote .deck-remote-modes button {
+  padding: 0 6px;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* ── sheets, toast, instructions ── */
+.deck-remote-sheet {
+  position: absolute;
+  inset: auto 0 0 0;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  background: var(--r-panel);
+  border-top: 1px solid var(--r-line);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  overflow: auto;
+  z-index: 5;
+}
+.deck-remote-sheet header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.deck-remote-sheet header strong {
+  flex: 1;
+  font-size: 17px;
+}
+.deck-remote-sheet ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.deck-remote .deck-remote-sheet ol button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+.deck-remote-sheet ol b {
+  min-width: 2ch;
+  color: var(--r-muted);
+  font-variant-numeric: tabular-nums;
+}
+.deck-remote-sheet label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.deck-remote-sheet input[type="text"],
+.deck-remote-sheet select {
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--r-line);
+  background: var(--r-raised);
+}
+.deck-remote-sheet input[type="range"] {
+  width: 100%;
+  min-height: 32px;
+  accent-color: var(--r-accent);
+}
+.deck-remote-sheet .deck-remote-check {
+  flex-direction: row;
+  align-items: center;
+}
+.deck-remote-sheet .deck-remote-check input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--r-accent);
+}
+.deck-remote-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 20px);
+  max-width: calc(100% - 32px);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--r-raised);
+  border: 1px solid var(--r-line);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  z-index: 6;
+}
+.deck-remote-toast[data-on] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.deck-remote-instructions {
+  margin: auto;
+  max-width: 34rem;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  overflow: auto;
+}
+.deck-remote-instructions h1 {
+  font-size: 22px;
+  margin: 8px 0 0;
+}
+.deck-remote-instructions h2 {
+  font-size: 17px;
+  margin: 0;
+  color: var(--r-muted);
+}
+.deck-remote-instructions ol {
+  padding-left: 1.2em;
+  margin: 4px 0;
+}
+.deck-remote-instructions li {
+  margin: 6px 0;
+}
+
+/* Landscape on a phone: the slide and notes on the left, the buttons on the right. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .deck-remote-header {
+    grid-template-columns: 1fr auto auto;
+    padding: 6px 12px;
+  }
+  .deck-remote-slide-title {
+    grid-column: auto;
+    grid-row: 1;
+    grid-column-start: 2;
+    max-width: 30vw;
+  }
+  .deck-remote-body {
+    flex-direction: row;
+  }
+  .deck-remote-view {
+    flex: 1.35;
+  }
+  .deck-remote-stage {
+    --remote-stage-h: 52vh;
+  }
+  .deck-remote-controls {
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .deck-remote-nav {
+    height: clamp(64px, 26vh, 110px);
+  }
+}
+
+/* ── the presenter view's pairing dialog ── */
+.deck-remote-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+.deck-remote-dialog-panel {
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  font: 14px/1.45 var(--deck-body-font);
+}
+.deck-remote-dialog-panel header,
+.deck-remote-dialog-panel footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.deck-remote-dialog-panel header strong {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+}
+.deck-remote-dialog-panel p {
+  margin: 0;
+}
+.deck-remote-dialog-panel .deck-muted {
+  color: var(--deck-muted);
+  font-size: 13px;
+}
+.deck-remote-dialog-panel button {
+  font: 13px var(--deck-body-font);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.deck-remote-dialog-panel button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.deck-remote-qr {
+  align-self: center;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+}
+.deck-remote-problem {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--deck-surface);
+}
+.deck-remote-dialog-panel footer .deck-remote-count {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--deck-muted);
+}
+.deck-remote-dialog-panel .deck-remote-count i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--deck-muted);
+}
+.deck-remote-dialog-panel .deck-remote-count i.is-on {
+  background: #22c55e;
+}

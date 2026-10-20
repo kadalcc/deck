@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { z } from "zod";
 
 import { Icon } from "../components/bling.tsx";
 import { createStore, useStore } from "../core/store.ts";
@@ -7,6 +8,7 @@ import { EMPTY_ROOM, type RoomState, type Stroke } from "../live/protocol.ts";
 
 const noRoom = createStore<RoomState>(EMPTY_ROOM);
 import { useLiveOptional } from "../live/context.ts";
+import { useCommand } from "../react/commands.ts";
 import { useDeck } from "../react/context.ts";
 import { useActions, useLayout, useNav, useUi } from "../react/hooks.ts";
 import {
@@ -181,6 +183,149 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
     if (live && (deck.isPresenter || deck.config.drawings.syncAll))
       live.client.send({ type: "draw:clear", slide: slideKey });
   };
+
+  // The same pen as commands, for the phone remote and agents. Coordinates are 0–1 across the
+  // slide; strokes land in stage pixels like any other.
+  const at = (x: number, y: number): [number, number] => [
+    x * deck.config.width,
+    y * deck.config.height,
+  ];
+  const commit = (stroke: Stroke) => {
+    const done = { ...stroke, points: simplify(stroke.points) };
+    setLocal((d) => ({ ...d, [slideKey]: [...(d[slideKey] ?? []), done] }));
+    if (live && (deck.isPresenter || deck.config.drawings.syncAll))
+      live.client.send({ type: "draw", slide: slideKey, stroke: done });
+    return { id: done.id, points: done.points.length };
+  };
+  const style = z.object({
+    tool: z.enum(["pen", "highlighter"]).optional(),
+    color: z.string().optional().describe(`a CSS colour; the palette is ${DRAW_COLORS.join(" ")}`),
+    size: z.number().min(1).max(48).optional().describe("stroke width in slide pixels"),
+    keep: z
+      .boolean()
+      .optional()
+      .describe("keep the stroke; by default it fades a few seconds after it is drawn"),
+  });
+  const penStroke = useRef<Stroke | null>(null);
+  const strokeOf = (p: z.infer<typeof style>) =>
+    newStroke(p.tool ?? tool, p.color ?? color, p.size ?? size, !(p.keep ?? keep));
+  useCommand(
+    canDraw
+      ? {
+          id: "draw.undo",
+          title: "Undo stroke",
+          description: "Remove the last stroke on this slide.",
+          group: "draw",
+          keys: "Ctrl Z",
+          enabled: () => mine.length > 0,
+          run: () => undo(),
+        }
+      : null,
+  );
+  useCommand(
+    canDraw
+      ? {
+          id: "draw.clear",
+          title: "Clear drawing",
+          description: "Remove every stroke on this slide.",
+          group: "draw",
+          keys: "Shift C",
+          run: () => clear(),
+        }
+      : null,
+  );
+  useCommand(
+    canDraw
+      ? {
+          id: "draw.pen",
+          title: "Live pen",
+          description:
+            "Draw as a finger moves: phase start at the first point, move for each next one, end to lift the pen. For the phone remote's touchpad.",
+          group: "draw",
+          params: style.extend({
+            phase: z.enum(["start", "move", "end"]),
+            x: z.number().min(0).max(1),
+            y: z.number().min(0).max(1),
+          }),
+          run: (p) => {
+            // The stroke in progress lives in a ref: committing from inside a state updater ran
+            // twice under StrictMode and left two strokes with one id.
+            if (p.phase === "start") {
+              const s = strokeOf(p);
+              s.points.push(at(p.x, p.y));
+              penStroke.current = s;
+              setCurrent(s);
+              return null;
+            }
+            const c = penStroke.current;
+            if (!c) return null;
+            const next = { ...c, points: [...c.points, at(p.x, p.y)] };
+            if (p.phase === "end") {
+              penStroke.current = null;
+              setCurrent(null);
+              return commit(next);
+            }
+            penStroke.current = next;
+            setCurrent(next);
+            return null;
+          },
+        }
+      : null,
+  );
+  useCommand(
+    canDraw
+      ? {
+          id: "draw.shape",
+          title: "Mark the slide",
+          description:
+            "Draw a circle (ellipse) around, a box around, an underline below, or an arrow pointing at a region of the slide, given as x, y, w, h from 0 to 1. Use deck.slide to read what is where first.",
+          group: "draw",
+          params: style.extend({
+            shape: z.enum(["circle", "box", "underline", "arrow"]),
+            x: z.number().min(0).max(1),
+            y: z.number().min(0).max(1),
+            w: z.number().min(0).max(1),
+            h: z.number().min(0).max(1),
+          }),
+          run: (p) => {
+            const s = strokeOf(p);
+            const [x, y] = at(p.x, p.y);
+            const [w, h] = at(p.w, p.h);
+            const pts: [number, number][] = [];
+            if (p.shape === "circle") {
+              const cx = x + w / 2;
+              const cy = y + h / 2;
+              // A hand-drawn loop: slightly more than once round, so it reads as drawn.
+              for (let i = 0; i <= 52; i++) {
+                const t = (i / 48) * Math.PI * 2 - Math.PI / 2;
+                pts.push([cx + (w / 2 + 6) * Math.cos(t), cy + (h / 2 + 6) * Math.sin(t)]);
+              }
+            } else if (p.shape === "box") {
+              pts.push([x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]);
+            } else if (p.shape === "underline") {
+              for (let i = 0; i <= 12; i++) pts.push([x + (w * i) / 12, y + h + 6 + Math.sin(i) * 1.5]);
+            } else {
+              // From below-left of the region to its centre, with a head.
+              const tx = x + w / 2;
+              const ty = y + h / 2;
+              const fx = Math.max(0, x - 120);
+              const fy = Math.min(deck.config.height, y + h + 120);
+              const ang = Math.atan2(ty - fy, tx - fx);
+              const head = 28;
+              pts.push(
+                [fx, fy],
+                [tx, ty],
+                [tx - head * Math.cos(ang - 0.5), ty - head * Math.sin(ang - 0.5)],
+                [tx, ty],
+                [tx - head * Math.cos(ang + 0.5), ty - head * Math.sin(ang + 0.5)],
+              );
+            }
+            s.points = pts;
+            return commit(s);
+          },
+        }
+      : null,
+  );
 
   // Keyboard: Shift+C clears, Ctrl/Cmd+Z undoes — routed through the deck's actions by name.
   useEffect(() => {

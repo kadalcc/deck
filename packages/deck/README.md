@@ -37,6 +37,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | `kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX). Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable; `--vector-pdf` prints with the browser alone |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
 | `kadal-deck publish [--slug] [--workspace] [--title] [--host]` | build for the host and publish; only changed files are uploaded |
+| `kadal-deck narrate [--voice id] [--dtype q8\|fp32…] [--force] [--setup]` | bake the narration: each notes segment spoken by Kokoro into `public/narration/` (MP3/Opus with ffmpeg, else WAV) + `public/narration.json`; skips clips that exist. `--setup` installs `kokoro-js` |
 | `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |
 
 Every command takes `--dir <path>` (`-C`) and, except `dev`, `build` and `mcp`, `--json`: one JSON
@@ -168,6 +169,39 @@ The one rule underneath: a move with no `sync.source` is a person, here, and end
 
 - `/<slug>/?projector` — a window that exists to be LOOKED at: a second screen, or the one window to share on a call. It renders the deck exactly as `/<slug>/` does — backgrounds, controls, progress, slide number, the presenter's laser and pen, reactions — and gives up only input: no key, swipe, wheel or click reaches navigation, and the follow can never be broken, because a stray press on a shared window in the middle of a call is not a thing to be recoverable from. It shows no cursor. The presenter view's **Share window** button opens and closes one with a plain `window.open`, so it works in any browser; a desktop shell that wants to give it a frame of its own only has to recognise the URL.
 - `/<slug>/notes` — every note on one page. `/<slug>/stats` — views, dwell per slide, sessions, questions, reactions, exports, share links.
+
+## Narration
+
+Rehearse with the deck reading its own notes. The presenter view has a narration bar at the
+bottom; on the deck itself `?narrate` shows it and **R** starts or pauses it. Each `[click]` part
+of a slide's `<Notes>` is said at its step, then — after `narration.gap` — the deck runs `nav.next`
+and the next part is said, so the presenter window, a projector and the room follow exactly as
+they follow you. A slide without notes stays up long enough to read it (`narration.silent`).
+Navigating by hand while it plays moves the narration with you; pause stops the voice at once.
+The bar has previous / play / next / stop, speed (0.8–2×), mute and volume, the voice, the engine,
+"follow" (off: it reads on without turning pages), and a timeline with a mark per slide (hover
+for the title, click to narrate from there). Every control is a `narrate.*` command
+(`narrate.play {from}`, `narrate.rate`, `narrate.voice`, `narrate.state`…), so an agent or the
+phone remote can drive it too. Frontmatter: `say: "…"` replaces a slide's notes;
+`narration: false` keeps it quiet (in the headmatter: turns narration off).
+
+Voices, chosen per segment by `narration.engine: auto`:
+
+1. **Baked clips** — `npx kadal-deck narrate` speaks every segment once and writes the files into
+   `public/`. Instant, the same everywhere, no model in the browser. A clip is found by the
+   SHA-256 of `voice|text`, so editing a sentence just falls back until you run it again.
+2. **Kokoro-82M in the browser** — in a Web Worker on WebGPU (fp32) or WebAssembly (q8). It starts
+   downloading (~90 MB on WebAssembly, ~300 MB on WebGPU, kept in the browser cache) the first
+   time someone presses play, never on page load; the browser's voice reads until it is ready, and
+   each next segment is synthesized while the current one plays.
+3. **The browser's own voice** (`speechSynthesis`) — always there, no download.
+
+Kokoro needs `kokoro-js`, an **optional peer**: `npx kadal-deck narrate --setup` adds it to the
+deck (it brings transformers.js and the ONNX runtime, a few hundred MB in `node_modules`, and adds
+a ~2 MB worker and ~22 MB `.wasm` to the build — fetched only when narration uses Kokoro). Without
+it nothing of it is built and the narrator uses baked clips and the browser's voice. The weights
+come from the Hugging Face Hub at run time; see `THIRD_PARTY_NOTICES.md` for the licences
+(eSpeak NG, inside the phonemizer, is GPL-3.0-or-later).
 
 ## Export
 
