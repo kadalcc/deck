@@ -16,7 +16,15 @@ import {
   wrapDegrees,
 } from "./air.ts";
 import { wireResult } from "./link.ts";
-import { CODE, createRelay, type RelayOut, type RelayPeer } from "./relay.ts";
+import {
+  CODE,
+  CODE_TTL,
+  createRelay,
+  ROTATE_MS,
+  type RelayOut,
+  type RelayPeer,
+  TAKEN_OVER,
+} from "./relay.ts";
 
 describe("the One Euro filter", () => {
   test("passes the first sample through and holds a constant", () => {
@@ -279,83 +287,176 @@ describe("the dev relay", () => {
     };
     return p;
   };
+  type Hosted = Extract<RelayOut, { op: "hosted" }>;
+  type Joined = Extract<RelayOut, { op: "joined" }>;
   const setup = () => {
     let t = 1_000;
     const relay = createRelay({ urls: () => ["http://192.168.1.4:5173/talk/"], now: () => t });
     const host = peer();
     relay.message(host, { op: "host" });
-    const hosted = host.last("hosted") as Extract<RelayOut, { op: "hosted" }>;
-    return { relay, host, code: hosted.code, hosted, tick: (ms: number) => (t += ms) };
+    const hosted = host.last("hosted") as Hosted;
+    const code = () => (host.last("hosted") as Hosted).code;
+    const pair = (phone = peer(), address?: string) => {
+      relay.message(phone, { op: "join", code: code() }, address);
+      return phone;
+    };
+    return { relay, host, hosted, code, pair, tick: (ms: number) => (t += ms) };
+  };
+  const state = {
+    slide: { index: 0, h: 0, v: 0, id: null, title: null, click: 0, clicks: 0 },
+    total: 3,
+    blackout: true,
+    overview: false,
+    pointer: false,
+    spotlight: false,
+    drawing: false,
+    hints: false,
+    zoomed: false,
+    colorScheme: "light",
+    theme: "minimal",
+    startedAt: null,
   };
 
-  test("a host is given a code and the network addresses", () => {
+  test("a host is given a place, a code that works for a minute, and the network addresses", () => {
     const { hosted, relay } = setup();
     expect(hosted.code).toMatch(CODE);
+    expect(hosted.id).toMatch(/^[a-z0-9]{12}$/);
+    expect(hosted.ttl).toBe(CODE_TTL);
     expect(hosted.urls).toEqual(["http://192.168.1.4:5173/talk/"]);
     expect(hosted.remotes).toBe(0);
     expect(relay.stats()).toEqual({ pairs: 1, hosts: 1, phones: 0 });
   });
 
-  test("a phone with the code is paired; the host hears about it", () => {
-    const { relay, host, code } = setup();
-    const phone = peer();
-    relay.message(phone, { op: "join", code: code.toLowerCase() });
-    expect(phone.last()).toEqual({ op: "joined", host: true });
-    expect(host.last()).toEqual({ op: "remotes", count: 1 });
+  test("a phone with the code is paired and given a lease; the host gets the next code", () => {
+    const { relay, host, hosted, pair } = setup();
+    const phone = pair();
+    const joined = phone.last() as Joined;
+    expect(joined).toMatchObject({ op: "joined", host: true });
+    expect(joined.lease).toMatch(/^[a-z0-9]{24}$/);
+    const next = host.last("hosted") as Hosted;
+    expect(next).toMatchObject({ remotes: 1, paired: true });
+    expect(next.code).not.toBe(hosted.code);
     relay.leave(phone);
     expect(host.last()).toEqual({ op: "remotes", count: 0 });
   });
 
+  test("the code rotates while the QR is up; the previous one works until its minute is out", () => {
+    const { relay, host, hosted, tick } = setup();
+    relay.message(host, { op: "rotate" });
+    expect((host.last("hosted") as Hosted).code).toBe(hosted.code);
+    tick(ROTATE_MS + 1);
+    relay.message(host, { op: "rotate" });
+    const second = host.last("hosted") as Hosted;
+    expect(second.code).not.toBe(hosted.code);
+    // A phone that was mid-scan of the first code still gets in …
+    const late = peer();
+    relay.message(late, { op: "join", code: hosted.code });
+    expect(late.last()?.op).toBe("joined");
+    // … but not once the code's minute is out.
+    tick(CODE_TTL);
+    const later = peer();
+    relay.message(later, { op: "join", code: second.code });
+    expect((later.last() as { reason: string }).reason).toMatch(/expired/);
+  });
+
+  test("a code works once", () => {
+    const { relay, hosted, pair } = setup();
+    pair();
+    const again = peer();
+    relay.message(again, { op: "join", code: hosted.code });
+    expect(again.last()?.op).toBe("denied");
+  });
+
+  test("one phone at a time: the newest replaces the one before, whose lease stops working", () => {
+    const { relay, host, pair } = setup();
+    const a = pair();
+    const leaseA = (a.last() as Joined).lease;
+    const b = pair();
+    expect(a.last()).toEqual({ op: "bye", reason: TAKEN_OVER });
+    expect(b.last()?.op).toBe("joined");
+    expect(relay.stats().phones).toBe(1);
+    expect(host.last("remotes")).toEqual({ op: "remotes", count: 1 });
+    // a's commands go nowhere now, and its lease does not bring it back.
+    const n = host.inbox.length;
+    relay.message(a, { op: "msg", data: { type: "command", id: "nav.next", seq: 1 } });
+    expect(host.inbox.length).toBe(n);
+    const back = peer();
+    relay.message(back, { op: "join", lease: leaseA });
+    expect((back.last() as { reason: string }).reason).toMatch(/no longer the remote/);
+  });
+
+  test("the paired phone comes back with its lease after a dropped connection", () => {
+    const { relay, host, pair } = setup();
+    const a = pair();
+    const lease = (a.last() as Joined).lease;
+    relay.leave(a);
+    const again = peer();
+    relay.message(again, { op: "join", lease });
+    expect(again.last()).toMatchObject({ op: "joined", host: true, lease });
+    expect(host.last("remotes")).toEqual({ op: "remotes", count: 1 });
+  });
+
+  test("the phone that used a code may say it again (a page mounted twice); nobody else may", () => {
+    const { relay, host, hosted } = setup();
+    const device = "0123456789abcdef0123";
+    const first = peer();
+    relay.message(first, { op: "join", code: hosted.code, device });
+    const lease = (first.last() as Joined).lease;
+    relay.leave(first);
+    const second = peer();
+    relay.message(second, { op: "join", code: hosted.code, device });
+    expect(second.last()).toMatchObject({ op: "joined", lease });
+    expect(host.last("remotes")).toEqual({ op: "remotes", count: 1 });
+    const stranger = peer();
+    relay.message(stranger, { op: "join", code: hosted.code, device: "ffffffffffffffffffff" });
+    expect(stranger.last()?.op).toBe("denied");
+  });
+
   test("a wrong code is refused, and guessing is limited per address", () => {
-    const { relay, code } = setup();
+    const { relay, pair } = setup();
     const phone = peer();
     for (let i = 0; i < 5; i++) relay.message(phone, { op: "join", code: "AAAAAA" }, "10.0.0.9");
     expect(phone.last()?.op).toBe("denied");
     // Locked out now, even with the right code, from that address only.
-    relay.message(phone, { op: "join", code }, "10.0.0.9");
+    pair(phone, "10.0.0.9");
     expect((phone.last() as { reason: string }).reason).toMatch(/Too many/);
-    const other = peer();
-    relay.message(other, { op: "join", code }, "10.0.0.10");
+    const other = pair(peer(), "10.0.0.10");
     expect(other.last()?.op).toBe("joined");
   });
 
   test("without an address, guesses count per connection and in all", () => {
-    const { relay, code } = setup();
+    const { relay, pair } = setup();
     const guesser = peer();
     for (let i = 0; i < 5; i++) relay.message(guesser, { op: "join", code: "AAAAAA" });
-    relay.message(guesser, { op: "join", code });
+    pair(guesser);
     expect((guesser.last() as { reason: string }).reason).toMatch(/Too many/);
-    const honest = peer();
-    relay.message(honest, { op: "join", code });
+    const honest = pair();
     expect(honest.last()?.op).toBe("joined");
     // A script opening a new connection for every guess still hits the overall limit.
     for (let i = 0; i < 60; i++) relay.message(peer(), { op: "join", code: "BBBBBB" });
-    const late = peer();
-    relay.message(late, { op: "join", code });
+    const late = pair();
     expect((late.last() as { reason: string }).reason).toMatch(/Too many/);
   });
 
   test("lockouts expire", () => {
-    const { relay, code, tick } = setup();
+    const { relay, pair, tick, host } = setup();
     const phone = peer();
     for (let i = 0; i < 5; i++) relay.message(phone, { op: "join", code: "AAAAAA" }, "a");
-    tick(61_000);
-    relay.message(phone, { op: "join", code }, "a");
+    tick(ROTATE_MS + 1);
+    relay.message(host, { op: "rotate" });
+    tick(ROTATE_MS + 1);
+    relay.message(host, { op: "rotate" });
+    pair(phone, "a");
     expect(phone.last()?.op).toBe("joined");
   });
 
-  test("commands go to the host stamped with the phone; answers come back to that phone only", () => {
-    const { relay, host, code } = setup();
-    const a = peer();
-    const b = peer();
-    relay.message(a, { op: "join", code });
-    relay.message(b, { op: "join", code });
+  test("commands go to the host stamped with the phone; answers come back to it", () => {
+    const { relay, host, pair } = setup();
+    const a = pair();
     relay.message(a, { op: "msg", data: { type: "command", id: "nav.next", seq: 7 } });
     const cmd = host.last("msg") as Extract<RelayOut, { op: "msg" }>;
     expect(cmd.data).toMatchObject({ type: "command", id: "nav.next", seq: 7, params: {} });
     const from = (cmd.data as { from: string }).from;
-    expect(typeof from).toBe("string");
-    const before = b.inbox.length;
     relay.message(host, {
       op: "msg",
       data: { type: "command:result", to: from, seq: 7, ok: true, value: { index: 1 } },
@@ -364,58 +465,38 @@ describe("the dev relay", () => {
       op: "msg",
       data: { type: "command:result", seq: 7, ok: true, value: { index: 1 } },
     });
-    expect(b.inbox.length).toBe(before);
+    // An answer addressed to anyone else goes nowhere.
+    const n = a.inbox.length;
+    relay.message(host, { op: "msg", data: { type: "command:result", to: "x", seq: 8, ok: true } });
+    expect(a.inbox.length).toBe(n);
   });
 
-  test("state goes to every phone of the code, and to no other code's", () => {
-    const { relay, host, code } = setup();
+  test("state goes to the window's phone, and to no other window's", () => {
+    const { relay, host, pair } = setup();
     const otherHost = peer();
     relay.message(otherHost, { op: "host" });
-    const otherCode = (otherHost.last("hosted") as { code: string }).code;
-    expect(otherCode).not.toBe(code);
-    const a = peer();
-    const b = peer();
+    const otherCode = (otherHost.last("hosted") as Hosted).code;
+    const a = pair();
     const stranger = peer();
-    relay.message(a, { op: "join", code });
-    relay.message(b, { op: "join", code });
     relay.message(stranger, { op: "join", code: otherCode });
-    const state = {
-      slide: { index: 0, h: 0, v: 0, id: null, title: null, click: 0, clicks: 0 },
-      total: 3,
-      blackout: true,
-      overview: false,
-      pointer: false,
-      spotlight: false,
-      drawing: false,
-      hints: false,
-      zoomed: false,
-      colorScheme: "light",
-      theme: "minimal",
-      startedAt: null,
-    };
     const n = stranger.inbox.length;
     relay.message(host, { op: "msg", data: { type: "remote:state", state } });
     expect(a.last()).toEqual({ op: "msg", data: { type: "remote:state", state } });
-    expect(b.last()).toEqual({ op: "msg", data: { type: "remote:state", state } });
     expect(stranger.inbox.length).toBe(n);
   });
 
-  test("a phone cannot answer, push state or kick; junk is dropped", () => {
-    const { relay, host, code } = setup();
-    const a = peer();
-    const b = peer();
-    relay.message(a, { op: "join", code });
-    relay.message(b, { op: "join", code });
+  test("a phone cannot answer, push state, rotate or kick; junk is dropped", () => {
+    const { relay, host, pair } = setup();
+    const a = pair();
     const hostSeen = host.inbox.length;
-    const bSeen = b.inbox.length;
     relay.message(a, { op: "msg", data: { type: "command:result", to: "p1", seq: 1, ok: true } });
     relay.message(a, { op: "msg", data: { type: "remote:state", state: {} } });
     relay.message(a, { op: "msg", data: { type: "command", id: "bad id", seq: 1 } });
     relay.message(a, { op: "kick" });
+    relay.message(a, { op: "rotate" });
     relay.message(a, "not an object");
     relay.message(a, { op: "nope" });
     expect(host.inbox.length).toBe(hostSeen);
-    expect(b.inbox.length).toBe(bSeen);
     // A stranger that never joined reaches nobody.
     const stranger = peer();
     relay.message(stranger, { op: "msg", data: { type: "command", id: "nav.next", seq: 1 } });
@@ -423,9 +504,8 @@ describe("the dev relay", () => {
   });
 
   test("without its host, a phone's command fails at once and the phone is told", () => {
-    const { relay, host, code } = setup();
-    const a = peer();
-    relay.message(a, { op: "join", code });
+    const { relay, host, pair } = setup();
+    const a = pair();
     relay.leave(host);
     expect(a.last()).toEqual({ op: "host", online: false });
     relay.message(a, { op: "msg", data: { type: "command", id: "nav.next", seq: 4 } });
@@ -435,53 +515,55 @@ describe("the dev relay", () => {
     });
   });
 
-  test("a reloaded host gets its code back and its phones stay paired", () => {
-    const { relay, host, code } = setup();
-    const a = peer();
-    relay.message(a, { op: "join", code });
+  test("a reloaded host gets its place back and its phone stays paired", () => {
+    const { relay, host, hosted, pair } = setup();
+    const a = pair();
     relay.leave(host);
     const again = peer();
-    relay.message(again, { op: "host", code });
-    expect(again.last("hosted")).toMatchObject({ code, remotes: 1 });
+    relay.message(again, { op: "host", id: hosted.id });
+    expect(again.last("hosted")).toMatchObject({ id: hosted.id, remotes: 1 });
     expect(a.last()).toEqual({ op: "host", online: true });
   });
 
-  test("a code another window holds is not handed over", () => {
-    const { relay, code } = setup();
+  test("a place another window holds is not handed over", () => {
+    const { relay, hosted } = setup();
     const thief = peer();
-    relay.message(thief, { op: "host", code });
-    expect((thief.last("hosted") as { code: string }).code).not.toBe(code);
+    relay.message(thief, { op: "host", id: hosted.id });
+    expect((thief.last("hosted") as Hosted).id).not.toBe(hosted.id);
   });
 
-  test("after a dev server restart, the old code can be hosted again", () => {
+  test("after a dev server restart, the old place can be hosted again", () => {
     const relay = createRelay();
     const host = peer();
-    relay.message(host, { op: "host", code: "ABCDEF" });
-    expect(host.last("hosted")).toMatchObject({ code: "ABCDEF" });
+    relay.message(host, { op: "host", id: "abcdef123456" });
+    expect(host.last("hosted")).toMatchObject({ id: "abcdef123456" });
     const junk = peer();
-    relay.message(junk, { op: "host", code: "lower!" });
-    expect((junk.last("hosted") as { code: string }).code).toMatch(CODE);
+    relay.message(junk, { op: "host", id: "NOT AN ID" });
+    expect((junk.last("hosted") as Hosted).id).toMatch(/^[a-z0-9]{12}$/);
   });
 
-  test("kick disconnects every phone and retires the code", () => {
-    const { relay, host, code } = setup();
-    const a = peer();
-    relay.message(a, { op: "join", code });
+  test("kick disconnects the phone, voids its lease and every code shown so far", () => {
+    const { relay, host, pair, code } = setup();
+    const shown = code();
+    const a = pair();
+    const lease = (a.last() as Joined).lease;
+    const unused = code();
     relay.message(host, { op: "kick" });
-    expect(a.last()?.op).toBe("bye");
-    const next = host.last("hosted") as { code: string; remotes: number };
-    expect(next.code).not.toBe(code);
+    expect(a.last()).toEqual({ op: "bye", reason: "The presenter disconnected this phone." });
+    const next = host.last("hosted") as Hosted;
+    expect([shown, unused]).not.toContain(next.code);
     expect(next.remotes).toBe(0);
-    // The old QR pairs nobody, and the kicked phone's commands go nowhere.
-    const late = peer();
-    relay.message(late, { op: "join", code });
-    expect(late.last()?.op).toBe("denied");
+    for (const hello of [{ code: unused }, { lease }]) {
+      const late = peer();
+      relay.message(late, { op: "join", ...hello });
+      expect(late.last()?.op).toBe("denied");
+    }
     const n = host.inbox.length;
     relay.message(a, { op: "msg", data: { type: "command", id: "nav.next", seq: 1 } });
     expect(host.inbox.length).toBe(n);
   });
 
-  test("idle codes are forgotten", () => {
+  test("idle places are forgotten", () => {
     const { relay, host, tick } = setup();
     relay.leave(host);
     tick(31 * 60_000);

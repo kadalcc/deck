@@ -49,13 +49,21 @@ button runs a command (`nav.next`, `present.laserAt`, `draw.pen` …) in the pre
 remote can do what the keyboard can and nothing else.
 
 - The deck's `main.tsx` passes `remote: RemotePage` from `@kadal/deck/remote` in `<Deck pages>`.
-- Hosted deck: the QR is `remote#ticket=…`. The presenter ticket travels in the URL fragment, so
-  it never reaches a server log. The room relays the phone's commands to the presenter windows only.
+- One phone at a time. The QR holds a pairing code that works once and changes every 30 seconds
+  while the dialog is open (each code works for a minute). The newest phone to scan becomes the
+  remote and any other is disconnected and told so. A paired phone keeps a lease for its tab, so a
+  reload or a dropped connection reconnects without a new scan, until another phone takes over.
+- Hosted deck: the QR is `remote#pair=CODE`. The code travels in the URL fragment, so it never
+  reaches a server log, and it is not the presenter's ticket. The room relays the phone's commands
+  to the presenter windows only, and a phone can send nothing else.
 - `kadal-deck dev`: the dev server relays it with a 6-character code (`remote?pair=CODE`). Run
   `kadal-deck dev --host` so the phone can reach the computer on the same Wi-Fi. Add `--https`
   (a self-signed certificate) for the air pointer, because motion sensors need a secure page. On
   plain http the phone points by touch instead.
-- **Disconnect** in the dialog drops every phone. On the dev server it also changes the code.
+- On an iPhone the air pointer first asks for one tap to allow motion (iOS only asks from a tap);
+  after that the button is a hold.
+- **Disconnect** in the dialog drops the phone, even one that is offline right now, voids its lease
+  and changes the code.
 
 ## A good interactive talk
 

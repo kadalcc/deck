@@ -325,6 +325,18 @@
   border-color: #b91c1c;
   color: #fff;
 }
+/* iOS: one tap to allow the motion sensors before the hold works. */
+.deck-remote .deck-remote-air.is-ask {
+  border-style: solid;
+  border-color: #2563eb;
+  color: #93c5fd;
+}
+.deck-remote .deck-remote-air.is-ask[data-motion="denied"] {
+  border-style: dashed;
+  border-color: inherit;
+  color: inherit;
+  opacity: 0.75;
+}
 .deck-remote-nav {
   display: grid;
   grid-template-columns: 1fr 2fr;
@@ -544,6 +556,9 @@
 .deck-remote-dialog-panel .deck-muted {
   color: var(--deck-muted);
   font-size: 13px;
+}
+.deck-remote-dialog-panel .deck-remote-countdown {
+  font-variant-numeric: tabular-nums;
 }
 .deck-remote-dialog-panel button {
   font: 13px var(--deck-body-font);

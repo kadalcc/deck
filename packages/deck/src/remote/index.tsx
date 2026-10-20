@@ -7,7 +7,7 @@ import { readItem, writeItem } from "../core/storage.ts";
 import { useStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
 import type { RemoteState } from "../live/protocol.ts";
-import { presenterTicket } from "../live/ticket.ts";
+import { presenterTicket, splitFromHash } from "../live/ticket.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { useDeck } from "../react/context.ts";
 import { useFit } from "../react/fit.ts";
@@ -21,7 +21,7 @@ import {
   orientationToPoint,
   readOrientation,
 } from "./air.ts";
-import { devRemote, type RemoteLink, roomRemote } from "./link.ts";
+import { devRemote, hasLease, type RemoteLink, roomRemote } from "./link.ts";
 
 export { RemoteHost, remoteState } from "./host.tsx";
 export { RemoteMirror, FORWARDED } from "./mirror.ts";
@@ -48,42 +48,86 @@ export type { HostLink, RemoteLink, RemoteStatus } from "./link.ts";
  * window (core/commands.ts), so it can do exactly what the keyboard can and nothing more.
  *
  * It is the deck app itself, so the slide it shows is rendered by the deck's own components —
- * what the room sees, not a picture of it. Paired by the presenter view's "Phone remote" QR:
- * `remote#ticket=…` on a hosted deck (the fragment never reaches a server), `remote?pair=CODE` on
- * `kadal-deck dev`.
+ * what the room sees, not a picture of it. Paired by the presenter view's "Phone remote" QR, which
+ * holds a one-time code (`remote#pair=…` on a hosted deck — the fragment never reaches a server —
+ * and `remote?pair=CODE` on `kadal-deck dev`); after that the lease the room gave it brings it
+ * back, so a reload or a dropped connection needs no new scan. One phone at a time: a newer phone
+ * scanning takes over, and this one says so.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export function RemotePage() {
   const deck = useDeck();
-  const [pair] = useState(() =>
-    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("pair"),
-  );
+  const [{ hashPair, searchPair }, setCodes] = useState(takePairCode);
+  // A code arriving in the fragment of a page already open here (a link opened in the same tab).
+  useEffect(() => {
+    const onHash = () => {
+      if (!/[#&]pair=/.test(window.location.hash)) return;
+      taken = null;
+      setCodes(takePairCode());
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const ticket = useStore(presenterTicket);
   const api = deck.config.live.api;
   const relay = deck.manifest.relay ?? null;
-  const pairable = !!(api && ticket) || !!(pair && relay);
+  const room = roomIdOf(deck.config);
+  const devPlace = `dev.${room}`;
+  const pairable =
+    !!(api && (hashPair || ticket || hasLease(room))) ||
+    !!(relay && (searchPair || hasLease(devPlace)));
   // Made in an effect: what opens the socket closes it (StrictMode mounts twice in dev).
   const [link, setLink] = useState<RemoteLink | null>(null);
   useEffect(() => {
     let made: RemoteLink | null = null;
-    if (api && ticket) made = roomRemote({ api, room: roomIdOf(deck.config), ticket });
-    else if (pair && relay) made = devRemote(relay, pair.toUpperCase());
+    if (api && (hashPair || ticket || hasLease(room)))
+      made = roomRemote({ api, room, pair: hashPair, ticket: hashPair ? null : ticket });
+    else if (relay && (searchPair || hasLease(devPlace)))
+      made = devRemote(relay, searchPair?.toUpperCase() ?? null, devPlace);
     setLink(made);
     return () => {
       made?.close();
       setLink(null);
     };
-  }, [api, ticket, pair, relay, deck.config]);
+  }, [api, ticket, hashPair, searchPair, relay, room, devPlace]);
   useWakeLock();
   return (
     <div className="deck-remote">
       {link ? (
         <Console link={link} />
       ) : pairable ? null : (
-        <Instructions pair={pair} hosted={!!api} dev={!!relay} />
+        <Instructions pair={searchPair} hosted={!!api} dev={!!relay} />
       )}
     </div>
   );
+}
+
+let taken: { hashPair: string | null; searchPair: string | null } | null = null;
+
+/**
+ * The pairing code this page was opened with, read ONCE and taken out of the address bar: it works
+ * once, so a reload must come back with the lease instead, and a code left in the URL would only
+ * fail. (Module state, not component state: StrictMode runs initialisers twice.)
+ */
+function takePairCode(): { hashPair: string | null; searchPair: string | null } {
+  if (taken) return taken;
+  if (typeof window === "undefined") return { hashPair: null, searchPair: null };
+  const { value: hashPair, hash } = splitFromHash(window.location.hash, "pair");
+  const search = new URLSearchParams(window.location.search);
+  const searchPair = search.get("pair");
+  search.delete("pair");
+  const query = search.toString();
+  try {
+    history.replaceState(
+      history.state,
+      "",
+      `${location.pathname}${query ? `?${query}` : ""}${hash}`,
+    );
+  } catch {
+    /* the code stays in the address bar; it has been used by then */
+  }
+  taken = { hashPair, searchPair };
+  return taken;
 }
 
 function Instructions({
@@ -225,7 +269,8 @@ function Console({ link }: { link: RemoteLink }) {
   const [message, setMessage] = useState<string | null>(null);
   const flash = (m: string) => {
     setMessage(m);
-    setTimeout(() => setMessage((x) => (x === m ? null : x)), 2200);
+    // Long enough to read: a sentence of advice stays up longer than "Done".
+    setTimeout(() => setMessage((x) => (x === m ? null : x)), Math.max(2200, m.length * 55));
   };
 
   // The slide on show follows the presenter's colour scheme and theme, so it looks as theirs does.
@@ -250,8 +295,13 @@ function Console({ link }: { link: RemoteLink }) {
     return (
       <div className="deck-remote-instructions">
         <Icon name="unplug" size={40} />
-        <h2>Not paired</h2>
+        <h2>
+          {reason?.startsWith("Another phone") ? "Another phone is the remote" : "Not paired"}
+        </h2>
         <p>{reason ?? "This phone is not paired."}</p>
+        <p className="deck-remote-muted">
+          To use this phone, press <b>Phone remote</b> on the presenter view and scan the QR again.
+        </p>
       </div>
     );
 
@@ -621,11 +671,42 @@ function MiniSlide({
   );
 }
 
+type MotionAccess = "unknown" | "granted" | "denied";
+
+/** iOS's gate on the motion sensors: present only where the page must ask (Safari, and every iOS browser). */
+function motionGate(): (() => Promise<string>) | null {
+  if (typeof window === "undefined") return null;
+  const DOE = (
+    window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } }
+  ).DeviceOrientationEvent;
+  return typeof DOE?.requestPermission === "function" ? DOE.requestPermission.bind(DOE) : null;
+}
+
+/** Motion access this page already has: no gate, or the gate was opened before (events arrive). */
+function useMotionAccess(): [MotionAccess, (a: MotionAccess) => void] {
+  const [access, setAccess] = useState<MotionAccess>(() => (motionGate() ? "unknown" : "granted"));
+  useEffect(() => {
+    if (access !== "unknown") return;
+    // Allowed earlier in this browser: iOS sends events without asking again, so one arriving
+    // means there is nothing to ask.
+    const heard = (e: DeviceOrientationEvent) => {
+      if (e.alpha !== null || e.beta !== null) setAccess("granted");
+    };
+    window.addEventListener("deviceorientation", heard);
+    return () => window.removeEventListener("deviceorientation", heard);
+  }, [access]);
+  return [access, setAccess];
+}
+
 /**
  * THE AIR POINTER: hold the button, point the phone. The aim when the button goes down is the
- * slide's centre; turning `range` degrees reaches an edge. Orientation events (with iOS's
- * permission prompt, asked on the press itself) or, where the Generic Sensor API has one, the
- * gyroscope — whichever speaks first — through a One Euro filter, sent at most 30 times a second.
+ * slide's centre; turning `range` degrees reaches an edge. Orientation events or, where the
+ * Generic Sensor API has one, the gyroscope — whichever speaks first — through a One Euro filter,
+ * sent at most 30 times a second.
+ *
+ * iOS shows its "Allow motion and orientation" prompt only from a TAP (a click), never from the
+ * press that starts a hold — asked there, it refuses without showing anything. So on iOS the button
+ * first asks for one tap to allow motion, then works as a hold.
  */
 function AirButton({
   link,
@@ -640,7 +721,8 @@ function AirButton({
   const secure = typeof window !== "undefined" && window.isSecureContext;
   const supported = typeof window !== "undefined" && "DeviceOrientationEvent" in window;
   const session = useRef<null | (() => void)>(null);
-  const permission = useRef<"unknown" | "granted" | "denied">("unknown");
+  const [access, setAccess] = useMotionAccess();
+  const gate = motionGate();
 
   const pressed = useRef(false);
   const stop = () => {
@@ -651,31 +733,33 @@ function AirButton({
   };
   useEffect(() => stop, []);
 
-  const start = async (e: React.PointerEvent) => {
+  /** The tap that opens iOS's gate: requestPermission straight from the click, nothing awaited first. */
+  const allow = () => {
+    if (!gate) return setAccess("granted");
+    buzz(settings.haptics, 10);
+    gate().then(
+      (answer) => {
+        if (answer === "granted") {
+          setAccess("granted");
+          flash("Motion on. Now hold the button and move the phone.");
+        } else {
+          setAccess("denied");
+          flash(MOTION_REFUSED);
+        }
+      },
+      () => {
+        // Not shown at all (iOS wants a tap) — leave it to be asked again.
+        flash("Tap the button once more to allow motion.");
+      },
+    );
+  };
+
+  const start = (e: React.PointerEvent) => {
     e.preventDefault();
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     if (session.current) return;
     pressed.current = true;
     buzz(settings.haptics, 10);
-    // iOS: the prompt must come from the press itself.
-    const DOE = (
-      window as unknown as {
-        DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
-      }
-    ).DeviceOrientationEvent;
-    if (DOE?.requestPermission && permission.current !== "granted") {
-      try {
-        permission.current = (await DOE.requestPermission()) === "granted" ? "granted" : "denied";
-      } catch {
-        permission.current = "denied";
-      }
-      if (permission.current !== "granted") {
-        flash("Motion access was not allowed. Touch the slide to point instead.");
-        return;
-      }
-      // Let go while the prompt was up: nothing to point.
-      if (!pressed.current) return;
-    }
     const fx = createOneEuro();
     const fy = createOneEuro();
     const out = createCoalescer<{ x: number; y: number }>((p) => link.fire("present.laserAt", p));
@@ -745,6 +829,22 @@ function AirButton({
   };
 
   const off = !supported || !secure;
+  if (!off && access !== "granted")
+    return (
+      <button
+        type="button"
+        className="deck-remote-air is-ask"
+        onClick={access === "denied" ? () => flash(MOTION_REFUSED) : allow}
+        data-motion={access}
+      >
+        <Icon name="smartphone" size={22} />
+        <span>
+          {access === "denied"
+            ? "Motion is off for this site — touch the slide to point"
+            : "Tap to allow motion · then hold to point"}
+        </span>
+      </button>
+    );
   return (
     <button
       type="button"
@@ -769,6 +869,10 @@ function AirButton({
     </button>
   );
 }
+
+/** iOS keeps a "Don't Allow" until Safari starts again; this says how to get the prompt back. */
+const MOTION_REFUSED =
+  "Motion was not allowed. To ask again, close Safari completely (swipe it away), reopen the remote and tap Allow. Until then, touch the slide to point.";
 
 function Notes({
   state,
