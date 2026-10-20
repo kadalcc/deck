@@ -1,5 +1,68 @@
 # @kadal/deck
 
+## 0.3.0
+
+### Minor Changes
+
+- 1af5183: Commands: everything a person can do to a running deck is now a command in one registry —
+  `deck.commands` (and `window.__deck.commands`), with stable ids (`nav.next`, `present.blackout`,
+  `draw.shape`, `deck.slide` …), descriptions, and zod parameters exported as JSON Schema. The
+  keyboard runs through it, so a phone remote or an AI agent can do exactly what the keys and
+  buttons do. New commands aim the laser (`present.laserAt`), drive the pen from a touchpad
+  (`draw.pen`), mark a region (`draw.shape`: circle, box, underline, arrow), zoom to a point, and
+  read the deck (`deck.state`, `deck.outline`, `deck.slide`, `deck.search`). The manifest now
+  carries each slide's speaker notes as plain text (`notesText`). `useCommand` registers your own.
+- e960d13: Narration: rehearse with the deck reading its own notes. Each `[click]` part of a slide's
+  `<Notes>` is spoken at its step, then the deck turns the page with `nav.next` — through the
+  command registry, so the presenter window, a projector and the room follow. A bar at the bottom
+  of the presenter view (and on the deck behind `?narrate`, or the new `R` key) has prev / play /
+  next / stop, speed, mute and volume, voice and engine menus, "follow the narrator", and a
+  timeline with a mark per slide to seek. Every control is a `narrate.*` command.
+
+  Three voices behind one interface, picked per segment: baked clips from the new
+  `kadal-deck narrate` (Kokoro-82M on the CPU, MP3/Opus via ffmpeg or WAV, indexed by SHA-256 in
+  `public/narration.json`), Kokoro-82M in the browser in a Web Worker (WebGPU fp32 or WebAssembly
+  q8, downloaded on the first play and cached), and the browser's `speechSynthesis`. Kokoro needs
+  `kokoro-js`, a new optional peer dependency (`kadal-deck narrate --setup` installs it); without it
+  nothing of it is built. Config: `narration: { enabled, engine, voice, rate, gap, silent, model,
+  dtype }`; slide frontmatter `say:` and `narration: false`. Licences of the pieces it reaches for,
+  including eSpeak NG (GPL-3.0-or-later) inside the phonemizer, are in `THIRD_PARTY_NOTICES.md`.
+
+- 2473f77: Phone remote: the presenter view's new **Phone remote** button shows a QR, and the phone that
+  scans it becomes a one-handed remote at `/<slug>/remote` (`RemotePage` from
+  `@kadal/deck/remote`; add `remote: RemotePage` to `<Deck pages>`). It shows a live copy of the
+  current slide, rendered by the deck's own components. Touch the slide to aim the laser or the
+  spotlight, draw on it with the pen, or tap to zoom. Hold the air-pointer button and move the
+  phone to point (DeviceOrientation with iOS's permission prompt, or a Gyroscope where there is one,
+  smoothed by a One Euro filter). It also has next and back (or a swipe), blackout, focus labels, a
+  slide list, the notes for the current click step, the timer with pacing, buzzes at chosen
+  minutes, haptic ticks and a screen wake lock. Everything it does runs as a command in the
+  presenting window.
+
+  With a room, the phone is a presenter socket holding the ticket from the QR's fragment. The
+  protocol gains `command`, `command:result`, `remote:state`, `remote:kick` and `remote:bye`, plus
+  validators. Without a room, `kadal-deck dev` relays it over the dev server's HMR socket with a
+  pairing code. `kadal-deck dev --https` serves a self-signed certificate so phones get motion
+  sensors. In the presenter view without a room, the laser now shows on the current slide, and the
+  remote's laser, ink and zoom reach the play window.
+
+- 71ad8e8: The presenter gate follows the host: when it says the deck has no passcode (`passcode: false`) the
+  gate stops asking for one, and when it gives a `signIn` URL it offers "Sign in as the author" —
+  on its own, or below the passcode field. Only http(s) links are followed.
+- 2d862df: Decks without a build. `@kadal/deck/runtime` compiles a deck from its text in the browser —
+  the same remark/rehype passes, Shiki highlighting, notes, magic move and glossary as the Vite
+  plugin (both now share `compiler/pipeline.ts`) — and returns diagnostics with lines instead of
+  throwing. The new `@kadal/deck-shell` package is one prebuilt static page that runs any
+  `deck.mdx` served beside it, under any path; with `?preview` it is an editor's live iframe,
+  speaking a small `postMessage` protocol (source in; diagnostics, outline, position, command
+  results and picked points out). `<Deck base>` sets the URL root explicitly. Slides compiled
+  this way use the engine's components and cannot `import`.
+
+### Patch Changes
+
+- ac41497: A deck compiled again in the same page (an editor's live preview) now shows the new slides: the
+  slide-module cache is keyed by each manifest entry's loader instead of the slide's index.
+
 ## 0.2.2
 
 ### Patch Changes
