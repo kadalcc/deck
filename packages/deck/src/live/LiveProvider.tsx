@@ -5,7 +5,7 @@ import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
 import { roomIdOf } from "../core/model.ts";
-import { type DeckRuntime, useDeck } from "../react/context.ts";
+import { type DeckRuntime, type UiState, useDeck } from "../react/context.ts";
 import { Icon } from "../components/bling.tsx";
 import { z } from "zod";
 import { useCommand } from "../react/commands.ts";
@@ -17,7 +17,13 @@ import { RoomClient, viewerId } from "./client.ts";
 import { presenterTicket, viewerPass } from "./ticket.ts";
 import { turnstileToken, viewerCheck } from "./turnstile.ts";
 import { LiveContext, type LiveValue, useLiveOptional } from "./context.ts";
-import { EMPTY_ROOM, type Role, type RoomState, type ServerMessage } from "./protocol.ts";
+import {
+  EMPTY_ROOM,
+  parseZoom,
+  type Role,
+  type RoomState,
+  type ServerMessage,
+} from "./protocol.ts";
 
 /** Without a room, this window is the one presenting: it draws and points for itself. */
 const OFFLINE_ROLE = createStore<Role>("presenter");
@@ -220,6 +226,65 @@ function Wiring() {
       if (s.spotlight !== prev.spotlight) apply(s.spotlight);
     });
   }, [deck.ui, live.client, role]);
+
+  /**
+   * The zoom, the same way: the presenter's goes to the room (as a fraction of the slide, so any
+   * screen size reads it), and every screen that is FOLLOWING zooms with it — the projector, and
+   * the audience's own screens. A viewer reading on their own keeps their own zoom. The presenter
+   * says what is true on every (re)connection, so a reload can never leave the projector zoomed.
+   */
+  useEffect(() => {
+    if (role !== "presenter") return;
+    const { width, height } = deck.config;
+    const send = (z: UiState["zoom"]) =>
+      live.client.send({
+        type: "zoom",
+        zoom: z
+          ? {
+              x: Math.min(1, Math.max(0, z.x / width)),
+              y: Math.min(1, Math.max(0, z.y / height)),
+              scale: Math.min(6, Math.max(1.2, z.scale)),
+            }
+          : null,
+      });
+    const offUi = deck.ui.subscribe((s, prev) => {
+      if (s.zoom !== prev.zoom) send(s.zoom);
+    });
+    const offWelcome = live.client.on((m) => {
+      if (m.type === "welcome") send(deck.ui.get().zoom);
+    });
+    return () => {
+      offUi();
+      offWelcome();
+    };
+  }, [deck.ui, deck.config, live.client, role]);
+  useEffect(() => {
+    if (role === "presenter") return;
+    const { width, height } = deck.config;
+    const apply = () => {
+      if (!deck.nav.get().follow) return;
+      const z = parseZoom(live.client.state.get().zoom ?? null) ?? null;
+      const next = z ? { x: z.x * width, y: z.y * height, scale: z.scale } : null;
+      deck.ui.update((u) =>
+        u.zoom === next ||
+        (u.zoom && next && u.zoom.x === next.x && u.zoom.y === next.y && u.zoom.scale === next.scale)
+          ? u
+          : { ...u, zoom: next },
+      );
+    };
+    apply();
+    const offState = live.client.state.subscribe((s, prev) => {
+      if (s.zoom !== prev.zoom) apply();
+    });
+    // Back to following: catch up with the presenter's zoom too.
+    const offNav = deck.nav.subscribe((s, prev) => {
+      if (s.follow && !prev.follow) apply();
+    });
+    return () => {
+      offState();
+      offNav();
+    };
+  }, [deck.ui, deck.nav, deck.config, live.client, role]);
 
   // Term cards. The presenter's go out only while "Share terms" is on (off by default: a card is
   // the presenter's own aid until they decide the room should see it); switching it off, closing

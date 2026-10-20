@@ -62,6 +62,8 @@ remote can do what the keyboard can and nothing else.
   plain http the phone points by touch instead.
 - On an iPhone the air pointer first asks for one tap to allow motion (iOS only asks from a tap);
   after that the button is a hold.
+- Zoom (the phone's Zoom, or Alt+click on the presenter view) travels through the room like the
+  spotlight: the projector and every following screen zoom with the presenter.
 - **Disconnect** in the dialog drops the phone, even one that is offline right now, voids its lease
   and changes the code.
 
