@@ -1,6 +1,5 @@
 ---
 "@kadal/deck": minor
-"@kadal/deck-shell": minor
 ---
 
 Decks without a build. `@kadal/deck/runtime` compiles a deck from its text in the browser —
