@@ -1,0 +1,103 @@
+{
+  "name": "@kadal/theme-terminal",
+  "version": "0.3.6",
+  "description": "Terminal, a theme for Kadal Deck (@kadal/deck). A developer theme for code-heavy talks: mono-forward type, superb code blocks, dark first with a good light variant, and the matching Ayu code colours.",
+  "keywords": [
+    "kadal-theme",
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "theme",
+    "developer",
+    "terminal",
+    "code",
+    "monospace"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/pmithunish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/theme-terminal"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "style.css",
+    "index.tsx",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "kadal": {
+    "theme": {
+      "name": "terminal",
+      "title": "Terminal",
+      "description": "A developer theme for code-heavy talks: mono-forward type, superb code blocks, dark first with a good light variant, and the matching Ayu code colours.",
+      "colorScheme": "both",
+      "config": {
+        "transition": "fade",
+        "colorScheme": "dark",
+        "fonts": {
+          "heading": "JetBrains Mono",
+          "sans": "IBM Plex Sans",
+          "mono": "JetBrains Mono",
+          "weights": "400,500,700"
+        }
+      },
+      "themeConfig": {
+        "cursor": true
+      },
+      "shiki": {
+        "light": "ayu-light",
+        "dark": "ayu-dark"
+      },
+      "defaults": {},
+      "layouts": [
+        "code",
+        "shell"
+      ],
+      "components": [
+        "Terminal"
+      ]
+    }
+  },
+  "scripts": {
+    "dev": "kadal-deck dev -C preview",
+    "check": "kadal-deck check -C preview",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "^0.3.6",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}

@@ -1,0 +1,753 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Terminal — a developer theme for code-heavy talks. Mono-forward: JetBrains Mono for headings,
+   labels and code, IBM Plex Sans for reading text. Dark first (the deck starts dark unless it says
+   otherwise), with a light variant made to the same standard; the palette is Ayu's, so the code
+   colours (Shiki's ayu-dark / ayu-light) and the slide agree. Code blocks are the centre: a
+   window bar with its three lights, line numbers, a lit active line, a clear dim.
+
+   Scoped under .theme-terminal; light is .theme-terminal (tokens below), dark is
+   .theme-terminal[data-color-scheme="dark"]. themeConfig: `accent` (the dark scheme's prompt
+   green, --theme-accent), `accentLight` (the light scheme's, --theme-accent-light; derived from
+   `accent` when only that is set), `cursor: false` stills the cover's cursor (--theme-cursor).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-terminal {
+  /* light: Ayu Light */
+  --terminal-accent-deep: color-mix(in oklab, var(--theme-accent) 62%, black);
+  --deck-bg: #fafafa;
+  --deck-fg: #1f2430;
+  --deck-muted: #5c6773;
+  --deck-accent: var(--theme-accent-light, var(--terminal-accent-deep, #477a0b));
+  --deck-accent-2: #0b7aa6;
+  --deck-surface: #eff1f3;
+  --deck-border: #d9dde2;
+  --deck-live: var(--deck-accent);
+  --deck-controls-color: var(--deck-accent);
+  --terminal-red: #d6454d;
+  --terminal-amber: #b86b00;
+  --terminal-green: #477a0b;
+  --terminal-violet: #8a52c8;
+  --terminal-code-ink: #b15c00;
+  --terminal-window: #e9ecef;
+  --deck-heading-font: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-body-font: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --deck-mono-font: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 34px;
+  --deck-code-bg: #f3f4f5;
+  --deck-code-fg: #5c6166;
+  --deck-code-active: rgba(71, 122, 11, 0.1);
+  --deck-radius: 10px;
+  --deck-pad: 80px;
+  --deck-transition: 300ms;
+}
+.theme-terminal[data-color-scheme="dark"] {
+  /* dark: Ayu Dark */
+  --deck-bg: #0b0e14;
+  --deck-fg: #dcd9cf;
+  --deck-muted: #8e959f;
+  --deck-accent: var(--theme-accent, #aad94c);
+  --deck-accent-2: #39bae6;
+  --deck-surface: #12161e;
+  --deck-border: #232a36;
+  --terminal-red: #f07178;
+  --terminal-amber: #ffb454;
+  --terminal-green: #aad94c;
+  --terminal-violet: #d2a6ff;
+  --terminal-code-ink: #ffb454;
+  --terminal-window: #141821;
+  --deck-code-bg: #0d1017;
+  --deck-code-fg: #bfbdb6;
+  --deck-code-active: rgba(170, 217, 76, 0.09);
+  color-scheme: dark;
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-terminal .deck-slide {
+  line-height: 1.45;
+}
+.theme-terminal .deck-slide :is(h1, h2, h3, h4) {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+.theme-terminal .deck-slide h1 {
+  font-size: 2.5em;
+}
+.theme-terminal .deck-slide h2 {
+  font-size: 1.6em;
+  margin-bottom: 0.65em;
+}
+/* headings keep their markdown: a `#` before the second level, quiet */
+.theme-terminal .deck-slide h2::before {
+  content: "# " / "";
+  color: var(--deck-accent);
+  font-weight: 400;
+}
+.theme-terminal .deck-slide h3 {
+  font-size: 1.1em;
+  letter-spacing: -0.02em;
+}
+.theme-terminal .deck-slide h3::before {
+  content: "## " / "";
+  color: var(--deck-muted);
+  font-weight: 400;
+}
+.theme-terminal .deck-slide h4 {
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-slide h4::before {
+  content: "// " / "";
+  color: var(--deck-accent);
+}
+.theme-terminal .deck-layout-default > :is(p, ul, ol) {
+  max-width: 36em;
+}
+.theme-terminal .deck-slide ul {
+  list-style: none;
+  padding-inline-start: 1.2em;
+}
+.theme-terminal .deck-slide ul > li {
+  position: relative;
+}
+.theme-terminal .deck-slide ul > li::before {
+  content: "\203A" / "";
+  position: absolute;
+  left: -1.05em;
+  font: 700 1em var(--deck-mono-font);
+  color: var(--deck-accent);
+}
+.theme-terminal .deck-slide ul ul > li::before {
+  content: "\00B7" / "";
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-slide ol > li::marker {
+  font-family: var(--deck-mono-font);
+  font-weight: 700;
+  color: var(--deck-accent);
+}
+.theme-terminal .deck-slide strong {
+  font-weight: 700;
+  color: var(--deck-fg);
+}
+.theme-terminal .deck-slide em {
+  font-style: normal;
+  color: var(--terminal-amber);
+}
+.theme-terminal .deck-slide a {
+  color: var(--deck-accent-2);
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+.theme-terminal .deck-slide a:hover {
+  text-decoration-style: solid;
+}
+.theme-terminal .deck-slide blockquote {
+  position: relative;
+  margin: 0.6em 0;
+  padding: 0.1em 0 0.1em 1.4em;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-slide blockquote::before {
+  content: ">" / "";
+  position: absolute;
+  left: 0;
+  font: 700 1em var(--deck-mono-font);
+  color: var(--deck-accent);
+}
+.theme-terminal .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+.theme-terminal .deck-slide hr {
+  border-top: 1px dashed var(--deck-border);
+}
+.theme-terminal .deck-slide table {
+  font-size: 0.68em;
+  border: 1px solid var(--deck-border);
+  border-radius: 8px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+.theme-terminal .deck-slide th {
+  font: 600 0.78em var(--deck-mono-font);
+  letter-spacing: 0.06em;
+  color: var(--deck-accent);
+  background: var(--deck-surface);
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-terminal .deck-slide :is(th, td) {
+  padding: 0.5em 0.9em;
+}
+.theme-terminal .deck-slide td + td,
+.theme-terminal .deck-slide th + th {
+  border-left: 1px solid var(--deck-border);
+}
+.theme-terminal .deck-slide tbody tr:last-child td {
+  border-bottom: 0;
+}
+.theme-terminal .deck-slide :not(pre) > code {
+  font-size: 0.82em;
+  padding: 0.1em 0.38em;
+  border-radius: 5px;
+  color: var(--terminal-code-ink);
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-border);
+}
+.theme-terminal .deck-kbd {
+  border-radius: 5px;
+  border-color: var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+}
+.theme-terminal .deck-slide :is(img, video) {
+  border-radius: 8px;
+}
+
+/* ── code: the window ──────────────────────────────────────────────────── */
+.theme-terminal .deck-code-block {
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  background: var(--deck-code-bg);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 20px 50px -28px rgba(0, 0, 0, 0.55);
+}
+.theme-terminal .deck-code-title {
+  position: relative;
+  justify-content: center;
+  padding: 0.65em 1em;
+  font: 500 0.46em var(--deck-mono-font);
+  letter-spacing: 0.02em;
+  color: var(--deck-muted);
+  background: var(--terminal-window);
+  border-bottom: 1px solid var(--deck-border);
+}
+/* the three lights, from the one dot the bar has */
+.theme-terminal .deck-code-title-dot {
+  position: absolute;
+  left: 1.1em;
+  top: 50%;
+  width: 0.95em;
+  height: 0.95em;
+  margin-top: -0.475em;
+  background: #f07171;
+  box-shadow:
+    1.5em 0 0 #f2ae49,
+    3em 0 0 #86b300;
+}
+/* a block without a title still gets its window bar */
+.theme-terminal .deck-code-block:not(.has-title) {
+  padding-top: 1.35em;
+}
+.theme-terminal .deck-code-block:not(.has-title)::before {
+  content: "";
+  position: absolute;
+  left: 0.5em;
+  top: 0.48em;
+  width: 0.43em;
+  height: 0.43em;
+  border-radius: 50%;
+  background: #f07171;
+  box-shadow:
+    0.68em 0 0 #f2ae49,
+    1.36em 0 0 #86b300;
+  opacity: 0.85;
+}
+.theme-terminal pre.deck-code,
+.theme-terminal .shiki-magic-move-wrap {
+  font-size: 0.6em;
+  line-height: 1.7;
+  font-variant-ligatures: contextual;
+}
+.theme-terminal pre.deck-code {
+  padding: 0.85em 0 0.95em;
+}
+.theme-terminal pre.deck-code .line {
+  padding: 0 1.4em;
+}
+.theme-terminal .shiki-magic-move-wrap {
+  padding: 0.85em 1.4em 0.95em;
+}
+.theme-terminal pre.deck-code .line.is-active {
+  background: var(--deck-code-active);
+  box-shadow: inset 0.2em 0 0 var(--deck-accent);
+}
+.theme-terminal pre.deck-code .line.is-dim {
+  opacity: 0.36;
+  filter: saturate(0.5);
+}
+.theme-terminal pre.deck-code.has-lines .line::before {
+  color: var(--deck-muted);
+  opacity: 0.5;
+}
+.theme-terminal pre.deck-code.has-lines .line.is-active::before {
+  color: var(--deck-accent);
+  opacity: 1;
+}
+.theme-terminal .deck-code-copy {
+  font-size: 0.42em;
+  border-radius: 6px;
+  background: var(--terminal-window);
+}
+
+/* ── components ────────────────────────────────────────────────────────── */
+/* a callout is a log line: a bracketed level, then the message */
+.theme-terminal .deck-callout {
+  padding: 0.6em 0.95em;
+  border: 1px solid var(--deck-border);
+  border-inline-start: 3px solid var(--terminal-kind);
+  border-radius: 8px;
+  background: var(--deck-surface);
+  font-size: 0.8em;
+  --terminal-kind: var(--deck-accent-2);
+}
+.theme-terminal .deck-callout.kind-tip {
+  --terminal-kind: var(--terminal-green);
+}
+.theme-terminal .deck-callout.kind-warn {
+  --terminal-kind: var(--terminal-amber);
+}
+.theme-terminal .deck-callout.kind-danger {
+  --terminal-kind: var(--terminal-red);
+}
+.theme-terminal .deck-callout.kind-note {
+  --terminal-kind: var(--deck-muted);
+}
+.theme-terminal .deck-callout-title {
+  font: 700 0.72em var(--deck-mono-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--terminal-kind);
+  margin-bottom: 0.3em;
+}
+.theme-terminal .deck-callout-title::before {
+  content: "[" / "";
+}
+.theme-terminal .deck-callout-title::after {
+  content: "]" / "";
+}
+.theme-terminal .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-terminal .deck-badge {
+  font-family: var(--deck-mono-font);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: 5px;
+}
+.theme-terminal .deck-badge.tone-good {
+  color: var(--terminal-green);
+}
+.theme-terminal .deck-badge.tone-warn {
+  color: var(--terminal-amber);
+}
+.theme-terminal .deck-badge.tone-bad {
+  color: var(--terminal-red);
+}
+/* the contents as `tree` prints them */
+.theme-terminal .deck-toc {
+  font-family: var(--deck-mono-font);
+  font-size: 0.82em;
+}
+.theme-terminal .deck-toc li {
+  margin: 0.12em 0;
+}
+.theme-terminal .deck-toc li::before {
+  content: "\251C\2500 " / "";
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-toc li:last-child::before {
+  content: "\2514\2500 " / "";
+}
+.theme-terminal .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 1.6em;
+}
+.theme-terminal .deck-toc li.is-current > a {
+  color: var(--deck-accent);
+}
+.theme-terminal .deck-toc li.is-current > a::after {
+  content: "  \2190 you are here" / "";
+  color: var(--deck-muted);
+  font-weight: 400;
+}
+.theme-terminal .deck-counter {
+  font-family: var(--deck-mono-font);
+}
+.theme-terminal .deck-mark {
+  --mark-color: var(--deck-accent);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-terminal .deck-progress {
+  height: 3px;
+  background: var(--deck-surface);
+}
+.theme-terminal .deck-progress span {
+  background: var(--deck-accent);
+}
+.theme-terminal .deck-slide-number {
+  font: 500 13px var(--deck-mono-font);
+  color: var(--deck-muted);
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-border);
+  border-radius: 5px;
+}
+.theme-terminal .deck-slide-number::before {
+  content: "[" / "";
+}
+.theme-terminal .deck-slide-number::after {
+  content: "]" / "";
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+/* the prompt, and the cursor after the title */
+.theme-terminal :is(.deck-layout-cover, .deck-layout-intro, .deck-layout-section, .deck-layout-end) :is(h1, h2)::before {
+  content: "\276F  " / "";
+  color: var(--deck-accent);
+  font-weight: 700;
+}
+.theme-terminal .deck-layout-cover {
+  justify-content: center;
+  align-items: flex-start;
+}
+.theme-terminal .deck-layout-cover h1 {
+  font-size: 3.4em;
+  letter-spacing: -0.045em;
+  margin-bottom: 0.4em;
+}
+.theme-terminal :is(.deck-layout-cover, .deck-layout-end) h1::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 0.9em;
+  margin-left: 0.15em;
+  vertical-align: -0.08em;
+  background: var(--deck-accent);
+  opacity: var(--theme-cursor, 1);
+  animation: terminal-blink 1.1s steps(1) infinite;
+}
+@keyframes terminal-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.theme-terminal .deck-layout-cover > p {
+  max-width: 38em;
+  font-size: 1em;
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-layout-cover h4 {
+  margin-bottom: 1.4em;
+}
+.theme-terminal .deck-layout-intro {
+  align-items: flex-start;
+}
+.theme-terminal .deck-layout-intro h1 {
+  font-size: 2.6em;
+}
+.theme-terminal .deck-layout-intro > p {
+  max-width: 34em;
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-layout-section {
+  align-items: flex-start;
+}
+.theme-terminal .deck-layout-section :is(h1, h2) {
+  font-size: 2.9em;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.45em;
+  border-bottom: 1px dashed var(--deck-border);
+}
+.theme-terminal .deck-layout-section > p {
+  font-family: var(--deck-mono-font);
+  font-size: 0.8em;
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-layout-section > p::before {
+  content: "// " / "";
+  color: var(--deck-accent);
+}
+.theme-terminal .deck-layout-end :is(h1, h2) {
+  font-size: 3em;
+}
+.theme-terminal .deck-layout-end > p {
+  font-family: var(--deck-mono-font);
+  font-size: 0.75em;
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  font-family: var(--deck-mono-font);
+  font-size: 5em;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  color: var(--deck-accent);
+  margin-bottom: 0.2em;
+}
+.theme-terminal .deck-layout-fact > :not(:first-child) {
+  font-size: 0.95em;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--deck-muted);
+  max-width: 32em;
+}
+/* a quote is a block comment */
+.theme-terminal .deck-layout-quote {
+  padding-inline: 10%;
+  font-style: normal;
+  font-size: 1.1em;
+}
+.theme-terminal .deck-layout-quote blockquote {
+  padding: 0;
+  color: var(--deck-fg);
+  font-size: 1.15em;
+  line-height: 1.35;
+}
+.theme-terminal .deck-layout-quote blockquote::before {
+  content: "/*" / "";
+  position: static;
+  display: block;
+  margin-bottom: 0.3em;
+  color: var(--deck-muted);
+  font-weight: 400;
+}
+.theme-terminal .deck-layout-quote blockquote::after {
+  content: "*/" / "";
+  display: block;
+  margin-top: 0.3em;
+  font: 400 1em var(--deck-mono-font);
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-layout-quote > p {
+  font: 500 0.6em var(--deck-mono-font);
+  color: var(--deck-accent);
+}
+.theme-terminal .deck-layout-quote > p::before {
+  content: "\2014 " / "";
+}
+.theme-terminal .deck-layout-statement :is(h1, h2) {
+  font-size: 2.5em;
+  max-width: 22ch;
+  margin-inline: auto;
+}
+.theme-terminal .deck-layout-full {
+  padding: 0;
+}
+.theme-terminal .deck-layout-two-cols {
+  column-gap: 2em;
+}
+.theme-terminal .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) > :first-child {
+  margin-top: 0;
+}
+.theme-terminal .deck-layout-two-cols-header {
+  column-gap: 2em;
+}
+.theme-terminal .deck-layout-two-cols-header > .deck-slot-default {
+  padding-bottom: 0.4em;
+  margin-bottom: 0.3em;
+  border-bottom: 1px dashed var(--deck-border);
+}
+.theme-terminal .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding: 0.6em 0.9em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+}
+.theme-terminal .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) > :last-child {
+  margin-bottom: 0;
+}
+.theme-terminal .deck-layout-image .deck-layout-image-content {
+  background: linear-gradient(180deg, transparent, rgba(11, 14, 20, 0.85));
+}
+.theme-terminal :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: calc(var(--deck-pad) * 0.9);
+}
+.theme-terminal .deck-layout-image-pane {
+  background-color: var(--deck-surface);
+}
+.theme-terminal :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  border-top: 1.4em solid var(--terminal-window);
+  box-shadow: 0 20px 50px -28px rgba(0, 0, 0, 0.55);
+}
+.theme-terminal :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── the theme's own layouts and components (index.tsx) ───────────────── */
+/* code: the heading small, the code as tall as the slide allows, notes beside it */
+.theme-terminal .deck-layout-code {
+  display: flex;
+  flex-direction: column;
+}
+.theme-terminal .deck-layout-code:has(> .deck-slot-side) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.42fr);
+  grid-template-rows: minmax(0, 1fr);
+  column-gap: 1.4em;
+}
+.theme-terminal .deck-layout-code > .deck-slot-default {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.theme-terminal .deck-layout-code > .deck-slot-side {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  font-size: 0.8em;
+  color: var(--deck-muted);
+}
+.theme-terminal .deck-layout-code :is(h1, h2) {
+  font-size: 1.25em;
+  margin-bottom: 0.5em;
+}
+.theme-terminal .deck-layout-code :is(.deck-code-block, .shiki-magic-move-container) {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+}
+.theme-terminal .deck-layout-code pre.deck-code {
+  font-size: 0.66em;
+}
+/* shell: the whole slide is a terminal window */
+.theme-terminal .deck-layout-shell {
+  padding: 0;
+}
+.theme-terminal .terminal-window {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--deck-border);
+  border-radius: 14px;
+  background: var(--deck-code-bg);
+  color: var(--deck-code-fg);
+  overflow: hidden;
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.6);
+}
+.theme-terminal .terminal-bar {
+  position: relative;
+  flex: none;
+  padding: 0.55em 1em;
+  text-align: center;
+  font: 500 0.5em var(--deck-mono-font);
+  color: var(--deck-muted);
+  background: var(--terminal-window);
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-terminal .terminal-bar::before {
+  content: "";
+  position: absolute;
+  left: 1.2em;
+  top: 50%;
+  width: 0.95em;
+  height: 0.95em;
+  margin-top: -0.475em;
+  border-radius: 50%;
+  background: #f07171;
+  box-shadow:
+    1.5em 0 0 #f2ae49,
+    3em 0 0 #86b300;
+}
+.theme-terminal .terminal-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.8em 1.1em;
+  overflow: hidden;
+  font: 0.72em/1.6 var(--deck-mono-font);
+}
+.theme-terminal .terminal-screen :is(h1, h2, h3) {
+  font-size: 1.2em;
+}
+.theme-terminal .terminal-screen .deck-code-block {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding-top: 0;
+}
+.theme-terminal .terminal-screen .deck-code-block::before {
+  display: none;
+}
+.theme-terminal .terminal-screen pre.deck-code {
+  font-size: 0.9em;
+}
+.theme-terminal .terminal-screen pre.deck-code .line {
+  padding-inline: 0;
+}
+/* Terminal: a session, line by line */
+.theme-terminal .terminal-window.is-inline {
+  height: auto;
+  margin: 0.5em 0;
+  border-radius: var(--deck-radius);
+  box-shadow: 0 20px 50px -28px rgba(0, 0, 0, 0.55);
+}
+.theme-terminal .terminal-lines {
+  margin: 0;
+  padding: 0.75em 1.1em 0.85em;
+  font: 0.6em/1.7 var(--deck-mono-font);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.theme-terminal .terminal-line {
+  display: block;
+}
+.theme-terminal .terminal-line.is-command {
+  color: var(--deck-fg);
+}
+.theme-terminal .terminal-prompt {
+  color: var(--deck-accent);
+  font-weight: 700;
+  user-select: none;
+}
+.theme-terminal .terminal-line.is-comment {
+  color: var(--deck-muted);
+  font-style: italic;
+}
+.theme-terminal .terminal-line.is-output {
+  color: var(--deck-code-fg);
+  opacity: 0.85;
+}
+.theme-terminal .terminal-line.is-error {
+  color: var(--terminal-red);
+}
+.theme-terminal .terminal-line.is-ok {
+  color: var(--terminal-green);
+}
+
+/* ── still copies and stillness ─────────────────────────────────────────── */
+.theme-terminal .deck-print-page :is(.deck-code-block, .terminal-window, .deck-frame) {
+  box-shadow: none;
+}
+.theme-terminal .deck-print-page h1::after,
+.theme-terminal .deck-slide:is(.is-print, .is-tile) h1::after {
+  animation: none;
+}
+@media print {
+  .theme-terminal :is(.deck-code-block, .terminal-window, .deck-frame) {
+    box-shadow: none;
+  }
+  .theme-terminal h1::after {
+    animation: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-terminal :is(.deck-layout-cover, .deck-layout-end) h1::after {
+    animation: none;
+  }
+}
+
+/* centred: the built-in placement, in this theme's rhythm */
+.theme-terminal .deck-layout-center > :is(h1, h2) {
+  margin-bottom: 0.3em;
+}
