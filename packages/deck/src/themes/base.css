@@ -1832,6 +1832,10 @@ pre.deck-code.has-lines .line::before {
     opacity: 0;
   }
 }
+.deck-ad-slot,
+.deck-ad-slot * {
+  box-sizing: border-box;
+}
 .deck-ad-slot {
   position: absolute;
   pointer-events: auto;
@@ -1945,7 +1949,8 @@ pre.deck-code.has-lines .line::before {
   padding: 7px 12px;
   border-radius: 999px;
   background: var(--deck-accent);
-  color: #fff;
+  /* the slide's own background on the accent reads in both schemes (a dark theme's accent is pale) */
+  color: var(--deck-bg);
   white-space: nowrap;
 }
 .deck-ad-slot.is-wide .deck-ad-cta {
