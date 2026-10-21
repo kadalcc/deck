@@ -2,10 +2,10 @@
 /**
  * A scaffolded deck in a real (headless) browser:
  *   1. `kadal-deck dev`: the deck renders, arrow keys move, the presenter route loads, the
- *      console stays clean, and no badge shows on a self-hosted deck.
+ *      console stays clean, and no watermark shows on a self-hosted deck.
  *   2. the built dist/, served the way the host serves a published deck — with
- *      window.__KADAL_DECK__ injected — joins the host's room id and shows the badge, which the
- *      print view hides.
+ *      window.__KADAL_DECK__ injected — joins the host's room id and carries the free-plan
+ *      watermark on the slide, and on every page of the print view that exports are made from.
  *
  *   node tools/browser-check.mjs <deck folder>      (e.g. the folder tools/smoke.mjs printed)
  */
@@ -51,7 +51,7 @@ try {
   await page.waitForTimeout(900);
   const hash = await page.evaluate(() => location.hash);
   check("dev: ArrowRight moves to the next slide", /^#\/1/.test(hash), hash);
-  check("dev: no badge on a self-hosted deck", (await page.locator(".deck-made-with").count()) === 0);
+  check("dev: no watermark on a self-hosted deck", (await page.locator(".deck-watermark").count()) === 0);
   await page.goto("http://localhost:5399/presenter");
   await page.waitForSelector(".deck-presenter", { timeout: 30_000 });
   check("dev: the presenter view loads", true);
@@ -93,15 +93,18 @@ try {
   await page.goto("http://localhost:5398/");
   await page.waitForSelector(".deck-slide.is-present", { timeout: 30_000 });
   await page.waitForTimeout(2500);
-  const badge = page.locator(".deck-made-with");
-  check("published: the badge shows", (await badge.count()) === 1 && (await badge.isVisible()));
-  check("published: the badge links home", (await badge.getAttribute("href")) === "https://deck.kadal.cc/?ref=badge");
+  const mark = page.locator(".deck-slide.is-present .deck-watermark");
+  check("published: the present slide carries the watermark", (await mark.count()) === 1 && (await mark.isVisible()));
+  check("published: the watermark links home", (await mark.getAttribute("href")) === "https://deck.kadal.cc/?ref=watermark");
   const all = [...sockets, ...api];
   check("published: host calls use the room id", all.some((u) => u.includes("dabc123def456")), all.slice(0, 3).join(" "));
   check("published: nothing keyed by the slug", !all.some((u) => /\/(rooms|decks)\/(deck|my-talk)\b/.test(u)));
   await page.goto("http://localhost:5398/?print-pdf");
   await page.waitForTimeout(2000);
-  check("published: print view hides the badge", (await page.locator(".deck-made-with").count()) === 0);
+  // Exports are made from the print view, so the mark must be on every page of it.
+  const pages = await page.locator(".deck-print-page:not(.deck-print-notes-page)").count();
+  const marks = await page.locator(".deck-watermark").count();
+  check("published: every print page carries the watermark", pages > 0 && marks >= pages, `${marks} marks, ${pages} pages`);
   await page.close();
 } finally {
   server.close();

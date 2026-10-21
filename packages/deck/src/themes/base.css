@@ -1726,33 +1726,52 @@ pre.deck-code.has-lines .line::before {
   grid-column: 1 / -1;
 }
 
-/* "Made with Kadal Deck": the free-plan badge, bottom-left, out of the way of the slide number. */
-.deck-made-with {
+/* "Made with Kadal Deck" (react/Watermark.tsx): on every slide of a free-plan hosted deck. Sized
+   from the deck's base text size, so it scales with the slide; top-right, the one corner no
+   control sits over (the theme button is bottom-left, the arrows and number bottom-right). It
+   carries its own backing so it reads on any slide (an image, a dark section), and prints. */
+.deck-watermark {
   position: absolute;
-  left: 14px;
-  bottom: 12px;
-  z-index: 20;
-  font: 12px/1 var(--deck-body-font, system-ui, sans-serif);
-  color: var(--deck-muted);
-  text-decoration: none;
-  background: var(--deck-surface);
-  padding: 6px 9px;
-  border-radius: 6px;
-  opacity: 0.72;
-  transition: opacity 0.2s ease;
-}
-.deck-made-with:hover,
-.deck-made-with:focus-visible {
-  opacity: 1;
+  top: calc(var(--deck-base-size, 32px) * 0.5);
+  right: calc(var(--deck-base-size, 32px) * 0.5);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.45em 0.85em 0.45em 0.7em;
+  border-radius: 999px;
+  font: 500 calc(var(--deck-base-size, 32px) * 0.44) / 1 var(--deck-body-font, system-ui, sans-serif);
+  letter-spacing: 0.01em;
   color: var(--deck-fg);
+  text-decoration: none;
+  background: color-mix(in oklab, var(--deck-bg) 84%, transparent);
+  border: 1px solid color-mix(in oklab, var(--deck-fg) 14%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(6px);
+  opacity: 0.9;
+  pointer-events: auto;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
-.deck-made-with strong {
-  font-weight: 600;
+/* A slide's own link styles (underlines, accent colour) are not the mark's. */
+.deck-slide a.deck-watermark,
+.deck-slide a.deck-watermark:hover {
+  color: var(--deck-fg);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklab, var(--deck-fg) 14%, transparent);
 }
-@media print {
-  .deck-made-with {
-    display: none;
-  }
+.deck-watermark:hover,
+.deck-watermark:focus-visible {
+  opacity: 1;
+}
+.deck-watermark svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  color: var(--deck-accent);
+}
+.deck-watermark strong {
+  font-weight: 700;
 }
 
 /* The runtime compiler: a slide that did not compile, and the prebuilt shell's own status. */
