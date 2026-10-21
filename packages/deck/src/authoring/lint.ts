@@ -16,6 +16,7 @@ import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/mod
 import { parseGlossary } from "../glossary/parse.ts";
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
 import { checkValue, closest } from "./validate.ts";
+import { parseDuration } from "../core/timer.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -256,6 +257,15 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       if (why)
         add({ ...at, severity: "error", code: "frontmatter-type", message: `"${key}": ${why}.` });
     }
+    // `duration: 30min` is a string the schema cannot check: read it as the timer does.
+    if (head && s.frontmatter.duration != null && parseDuration(s.frontmatter.duration) === null)
+      add({
+        ...at,
+        severity: "warning",
+        code: "duration-unreadable",
+        message: `"duration": ${JSON.stringify(s.frontmatter.duration)} is not a length of time, so the timer ignores it.`,
+        hint: 'Write it as 30min, 1h, 1h30m, 90s, 25:00, or a number of minutes.',
+      });
     const layout = s.frontmatter.layout;
     if (typeof layout === "string" && !layouts.has(layout)) {
       const near = closest(layout, layouts);
