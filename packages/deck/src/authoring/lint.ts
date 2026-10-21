@@ -404,6 +404,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         message: `"duration": ${JSON.stringify(s.frontmatter.duration)} is not a length of time, so the timer ignores it.`,
         hint: 'Write it as 30min, 1h, 1h30m, 90s, 25:00, or a number of minutes.',
       });
+    if (head) lintSiteKeys(s.frontmatter, at);
     const layout = s.frontmatter.layout;
     if (typeof layout === "string" && !layouts.has(layout)) {
       const near = closest(layout, layouts);
@@ -480,6 +481,46 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         slide: s.index,
         hint: "Slide settings sit between two `---` lines: `---`, then `background: spotlight`, then `---`, then the slide.",
       });
+  }
+
+  /** The build's own keys (vite/site.ts): files it will look for, and what a link preview needs. */
+  function lintSiteKeys(
+    fm: Record<string, unknown>,
+    at: { file: string; line: number; slide: number },
+  ) {
+    if (typeof fm.favicon === "string") checkAsset(fm.favicon, at.file, at.line, at.slide);
+    const seo =
+      fm.seoMeta && typeof fm.seoMeta === "object" ? (fm.seoMeta as Record<string, unknown>) : {};
+    const og = typeof seo.ogImage === "string" ? seo.ogImage.trim() : "";
+    if (og && og !== "auto" && !isUrl(og)) {
+      const rel = og.replace(/^\.?\//, "");
+      if (!exists(joinPath(joinPath(root, "public"), rel)) && !exists(joinPath(root, rel)))
+        add({
+          ...at,
+          severity: "warning",
+          code: "og-image-missing",
+          message: `seoMeta.ogImage "${og}" is not in the deck folder or public/, so the build leaves og:image out.`,
+          hint: "Use `ogImage: auto` to photograph slide 1, or a full URL.",
+        });
+    }
+    if (og && !isUrl(og) && !seo.ogUrl && !seo.canonical)
+      add({
+        ...at,
+        severity: "info",
+        code: "og-url-missing",
+        message: "og:image will be a path, not a full URL: most link previews (Slack, X, LinkedIn) skip it.",
+        hint: "Add seoMeta.ogUrl: the address the deck will be served at, e.g. https://you.github.io/talk/.",
+      });
+    if (fm.pwa && typeof fm.pwa === "object" && !Array.isArray(fm.pwa))
+      for (const key of Object.keys(fm.pwa))
+        if (!["name", "shortName", "themeColor", "backgroundColor", "display"].includes(key))
+          add({
+            ...at,
+            severity: "warning",
+            code: "pwa-unknown-key",
+            message: `Unknown pwa option "${key}".`,
+            hint: "pwa takes name, shortName, themeColor, backgroundColor and display.",
+          });
   }
 
   function checkAsset(url: string, file: string, line: number, slide: number, column?: number) {

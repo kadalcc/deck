@@ -129,6 +129,7 @@ interface ContextLike {
 interface ElementLike {
   screenshot(o?: Record<string, unknown>): Promise<Buffer>;
   scrollIntoViewIfNeeded(): Promise<void>;
+  boundingBox(): Promise<{ x: number; y: number; width: number; height: number } | null>;
 }
 interface PageLike {
   goto(url: string, o?: Record<string, unknown>): Promise<unknown>;
@@ -136,6 +137,7 @@ interface PageLike {
   waitForTimeout(ms: number): Promise<void>;
   evaluate<T>(fn: () => T | Promise<T>): Promise<T>;
   $$(sel: string): Promise<ElementLike[]>;
+  screenshot(o?: Record<string, unknown>): Promise<Buffer>;
   on(
     event: string,
     cb: (arg: { type?: () => string; text?: () => string; message?: string }) => void,
@@ -176,6 +178,11 @@ export interface RenderRequest {
   theme?: string;
   /** Pixel width of each picture (default 1280; the slide's own width is 1920). */
   width?: number;
+  /**
+   * Crop each picture to this width/height ratio around its centre (1200/630 for an Open Graph
+   * card: the middle 1920×1008 of a 16:9 slide). Default: the slide's own shape.
+   */
+  aspect?: number;
 }
 
 export interface RenderedSlide {
@@ -311,13 +318,34 @@ export class SlideRenderer {
         const pick = list[list.length - 1]!;
         const el = pages[pick]!;
         await el.scrollIntoViewIfNeeded();
-        const png = await el.screenshot({ type: "png", animations: "disabled" });
         const meta = info[pick]!;
+        const box = req.aspect ? await el.boundingBox() : null;
+        let w = meta.width;
+        let h = meta.height;
+        let png: Buffer;
+        if (box && req.aspect) {
+          // The page's coordinates (fullPage), so the clip is where the box is however it scrolled.
+          const scrollY = await page.evaluate(() => window.scrollY);
+          const scrollX = await page.evaluate(() => window.scrollX);
+          w = Math.min(box.width, box.height * req.aspect);
+          h = w / req.aspect;
+          png = await page.screenshot({
+            type: "png",
+            animations: "disabled",
+            fullPage: true,
+            clip: {
+              x: box.x + scrollX + (box.width - w) / 2,
+              y: box.y + scrollY + (box.height - h) / 2,
+              width: w,
+              height: h,
+            },
+          });
+        } else png = await el.screenshot({ type: "png", animations: "disabled" });
         shots.push({
           index,
           click: meta.click,
-          width: Math.round(meta.width * (width / 1920)),
-          height: Math.round(meta.height * (width / 1920)),
+          width: Math.round(w * (width / 1920)),
+          height: Math.round(h * (width / 1920)),
           png,
         });
       }

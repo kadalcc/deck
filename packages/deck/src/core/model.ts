@@ -309,7 +309,30 @@ export interface DeckConfig {
    * — which also points the theme's font tokens at them (theming/fonts.ts).
    */
   fonts: FontsInput;
+  /**
+   * The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage`
+   * (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`,
+   * `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any
+   * other key as a meta tag of its own. Written into the built index.html.
+   */
   seoMeta: Record<string, string>;
+  /** The page's language: `<html lang>` and og:locale. Empty leaves index.html's. */
+  lang: string;
+  /** The tab icon: a file in public/ (`/logo.svg`) or a URL. The PWA's icon, when it is local. */
+  favicon: string;
+  /**
+   * `kadal-deck build` makes the deck an installable web app that presents offline: a web
+   * manifest, icons, and a service worker that precaches the build (vite/pwa.ts). Never in dev;
+   * `kadal-deck publish` leaves it out unless `--pwa`. An object sets { name, shortName,
+   * themeColor, backgroundColor, display }.
+   */
+  pwa: boolean | Record<string, string>;
+  /**
+   * At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS
+   * `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it
+   * presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache.
+   */
+  bundleRemoteAssets: boolean;
   /**
    * Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g.
    * `{ layout: center, transition: fade }`. A theme's defaults sit beneath it.
@@ -440,6 +463,10 @@ export const DEFAULT_CONFIG: DeckConfig = {
   download: false,
   fonts: [],
   seoMeta: {},
+  lang: "",
+  favicon: "",
+  pwa: false,
+  bundleRemoteAssets: false,
   defaults: {},
   plantUmlServer: "https://www.plantuml.com/plantuml",
   notesAutoRuby: {},

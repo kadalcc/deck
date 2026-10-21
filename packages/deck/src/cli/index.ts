@@ -5,7 +5,11 @@
  *   kadal-deck new --theme <name> [dir]   a theme package, ready to publish (--addon: an addon)
  *   kadal-deck theme eject [--dir theme]  copy the deck's theme into the deck, to change it
  *   kadal-deck dev [vite flags]           the deck with live reload (vite)
- *   kadal-deck build [vite flags]         dist/ for any static host (vite build); --without-notes
+ *   kadal-deck build [a.mdx b.mdx…]       dist/ for any static host (vite build); --without-notes,
+ *                                         --base, --out, several decks into folders (cli/build.ts)
+ *   kadal-deck serve [dist]               the build, served as a static host would (cli/serve.ts)
+ *   kadal-deck ci <host>                  the files a host needs: github-pages, netlify, vercel,
+ *                                         cloudflare, docker (cli/hosting.ts)
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
  *   kadal-deck info [topic]               the catalog: components, layouts, backgrounds, keys…
  *   kadal-deck screenshot                 PNGs of slides (headless Chromium)
@@ -43,15 +47,24 @@ export const EXIT = { ok: 0, failed: 1, usage: 2, auth: 3, missing: 4 } as const
 export const HELP = `kadal-deck <command> [options]
 
   new <dir>   create a deck from the starter      --title <t> --yes --no-install --pm <npm|pnpm|yarn|bun>
+              --ci <host[,host]>  with the hosting files too (see ci)
               --theme <name> [dir]  a theme package instead (kadal-theme-<name>)   --addon <name>  an addon
   theme       theme eject [--dir ./theme] [--force]  copy the deck's theme (or a built-in) into the
               deck and point the headmatter at it   (-C <deck> for a deck elsewhere)
   dev         run the deck locally with live reload (Vite flags pass through)
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
-  build       build the deck into dist/ (any static host can serve it)
+  build       build the deck into dist/ (any static host can serve it)   [deck files…]
+              a.mdx b.mdx  several decks: dist/a/, dist/b/ and a page listing them
+              --base /talks/x/  where it will be served   --out <dir>  where it goes (--outDir)
               --without-notes  leave the speaker notes out of the build
+              --pwa / --no-pwa  the offline app (\`pwa: true\` in the deck)
+              --bundle-remote-assets  download remote images and fonts into the build
               --download  also print it to dist/deck.pdf for the deck's Download button
               (\`download: true\` in the deck does the same; --no-download skips it)
+  serve       serve a built deck as a static host would   [folder, default dist]
+              --port <n> (4173)  --host <addr> (127.0.0.1; 0.0.0.0 for a container)  --base <path>
+  ci          write a host's deploy files: ci <github-pages|netlify|vercel|cloudflare|docker>[,…]
+              --force  replace files that are there
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
   info        the reference: info [components|layouts|backgrounds|themes|transitions|clicks|code|
@@ -72,6 +85,7 @@ export const HELP = `kadal-deck <command> [options]
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
               --no-thumbnail  skip the picture of slide 1 the host shows in its lists
               --without-notes  publish without the speaker notes
+              --pwa  keep the deck's service worker (left out on the host by default)
   narrate     bake the narration: every notes segment spoken by Kokoro into public/narration/
               --voice <id> (default af_heart)  --dtype <fp32|fp16|q8|q4|q4f16>  --force (redo all)
               --setup  install kokoro-js into the deck first (an optional, ~400 MB dependency)
@@ -102,7 +116,10 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     yes: { kind: "boolean", short: "y" },
     install: { kind: "boolean" },
     pm: { kind: "string" },
+    ci: { kind: "string" },
   },
+  serve: { port: { kind: "number" }, host: { kind: "string" }, base: { kind: "string" } },
+  ci: { force: { kind: "boolean" } },
   check: { compile: { kind: "boolean" } },
   info: { search: { kind: "string" }, markdown: { kind: "boolean" } },
   screenshot: {
@@ -124,6 +141,7 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     host: { kind: "string" },
     thumbnail: { kind: "boolean" },
     "without-notes": { kind: "boolean" },
+    pwa: { kind: "boolean" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
   // Mirrors NARRATE_FLAGS in narrate.ts, which is imported only when the command runs.
@@ -213,41 +231,66 @@ async function run(
 ): Promise<number> {
   const { json, say, emit } = io;
   switch (command) {
-    case "dev":
-    case "build": {
+    case "dev": {
       // Vite's own flags pass straight through; only --dir is ours.
+      const {
+        flags,
+        rest: vite,
+        positionals,
+      } = parseArgs(rest, { dir: GLOBAL.dir! }, { passthrough: true });
+      const dir = resolve(cwd, str(flags.dir) ?? ".");
+      // `dev --https`: Vite dropped its own flag, so the deck's plugin makes a certificate
+      // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
+      if (vite.includes("--https")) process.env.KADAL_DECK_HTTPS = "1";
+      await runVite(dir, [...positionals, ...vite.filter((a) => a !== "--https")]);
+      return EXIT.ok;
+    }
+    case "build": {
+      // Vite's own flags pass straight through (--base, --outDir, --mode…); these are ours.
       const {
         flags,
         rest: vite,
         positionals,
       } = parseArgs(
         rest,
-        command === "build"
-          ? { dir: GLOBAL.dir!, download: { kind: "boolean" }, port: { kind: "number" } }
-          : { dir: GLOBAL.dir! },
+        {
+          dir: GLOBAL.dir!,
+          download: { kind: "boolean" },
+          port: { kind: "number" },
+          out: { kind: "string" },
+          "without-notes": { kind: "boolean" },
+          pwa: { kind: "boolean" },
+          "bundle-remote-assets": { kind: "boolean" },
+        },
         { passthrough: true },
       );
       const dir = resolve(cwd, str(flags.dir) ?? ".");
-      // `dev --https`: Vite dropped its own flag, so the deck's plugin makes a certificate
-      // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
-      const https = command === "dev" && vite.includes("--https");
-      if (https) process.env.KADAL_DECK_HTTPS = "1";
-      // `build --without-notes`: the deck's plugin reads this and builds no notes (vite/index.ts).
-      if (command === "build" && vite.includes("--without-notes"))
-        process.env.KADAL_DECK_WITHOUT_NOTES = "1";
-      const passed = vite.filter((a) => a !== "--https" && a !== "--without-notes");
-      await runVite(
+      // The deck's plugin reads these (vite/index.ts, vite/site.ts).
+      if (flags["without-notes"] === true) process.env.KADAL_DECK_WITHOUT_NOTES = "1";
+      if (flags.pwa !== undefined) process.env.KADAL_DECK_PWA = flags.pwa ? "1" : "0";
+      if (flags["bundle-remote-assets"] !== undefined)
+        process.env.KADAL_DECK_REMOTE_ASSETS = flags["bundle-remote-assets"] ? "1" : "0";
+      // Deck files on the command line build one after another, each in its folder (cli/build.ts).
+      const { planBuild, runBuild } = await import("./build.ts");
+      const plan = planBuild(positionals, vite, str(flags.out));
+      const port = num(flags.port);
+      await runBuild({
         dir,
-        command === "build" ? ["build", ...positionals, ...passed] : [...positionals, ...passed],
-      );
-      // `--download` (or `download: true` in the deck): the PDF its Download button offers.
-      if (command === "build" && flags.download !== false) {
-        const { buildDownload, deckWantsDownload, outDirOf } = await import("./download.ts");
-        if (flags.download === true || (await deckWantsDownload(dir))) {
-          const port = num(flags.port);
-          await buildDownload(dir, { outDir: outDirOf(passed), ...(port ? { port } : {}), say });
-        }
-      }
+        plan,
+        say,
+        // `--download` (or `download: true` in the deck): the PDF its Download button offers.
+        after: async (record) => {
+          if (flags.download === false) return;
+          const { buildDownload, deckWantsDownload } = await import("./download.ts");
+          if (flags.download === true || (await deckWantsDownload(dir, record.entry)))
+            await buildDownload(dir, {
+              outDir: record.outDir,
+              base: record.base,
+              ...(port ? { port } : {}),
+              say,
+            });
+        },
+      });
       return EXIT.ok;
     }
     case undefined:
@@ -338,11 +381,47 @@ async function run(
         pm: pm as never,
         stdio: json ? "stderr" : "inherit",
       });
+      // `--ci github-pages,docker`: the hosting recipes too (cli/hosting.ts).
+      const ci = str(flags.ci);
+      if (ci) {
+        const { hostTargets, writeHosting } = await import("./hosting.ts");
+        const hosting = writeHosting(result.dir, hostTargets(ci));
+        result.next.push(...hosting.next);
+      }
       if (json) emit({ ok: true, ...result });
       else
         say(
           `\nYour deck is in ${result.dir}. Next:\n\n  ${result.next.join("\n  ")}\n\nDocs: https://deck.kadal.cc/docs/`,
         );
+      return EXIT.ok;
+    }
+    case "serve": {
+      const { detectBase, startStaticServer } = await import("./serve.ts");
+      const root = resolve(dir, positionals[0] ?? "dist");
+      const base = str(flags.base) ?? detectBase(root);
+      const host = str(flags.host) ?? "127.0.0.1";
+      const port = num(flags.port) ?? 4173;
+      const server = await startStaticServer({ root, base, port, host });
+      const shown = host === "0.0.0.0" || host === "::" ? "localhost" : host;
+      const url = `http://${shown}:${port}${base.endsWith("/") ? base : `${base}/`}`;
+      if (json) emit({ ok: true, url, root, base });
+      else say(`serve  ${root}\n       ${url}   (Ctrl+C stops)`);
+      await new Promise<void>((done) => {
+        const stop = () => server.close(() => done());
+        process.once("SIGINT", stop);
+        process.once("SIGTERM", stop);
+      });
+      return EXIT.ok;
+    }
+    case "ci": {
+      const spec = positionals.join(",");
+      const { hostTargets, writeHosting } = await import("./hosting.ts");
+      const result = writeHosting(dir, hostTargets(spec), { force: flags.force === true });
+      if (json) emit({ ok: true, ...result });
+      else {
+        for (const f of result.files) say(`wrote  ${f}`);
+        say(`\nNext:\n  ${result.next.join("\n  ")}`);
+      }
       return EXIT.ok;
     }
     case "check": {
@@ -710,6 +789,10 @@ export async function publishCommand(
       await rm(out, { recursive: true, force: true });
       // `--without-notes`: the deck's plugin builds no notes (vite/index.ts reads this).
       if (flags["without-notes"] === true) process.env.KADAL_DECK_WITHOUT_NOTES = "1";
+      // The host routes the deck and writes its room into index.html: no static-host fallbacks,
+      // and no service worker on its origin unless asked (vite/site.ts).
+      process.env.KADAL_DECK_TARGET = "host";
+      if (flags.pwa === true) process.env.KADAL_DECK_PWA = "1";
       await runVite(dir, ["build", "--base", base, "--outDir", out, "--emptyOutDir"]);
     },
   });

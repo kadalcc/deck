@@ -17,6 +17,7 @@ import {
 } from "./contract.ts";
 import { type ResolvedFonts, resolveFonts } from "./fonts.ts";
 import { mergeComponents, mergeLayers, mergeThemeConfig, themeConfigVars } from "./merge.ts";
+import { localAsset } from "../core/remote-assets.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -144,7 +145,7 @@ function loadSheet(
   return new Promise((done) => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = sheet.href;
+    link.href = localAsset(sheet.href);
     link.dataset.deckFont = sheet.family;
     let retried = false;
     link.onload = () => done();
@@ -152,7 +153,7 @@ function loadSheet(
       // Google refuses the whole family when one weight is missing: ask once more without them.
       if (sheet.retry && !retried) {
         retried = true;
-        link.href = sheet.retry;
+        link.href = localAsset(sheet.retry);
         return;
       }
       console.warn(`[deck] the font "${sheet.family}" could not load from ${sheet.href}.`);
