@@ -270,7 +270,11 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `ads` | `boolean` | `false` | Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them. |
 | `download` | `string \| boolean` | `false` | A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there is none; a URL links that file instead. A host may switch it off, or on, for the decks it serves (`window.__KADAL_DECK__.download`). See core/download.ts. |
 | `fonts` | `FontsInput` | `[]` | Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or Slidev's object — `{ sans, heading, serif, mono, weights, italic, provider: google\|bunny\|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts). |
-| `seoMeta` | `Record<string, string>` | `{}` | Extra <meta> tags. |
+| `seoMeta` | `Record<string, string>` | `{}` | The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html. |
+| `lang` | `string` | `""` | The page's language: `<html lang>` and og:locale. Empty leaves index.html's. |
+| `favicon` | `string` | `""` | The tab icon: a file in public/ (`/logo.svg`) or a URL. The PWA's icon, when it is local. |
+| `pwa` | `boolean \| Record<string, string>` | `false` | `kadal-deck build` makes the deck an installable web app that presents offline: a web manifest, icons, and a service worker that precaches the build (vite/pwa.ts). Never in dev; `kadal-deck publish` leaves it out unless `--pwa`. An object sets { name, shortName, themeColor, backgroundColor, display }. |
+| `bundleRemoteAssets` | `boolean` | `false` | At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache. |
 | `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
 | `plantUmlServer` | `string` | `"https://www.plantuml.com/plantuml"` | The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. |
 | `notesAutoRuby` | `Record<string, string>` | `{}` | Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. |
@@ -285,3 +289,4 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `contextMenu` | `boolean \| "dev" \| "build"` | `true` | The right-click menu on the slides: true (always), false (never), "dev" (only under `kadal-deck dev`) or "build" (only in a built deck). Shift + right-click always gives the browser's own menu. Values: `dev` `build` |
 | `aspectRatio` | `number` |  | Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…). |
 | `canvasWidth` | `number` |  | Slidev spelling: the stage width used with aspectRatio. |
+| `remoteAssets` | `boolean \| "build"` |  | Slidev spelling of bundleRemoteAssets (true or "build"; "dev" does nothing). |

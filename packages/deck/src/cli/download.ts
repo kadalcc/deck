@@ -47,15 +47,27 @@ export async function buildDownload(
   {
     outDir = "dist",
     port,
+    base,
     say = console.log,
-  }: { outDir?: string; port?: number; say?: (line: string) => void } = {},
+  }: {
+    outDir?: string;
+    port?: number;
+    /** The base the build was made for (`--base`, or one of several decks' folder). */
+    base?: string;
+    say?: (line: string) => void;
+  } = {},
 ): Promise<string> {
   const target = resolve(dir, outDir);
   say(`pdf    printing the built deck for its Download button`);
+  // The preview must serve the build where it was built to live, or its asset URLs miss.
+  const args = [
+    ...(outDir !== "dist" ? ["--outDir", outDir] : []),
+    ...(base ? ["--base", base] : []),
+  ];
   const server = await DeckServer.start(dir, "preview", {
     build: false,
     ...(port ? { port } : {}),
-    ...(outDir !== "dist" ? { args: ["--outDir", outDir] } : {}),
+    ...(args.length ? { args } : {}),
   });
   try {
     const { exportDeck } = await import("../export/index.ts");

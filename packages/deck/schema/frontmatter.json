@@ -1323,7 +1323,34 @@
         },
         "seoMeta": {
           "type": "object",
-          "description": "Extra <meta> tags."
+          "description": "The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html."
+        },
+        "lang": {
+          "type": "string",
+          "description": "The page's language: `<html lang>` and og:locale. Empty leaves index.html's.",
+          "default": ""
+        },
+        "favicon": {
+          "type": "string",
+          "description": "The tab icon: a file in public/ (`/logo.svg`) or a URL. The PWA's icon, when it is local.",
+          "default": ""
+        },
+        "pwa": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "`kadal-deck build` makes the deck an installable web app that presents offline: a web manifest, icons, and a service worker that precaches the build (vite/pwa.ts). Never in dev; `kadal-deck publish` leaves it out unless `--pwa`. An object sets { name, shortName, themeColor, backgroundColor, display }.",
+          "default": false
+        },
+        "bundleRemoteAssets": {
+          "type": "boolean",
+          "description": "At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache.",
+          "default": false
         },
         "defaults": {
           "type": "object",
@@ -1416,6 +1443,17 @@
         "canvasWidth": {
           "type": "number",
           "description": "Slidev spelling: the stage width used with aspectRatio."
+        },
+        "remoteAssets": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Slidev spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing)."
         }
       },
       "additionalProperties": true

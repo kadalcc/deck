@@ -36,7 +36,10 @@ and `slide_render` (pictures of slides).
    `slide_render` returns the images). Open and inspect every picture: text overflowing or
    clipped, crowding, tiny type, low contrast, empty halves, broken images or components. Fix and
    look again. Try `--scheme dark` if the deck allows dark mode.
-6. **Ship** when the user asks: `npx kadal-deck build` (static `dist/`), `npx kadal-deck export
+6. **Ship** when the user asks: `npx kadal-deck build` (static `dist/`; `--base /path/` for a
+   sub-path, `pwa: true` to present offline, `bundleRemoteAssets: true` for no network at all,
+   `seoMeta.ogImage: auto` for a link-preview picture; `npx kadal-deck ci github-pages` — or
+   netlify, vercel, cloudflare, docker — writes the host's deploy files), `npx kadal-deck export
    --png --pptx` (PDF/PNG/PPTX in `export/`; `--format pptx-editable` for a PowerPoint file with
    native, editable text, `--format md` for Markdown with the notes, `--range 1,3-5`, `--dark`),
    or `npx kadal-deck publish` (a URL with a live room on deck.kadal.cc). `download: true` in the

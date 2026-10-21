@@ -75,6 +75,7 @@ import { createMenuRegistry, type MenuInput } from "./menu.ts";
 import { devNotesEditor, type NotesEditor } from "./notes.ts";
 import { PresentingLayer, usePresentingRoot } from "./Presenting.tsx";
 import { SideEditor } from "./SideEditor.tsx";
+import { useDocumentHead } from "./head.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -834,6 +835,8 @@ function useDeckEffects(
   useEffect(() => {
     document.title = config.title;
   }, [config.title]);
+  // Description, Open Graph, favicon, lang: what index.html has from the build, kept in step.
+  useDocumentHead(config, base);
 
   // Layout: scale to the viewport (or the embedding element), less whatever the ad frame keeps.
   // The presenter view lays its own canvas out (presenter/index.tsx sets scale 1 inside a box it

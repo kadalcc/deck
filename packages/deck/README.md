@@ -28,16 +28,18 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 
 | command | what |
 | --- | --- |
-| `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun]` | a deck from the starter, no questions asked |
+| `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun] [--ci host]` | a deck from the starter, no questions asked; `--ci` adds a host's deploy files |
 | `kadal-deck dev [--https] [--tunnel] [--remote [password]]` | Vite dev server for the deck in this folder, with the [side editor](#editors) (E). `--tunnel`: on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`), with a QR in the terminal and the phone remote pairing through it; `--remote [password]`: on the network, the presenter and editing behind the password (a tunnel always has one) |
-| `kadal-deck build [--without-notes] [--download]` | `dist/` for any static host; `--without-notes` leaves the speaker notes out; `--download` (or `download: true`) also prints `dist/deck.pdf` for the deck's Download button |
+| `kadal-deck build [deck files…] [--base /path/] [--out dir] [--without-notes] [--download] [--pwa] [--bundle-remote-assets]` | `dist/` for any static host; several deck files build into folders; `--without-notes` leaves the speaker notes out; `--download` (or `download: true`) also prints `dist/deck.pdf` for the deck's Download button. See [Build and host](#build-and-host) |
+| `kadal-deck serve [folder] [--port n] [--host addr] [--base /path/]` | serve a build as a static host would (routes, Range, cache headers), for checking it or a container |
+| `kadal-deck ci <github-pages\|netlify\|vercel\|cloudflare\|docker>` | write that host's deploy files for this deck (`--force` to replace) |
 | `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
 | `kadal-deck format [files] [--check]` | format `deck.mdx` and its includes (or the files named) with [@kadal/prettier-plugin](../prettier-plugin): separators, frontmatter YAML (comments kept), each slide's Markdown; code, notes, magic-move, `<style>`, maths and `::slot::` sugar byte for byte; every slide checked to mean the same. `--check` exits 1 when a file would change |
 | `kadal-deck info [topic] [name] [--search words] [--markdown]` | the reference (components, layouts, backgrounds, themes, transitions, clicks, code, deck, slide, keys, routes, live, cli, exit) |
 | `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium) |
 | `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--range 1,3-5] [--dark] [--no-with-clicks] [--omit-background] [--per-slide] [--out dir] [--output name] [--scale n] [--url u]` | PDF (and PNG, PPTX, editable PPTX, Markdown) into `export/` — install `playwright`. Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable, with bookmarks from the slide titles; `--vector-pdf` prints with the browser alone. See [Export](#export) |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
-| `kadal-deck publish [--slug] [--workspace] [--title] [--host] [--without-notes]` | build for the host and publish; only changed files are uploaded |
+| `kadal-deck publish [--slug] [--workspace] [--title] [--host] [--without-notes] [--pwa]` | build for the host and publish; only changed files are uploaded |
 | `kadal-deck narrate [--voice id] [--dtype q8\|fp32…] [--force] [--setup]` | bake the narration: each notes segment spoken by Kokoro into `public/narration/` (MP3/Opus with ffmpeg, else WAV) + `public/narration.json`; skips clips that exist. `--setup` installs `kokoro-js` |
 | `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |
 
@@ -312,11 +314,60 @@ Needs `playwright` installed in the deck: it is an optional peer, so a deck that
 never downloads a browser. `pptxgenjs` and `pdf-lib` come with the engine (and load only when
 used).
 
+## Build and host
+
+`npx kadal-deck build` writes `dist/`, a folder any static host serves. Everything but the live
+room runs without a server.
+
+- **Where it lives.** `--base /talks/maps/` builds for that address (every route, asset, the
+  Excalidraw fonts, the Monaco and narrator workers follow it); `--out site` (Vite's `--outDir`)
+  names the folder. `kadal-deck build a.mdx b.mdx` builds each deck file into its own folder
+  (`dist/a/` at `<base>a/`, `dist/b/`…) with a page listing them, as Slidev's multiple entries do.
+- **Routes on any host.** The deck's pages are paths (`/presenter`, `/notes`, `/remote`…). The
+  build copies index.html into a folder for each, and writes `404.html` and Netlify's
+  `_redirects`, so GitHub Pages, S3 and plain nginx serve them with no rewrite rules.
+- **The page's head** comes from the headmatter: `title`, `info` (description), `author`, `lang`,
+  `favicon`, and `seoMeta` with Slidev's names — `ogImage`, `ogUrl`, `ogTitle`, `twitterCard`,
+  `twitterSite`, `canonical`, `themeColor`, any other key as a meta tag. `ogImage: auto`
+  photographs slide 1 into `og-image.png` (1200×630) during the build (needs Playwright; without
+  it the build says so and goes on; a committed `og-image.png` is used instead). Set `ogUrl` to
+  the deck's address so `og:image` is a full URL, which most link previews require.
+- **Offline, as an app.** `pwa: true` (or `--pwa`) adds a web manifest, icons (your `favicon`, or
+  a monogram in the theme's colours) and a service worker that saves the whole build for
+  offline presenting. It shows "Saving for offline…" on the first visit and offers a new build
+  with a Reload button — never reloading mid-talk. It never answers the live room, the host's
+  `/api`, the dev endpoints or the phone remote, and it is never registered in `kadal-deck dev`.
+- **No network at all.** `bundleRemoteAssets: true` (or `--bundle-remote-assets`; Slidev's
+  `remoteAssets` works too) downloads the remote images, video, Google/Bunny Fonts (stylesheets
+  and font files) and CSS `url()`s the deck names into `dist/remote-assets/`, cached in
+  `.kadal-deck/cache` between builds. One that fails stays remote; the build lists it.
+- **Check it.** `npx kadal-deck serve` serves `dist/` at its base like a host (`--host 0.0.0.0`
+  in a container).
+
+`npx kadal-deck ci <host>` writes the files a host needs, for the deck's package manager and its
+folder in the repository:
+
+| host | files | then |
+| --- | --- | --- |
+| `github-pages` | `.github/workflows/deploy-deck.yml` (builds with `--base /<repo>/`) | Settings → Pages → Source: GitHub Actions |
+| `netlify` | `netlify.toml` | import the repository |
+| `vercel` | `vercel.json` (SPA rewrite, cache headers) | import the repository |
+| `cloudflare` | `wrangler.jsonc` (Workers static assets, SPA fallback) | `npx wrangler deploy` |
+| `docker` | `Dockerfile`, `nginx.conf`, `.dockerignore` | `docker build -t talk . && docker run -p 8080:8080 talk` |
+
+A deck whose build needs Chromium (`download: true`, `ogImage: auto`, `pwa`) gets the step that
+installs it; keep `playwright` in its devDependencies.
+
 ## Publish
 
 `npx kadal-deck publish` puts the deck on https://deck.kadal.cc with a live room, analytics and
 share links (free plan included). Any static host also works: `npx kadal-deck build` and upload
-`dist/` — everything except the live room runs without a server.
+`dist/` — everything except the live room runs without a server (see
+[Build and host](#build-and-host)). The host routes the deck itself, so a published build has no
+route copies, and no service worker unless `publish --pwa`. deck.kadal.cc serves decks sandboxed
+(below), and a browser gives an opaque origin no service worker at all; the flag is for a host of
+your own that serves decks on a real origin, where the worker keeps the deck offline and still
+leaves the room and the host's `/api` alone.
 
 ### Sandboxed hosting (opaque origins)
 

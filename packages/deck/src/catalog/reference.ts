@@ -749,7 +749,7 @@ export const CLI: CliCommand[] = [
   {
     name: "new",
     usage:
-      "kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun] · kadal-deck new --theme <name> [dir] · kadal-deck new --addon <name> [dir]",
+      "kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun] [--ci host[,host]] · kadal-deck new --theme <name> [dir] · kadal-deck new --addon <name> [dir]",
     summary:
       "Scaffold a deck (non-interactive); with --theme or --addon, a package ready to publish: package.json per the contract, a stylesheet with every token and layout class in light and dark, a layout, a layer, a README and a preview deck.",
     json: true,
@@ -770,10 +770,26 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "build",
-    usage: "kadal-deck build [--without-notes] [--download] [--port n] [vite flags]",
+    usage:
+      "kadal-deck build [deck files…] [--base /path/] [--out dir] [--without-notes] [--download] [--pwa | --no-pwa] [--bundle-remote-assets] [--port n] [vite flags]",
     summary:
-      "dist/ for any static host. `--without-notes` leaves the speaker notes out of the build (no notes modules; the presenter and narrator have none). --download (or `download: true` in the deck) also prints dist/deck.pdf for the deck's Download button; --no-download skips it.",
+      "dist/ for any static host. `--base /talks/x/` builds for that address (every route, the Excalidraw fonts, the workers and the narrator follow it); `--out` (Vite's --outDir) names the folder. Several deck files (`build a.mdx b.mdx`) build into dist/a/ and dist/b/ at <base>a/ and <base>b/, with a page listing them. The head comes from the headmatter (title, info, lang, favicon, seoMeta: Open Graph, Twitter, canonical; `ogImage: auto` photographs slide 1 into og-image.png). Each route also gets an index.html copy, plus 404.html and _redirects, so GitHub Pages, S3 and nginx serve /presenter without rewrites. `--without-notes` leaves the speaker notes out (no notes modules; the presenter and narrator have none). --download (or `download: true`) also prints dist/deck.pdf for the deck's Download button; --no-download skips it. --pwa (or `pwa: true`) makes it an installable app that presents offline; --bundle-remote-assets (or `bundleRemoteAssets: true`) downloads the remote images, media and fonts into it.",
     json: false,
+  },
+  {
+    name: "serve",
+    usage: "kadal-deck serve [folder] [--port n] [--host addr] [--base /path/] [--json]",
+    summary:
+      "Serve a built deck (dist/ by default) as a static host would: at the base it was built for (read from the build, or --base), every route answered by the deck's page, Range requests for video, a CDN's cache headers. For checking a build, the PWA offline, or a container (--host 0.0.0.0). Ctrl+C stops it.",
+    json: true,
+  },
+  {
+    name: "ci",
+    usage:
+      "kadal-deck ci <github-pages|netlify|vercel|cloudflare|docker>[,…] [--force] [-C deck] [--json]",
+    summary:
+      "Write what a host needs to build and serve the deck, for its package manager and its folder in the repository: a GitHub Pages workflow (.github/workflows/deploy-deck.yml, --base /<repo>/), netlify.toml, vercel.json, wrangler.jsonc (Workers static assets), or a Dockerfile with nginx.conf. A deck whose build needs Chromium (download, ogImage: auto, pwa) gets the step that installs it. --force replaces existing files.",
+    json: true,
   },
   {
     name: "check",
@@ -832,9 +848,9 @@ export const CLI: CliCommand[] = [
   {
     name: "publish",
     usage:
-      "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--without-notes] [--json]",
+      "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--without-notes] [--pwa] [--json]",
     summary:
-      "Build and publish to a host; prints the URL. `--without-notes` publishes the deck without its speaker notes.",
+      "Build and publish to a host; prints the URL. `--without-notes` publishes the deck without its speaker notes. The host routes the deck itself, so the build has no static-host fallbacks, and no service worker unless --pwa (for a self-run host that serves decks on a real origin: deck.kadal.cc sandboxes them, and an opaque origin gets no worker; the live room and the host's API are never cached either way).",
     json: true,
   },
   {
@@ -963,7 +979,6 @@ export const DECK_KEY_DOCS: Record<string, string> = {
     'The theme\'s knobs, over its own defaults: each key becomes a CSS custom property `--theme-<kebab-key>` on the deck root (`primaryColor: "#0f766e"` → `--theme-primary-color`; nested keys join with dashes). What a theme reads is in its README.',
   layers:
     "Where the global and slide layers (global-top.tsx and friends, or a theme's or addon's) draw besides the deck, print and export: { presenter: true, overview: false }.",
-  seoMeta: "Extra <meta> tags.",
 };
 
 /** Deck-level keys that are not DeckConfig fields. */
@@ -978,6 +993,15 @@ export const EXTRA_DECK_KEYS = [
     name: "canvasWidth",
     type: N(),
     description: "Slidev spelling: the stage width used with aspectRatio.",
+    scope: "deck" as const,
+  },
+  {
+    name: "remoteAssets",
+    type: {
+      text: 'boolean | "build"',
+      variants: [{ type: "boolean" as const }, { type: "string" as const }],
+    },
+    description: "Slidev spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing).",
     scope: "deck" as const,
   },
 ];

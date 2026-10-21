@@ -49,6 +49,7 @@ import { DRAG_PATH, dragEndpoint } from "./drag-dev.ts";
 import { iconRegistration, resolveIcons } from "../icons/node.ts";
 import { SIDE_EDITOR_DEPS, SOURCE_PATH, sideEditorCode, sourceEndpoint } from "./source-dev.ts";
 import { type RemoteGate, remoteGate, remoteSettings } from "./remote-dev.ts";
+import { deckSite, subdirConfig } from "./site.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -182,7 +183,8 @@ const VIRTUAL = "virtual:deck";
 const RESOLVED = "\0virtual:deck";
 
 export function deck(options: DeckPluginOptions = {}): Plugin {
-  const entry = options.entry ?? "deck.mdx";
+  // `kadal-deck build a.mdx b.mdx` builds each file in turn through the same config (cli/build.ts).
+  const entry = process.env.KADAL_DECK_ENTRY || (options.entry ?? "deck.mdx");
   // The Shiki themes: the plugin's options, else the deck's theme package's, else GitHub's —
   // decided again at every manifest build, since the headmatter's theme can change.
   let themes = shikiThemes(options.shiki, null);
@@ -191,6 +193,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   let base = "/";
   let outDir = "dist";
   let building = false;
+  let publicDir: string | null = null;
+  let watching = false;
   let highlighter: Highlighter | null = null;
   let server: ViteDevServer | null = null;
   let manifest: ReturnType<typeof build> | null = null;
@@ -389,6 +393,19 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     return `// ${file}\n${iconRegistration(icons.icons)}${String(out)}`;
   }
 
+  // The head, the OG card, the PWA, bundled remote assets and the static-host files (vite/site.ts).
+  const site = deckSite({
+    root: () => root,
+    entry: () => entryPath,
+    base: () => base,
+    outDir: () => outDir,
+    publicDir: () => publicDir,
+    building: () => building,
+    watching: () => watching,
+    deck: () => ensure(),
+    manifestId: RESOLVED,
+  });
+
   return {
     name: "stack:deck",
     enforce: "pre",
@@ -398,9 +415,13 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       base = config.base.endsWith("/") ? config.base : `${config.base}/`;
       outDir = resolve(root, config.build.outDir);
       building = config.command === "build";
+      publicDir = config.publicDir || null;
+      watching = !!config.build.watch;
     },
     async config(user, env) {
       const out: {
+        base?: string;
+        build?: { outDir: string };
         worker?: { format: "es" };
         server?: { https?: object; fs?: { allow: string[] }; allowedHosts?: string[] };
         resolve?: { dedupe: string[] };
@@ -421,6 +442,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
       // only an ES-module worker can do. A deck that set its own worker format keeps it.
       if (!user.worker?.format) out.worker = { format: "es" };
+      // One of several decks in one `kadal-deck build`: its own folder and base (cli/build.ts).
+      Object.assign(out, subdirConfig(user, env.command));
       // `kadal-deck dev --https`: a self-signed certificate, so a phone gets a secure context (the
       // air pointer's motion sensors need one). The deck's own `server.https` wins.
       // A deck with Monaco editors: their few Shiki/Monaco glue packages are pre-bundled up front, so
@@ -518,6 +541,10 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         return [];
       if (manifest && hotNotes()) return [];
     },
+    transformIndexHtml: site.transformIndexHtml,
+    transform: site.transform,
+    generateBundle: site.generateBundle,
+    closeBundle: site.closeBundle,
     writeBundle() {
       if (!building) return;
       const dist = excalidrawDist();
