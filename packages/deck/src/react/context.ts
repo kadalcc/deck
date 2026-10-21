@@ -15,6 +15,7 @@ import type {
 import type { NavState } from "../core/navigation.ts";
 import type { Store } from "../core/store.ts";
 import type { GlossaryEntry } from "../glossary/model.ts";
+import type { ResolvedLayers } from "../theming/contract.ts";
 
 /** Which page of the deck app is showing. */
 export type ViewMode = "play" | "presenter" | "audience" | "print" | "stats" | "notes" | "remote";
@@ -167,6 +168,11 @@ export interface DeckRuntime {
    * the ad frame's (core/ads.ts). The layout fits the slide into what is left.
    */
   stageInset: Store<StageInset>;
+  /**
+   * The global and slide layers to draw, each a stack (the theme's, the addons', the deck's):
+   * react/Layers.tsx. Absent when a runtime is made by hand (a test, an old host).
+   */
+  layers?: ResolvedLayers;
 }
 
 export interface StageInset {

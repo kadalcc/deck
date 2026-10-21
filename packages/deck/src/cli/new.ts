@@ -1,6 +1,14 @@
 import { spawn } from "node:child_process";
-import { cpSync, existsSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -152,4 +160,85 @@ export async function newDeck(target: string, options: NewOptions = {}): Promise
       `${x} kadal-deck publish`,
     ],
   };
+}
+
+/**
+ * `kadal-deck new --theme <name> [dir]` (or `--addon`): a theme or addon package from the
+ * scaffold (theming/scaffold.ts) — package.json per the contract, a stylesheet with every token
+ * and layout class, a layout, a layer, a README and a preview deck. Installs only when asked
+ * (`--install`): a package is often made inside a workspace that installs for it.
+ */
+export async function newPackage(
+  kind: "theme" | "addon",
+  rawName: string,
+  target: string | null,
+  cwd: string,
+  options: NewOptions = {},
+): Promise<NewResult & { name: string; package: string }> {
+  const { addonScaffold, scaffoldName, scaffoldTitle, themeScaffold } =
+    await import("../theming/scaffold.ts");
+  const name = scaffoldName(rawName);
+  if (!name)
+    throw new Error(`"${rawName}" has nothing a package name can use; try letters and dashes.`);
+  const pkgName = `kadal-${kind}-${name}`;
+  const dir = resolve(target ?? join(cwd, pkgName));
+  if (existsSync(dir) && readdirSync(dir).length > 0)
+    throw new TargetNotEmptyError(`${dir} is not empty. Choose another directory.`);
+  const own = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as {
+    version: string;
+  };
+  const opts = {
+    name,
+    title: options.title?.trim() || scaffoldTitle(name),
+    deckRange: `^${own.version}`,
+  };
+  const files = kind === "theme" ? themeScaffold(opts) : addonScaffold(opts);
+  for (const [rel, text] of Object.entries(files)) {
+    const file = join(dir, rel === "_gitignore" ? ".gitignore" : rel);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, text);
+  }
+  const pm = options.pm ?? detectPackageManager();
+  let installed = false;
+  if (options.install === true) {
+    await install(pm, dir, options.stdio);
+    installed = true;
+  }
+  const run = pm === "npm" ? "npm run" : pm;
+  return {
+    dir,
+    name,
+    package: pkgName,
+    title: opts.title,
+    files: list(dir).sort(),
+    installed,
+    packageManager: pm,
+    next: [
+      `cd ${dir}`,
+      ...(installed ? [] : [`${pm} install`]),
+      `${run} dev                 the preview deck, live`,
+      `${kind === "theme" ? "edit style.css, layouts.tsx" : "edit index.tsx, style.css"}`,
+      `npm publish             keep the kadal-${kind} keyword`,
+    ],
+  };
+}
+
+function install(pm: PackageManager, dir: string, where: NewOptions["stdio"]): Promise<void> {
+  return new Promise<void>((ok, fail) => {
+    const stdio =
+      where === "ignore"
+        ? "ignore"
+        : where === "stderr"
+          ? (["ignore", process.stderr, process.stderr] as const)
+          : "inherit";
+    const child = spawn(pm, ["install"], {
+      cwd: dir,
+      stdio: stdio as never,
+      shell: process.platform === "win32",
+    });
+    child.on("error", fail);
+    child.on("exit", (code) =>
+      code === 0 ? ok() : fail(new Error(`${pm} install failed (exit ${code})`)),
+    );
+  });
 }

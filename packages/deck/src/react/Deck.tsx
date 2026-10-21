@@ -62,6 +62,10 @@ import { useBuiltinCommands } from "./commands.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 import { ThumbnailHost } from "../export/thumbnail.tsx";
+import type { DeckLayers } from "../theming/contract.ts";
+import { packageConfigLayer } from "../theming/merge.ts";
+import { useDeckFonts, useDeckPackages, usePackageSetup, useRootVars } from "../theming/react.tsx";
+import { ThemeNotice } from "./ThemeNotice.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -99,6 +103,12 @@ export interface DeckProps {
    * that was not built for its address (the prebuilt shell) works it out and passes it here.
    */
   base?: string;
+  /**
+   * Layers on every slide (react/Layers.tsx): `global-top`, `global-bottom`, `slide-top`,
+   * `slide-bottom`. They draw with the theme's and the addons' (and a `global-top.tsx` beside
+   * deck.mdx); `false` for one hides that layer from all of them.
+   */
+  layers?: DeckLayers;
 }
 
 function baseOf(): string {
@@ -146,6 +156,7 @@ export function Deck({
   pages = {},
   children,
   base: baseIn,
+  layers: deckLayers,
 }: DeckProps) {
   const base = useMemo(
     () => (baseIn ? (baseIn.endsWith("/") ? baseIn : `${baseIn}/`) : baseOf()),
@@ -155,11 +166,14 @@ export function Deck({
   const config = useMemo(() => {
     // Before anything reads the fragment: a presenter ticket rides in it (live/ticket.ts).
     captureTicket();
+    // The theme package's own config sits under the headmatter; the names it resolved to (a
+    // `theme: ./theme` is the class its package names) over it; deck.config.ts over both.
+    const pk = packageConfigLayer(manifest.packages);
     return withHostOverride(
-      resolveConfig({ slug: slugFromBase }, manifest.headmatter, configIn),
+      resolveConfig({ slug: slugFromBase }, pk.below, manifest.headmatter, pk.names, configIn),
       readHostOverride(),
     );
-  }, [manifest.headmatter, configIn, slugFromBase]);
+  }, [manifest.headmatter, manifest.packages, configIn, slugFromBase]);
   const columns = useMemo<Column[]>(
     () => columnsOf(manifest.slides, config),
     [manifest.slides, config],
@@ -449,6 +463,11 @@ export function Deck({
   // One registry for the page's life: a host registers its panels once, whatever re-renders.
   const [panels] = useState(createPanelRegistry);
 
+  // The theme on show (this screen's choice) decides the layouts, components and layers merged
+  // in from the packages; theming/react.tsx.
+  const shownTheme = useStore(ui, (s) => s.theme);
+  const merged = useDeckPackages(manifest, components, deckLayers, shownTheme);
+
   const runtime = useMemo<DeckRuntime>(
     () => ({
       manifest,
@@ -460,7 +479,8 @@ export function Deck({
       layout,
       mode,
       base,
-      components,
+      components: merged.components,
+      layers: merged.layers,
       actions,
       commands,
       ticket: () => presenterTicket.get(),
@@ -483,7 +503,8 @@ export function Deck({
       layout,
       mode,
       base,
-      components,
+      merged.components,
+      merged.layers,
       actions,
       commands,
       windowId,
@@ -497,6 +518,8 @@ export function Deck({
   );
 
   useBuiltinCommands(runtime);
+  usePackageSetup(runtime, merged.modules);
+  useDeckFonts(config.fonts);
   useDeckEffects(runtime, flags, wantedAtLoad, related);
   useTermEffects(runtime);
   // A share window the viewer closed themselves: the button that opened it stops looking lit.
@@ -545,6 +568,7 @@ export function Deck({
         {/* Every slide's own <style>, scoped to it (compiler/slide-style.ts): one sheet, every view. */}
         {manifest.styles ? <style data-deck-slide-styles="">{manifest.styles}</style> : null}
         {wrapped}
+        {mode !== "print" ? <ThemeNotice /> : null}
         {/* A picture of a slide for a host's lists (export.thumbnail); nothing until one is asked for. */}
         {mode !== "print" && mode !== "remote" ? <ThumbnailHost /> : null}
       </DeckRoot>
@@ -617,6 +641,8 @@ function DeckRoot({ children }: { children: ReactNode }) {
     [deck.ui],
   );
   useEffect(() => deck.nav.subscribe((s) => setPaused(s.paused)), [deck.nav]);
+  // `--theme-*` from themeConfig, and the font tokens `fonts` points at its families.
+  const vars = useRootVars(deck.manifest, theme, deck.config.themeConfig, deck.config.fonts);
   useEffect(() => {
     document.documentElement.dataset.colorScheme = scheme;
     document.documentElement.classList.toggle("dark", scheme === "dark");
@@ -637,6 +663,7 @@ function DeckRoot({ children }: { children: ReactNode }) {
         .join(" ")}
       data-color-scheme={scheme}
       dir={deck.config.rtl ? "rtl" : undefined}
+      style={Object.keys(vars).length ? (vars as React.CSSProperties) : undefined}
     >
       {children}
     </div>
@@ -718,16 +745,10 @@ function useDeckEffects(
 ) {
   const { nav, ui, layout, config, columns, actions, base, mode, stageInset } = deck;
 
-  // Title and fonts.
+  // The title (the fonts are theming/react.tsx's `useDeckFonts`).
   useEffect(() => {
     document.title = config.title;
-    if (!config.fonts.length) return;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?${config.fonts.map((f) => `family=${encodeURIComponent(f).replace(/%3A/g, ":").replace(/%40/g, "@").replace(/%3B/g, ";")}`).join("&")}&display=swap`;
-    document.head.appendChild(link);
-    return () => link.remove();
-  }, [config.title, config.fonts]);
+  }, [config.title]);
 
   // Layout: scale to the viewport (or the embedding element), less whatever the ad frame keeps.
   useEffect(() => {

@@ -7,6 +7,7 @@ import { animateFrom, snapshot, type Snapshot } from "./AutoAnimate.ts";
 import { transitionMs } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
 import { useLayout, useNav } from "./hooks.ts";
+import { StageLayer } from "./Layers.tsx";
 import { SlideFrame } from "./SlideFrame.tsx";
 
 /**
@@ -175,6 +176,7 @@ export function Stage() {
       data-direction={direction}
       data-overview={overview || undefined}
     >
+      <StageLayer name="global-bottom" />
       {frames.map((f) => {
         const meta = deck.columns[f.h]!.slides[f.v]!;
         const options = deck.options.get(navKey(f.h, f.v))!;
@@ -205,6 +207,7 @@ export function Stage() {
           />
         );
       })}
+      <StageLayer name="global-top" />
     </div>
   );
 }

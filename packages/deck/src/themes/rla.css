@@ -90,3 +90,16 @@
   border-radius: 6px;
   padding: 0.2em 0.6em;
 }
+/* two-cols-header: the header in the ramp, the columns as glass cards */
+.theme-rla .deck-layout-two-cols-header > .deck-slot-default :is(h1, h2) {
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.theme-rla .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding: 0.7em 0.9em;
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+}

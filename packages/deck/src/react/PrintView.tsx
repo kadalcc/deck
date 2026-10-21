@@ -4,6 +4,7 @@ import { key as navKey } from "../core/navigation.ts";
 import { BackgroundLayer } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
 import { loadSlide, SlideFrame } from "./SlideFrame.tsx";
+import { useFontsReady } from "../theming/react.tsx";
 
 /**
  * `?print-pdf`: every slide laid out as a page at the authored size, one page per click step when
@@ -54,6 +55,8 @@ export function PrintView() {
   }, [deck.config.width, deck.config.height]);
 
   const pages = printPages(flat, totals, deck.config.pdfSeparateFragments);
+  // The deck's web fonts (`fonts`), loaded: an export taken before them is in the fallback face.
+  const fontsReady = useFontsReady();
 
   // One more beat after the last change of page count, so the newest pages, fonts, KaTeX and
   // diagrams have painted.
@@ -67,7 +70,7 @@ export function PrintView() {
   return (
     <div
       className="deck-print-pages"
-      data-ready={ready || undefined}
+      data-ready={(ready && fontsReady) || undefined}
       style={{ width: deck.config.width, zoom }}
     >
       {pages.map((p) => {
@@ -89,6 +92,7 @@ export function PrintView() {
               click={p.click}
               preview
               reportTotal={!deck.config.pdfSeparateFragments || p.click === 0}
+              globalLayers
               // A page per step shows each step as it is; one page per slide shows everything.
               className={deck.config.pdfSeparateFragments ? "is-print" : "is-print is-print-all"}
             />

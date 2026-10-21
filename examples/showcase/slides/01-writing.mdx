@@ -109,6 +109,41 @@ A layout with two named regions. The text before `::right::` is the default slot
 </Notes>
 
 ----
+layout: two-cols-header
+id: layout-two-cols-header
+---
+
+<p className="sc-eyebrow">layout: two-cols-header</p>
+
+## A header across, two columns under it
+
+::left::
+
+Everything before the first marker is the header. `::left::` starts the left column…
+
+```mdx
+---
+layout: two-cols-header
+---
+## A header across…
+
+::left::
+…
+::right::
+…
+```
+
+::right::
+
+…and `::right::` the right one. An optional `::bottom::` spans both columns again, under them.
+
+<Callout kind="tip" title="Each theme styles it">minimal draws a hairline under the header, rla sets the columns on glass, stack puts an accent rule over each.</Callout>
+
+<Notes>
+Slidev's two-cols-header: the default slot becomes a header across the slide, and the left and right slots sit side by side beneath it. Press T and switch themes: each built-in theme styles the header and the columns its own way.
+</Notes>
+
+----
 layout: spotlight
 eyebrow: Your layout
 id: custom-layout
@@ -144,14 +179,14 @@ id: layouts
 
 <p className="sc-eyebrow">Writing · layouts</p>
 
-## Eighteen layouts, picked by name
+## Nineteen layouts, picked by name
 
 <p className="sc-lede">`layout: name` in a slide's frontmatter. Each name is a link to a slide wearing it — most are one <Kbd>↓</Kbd> away.</p>
 
 <div className="sc-layout-groups">
   <div><span>Words</span><div><Link to="layout-default">default</Link><Link to="layout-center">center</Link><Link to="layout-statement">statement</Link><Link to="layout-fact">fact</Link><Link to="layout-quote">quote</Link></div></div>
   <div><span>Openings</span><div><Link to="1">cover</Link><Link to="layout-intro">intro</Link><Link to="writing">section</Link><Link to="the-end">end</Link></div></div>
-  <div><span>Columns</span><div><Link to="slots">two-cols</Link></div></div>
+  <div><span>Columns</span><div><Link to="slots">two-cols</Link><Link to="layout-two-cols-header">two-cols-header</Link></div></div>
   <div><span>Pictures</span><div><Link to="layout-image">image</Link><Link to="layout-image-left">image-left</Link><Link to="media-images">image-right</Link></div></div>
   <div><span>Pages</span><div><Link to="layout-iframe">iframe</Link><Link to="layout-iframe-left">iframe-left</Link><Link to="other-pages">iframe-right</Link></div></div>
   <div><span>Bare</span><div><Link to="layout-full">full</Link><Link to="layout-none">none</Link></div></div>
@@ -159,7 +194,7 @@ id: layouts
 </div>
 
 <Notes>
-Slidev's eighteen layouts, every one of them used somewhere in this tour. The chips are `<Link to="id">` — each slide that demonstrates a layout has an `id:` in its frontmatter, so the link survives slides being added or moved. Press down to walk through the ones that have no other home.
+Slidev's nineteen layouts, every one of them used somewhere in this tour. The chips are `<Link to="id">` — each slide that demonstrates a layout has an `id:` in its frontmatter, so the link survives slides being added or moved. Press down to walk through the ones that have no other home.
 </Notes>
 
 ----

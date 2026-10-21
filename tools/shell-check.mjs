@@ -176,6 +176,33 @@ try {
   }
   const bad = await ask("export.thumbnail", { width: "big" }, 999);
   check("preview: export.thumbnail refuses bad params", !bad.ok, bad.error ?? "");
+  // A theme this shell does not bundle: the deck still runs, in minimal, and says so — a warning
+  // diagnostic to the editor and a dismissible notice to the presenter (theming/registry.ts).
+  await page.evaluate((deckText) => {
+    window.msgs.length = 0;
+    const text = /^theme:/m.test(deckText)
+      ? deckText.replace(/^theme:.*$/m, "theme: no-such-theme")
+      : deckText.replace(/^---\n/, "---\ntheme: no-such-theme\n");
+    document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "source", text, at: 0 }, "*");
+  }, deck);
+  await page.waitForFunction(() => window.msgs.some((m) => m.type === "compiled"), null, { timeout: 30_000 });
+  const fallback = await page.evaluate(() => window.msgs.find((m) => m.type === "compiled"));
+  check(
+    "preview: an unknown theme compiles with a warning",
+    fallback.ok && fallback.diagnostics.some((d) => d.severity === "warning" && /no-such-theme/.test(d.message)),
+    fallback.diagnostics.map((d) => d.message).join(" | "),
+  );
+  const notice = page.frameLocator("iframe").locator(".deck-theme-notice");
+  await notice.waitFor({ timeout: 20_000 }).then(
+    () => check("preview: …falls back to minimal, with a notice", true),
+    () => check("preview: …falls back to minimal, with a notice", false),
+  );
+  check(
+    "preview: …and the deck wears minimal",
+    await page.frameLocator("iframe").locator(".deck-root.theme-minimal").count() === 1,
+  );
+  await notice.getByRole("button", { name: "Dismiss" }).click();
+  check("preview: the notice dismisses", (await notice.count()) === 0);
   check("no console errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 } finally {
   await browser.close();

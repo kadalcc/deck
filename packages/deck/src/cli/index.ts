@@ -2,6 +2,8 @@
  * kadal-deck — the command line for a Kadal Deck folder (bin: ./bin.ts).
  *
  *   kadal-deck new <dir>                  a deck from the starter, no questions asked
+ *   kadal-deck new --theme <name> [dir]   a theme package, ready to publish (--addon: an addon)
+ *   kadal-deck theme eject [--dir theme]  copy the deck's theme into the deck, to change it
  *   kadal-deck dev [vite flags]           the deck with live reload (vite)
  *   kadal-deck build [vite flags]         dist/ for any static host (vite build); --without-notes
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
@@ -41,6 +43,9 @@ export const EXIT = { ok: 0, failed: 1, usage: 2, auth: 3, missing: 4 } as const
 export const HELP = `kadal-deck <command> [options]
 
   new <dir>   create a deck from the starter      --title <t> --yes --no-install --pm <npm|pnpm|yarn|bun>
+              --theme <name> [dir]  a theme package instead (kadal-theme-<name>)   --addon <name>  an addon
+  theme       theme eject [--dir ./theme] [--force]  copy the deck's theme (or a built-in) into the
+              deck and point the headmatter at it   (-C <deck> for a deck elsewhere)
   dev         run the deck locally with live reload (Vite flags pass through)
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
   build       build the deck into dist/ (any static host can serve it)
@@ -85,6 +90,8 @@ const GLOBAL: FlagSpecs = {
 const COMMAND_FLAGS: Record<string, FlagSpecs> = {
   new: {
     title: { kind: "string" },
+    theme: { kind: "string" },
+    addon: { kind: "string" },
     yes: { kind: "boolean", short: "y" },
     install: { kind: "boolean" },
     pm: { kind: "string" },
@@ -150,7 +157,9 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
     const code =
       e instanceof UsageError || (e as Error)?.name === "TargetNotEmptyError"
         ? EXIT.usage
-        : e instanceof MissingDependencyError || e instanceof NoDeckError
+        : e instanceof MissingDependencyError ||
+            e instanceof NoDeckError ||
+            (e as Error)?.name === "PackageResolveError"
           ? EXIT.missing
           : e instanceof HostError && e.status === 401
             ? EXIT.auth
@@ -234,6 +243,8 @@ async function run(
       else say(version);
       return EXIT.ok;
     }
+    case "theme":
+      return themeCommand(rest, cwd, io);
     case "export": {
       const { EXPORT_FLAGS, runExport } = await import("../export/run.ts");
       const { flags } = parseArgs(rest, { ...GLOBAL, ...EXPORT_FLAGS });
@@ -266,11 +277,37 @@ async function run(
 
   switch (command) {
     case "new": {
-      const target = positionals[0];
-      if (!target) throw new UsageError("Where should the deck go? kadal-deck new <dir>");
       const pm = str(flags.pm);
       if (pm && !["npm", "pnpm", "yarn", "bun"].includes(pm))
         throw new UsageError(`--pm must be npm, pnpm, yarn or bun`);
+      const kind = flags.theme !== undefined ? "theme" : flags.addon !== undefined ? "addon" : null;
+      if (kind) {
+        if (flags.theme !== undefined && flags.addon !== undefined)
+          throw new UsageError("--theme or --addon, not both");
+        const raw = str(flags[kind]);
+        if (!raw) throw new UsageError(`--${kind} needs a name: kadal-deck new --${kind} <name>`);
+        const { newPackage } = await import("./new.ts");
+        const result = await newPackage(
+          kind,
+          raw,
+          positionals[0] ? resolve(cwd, positionals[0]) : null,
+          cwd,
+          {
+            title: str(flags.title),
+            install: flags.install === true,
+            pm: pm as never,
+            stdio: json ? "stderr" : "inherit",
+          },
+        );
+        if (json) emit({ ok: true, kind, ...result });
+        else
+          say(
+            `\nYour ${kind} is in ${result.dir}. Next:\n\n  ${result.next.join("\n  ")}\n\nDocs: https://deck.kadal.cc/docs/`,
+          );
+        return EXIT.ok;
+      }
+      const target = positionals[0];
+      if (!target) throw new UsageError("Where should the deck go? kadal-deck new <dir>");
       const { newDeck } = await import("./new.ts");
       const result = await newDeck(resolve(cwd, target), {
         title: str(flags.title),
@@ -319,7 +356,7 @@ async function run(
       return EXIT.ok;
     }
     case "info":
-      return info(positionals, flags, io);
+      return info(positionals, { ...flags, dir }, io);
     case "screenshot":
       return screenshot(dir, flags, io);
     case "login": {
@@ -442,6 +479,7 @@ async function info(
     else say(cat.sectionMarkdown({ ...cat.catalog, [section]: [entry] }, section));
     return EXIT.ok;
   }
+  if (section === "themes") return infoThemes(cat, flags, { json, say, emit });
   if (json) emit({ ok: true, section, entries: cat.catalog[section] });
   else if (
     bool(flags.markdown) ||
@@ -460,6 +498,87 @@ async function info(
         `  ${item.name.padEnd(24)} ${item.category ? `${item.category.padEnd(11)} ` : ""}${item.summary ?? item.description ?? ""}`,
       );
     say(`\nkadal-deck info ${topic} <name> for one in full; --markdown for all of them.`);
+  }
+  return EXIT.ok;
+}
+
+/**
+ * `info themes`: the engine's themes, then every theme and addon package the deck in --dir can
+ * see (its node_modules and above), with their layouts — what `theme:` and `addons:` can name.
+ */
+async function infoThemes(
+  cat: typeof import("../catalog/index.ts"),
+  flags: Record<string, unknown>,
+  { json, say, emit }: Io,
+): Promise<number> {
+  const { listInstalledPackages } = await import("../theming/resolve.ts");
+  const dir = resolve(str(flags.dir) ?? ".");
+  const installed = listInstalledPackages(dir).map((p) => ({
+    kind: p.kind,
+    name: p.name,
+    package: p.package,
+    title: p.meta.title ?? null,
+    description: p.meta.description ?? null,
+    layouts: p.meta.layouts ?? [],
+    components: p.meta.components ?? [],
+    colorScheme: "colorScheme" in p.meta ? p.meta.colorScheme : null,
+    root: p.root,
+  }));
+  if (json) {
+    emit({ ok: true, section: "themes", entries: cat.catalog.themes, installed });
+    return EXIT.ok;
+  }
+  say(cat.sectionMarkdown(cat.catalog, "themes"));
+  const themes = installed.filter((p) => p.kind === "theme");
+  const addons = installed.filter((p) => p.kind === "addon");
+  say(`\nInstalled where ${dir} can see them:`);
+  if (!installed.length)
+    say(
+      "  none — npm install a kadal-theme-* or @kadal/theme-* package, or `kadal-deck new --theme <name>`",
+    );
+  for (const p of themes)
+    say(
+      `  theme  ${p.name.padEnd(16)} ${(p.package ?? "").padEnd(28)} ${p.layouts.length ? `layouts: ${p.layouts.join(", ")}` : ""}`,
+    );
+  for (const p of addons)
+    say(
+      `  addon  ${p.name.padEnd(16)} ${(p.package ?? "").padEnd(28)} ${[...p.components, ...p.layouts.map((l) => `layout:${l}`)].join(", ")}`,
+    );
+  return EXIT.ok;
+}
+
+/** `kadal-deck theme eject [--dir ./theme] [--force]`; `-C <deck>` points at the deck. */
+async function themeCommand(rest: string[], cwd: string, { json, say, emit }: Io): Promise<number> {
+  const { flags, positionals } = parseArgs(rest, {
+    json: { kind: "boolean" },
+    help: { kind: "boolean", short: "h" },
+    deck: { kind: "string", short: "C" },
+    dir: { kind: "string" },
+    force: { kind: "boolean" },
+    theme: { kind: "string" },
+  });
+  const sub = positionals[0];
+  if (flags.help || !sub) {
+    say(HELP);
+    return flags.help ? EXIT.ok : EXIT.usage;
+  }
+  if (sub !== "eject")
+    throw new UsageError(`Unknown theme command "${sub}". Try: kadal-deck theme eject`);
+  const { ejectTheme } = await import("../theming/eject.ts");
+  const result = ejectTheme(resolve(cwd, str(flags.deck) ?? "."), {
+    dir: str(flags.dir),
+    force: flags.force === true,
+    theme: str(flags.theme),
+  });
+  if (json) emit({ ok: true, ...result });
+  else {
+    say(
+      `Theme "${result.name}" ejected to ${result.dir}; the headmatter now says theme: ${result.to}`,
+    );
+    for (const line of result.removedImports)
+      say(`removed from src/main.tsx: ${line} (the copy styles .theme-${result.name} now)`);
+    if (result.dependencies.length)
+      say(`its module imports ${result.dependencies.join(", ")}: keep them installed in the deck.`);
   }
   return EXIT.ok;
 }

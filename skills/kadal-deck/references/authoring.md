@@ -71,7 +71,8 @@
 
 ## Layouts and slots
 
-`layout: two-cols` splits at a line `::right::`. Image layouts read `image:`; iframe layouts read
+`layout: two-cols` splits at a line `::right::`; `layout: two-cols-header` puts what comes first in a
+header across the slide, then `::left::` and `::right::` side by side. Image layouts read `image:`; iframe layouts read
 `url:`. All layouts: references/layouts-and-backgrounds.md. A custom layout is a component in
 `src/components.tsx` under the key `"layout:name"`, receiving `{ frontmatter, options, children }`.
 
@@ -99,8 +100,17 @@
 
 ## Look and feel
 
-- Themes: `theme: minimal | rla | stack` in the headmatter (the deck's `src/main.tsx` imports their
-  CSS). `colorScheme: dark` on one slide forces dark tokens there.
+- Themes: `theme: minimal | rla | stack` in the headmatter, or a package — `theme: seriph` finds
+  `@kadal/theme-seriph`, then `kadal-theme-seriph` (install it first) — or a folder, `theme: ./theme`.
+  The Vite plugin brings in its CSS, layouts and components; `kadal-deck info themes` lists what is
+  installed with each theme's layouts. `themeConfig: { primary: "#0f766e" }` sets the theme's knobs
+  (its README says which). `addons: [name]` adds addon packages the same way.
+  `colorScheme: dark` on one slide forces dark tokens there.
+- Something on every slide (a footer with the page number, a logo): a `global-bottom.tsx` (or
+  `global-top`, `slide-top`, `slide-bottom`) beside deck.mdx exporting a component; it gets
+  `{ page, total, layout, click, slide }` as props.
+- Fonts: `fonts: { sans: Inter, mono: Fira Code }` loads them (Google) and points the theme at them;
+  `provider: bunny | none`, `local: [...]`, `weights`, `italic` as in Slidev.
 - Theme tokens for your CSS: `--deck-bg`, `--deck-fg`, `--deck-muted`, `--deck-accent`,
   `--deck-accent-2`, `--deck-surface`, `--deck-border`, `--deck-radius`, `--deck-pad`,
   `--deck-base-size`, `--deck-heading-font`, `--deck-body-font`, `--deck-mono-font`. Use them

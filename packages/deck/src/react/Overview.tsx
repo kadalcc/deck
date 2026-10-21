@@ -64,6 +64,8 @@ export function Overview() {
                       active={false}
                       click={0}
                       preview
+                      layers={deck.config.layers.overview}
+                      globalLayers={deck.config.layers.overview}
                       className="is-tile"
                     />
                   </div>

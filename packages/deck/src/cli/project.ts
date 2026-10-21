@@ -161,6 +161,66 @@ export function configKeys(source: string | null): string[] {
   return [...flat.matchAll(/(?:^|,)\s*["']?([A-Za-z_$][\w$]*)["']?\s*:/g)].map((k) => k[1]!);
 }
 
+/**
+ * What the deck's theme and addon packages add, for the linter: the theme names they resolve
+ * to (and the specs that named them), the layouts and components their metadata lists, and an
+ * error for each one that does not resolve — with the resolver's own message (what was tried,
+ * how to install it).
+ */
+export async function packageExtensions(project: DeckProject): Promise<{
+  themes: string[];
+  layouts: string[];
+  components: string[];
+  diagnostics: LintResult["diagnostics"];
+}> {
+  const { readDeck } = await import("../authoring/source.ts");
+  const { requestedPackages } = await import("../theming/contract.ts");
+  const { resolvePackage } = await import("../theming/resolve.ts");
+  const { DEFAULT_CONFIG } = await import("../core/model.ts");
+  const out = {
+    themes: [] as string[],
+    layouts: [] as string[],
+    components: [] as string[],
+    diagnostics: [] as LintResult["diagnostics"],
+  };
+  let headmatter: Record<string, unknown>;
+  try {
+    headmatter = readDeck(project.files, { root: project.dir }).headmatter;
+  } catch {
+    return out;
+  }
+  const want = requestedPackages(
+    headmatter,
+    headmatter.themes === undefined ? [] : DEFAULT_CONFIG.themes,
+  );
+  const asked = [
+    ...(typeof headmatter.theme === "string" || headmatter.themes !== undefined
+      ? want.themes
+      : []
+    ).map((spec) => ["theme", spec] as const),
+    ...want.addons.map((spec) => ["addon", spec] as const),
+  ];
+  for (const [kind, spec] of asked) {
+    try {
+      const r = resolvePackage(kind, spec, project.dir);
+      if (kind === "theme") out.themes.push(spec, r.name);
+      out.layouts.push(...(r.meta.layouts ?? []));
+      out.components.push(...(r.meta.components ?? []));
+    } catch (e) {
+      if ((e as Error).name !== "PackageResolveError") throw e;
+      out.diagnostics.push({
+        severity: "error",
+        code: `${kind}-missing`,
+        message: (e as Error).message.split("\n")[0]!,
+        hint: (e as Error).message.split("\n").slice(1).join("\n"),
+        file: project.entry,
+        line: 1,
+      });
+    }
+  }
+  return out;
+}
+
 export async function checkProject(
   project: DeckProject,
   { compile = true } = {},
@@ -171,15 +231,40 @@ export async function checkProject(
     .filter((f) => f !== componentsFile)
     .map((f) => project.files.read(f) ?? "");
   const extensions = readExtensions(project.files.read(componentsFile), others);
-  return lintDeck({
+  // Theme and addon packages: their layouts and components are the deck's too, and a theme that
+  // resolves is one the deck ships (its CSS comes in through the Vite plugin).
+  const pk = await packageExtensions(project);
+  extensions.layouts.push(...pk.layouts);
+  extensions.components.push(...pk.components);
+  const own = deckThemes(project);
+  const themes = own || pk.themes.length ? [...(own ?? []), ...pk.themes] : undefined;
+  const result = await lintDeck({
     files: project.files,
     exists: project.exists,
     root: project.dir,
     extensions,
-    themes: deckThemes(project),
+    themes,
     configKeys: configKeys(project.files.read(join(project.dir, "deck.config.ts"))),
     compile,
   });
+  if (!pk.diagnostics.length) return result;
+  // A package that does not resolve says so once, with how to install it, rather than as an
+  // unknown theme as well.
+  const diagnostics = [
+    ...pk.diagnostics,
+    ...result.diagnostics.filter(
+      (d) =>
+        !(d.code === "theme-unknown" && pk.diagnostics.some((p) => p.code === "theme-missing")),
+    ),
+  ];
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  return {
+    ...result,
+    diagnostics,
+    errors,
+    warnings: diagnostics.filter((d) => d.severity === "warning").length,
+    ok: errors === 0,
+  };
 }
 
 export function rel(project: DeckProject | string, file: string): string {

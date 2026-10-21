@@ -60,3 +60,11 @@
   background: color-mix(in oklab, var(--deck-accent) 15%, transparent);
   border-color: transparent;
 }
+/* two-cols-header: an emerald rule over each column */
+.theme-stack .deck-layout-two-cols-header > .deck-slot-default {
+  margin-bottom: 0.3em;
+}
+.theme-stack .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding-top: 0.6em;
+  border-top: 4px solid var(--deck-accent);
+}

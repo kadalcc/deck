@@ -30,6 +30,12 @@ import {
 } from "../compiler/setup.ts";
 import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
+import { applySlideDefaults, shikiThemes, slideDefaultLayers } from "../theming/merge.ts";
+import {
+  type PackageRegistry,
+  packageRegistry,
+  resolveRuntimePackages,
+} from "../theming/registry.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -72,6 +78,13 @@ export interface CompileDeckOptions extends DeckSetup {
   shiki?: { light?: string; dark?: string; langs?: string[] };
   /** Slide defaults beneath the headmatter's `defaults:` (a theme's), see `prepareDeck`. */
   defaults?: Record<string, unknown> | Array<Record<string, unknown> | null | undefined> | null;
+  /**
+   * The themes and addons this page bundled, to resolve the headmatter's `theme`, `themes` and
+   * `addons` against (theming/registry.ts). Default: the page's registry, which the prebuilt
+   * shell fills with every first-party package. An unknown theme falls back to minimal with a
+   * warning; `false` skips packages entirely (the headmatter's theme names a stylesheet).
+   */
+  packages?: PackageRegistry | false;
 }
 
 export interface CompiledDeck {
@@ -177,10 +190,7 @@ export async function compileDeck(
   const push = (d: Omit<Diagnostic, "severity"> & { severity?: Diagnostic["severity"] }) =>
     diagnostics.push({ severity: "error", ...d });
 
-  const themes = {
-    light: options.shiki?.light ?? "github-light",
-    dark: options.shiki?.dark ?? "github-dark",
-  };
+  let themes = shikiThemes(options.shiki, null);
 
   let prepared: { headmatter: Record<string, unknown>; slides: PreparedSlide[]; styles: string };
   try {
@@ -211,6 +221,26 @@ export async function compileDeck(
   const renderMath = katexRenderer(katex);
   const server = plantUmlServer(prepared.headmatter);
   const ruby = notesRuby(prepared.headmatter);
+  // The theme and addons, from what this page bundled: their slide defaults go in under every
+  // slide's own before anything compiles, and the theme's Shiki themes colour the code.
+  const runtimePackages =
+    options.packages === false
+      ? null
+      : await resolveRuntimePackages(prepared.headmatter, options.packages ?? packageRegistry);
+  if (runtimePackages) {
+    for (const message of runtimePackages.warnings)
+      push({ severity: "warning", message, file, line: null, slide: null });
+    applySlideDefaults(
+      prepared.slides,
+      slideDefaultLayers(
+        prepared.headmatter,
+        runtimePackages.packages.theme,
+        runtimePackages.packages.addons,
+      ),
+    );
+    themes = shikiThemes(options.shiki, runtimePackages.packages.theme);
+  }
+
   const glossary: DeckGlossary = deckGlossary(
     prepared.headmatter,
     (src) => {
@@ -313,6 +343,7 @@ export async function compileDeck(
       slides,
       glossary: glossary.entries,
       styles: prepared.styles,
+      ...(runtimePackages ? { packages: runtimePackages.packages } : {}),
     },
     diagnostics,
     missing: [...missing],

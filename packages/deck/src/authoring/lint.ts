@@ -323,7 +323,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         severity: "warning",
         code: "theme-unknown",
         message: `Theme "${s.frontmatter.theme}" is not one the deck ships (${[...themes].join(", ")}).`,
-        hint: "Import its CSS in src/main.tsx and list it in `themes`, or pick a built-in theme.",
+        hint: "Install it as a package (@kadal/theme-<name> or kadal-theme-<name>), point at a folder (theme: ./theme), define .theme-<name> in your CSS, or pick a built-in theme.",
       });
     const id = idOf(s);
     if (typeof s.frontmatter.id === "string") {

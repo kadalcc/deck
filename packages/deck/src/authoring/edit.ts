@@ -259,13 +259,16 @@ function writeFrontmatter(
       else doc.splice(r.file, yamlStart, r.frontmatter.close - yamlStart + 1, []);
       return;
     }
-    const text = next.toString({ lineWidth: 0 }).replace(/\n+$/, "");
+    const text = next.toString({ lineWidth: 0, flowCollectionPadding: false }).replace(/\n+$/, "");
     doc.splice(r.file, yamlStart, r.frontmatter.close - yamlStart, text.split("\n"));
     return;
   }
   const next = edit(null);
   if (!next || !YAML.isMap(next.contents) || next.contents.items.length === 0) return;
-  const yaml = next.toString({ lineWidth: 0 }).replace(/\n+$/, "").split("\n");
+  const yaml = next
+    .toString({ lineWidth: 0, flowCollectionPadding: false })
+    .replace(/\n+$/, "")
+    .split("\n");
   if (r.head) {
     // No fence at the top yet: open one. A body that starts right away gets a blank line after.
     let at = 0;
@@ -396,7 +399,9 @@ export function updateHeadmatter(files: DeckFiles, patch: FrontmatterPatch): Edi
     let close = at + 1;
     while (close < lines.length && lines[close] !== "---") close++;
     const current = YAML.parseDocument(lines.slice(at + 1, close).join("\n"));
-    const next = patchDocument(current, patch).toString({ lineWidth: 0 }).replace(/\n+$/, "");
+    const next = patchDocument(current, patch)
+      .toString({ lineWidth: 0, flowCollectionPadding: false })
+      .replace(/\n+$/, "");
     doc.splice(files.entry, at + 1, close - at - 1, next.split("\n"));
     return doc.result(null, [], expect);
   }

@@ -10,7 +10,7 @@ carries speaker notes.
 
 | File | Chapter |
 | --- | --- |
-| `slides/01-writing.mdx` | the format, slots, a custom layout, all eighteen layouts, the glossary |
+| `slides/01-writing.mdx` | the format, slots, a custom layout, all nineteen layouts, the glossary |
 | `slides/02-clicks.mdx` | `<Clicks>`, every click effect, `at` / ranges / `hide` / `clicks:`, marks and moving words |
 | `slides/03-code.mdx` | stepped code, every fence option, magic move, maths, Mermaid, sketches |
 | `slides/04-looks.mdx` | three themes × light and dark, every background (and colour, gradient, image, video, page, wash), bling, building blocks |

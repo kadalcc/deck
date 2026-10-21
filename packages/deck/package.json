@@ -46,6 +46,7 @@
     "LICENSING.md",
     "THIRD_PARTY_NOTICES.md",
     "README.md",
+    "THEMES.md",
     "tools/verify-island.mjs"
   ],
   "bin": {
