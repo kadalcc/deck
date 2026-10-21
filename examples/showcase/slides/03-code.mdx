@@ -178,6 +178,192 @@ Slidev's magic move, compiled at build time. One fence of fences: each inner blo
 </Notes>
 
 ---
+id: code-kit
+---
+
+<p className="sc-eyebrow">Code · the developer's kit</p>
+
+## Marks, tabs and files
+
+<Cols cols="1.15fr 1fr" gap="2rem" align="start">
+<Col>
+
+```ts {1|3-4|all} [tide.ts]
+const datum = 0.0 // [!code --]
+const datum = 0.4 // [!code ++]
+export function height(t: number) { // [!code highlight]
+  return datum + 2.1 * Math.cos(t) // [!code word:datum]
+}
+```
+
+::code-group
+
+```sh [npm]
+npm i @kadal/deck
+```
+
+```sh [bun]
+bun add @kadal/deck
+```
+
+```sh [pnpm]
+pnpm add @kadal/deck
+```
+
+::
+
+</Col>
+<Col>
+
+<<< @/snippets/tide.ts#model [snippets/tide.ts · #model]
+
+<How>
+
+````mdx
+const datum = 0.4 // [!code ++]
+
+::code-group
+```sh [npm]
+npm i @kadal/deck
+```
+::
+
+<<< @/snippets/tide.ts#model
+````
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Three conveniences of a technical talk. Shiki's notation comments mark lines added, removed, highlighted or focused — the comment itself disappears — and they sit under the click steps rather than fighting them.
+[click] Line three and four light up as a step, on top of the highlight mark.
+[click] And everything again. Below, a code group: one tab per fence, named by its title, with ← and → between tabs. On the right, a region of a real file in the repo, imported with three angle brackets — edit the file and the slide follows.
+</Notes>
+
+----
+id: code-twoslash
+---
+
+<p className="sc-eyebrow">Code · TwoSlash</p>
+
+## Types, from the compiler
+
+<Cols cols="1.3fr 1fr" gap="2rem" align="start">
+<Col>
+
+```ts twoslash
+interface Tide {
+  height: number
+  at: Date
+}
+
+const low: Tide = { height: "0.4", at: new Date() }
+
+const high = { height: 6.1, at: new Date() } satisfies Tide
+//    ^?
+```
+
+</Col>
+<Col>
+
+Hover a name — or press <Kbd>Tab</Kbd> to it — for its type. Errors arrive underlined, with the compiler's own words; `// ^?` pins a type open.
+
+<How>
+
+````mdx
+```ts twoslash
+const high = { height: 6.1 }
+//    ^?
+```
+````
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+TwoSlash runs the TypeScript compiler while the deck builds: every identifier carries its real type, errors are the compiler's, and a caret query pins one open. Nothing of TypeScript reaches the audience — it is HTML.
+</Notes>
+
+----
+id: code-monaco
+---
+
+<p className="sc-eyebrow">Code · Monaco</p>
+
+## An editor on the slide
+
+<Cols n={2} gap="1.5rem" align="start">
+<Col>
+
+```ts {monaco} [harbour.ts]
+const harbours = ["Kadal", "Chennai", "Kochi"]
+export const loudest = harbours.map((h) => h.toUpperCase())
+```
+
+</Col>
+<Col>
+
+```ts {monaco-diff}
+const tide = 6.1
+const unit = "m"
+~~~
+const tide = 6.4
+const unit = "metres"
+```
+
+</Col>
+</Cols>
+
+<p className="sc-small"><code>{"```ts {monaco}"}</code> edits in place (with TypeScript's hovers and errors); <code>{"{monaco-diff}"}</code> splits two versions at a line of <code>~~~</code>. <Kbd>Esc</Kbd> hands the keys back to the deck.</p>
+
+<Notes>
+Monaco, the editor of VS Code, loaded only when a slide like this is on screen. On the left an editor with TypeScript behind it; on the right a diff of two versions. Printed, both are the highlighted code — the diff as a unified listing.
+</Notes>
+
+----
+id: code-run
+---
+
+<p className="sc-eyebrow">Code · run it</p>
+
+## Run it, see it
+
+```ts {monaco-run}{showOutputAt:'+1'} [tides.ts]
+const heights = [0.4, 2.8, 6.1, 3.3]
+const high = Math.max(...heights)
+console.log(`high water: ${high} m`, { at: heights.indexOf(high) })
+await new Promise((r) => setTimeout(r, 300))
+console.log(heights.map((h) => (h / high).toFixed(2)))
+```
+
+<p className="sc-small"><code>{"{monaco-run}"}</code>: JavaScript and TypeScript run in a Web Worker (with a timeout), Python in Pyodide, anything else through <code>registerCodeRunner</code>. <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd> runs; edits re-run.</p>
+
+<Notes>
+A runnable block: the code runs as the slide arrives and again on every edit, in a worker that a timeout can stop. Its output waits for a click here — showOutputAt plus one.
+[click] And there it is: console output, objects printed the way a console prints them.
+</Notes>
+
+----
+id: code-write
+---
+
+<p className="sc-eyebrow">Code · write back</p>
+
+## Edit the file from the slide
+
+<<< @/snippets/tide.ts#edit {monaco-write} [snippets/tide.ts · #edit]
+
+<p className="sc-small"><code>{"<<< @/snippets/tide.ts#edit {monaco-write}"}</code>: in <code>kadal-deck dev</code> every edit is saved into that region of the file; in a build it is read-only.</p>
+
+<Notes>
+The writable editor: the imported region is saved back into the snippet file as you type, during kadal-deck dev only — a built deck shows it read-only.
+</Notes>
+
+---
 id: maths
 ---
 

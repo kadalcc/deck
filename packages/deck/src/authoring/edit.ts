@@ -380,6 +380,58 @@ export function setNotes(files: DeckFiles, ref: SlideRef, notes: string | null):
   return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
 }
 
+/**
+ * Replace the body of one code fence on a slide: the fence whose code is `original` (the first
+ * such fence when the slide has several alike), with `code`. The fence lines themselves — the
+ * language, the meta, the indentation — stay as written. What `{monaco-write}` saves through in
+ * `kadal-deck dev`; refused when no fence on the slide holds `original` any more (the file was
+ * edited elsewhere since the slide was loaded) or when `code` would close the fence early.
+ */
+export function replaceCode(
+  files: DeckFiles,
+  ref: SlideRef,
+  original: string,
+  code: string,
+): EditResult {
+  const doc = new Doc(files);
+  const s = require(doc.before.slides, ref);
+  const { lines } = doc.lines(s.range.file);
+  const want = original.replace(/\r\n/g, "\n").replace(/\n$/, "");
+  for (let i = s.range.body; i < s.range.end; i++) {
+    const open = /^([ \t]*)(`{3,}|~{3,})(.*)$/.exec(lines[i]!);
+    if (!open) continue;
+    const [, indent, mark] = open as unknown as [string, string, string];
+    let close = i + 1;
+    const closing = new RegExp(`^[ \\t]*\\${mark[0]}{${mark.length},}[ \\t]*$`);
+    while (close < s.range.end && !closing.test(lines[close]!)) close++;
+    if (close >= s.range.end) break;
+    const body = lines
+      .slice(i + 1, close)
+      .map((l) => (l.startsWith(indent) ? l.slice(indent.length) : l.trimStart()))
+      .join("\n");
+    if (body !== want) {
+      i = close;
+      continue;
+    }
+    const next = code.replace(/\r\n/g, "\n").replace(/\n$/, "").split("\n");
+    if (next.some((l) => closing.test(l)))
+      throw new EditError(
+        `The code has a line of ${mark[0].repeat(mark.length)} that would close its fence early; use a longer fence in the deck.`,
+      );
+    doc.splice(
+      s.range.file,
+      i + 1,
+      close - i - 1,
+      next.map((l) => (l ? indent + l : l)),
+    );
+    const n = doc.before.slides.length;
+    return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
+  }
+  throw new EditError(
+    `No code block on slide ${s.index} holds that code any more — the file changed since the slide was loaded. Reload the deck and edit again.`,
+  );
+}
+
 /** Merge into the deck's headmatter (null deletes a key). */
 export function updateHeadmatter(files: DeckFiles, patch: FrontmatterPatch): EditResult {
   const doc = new Doc(files);

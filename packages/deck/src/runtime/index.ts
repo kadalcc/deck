@@ -25,3 +25,4 @@ export {
   registerTheme,
   resolveRuntimePackages,
 } from "../theming/registry.ts";
+export { type MonacoHost, type MonacoLoader, registerMonacoLoader } from "../monaco/loader.ts";

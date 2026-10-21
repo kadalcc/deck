@@ -13,6 +13,7 @@
 @import "./narrate.css";
 @import "./theming.css";
 @import "./export.css";
+@import "./code.css";
 
 :root {
   --deck-bg: #ffffff;

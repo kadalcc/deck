@@ -101,7 +101,9 @@ describe("examples", () => {
     const { createProcessor } = await import("@mdx-js/mdx");
     const { default: remarkGfm } = await import("remark-gfm");
     const { default: remarkMath } = await import("remark-math");
-    const { splitDeck } = await import("../compiler/split.ts");
+    // Through the compiler's own text passes: `<<<`, `::code-group` and magic move are its syntax.
+    const { prepareDeck } = await import("../compiler/pipeline.ts");
+    const region = "// #region ask\nexport const ask = (q: string) => q\n// #endregion ask\n";
     const names = builtinComponentNames();
     const examples = [
       ...catalog.components.map((c) => [`<${c.name}>`, c.example] as const),
@@ -109,7 +111,10 @@ describe("examples", () => {
       ...catalog.codeMeta.map((c) => [c.syntax, c.example] as const),
     ];
     for (const [label, example] of examples) {
-      const { slides } = splitDeck(example, { file: label });
+      const { slides } = prepareDeck(example, {
+        file: label,
+        snippets: { dirOf: () => "", read: (path) => ({ path, text: region }) },
+      });
       for (const s of slides) {
         const tags: string[] = [];
         const collect = () => (tree: { children?: unknown[] }) => {

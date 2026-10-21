@@ -99,3 +99,27 @@ The command-line flags of `kadal-deck export` (`--format`, `--range`, `--with-cl
 `--with-toc`, `--omit-background`, `--per-slide`, `--wait-until`, `--executable-path`) and the shape
 of the Markdown export follow Slidev's (MIT, https://github.com/slidevjs/slidev) so that a
 Slidev user's habits carry over; no Slidev code is copied.
+
+## The code toolkit (Monaco, TwoSlash, runners)
+
+`{monaco…}` code blocks, `twoslash` blocks and `{monaco-run}` use the packages below. They are
+ordinary npm dependencies of `@kadal/deck` (TypeScript is an optional peer), all under permissive
+licences; none of their code is copied into the engine's source. A deck's **build output**
+contains Monaco, its workers and the runner pieces only when one of its slides has a `{monaco…}`
+block, as lazy chunks fetched when such a slide is shown. Whoever publishes that build
+distributes them and should keep this notice (and Monaco's `ThirdPartyNotices.txt`, shipped in
+the `monaco-editor` package) with it.
+
+| Component | Version checked | Licence | Source | Where it runs |
+| --- | --- | --- | --- | --- |
+| monaco-editor | 0.57.0 | MIT | https://github.com/microsoft/monaco-editor | browser (lazy chunk + workers) |
+| @shikijs/monaco | 3.23.0 | MIT | https://github.com/shikijs/shiki | browser (with Monaco) |
+| @shikijs/transformers | 3.23.0 | MIT | https://github.com/shikijs/shiki | build (and the hosted shell's compiler) |
+| @shikijs/twoslash, twoslash | 3.23.0, 0.3.9 | MIT | https://github.com/shikijs/shiki · https://github.com/twoslashes/twoslash | build only (Node) |
+| typescript (optional peer, for TwoSlash) | 5.5+ | Apache-2.0 | https://github.com/microsoft/TypeScript | build only (Node) |
+| sucrase | 3.35.1 | MIT | https://github.com/alangpierce/sucrase | browser (TS → JS for the runner) |
+| dompurify | 3.4.16 | MPL-2.0 OR Apache-2.0 (used under Apache-2.0) | https://github.com/cure53/DOMPurify | browser (runner HTML output) |
+| Pyodide (CPython for WebAssembly) | 0.28.3 | MPL-2.0 | https://github.com/pyodide/pyodide | **downloaded at run time** from jsDelivr by a Python `{monaco-run}` block; never redistributed by this project |
+
+The CSS for TwoSlash's popups and the notation marks is written for this engine (it uses the class
+names TwoSlash and Shiki's transformers emit); no stylesheet of theirs is copied.

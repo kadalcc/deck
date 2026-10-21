@@ -26,6 +26,20 @@ export {
 } from "./renderers/index.ts";
 export { useMDXComponents } from "./react/mdx.tsx";
 export {
+  defineCodeRunners,
+  hasCodeRunner,
+  registerCodeRunner,
+  runCode,
+  setPythonRunnerIndexUrl,
+  type CodeOutput,
+  type CodeOutputLevel,
+  type CodeRunner,
+  type CodeRunnerContext,
+  type CodeRunners,
+  type CodeRunResult,
+} from "./monaco/runners.ts";
+export { type MonacoHost, type MonacoLoader, registerMonacoLoader } from "./monaco/loader.ts";
+export {
   DeckContext,
   SlideContext,
   useDeck,

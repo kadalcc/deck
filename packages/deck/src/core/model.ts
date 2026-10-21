@@ -95,6 +95,19 @@ export interface DeckManifest {
    * `theme` then names a stylesheet main.tsx imported, as it always did.
    */
   packages?: ManifestPackages;
+
+  /**
+   * Monaco for `{monaco…}` blocks: a lazy import of the deck's `virtual:deck/monaco`, which the
+   * Vite plugin generates only when some slide has one. Null or absent elsewhere; a page that
+   * compiles decks in the browser registers its own (`registerMonacoLoader`). See monaco/loader.ts.
+   */
+  monaco?: (() => Promise<import("../monaco/loader.ts").MonacoHost>) | null;
+
+  /**
+   * The deck's `setup/code-runners.ts`, when it has one: runners for `{monaco-run}` blocks,
+   * loaded before the first run. See monaco/runners.ts.
+   */
+  codeRunners?: (() => Promise<unknown>) | null;
 }
 
 /** A line to the dev server: Vite's HMR socket, event "kadal:remote". */

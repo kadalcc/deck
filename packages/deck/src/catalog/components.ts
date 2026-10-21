@@ -116,6 +116,21 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     example: "```ts {1|2-3|all} [app.ts]\nconst a = 1;\nconst b = 2;\nexport { a, b };\n```",
     mapping: true,
   },
+  CodeGroup: {
+    category: "code",
+    summary:
+      "Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as Slidev's `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print=\"all\"` prints every tab.",
+    example:
+      "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
+    props: {
+      children: "The fenced code blocks, one per tab (blank lines around them inside the tag).",
+      clicks: "Open the next tab on each click of the slide.",
+      at: "With `clicks`: the step of the first turn, like `<Click at>`.",
+      active: "The tab open at first (0-based).",
+      print: '"active" (default) prints the open tab; "all" prints every tab with its name.',
+      className: "Extra classes.",
+    },
+  },
   MagicMove: {
     category: "code",
     summary:

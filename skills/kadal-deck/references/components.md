@@ -810,6 +810,32 @@ export { a, b };
 ```
 ````
 
+#### `<CodeGroup>`
+
+Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as Slidev's `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print="all"` prints every tab.
+
+````mdx
+::code-group
+
+```sh [npm]
+npm i @kadal/deck
+```
+
+```sh [bun]
+bun add @kadal/deck
+```
+
+::
+````
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  | The fenced code blocks, one per tab (blank lines around them inside the tag). |
+| `clicks` | `boolean` |  | Open the next tab on each click of the slide, from the group's own step on. |
+| `at` | `string \| number` |  | With `clicks`: when the first turn happens, like `<Click at>` (`"+1"`, an absolute step). |
+| `active` | `number` | `0` | The tab open at first (0-based). Default 0. |
+| `print` | `"active" \| "all"` |  | What print and export show: the open tab (default) or every tab. |
+
 #### `<MagicMove>`
 
 Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step.
@@ -1144,6 +1170,79 @@ a
 b
 ```
 ````
+
+- `// [!code ++]` — Shiki notation comments, at the end of a line (any comment style): `[!code ++]` / `[!code --]` added and removed lines, `[!code highlight]` (or `highlight:3` for 3 lines), `[!code focus]` blurs the rest until hover, `[!code error]` / `[!code warning]`, `[!code word:name]` marks every `name`. The comment is removed. Works with click steps; `deck({ shiki: { transformers } })` adds your own transformers.
+
+````mdx
+```ts
+const a = 1 // [!code --]
+const a = 2 // [!code ++]
+const b = a // [!code highlight]
+```
+````
+
+- `::code-group` — Fences between `::code-group` and `::` (or `:::`) become tabs (`<CodeGroup>`), named by each fence's `[title]`. Options after the opener: `{clicks:true}` turns tabs on clicks, `{print:'all'}` prints every tab.
+
+````mdx
+::code-group
+
+```sh [npm]
+npm i @kadal/deck
+```
+
+```sh [bun]
+bun add @kadal/deck
+```
+
+::
+````
+
+- `<<< @/snippets/file.ts#region` — Import code from a file (`@` = the deck's folder; `./x` relative to the slide's file), optionally one `#region` (marked `// #region name` … `// #endregion` in any comment style). A language word and any fence meta may follow: `<<< @/a.js ts {2|4}{lines:true} [a.ts]`. Watched in dev; in the hosted shell the file must be published beside deck.mdx.
+
+```mdx
+<<< @/snippets/tide.ts#ask {2-3} [tide.ts]
+```
+
+- `twoslash` — TypeScript type information rendered at build time: hover (or Tab to) a name for its type, errors underlined with the compiler's message, `// ^?` pins a type under the token above. Needs `typescript` installed; the hosted shell renders the block plain.
+
+````mdx
+```ts twoslash
+const tide = { height: 6.1 }
+//    ^?
+```
+````
+
+- `{monaco}` — A Monaco editor on the slide (lazy-loaded; print, export and the phone remote show the highlighted code). Options: height (CSS or 'auto' to grow), lines, editorOptions (Monaco IEditorOptions), readonly. Esc gives the keys back to the deck.
+
+````mdx
+```ts {monaco}{height:'auto'}
+const greeting = 'hello'
+```
+````
+
+- `{monaco-diff}` — A Monaco diff editor: the original code, a line of `~~~`, then the modified code. Print shows a unified line diff. `{sideBySide:false}` for inline.
+
+````mdx
+```ts {monaco-diff}
+const tide = 6.1
+~~~
+const tide = 6.4
+```
+````
+
+- `{monaco-run}` — An editor with a Run button (Ctrl/⌘+Enter) and the output under it: JS/TS run in a Web Worker (console captured, timeouts), Python in Pyodide; other languages through `registerCodeRunner` or setup/code-runners.ts. Options: autorun (default true, re-runs on edit), showOutputAt (a click, e.g. '+1'), outputHeight, outputPosition ('bottom' | 'right'), timeout (ms), runnerOptions.
+
+````mdx
+```ts {monaco-run}{showOutputAt:'+1'}
+console.log([1, 2, 3].map((n) => n * 2))
+```
+````
+
+- `{monaco-write}` — An editor whose edits are saved back to the source in `kadal-deck dev` (the imported file with `<<<`, else the fence in deck.mdx); read-only in a build and in the hosted shell.
+
+```mdx
+<<< @/snippets/tide.ts#ask {monaco-write}
+```
 
 - `` ````md magic-move `` — A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.
 

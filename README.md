@@ -125,6 +125,8 @@ and `node tools/showcase-check.mjs` drives every slide and view of it in a headl
 
 - MDX with clicks (`<Click>`, `<Clicks>`, `at="+2"`), layouts and named slots
 - Code that steps line by line, Shiki highlighting, magic move
+- Live code: Monaco editors and diffs, runnable JS/TS/Python with the output on
+  the slide, TwoSlash type hovers, code groups, `<<<` snippet imports, `[!code ++]` marks
 - KaTeX maths and Mermaid diagrams
 - Excalidraw sketches drawn in code, with guided steps
 - Glossary term cards: the compiler links the first mention of each term

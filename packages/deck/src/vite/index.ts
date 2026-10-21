@@ -2,9 +2,14 @@ import { compile } from "@mdx-js/mdx";
 import { renderToString as renderKatex } from "katex";
 import { cpSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Highlighter, createHighlighter } from "shiki";
+import {
+  type Highlighter,
+  type ShikiTransformer,
+  bundledLanguagesInfo,
+  createHighlighter,
+} from "shiki";
 import { type Plugin, type ViteDevServer, searchForWorkspaceRoot } from "vite";
 
 import { levelOf, titleOf } from "../compiler/index.ts";
@@ -24,6 +29,7 @@ import {
   notesRuby,
   plantUmlServer,
 } from "../compiler/setup.ts";
+import { notationTransformers } from "../compiler/transformers.ts";
 import { DEFAULT_GLOSSARY } from "../glossary/model.ts";
 import { createRelay, type RelayPeer } from "../remote/relay.ts";
 import { applySlideDefaults, shikiThemes, slideDefaultLayers } from "../theming/merge.ts";
@@ -34,6 +40,9 @@ import {
   packageRoots,
   packagesCode,
 } from "./packages.ts";
+import { monacoInstalled, monacoLangs, monacoModule, setupFile } from "./monaco.ts";
+import { monacoWriteDev } from "./monaco-dev.ts";
+import { loadTwoslash } from "./twoslash.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -51,6 +60,8 @@ import {
  *   virtual:deck/notes/N     slide N's notes, compiled MDX (default export)
  *   virtual:deck/magic/N     slide N's precomputed magic-move steps
  *                            (the manifest also carries `styles`: every slide's <style>, scoped)
+ *   virtual:deck/monaco      Monaco for `{monaco…}` blocks (vite/monaco.ts) — only when a slide has
+ *                            one; otherwise the manifest says `monaco: null`
  *   virtual:deck/kokoro      the narrator's Kokoro worker — only when the deck has `kokoro-js`
  *                            installed; otherwise the manifest says `kokoro: null` and nothing of
  *                            it is built (it is an optional peer: ~400 MB of ONNX runtime)
@@ -94,10 +105,23 @@ export interface DeckPluginOptions extends DeckSetup {
   /** The deck file, relative to the Vite root. Default `deck.mdx`. */
   entry?: string;
   /**
-   * Shiki themes. Without them the deck's theme package decides (`kadal.theme.shiki`), and
-   * without that GitHub's light and dark; the theme's CSS can still restyle the colours.
+   * Shiki: the themes (without them the deck's theme package decides, `kadal.theme.shiki`, and
+   * without that GitHub's light and dark; the theme's CSS can still restyle the colours), the
+   * languages loaded, and transformers run on every code block after the built-in notation ones
+   * (`// [!code ++]`, see compiler/transformers.ts).
    */
-  shiki?: { light?: string; dark?: string; langs?: string[] };
+  shiki?: { light?: string; dark?: string; langs?: string[]; transformers?: ShikiTransformer[] };
+  /**
+   * TwoSlash for ```ts twoslash blocks (needs `typescript` installed). Default true; false renders
+   * them as plain highlighted code.
+   */
+  twoslash?: boolean;
+  /**
+   * The module that registers `{monaco-run}` runners, relative to the Vite root. Default: the
+   * deck's `setup/code-runners.ts` when there is one. Its default export is the runners map (or a
+   * function returning it); see `defineCodeRunners`.
+   */
+  codeRunners?: string;
 }
 
 /** Build-time KaTeX for the maths in a definition; the browser gets finished HTML. */
@@ -131,6 +155,22 @@ export const relay = hot
     }
   : null;`;
 
+/** Whether any slide of the deck (includes too) has a `{monaco…}` block; false when it cannot tell. */
+function deckUsesMonaco(entryPath: string): boolean {
+  try {
+    const { slides } = prepareDeck(readFileSync(entryPath, "utf8"), {
+      file: entryPath,
+      resolveInclude: (path, from) => {
+        const file = resolve(dirname(from), path);
+        return existsSync(file) ? { file, text: readFileSync(file, "utf8") } : null;
+      },
+    });
+    return monacoLangs(slides.map((s) => s.content)).size > 0;
+  } catch {
+    return false;
+  }
+}
+
 const VIRTUAL = "virtual:deck";
 const RESOLVED = "\0virtual:deck";
 
@@ -155,6 +195,11 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   /** Whether `kokoro-js` resolves from this package (decided once, at the first manifest). */
   let kokoro: Promise<boolean> | null = null;
   const withoutNotes = options.withoutNotes ?? process.env.KADAL_DECK_WITHOUT_NOTES === "1";
+  /** TwoSlash, loaded the first time a slide has a `twoslash` block (it starts TypeScript). */
+  let twoslash: Promise<ShikiTransformer | null> | null = null;
+  /** Files `/__kadal/monaco-write` just saved: their change must not reload the page. */
+  const quietWrites = new Map<string, string>();
+  const transformers = [...notationTransformers(), ...(options.shiki?.transformers ?? [])];
 
   let highlighterKey = "";
   const getHighlighter = async () => {
@@ -176,6 +221,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   function build() {
     included.clear();
     const text = readFileSync(entryPath, "utf8");
+    const deckDir = dirname(entryPath);
     const { headmatter, slides, styles } = prepareDeck(text, {
       file: entryPath,
       resolveInclude: (path, from) => {
@@ -186,6 +232,18 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       },
       preprocess: options.preprocess,
       withoutNotes,
+      // `<<<` imports: deck-root relative paths, read from the disk and watched like includes.
+      snippets: {
+        dirOf: (file) => relative(deckDir, dirname(file)).split(sep).join("/"),
+        read: (path) => {
+          const file = resolve(deckDir, path);
+          included.add(file);
+          server?.watcher.add(file);
+          if (!existsSync(file) || !statSync(file).isFile()) return null;
+          return { path, text: readFileSync(file, "utf8") };
+        },
+        onProblem: (message, s) => console.warn(`[deck] ${s.source.file}:${s.source.line}: ${message}`),
+      },
     });
     const katex = katexOptions(headmatter, options);
     // Themes, addons and layer files (vite/packages.ts): resolved from the deck's folder, and the
@@ -228,7 +286,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     return manifest;
   };
 
-  const invalidate = () => {
+  const invalidate = (quiet = false) => {
     manifest = null;
     if (!server) return;
     const mods = [...server.moduleGraph.idToModuleMap.keys()].filter((id) =>
@@ -238,7 +296,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       const mod = server.moduleGraph.getModuleById(id);
       if (mod) server.moduleGraph.invalidateModule(mod);
     }
-    server.ws.send({ type: "full-reload" });
+    if (!quiet) server.ws.send({ type: "full-reload" });
   };
 
   /**
@@ -248,6 +306,9 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
    */
   async function compileMdx(source: string, file: string, terms: unknown = null, notes = false) {
     const m = ensure();
+    if (options.twoslash !== false && /\btwoslash\b/.test(source))
+      twoslash ??= loadTwoslash(dirname(entryPath), (msg) => console.warn(`[deck] ${msg}`));
+    const ts = twoslash ? await twoslash : null;
     const run = async (format: "mdx" | "md") =>
       compile(source, {
         jsx: false,
@@ -265,6 +326,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           ruby: notes ? notesRuby(m.headmatter) : null,
           remarkPlugins: options.remarkPlugins,
           rehypePlugins: options.rehypePlugins,
+          transformers,
+          twoslash: ts,
         }),
         providerImportSource: "@kadal/deck/mdx-provider",
         format,
@@ -297,6 +360,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         worker?: { format: "es" };
         server?: { https?: object; fs?: { allow: string[] } };
         resolve?: { dedupe: string[] };
+        optimizeDeps?: { include: string[] };
       } = {};
       // A theme or addon package (or a layer file) brings modules from outside the deck's own
       // tree: one React, one engine for all of them, and a `../my-theme` the dev server may serve.
@@ -315,6 +379,16 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       if (!user.worker?.format) out.worker = { format: "es" };
       // `kadal-deck dev --https`: a self-signed certificate, so a phone gets a secure context (the
       // air pointer's motion sensors need one). The deck's own `server.https` wins.
+      // A deck with Monaco editors: their few Shiki/Monaco glue packages are pre-bundled up front, so
+      // the first editor does not make Vite discover them, re-optimize and reload the page.
+      if (env.command === "serve" && deckUsesMonaco(resolve(user.root ?? process.cwd(), entry)))
+        out.optimizeDeps = {
+          include: [
+            "@kadal/deck > @shikijs/monaco",
+            "@kadal/deck > shiki/core",
+            "@kadal/deck > shiki/engine/javascript",
+          ],
+        };
       if (env.command === "serve" && process.env.KADAL_DECK_HTTPS === "1" && !user.server?.https) {
         const { devCertificate } = await import("./https.ts");
         const https = devCertificate(resolve(user.root ?? process.cwd()));
@@ -325,6 +399,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     configureServer(s) {
       server = s;
       remoteRelay(s);
+      monacoWriteDev(s, { root: () => root, entry: () => entryPath, quiet: (f, t) => quietWrites.set(f, t) });
       const dist = excalidrawDist();
       s.middlewares.use((req, res, next) => {
         const url = (req.url ?? "").split("?")[0]!;
@@ -348,13 +423,22 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       s.watcher.add(resolve(dirname(entryPath), DEFAULT_GLOSSARY.src!));
       const changed = (file: string) => {
         if (
-          file === entryPath ||
-          included.has(file) ||
-          file === glossaryFile ||
-          packageFiles.has(file) ||
-          isLayerCandidate(file, dirname(entryPath))
+          !(
+            file === entryPath ||
+            included.has(file) ||
+            file === glossaryFile ||
+            packageFiles.has(file) ||
+            isLayerCandidate(file, dirname(entryPath))
+          )
         )
-          invalidate();
+          return;
+        // A `{monaco-write}` save: the slide already shows it, so recompile quietly, no reload.
+        const quiet = quietWrites.get(file);
+        if (quiet !== undefined) {
+          quietWrites.delete(file);
+          if (existsSync(file) && readFileSync(file, "utf8") === quiet) return invalidate(true);
+        }
+        invalidate();
       };
       s.watcher.on("change", changed);
       s.watcher.on("add", changed);
@@ -381,6 +465,16 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       if (!id.startsWith(RESOLVED)) return null;
       const m = ensure();
 
+      if (id === `${RESOLVED}/monaco`) {
+        return monacoModule({
+          langs: monacoLangs(m.slides.map((s) => s.content)),
+          themes,
+          deckDir: dirname(entryPath),
+          writeEndpoint: building ? null : `${base}__kadal/monaco-write`,
+          languages: bundledLanguagesInfo,
+        });
+      }
+
       if (id === `${RESOLVED}/kokoro`) {
         return `import KokoroWorker from ${JSON.stringify(`${kokoroWorkerFile()}?worker`)};
 export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kokoro" }); }
@@ -395,6 +489,10 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
           () => false,
         );
         const hasKokoro = await kokoro;
+        const hasMonaco = monacoInstalled() && monacoLangs(m.slides.map((s) => s.content)).size > 0;
+        const runnersFile = options.codeRunners
+          ? resolve(root, options.codeRunners)
+          : setupFile(dirname(entryPath), "code-runners");
         const entries = m.slides.map((s, i) => {
           const title = titleOf(s);
           return `  {
@@ -425,7 +523,9 @@ export const glossary = ${JSON.stringify(m.glossary.entries)};
 export const styles = ${JSON.stringify(m.styles)};
 ${building ? "export const relay = null;" : DEV_RELAY}
 export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
-export default { headmatter, slides, glossary, styles, relay, kokoro, packages };
+export const monaco = ${hasMonaco ? `() => import("${VIRTUAL}/monaco").then((m) => m.default())` : "null"};
+export const codeRunners = ${runnersFile && existsSync(runnersFile) ? `() => import(${JSON.stringify(runnersFile)})` : "null"};
+export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners };
 `;
       }
 

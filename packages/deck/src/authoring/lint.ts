@@ -4,13 +4,14 @@ import {
   builtinComponentNames,
   catalog as builtin,
 } from "../catalog/index.ts";
-import { parseCodeMeta } from "../compiler/code-meta.ts";
+import { CODE_OPTION_KEYS, parseCodeMeta } from "../compiler/code-meta.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
 import {
   type RawSlide,
   unclosedSettings,
   unclosedSettingsMessage,
 } from "../compiler/split.ts";
+import { extractRegion, parseSnippetLine } from "../compiler/snippets.ts";
 import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
@@ -160,6 +161,45 @@ function esmNames(code: string): string[] {
   return out;
 }
 
+const TWOSLASH_LANGS = new Set(["ts", "tsx", "js", "jsx", "typescript", "javascript", "mts", "cts"]);
+const RUNNABLE = new Set(["js", "javascript", "mjs", "cjs", "ts", "typescript", "mts", "cts", "py", "python", "python3"]);
+
+/**
+ * The slide's lines as MDX will see them: `<<<` imports and `::code-group` markers are the
+ * compiler's own syntax (they become fences and `<CodeGroup>` before MDX runs), so they are
+ * blanked — line numbers stay — after `onSnippet` has looked at each import.
+ */
+function withoutCodeSugar(lines: string[], onSnippet: (line: string, index: number) => void): string {
+  const out = [...lines];
+  let fence: { mark: string; magic: boolean } | null = null;
+  let group = false;
+  for (let i = 0; i < out.length; i++) {
+    const line = out[i]!;
+    const open = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (open) {
+      if (!fence) fence = { mark: open[1]!, magic: /^\s*md\s+magic-move/.test(open[2]!) };
+      else if (open[1]![0] === fence.mark[0] && open[1]!.length >= fence.mark.length && !open[2]!.trim())
+        fence = null;
+      continue;
+    }
+    if (fence && !fence.magic) continue;
+    if (/^[ \t]*<<<[ \t]+\S/.test(line)) {
+      onSnippet(line, i);
+      if (!fence) out[i] = "";
+      continue;
+    }
+    if (fence) continue;
+    if (/^[ \t]*:{2,}code-group\b/.test(line)) {
+      group = true;
+      out[i] = "";
+    } else if (group && /^[ \t]*:{2,}[ \t]*$/.test(line)) {
+      group = false;
+      out[i] = "";
+    }
+  }
+  return out.join("\n");
+}
+
 export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const cat = options.catalog ?? builtin;
   const files = options.files;
@@ -168,6 +208,82 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const ext = options.extensions ?? { components: [], layouts: [], backgrounds: [], open: false };
   const diagnostics: Diagnostic[] = [];
   const add = (d: Diagnostic) => diagnostics.push(d);
+
+  /** A code fence's language and meta: what the highlighter, Monaco and TwoSlash will ignore. */
+  const checkFence = (
+    lang: string,
+    meta: string,
+    value: string,
+    at: { file: string; line: number; slide: number; column?: number },
+  ) => {
+    if (lang === "md" && /magic-move/.test(meta)) return;
+    // Diagram fences take options of their own; remark-fences.ts checks them.
+    if (lang === "mermaid" || lang === "plantuml") return;
+    if (lang && !DEFAULT_LANGS.includes(lang) && !LANG_ALIASES.has(lang))
+      add({
+        ...at,
+        severity: "info",
+        code: "code-lang",
+        message: `\`${lang}\` is not among the languages loaded by default; it renders as plain text unless vite.config.ts passes deck({ shiki: { langs: [...] } }).`,
+      });
+    if (!meta) return;
+    const total = value.split("\n").length;
+    const parsed = parseCodeMeta(meta);
+    const beyond = (parsed.steps ?? [])
+      .flatMap((st) => (st ? [...st] : []))
+      .filter((x) => x > total + parsed.startLine - 1);
+    if (beyond.length && !parsed.monaco)
+      add({
+        ...at,
+        severity: "warning",
+        code: "code-meta",
+        message: `Highlight line ${beyond[0]} is past the end of the block (${total} lines).`,
+      });
+    for (const key of Object.keys(parsed.options))
+      if (!(CODE_OPTION_KEYS as readonly string[]).includes(key))
+        add({
+          ...at,
+          severity: "warning",
+          code: "code-meta",
+          message: `Unknown code option "${key}" (${CODE_OPTION_KEYS.join(", ")}).`,
+        });
+    const words = parsed.words.filter((w) => !w.startsWith("data-") && w !== "magic-move");
+    if (words.length)
+      add({
+        ...at,
+        severity: "info",
+        code: "code-meta",
+        message: `Code fence meta "${words.join(" ")}" is not understood and is ignored.`,
+      });
+    if (parsed.twoslash && !TWOSLASH_LANGS.has(lang))
+      add({
+        ...at,
+        severity: "info",
+        code: "code-twoslash",
+        message: `\`twoslash\` works on TypeScript and JavaScript blocks; this \`${lang || "text"}\` block renders without it.`,
+      });
+    if (parsed.monaco === "run" && !RUNNABLE.has(lang.toLowerCase()))
+      add({
+        ...at,
+        severity: "info",
+        code: "code-runner",
+        message: `No built-in runner for \`${lang || "text"}\` (JavaScript, TypeScript and Python have one): register one with registerCodeRunner("${lang}", …) or in setup/code-runners.ts, or the block shows "No runner".`,
+      });
+    if (parsed.monaco === "diff" && !/^~~~\s*$/m.test(value))
+      add({
+        ...at,
+        severity: "warning",
+        code: "code-meta",
+        message: "A {monaco-diff} block needs a line of ~~~ between the original and the modified code.",
+      });
+    if (parsed.monaco && parsed.steps)
+      add({
+        ...at,
+        severity: "info",
+        code: "code-meta",
+        message: "Line-highlight steps do not apply to a Monaco editor; they are ignored.",
+      });
+  };
 
   let deck: ReturnType<typeof readDeck>;
   try {
@@ -442,7 +558,40 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         add,
       );
       // What the compiler compiles: HTML comments and <style> blocks out, lines kept.
-      const body = maskSlideBody(raw);
+      // What the compiler compiles: HTML comments and <style> blocks out, lines kept; `<<<`
+      // imports checked and code-group / snippet sugar set aside.
+      const body = withoutCodeSugar(
+        maskSlideBody(raw).split("\n"),
+        (line, i) => {
+          // A `<<<` import: the file must be there, and the region in it.
+          const imp = parseSnippetLine(line);
+          if (!imp) return;
+          const raw = imp.spec.split("#")[0]!;
+          const target = raw.startsWith("@/")
+            ? joinPath(root, raw.slice(2))
+            : joinPath(dirOf(file), raw.replace(/^\//, ""));
+          const at = { file, line: offset + i + 1, slide: s.index };
+          const text = files.read(target);
+          if (text === null)
+            return add({
+              ...at,
+              severity: "warning",
+              code: "snippet-missing",
+              message: `<<< ${imp.spec}: ${target} does not exist; the slide shows a notice in its place.`,
+              hint: "`@/` is the deck's folder; other paths are relative to the file the slide is in.",
+            });
+          const region = extractRegion(text, imp.region);
+          if (!region)
+            return add({
+              ...at,
+              severity: "warning",
+              code: "snippet-region",
+              message: `<<< ${imp.spec}: there is no \`#region ${imp.region}\` in ${target}.`,
+              hint: "Mark it with `// #region name` and `// #endregion name` (any comment style).",
+            });
+          checkFence(imp.lang, imp.meta, region.code, at);
+        },
+      );
       const nodes: Node[] = [];
       const collect = () => (tree: Node) => {
         const walk = (n: Node) => {
@@ -597,58 +746,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
           }
         }
         if (n.type === "image" && n.url) checkAsset(n.url, file, line, s.index, column);
-        if (n.type === "code") {
-          const lang = n.lang ?? "";
-          const meta = n.meta ?? "";
-          if (lang === "md" && /magic-move/.test(meta)) continue;
-          // Diagram fences take options of their own; remark-fences.ts checked them above.
-          if (lang === "mermaid" || lang === "plantuml") continue;
-          if (lang && !DEFAULT_LANGS.includes(lang) && !LANG_ALIASES.has(lang))
-            add({
-              ...at,
-              severity: "info",
-              code: "code-lang",
-              message: `\`${lang}\` is not among the languages loaded by default; it renders as plain text unless vite.config.ts passes deck({ shiki: { langs: [...] } }).`,
-            });
-          if (!meta) continue;
-          const total = (n.value ?? "").split("\n").length;
-          const parsed = parseCodeMeta(meta);
-          const beyond = (parsed.steps ?? [])
-            .flatMap((st) => (st ? [...st] : []))
-            .filter((x) => x > total + parsed.startLine - 1);
-          if (beyond.length)
-            add({
-              ...at,
-              severity: "warning",
-              code: "code-meta",
-              message: `Highlight line ${beyond[0]} is past the end of the block (${total} lines).`,
-            });
-          for (const b of meta.matchAll(/\{([^}]*)\}/g)) {
-            if (!/^\s*[\w-]+\s*:/.test(b[1]!)) continue;
-            for (const pair of b[1]!.split(",")) {
-              const key = /^\s*([\w-]+)\s*:/.exec(pair)?.[1];
-              if (key && !["lines", "startLine", "maxHeight"].includes(key))
-                add({
-                  ...at,
-                  severity: "warning",
-                  code: "code-meta",
-                  message: `Unknown code option "${key}" (lines, startLine, maxHeight).`,
-                });
-            }
-          }
-          const braces = meta
-            .replace(/\[[^\]]*\]/g, "")
-            .replace(/\{[^}]*\}/g, "")
-            .replace(/data-[\w-]+(="[^"]*")?/g, "")
-            .trim();
-          if (braces && !/^(magic-move|\{|twoslash)/.test(braces))
-            add({
-              ...at,
-              severity: "info",
-              code: "code-meta",
-              message: `Code fence meta "${braces}" is not understood and is ignored.`,
-            });
-        }
+        if (n.type === "code") checkFence(n.lang ?? "", n.meta ?? "", n.value ?? "", at);
       }
     }
   }

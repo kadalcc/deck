@@ -2,7 +2,7 @@ import { compile, run } from "@mdx-js/mdx";
 import { renderToString as renderKatex } from "katex";
 import { type ComponentType, createElement } from "react";
 import * as jsxRuntime from "react/jsx-runtime";
-import type { Highlighter } from "shiki";
+import type { Highlighter, ShikiTransformer } from "shiki";
 
 import {
   levelOf,
@@ -73,9 +73,10 @@ export interface Diagnostic {
 export interface CompileDeckOptions extends DeckSetup {
   /** The deck file's name, for diagnostics. Default "deck.mdx". */
   file?: string;
-  /** Other files the deck reads by path: `src:` includes and the glossary. */
+  /** Other files the deck reads by path: `src:` includes, `<<<` snippets and the glossary. */
   files?: Record<string, string>;
-  shiki?: { light?: string; dark?: string; langs?: string[] };
+  /** As `deck({ shiki })`: themes, languages, and transformers after the notation ones. */
+  shiki?: { light?: string; dark?: string; langs?: string[]; transformers?: ShikiTransformer[] };
   /** Slide defaults beneath the headmatter's `defaults:` (a theme's), see `prepareDeck`. */
   defaults?: Record<string, unknown> | Array<Record<string, unknown> | null | undefined> | null;
   /**
@@ -126,6 +127,25 @@ const katexRenderer =
   (options: object = {}) =>
   (tex: string) =>
     renderKatex(tex, { throwOnError: false, ...options });
+
+/**
+ * TwoSlash needs the TypeScript compiler, which a page compiling decks does not have: `twoslash`
+ * blocks render as plain highlighted code here (a built deck has the types), said once a page.
+ */
+let twoslashNoted = false;
+const noteTwoslash = () => {
+  if (twoslashNoted) return;
+  twoslashNoted = true;
+  console.info(
+    "[deck] `twoslash` blocks show without type information here: TwoSlash runs when the deck is built with `kadal-deck build` (it needs TypeScript).",
+  );
+};
+
+/** The folder of a deck-relative path: `slides/a.mdx` → `slides`. */
+const folderOf = (file: string) => {
+  const i = file.lastIndexOf("/");
+  return i < 0 ? "" : file.slice(0, i);
+};
 
 /** A slide that did not compile shows why, where it would have been. */
 function errorSlide(message: string, where: string): ComponentType {
@@ -206,6 +226,18 @@ export async function compileDeck(
         return null;
       },
       onError: (e) => push({ message: e.message, file: e.file, line: e.line, slide: null }),
+      // `<<<` imports read from `files` too; one that is not there is reported as missing, so a
+      // caller that can fetch it (the shell does) fetches it and compiles again.
+      snippets: {
+        dirOf: (f) => folderOf(f === file ? "" : f.replace(/^\.\//, "")),
+        read: (path) => {
+          if (path in files) return { path, text: files[path]! };
+          missing.add(path);
+          return null;
+        },
+        onProblem: (message, s) =>
+          push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: null }),
+      },
     });
   } catch (err) {
     push({ message: err instanceof Error ? err.message : String(err), file, line: null, slide: null });
@@ -257,7 +289,11 @@ export async function compileDeck(
     },
   );
 
-  const hl = await getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS);
+  const [hl, { notationTransformers }] = await Promise.all([
+    getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS),
+    import("../compiler/transformers.ts"),
+  ]);
+  const transformers = [...notationTransformers(), ...(options.shiki?.transformers ?? [])];
   const slides: SlideMeta[] = await Promise.all(
     prepared.slides.map(async (s, i): Promise<SlideMeta> => {
       const where = `${s.source.file}:${s.source.line}`;
@@ -278,6 +314,9 @@ export async function compileDeck(
           ruby: notes ? ruby : null,
           remarkPlugins: options.remarkPlugins,
           rehypePlugins: options.rehypePlugins,
+          transformers,
+          twoslash: null,
+          onTwoslashMissing: noteTwoslash,
         });
         try {
           const Component = await compileToComponent(source, plugins);

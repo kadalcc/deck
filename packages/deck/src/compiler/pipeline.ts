@@ -2,7 +2,7 @@ import type { CompileOptions } from "@mdx-js/mdx";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import type { Highlighter } from "shiki";
+import type { Highlighter, ShikiTransformer } from "shiki";
 import { codeToKeyedTokens } from "shiki-magic-move/core";
 
 import type { MagicMoveData } from "../core/model.ts";
@@ -15,6 +15,7 @@ import {
   glossaryOptions,
 } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
+import { applyCodeGroups } from "./code-groups.ts";
 import { parseCodeMeta, serialiseSteps } from "./code-meta.ts";
 import { type MagicMoveBlock, findMagicMoves } from "./magic-move.ts";
 import { rehypeDeckCode } from "./rehype-code.ts";
@@ -30,6 +31,7 @@ import {
 } from "./setup.ts";
 import { deckStylesheet } from "./slide-style.ts";
 import { applySlots } from "./slots.ts";
+import { type SnippetReader, expandSnippets } from "./snippets.ts";
 import { type Frontmatter, type RawSlide, type SplitOptions, splitDeck } from "./split.ts";
 
 /**
@@ -43,13 +45,26 @@ import { type Frontmatter, type RawSlide, type SplitOptions, splitDeck } from ".
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-export type PreparedSlide = RawSlide & { magic: MagicMoveBlock[] };
+export type PreparedSlide = RawSlide & {
+  magic: MagicMoveBlock[];
+  /** The files its `<<<` imports read (deck-root relative), for watching. */
+  snippets: string[];
+};
 
 export interface PreparedDeck {
   headmatter: Record<string, unknown>;
   slides: PreparedSlide[];
   /** Every slide's `<style>` blocks as one stylesheet, scoped per slide ("" without any). */
   styles: string;
+}
+
+export interface SnippetOptions {
+  /** Reads a deck-root relative path; null when there is no such file. */
+  read: SnippetReader;
+  /** The deck-root relative folder of a slide's source file (for `<<< ./x.ts`). */
+  dirOf: (file: string) => string;
+  /** A `<<<` that could not be resolved: the slide shows a notice in its place. */
+  onProblem?: (message: string, slide: RawSlide) => void;
 }
 
 export interface PrepareOptions extends SplitOptions {
@@ -60,24 +75,36 @@ export interface PrepareOptions extends SplitOptions {
   defaults?: Frontmatter | Array<Frontmatter | null | undefined> | null;
   /** Drop every slide's notes (`--without-notes`). */
   withoutNotes?: boolean;
+  /** `<<<` snippet imports: how to read the files they name. */
+  snippets?: SnippetOptions;
 }
 
 /**
- * Split, then give every slide the deck's `defaults`, apply `::slot::` markers and lift
- * magic-move blocks out of every slide.
+ * Split, then give every slide the deck's `defaults`, expand `<<<` snippet imports, apply
+ * `::slot::` markers and `::code-group` blocks, and lift magic-move blocks out of every slide.
  */
 export function prepareDeck(text: string, options: PrepareOptions): PreparedDeck {
   const split = splitDeck(text, options);
   const layers = Array.isArray(options.defaults) ? options.defaults : [options.defaults];
   const defaults = slideDefaults(split.headmatter, ...layers);
+  const snip = options.snippets;
   const slides = split.slides.map((s) => {
-    const { text: content, blocks } = findMagicMoves(applySlots(s.content));
+    let body = s.content;
+    let snippets: string[] = [];
+    if (snip) {
+      const expanded = expandSnippets(body, snip.dirOf(s.source.file), snip.read);
+      body = expanded.text;
+      snippets = expanded.used;
+      for (const p of expanded.problems) snip.onProblem?.(p, s);
+    }
+    const { text: content, blocks } = findMagicMoves(applyCodeGroups(applySlots(body)));
     return {
       ...s,
       frontmatter: withDefaults(s.frontmatter, defaults),
       notes: options.withoutNotes ? null : s.notes,
       content,
       magic: blocks,
+      snippets,
     };
   });
   return { headmatter: split.headmatter, slides, styles: deckStylesheet(slides) };
@@ -133,6 +160,12 @@ export interface MdxPipelineOptions {
   remarkPlugins?: PluggableList;
   /** The deck's own rehype plugins, after everything of the engine's. */
   rehypePlugins?: PluggableList;
+  /** Shiki transformers for every code block: the notation ones, then the deck's own. */
+  transformers?: ShikiTransformer[];
+  /** TwoSlash for `twoslash` blocks, when the caller has TypeScript (the Vite plugin). */
+  twoslash?: ShikiTransformer | null;
+  /** A `twoslash` block rendered without types because `twoslash` is null here. */
+  onTwoslashMissing?: () => void;
 }
 
 /** The remark and rehype passes every slide (and every note) compiles with. */
@@ -180,7 +213,16 @@ export function mdxPlugins(
     ],
     rehypePlugins: [
       [rehypeKatex, freshKatex(o.katex ?? {})],
-      [rehypeDeckCode, { highlighter: o.highlighter, themes: o.themes }],
+      [
+        rehypeDeckCode,
+        {
+          highlighter: o.highlighter,
+          themes: o.themes,
+          transformers: o.transformers,
+          twoslash: o.twoslash,
+          onTwoslashMissing: o.onTwoslashMissing,
+        },
+      ],
       ...glossaryPass,
       ...(o.ruby
         ? [
