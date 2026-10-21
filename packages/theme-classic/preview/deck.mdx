@@ -1,0 +1,128 @@
+---
+title: Classic preview
+theme: ../
+layout: cover
+background: https://images.unsplash.com/photo-1502189562704-87e622a34c85?auto=format&fit=crop&w=2100&q=80
+---
+
+{/* Slidev's own example deck for @slidev/theme-default (example.md), slide for slide. Its
+    source.unsplash.com pictures no longer resolve, so the image slides use fixed photos. */}
+
+# Presentation title
+
+Presentation subtitle
+
+---
+
+# Slide Title
+
+Slide Subtitle
+
+* Slide bullet text
+  * Slide bullet text
+  * Slide bullet text
+* Slide bullet text
+* Slide bullet text
+
+---
+layout: image-right
+image: https://images.unsplash.com/photo-1530819568329-97653eafbbfa?auto=format&fit=crop&w=1200&q=80
+---
+
+# Slide Title
+
+Colons can be used to align columns.
+
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
+---
+layout: section
+---
+
+# Section Title
+
+---
+layout: statement
+---
+
+# Statement
+
+---
+layout: fact
+---
+
+# 100%
+Fact information
+
+---
+layout: quote
+---
+
+# "Notable quote"
+Attribution
+
+---
+layout: image-left
+image: https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80
+---
+
+# Code
+
+```ts {all|2|1-6|all}
+interface User {
+  id: number
+  firstName: string
+  lastName: string
+  role: string
+}
+
+function updateUser(id: number, update: Partial<User>) {
+  const user = getUser(id)
+  const newUser = { ...user, ...update }
+  saveUser(id, newUser)
+}
+```
+
+---
+layout: center
+---
+
+# Learn More
+
+[Documentations](https://sli.dev) / [GitHub Repo](https://github.com/slidevjs/slidev)
+
+---
+
+# H1
+## H2
+### H3
+#### H4
+##### H5
+###### H6
+
+---
+layout: two-cols-header
+---
+
+## Two columns under a header
+
+::left::
+
+The left column, with a [link](https://deck.kadal.cc) and `inline code`.
+
+> A quote block, in the code colours.
+
+::right::
+
+The right column. <kbd>Ctrl</kbd> + <kbd>K</kbd>
+
+1. An ordered list
+2. Of two items
+
+---
+layout: end
+---

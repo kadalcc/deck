@@ -1,0 +1,91 @@
+{
+  "name": "@kadal/theme-crisp",
+  "version": "0.3.6",
+  "description": "Crisp: plain black on white for Kadal Deck, ported from a Slidev theme. Helvetica Neue, bold titles, pictures set in a margin; light and dark.",
+  "keywords": [
+    "kadal-theme",
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "theme",
+    "slidev-port"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/theme-crisp"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "MIT",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "files": [
+    "style.css",
+    "index.tsx",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
+  },
+  "kadal": {
+    "theme": {
+      "name": "crisp",
+      "title": "Crisp",
+      "description": "Plain black on white: Helvetica Neue, bold titles, pictures in a margin, intro-image and 3-images layouts.",
+      "colorScheme": "both",
+      "themeConfig": {
+        "primary": "#3ab9d5"
+      },
+      "config": {
+        "fonts": {
+          "sans": "Helvetica Neue",
+          "local": "Helvetica Neue",
+          "weights": "300,400,500,600,700"
+        }
+      },
+      "shiki": {
+        "light": "vitesse-light",
+        "dark": "vitesse-dark"
+      },
+      "defaults": {},
+      "layouts": [
+        "intro-image",
+        "intro-image-right",
+        "image-right",
+        "3-images",
+        "bullets"
+      ],
+      "components": []
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "dev": "kadal-deck dev -C preview",
+    "build": "kadal-deck build -C preview",
+    "check": "kadal-deck check -C preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "^0.3.6",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}

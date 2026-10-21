@@ -1,0 +1,410 @@
+/* Crisp — a port to Kadal Deck of the Slidev theme @slidev/theme-apple-basic (MIT, © 2021
+   Slidev.js Team; the theme by Jeremy Meissner): plain black on white. Helvetica Neue, bold
+   headings, a bold subtitle under a big title, pictures set inside a margin, and the layouts that
+   go with them (intro-image, intro-image-right, image-right, 3-images, bullets). White on
+   #121212 in the dark.
+
+   Units. Slidev draws on a 980px-wide canvas with a 16px rem and a 1.1rem body; Kadal draws on a
+   1920px one. Everything here is in `--crisp-rem`, one Slidev rem at Kadal's scale, worked out
+   from the slide's base size the way Slidev's body is (1.1rem), so the proportions are Slidev's
+   exactly and a deck that changes --deck-base-size scales the whole theme with it.
+
+   Unlike Slidev's other themes this one does not build on Slidev's shared layout stylesheet: the
+   rules below are its own, so h4–h6 are body-sized and ordered lists are its (numbered) own.
+
+   themeConfig: `primary` → --theme-primary (the quote's rule, links on hover, the progress bar). */
+
+.theme-crisp {
+  --crisp-rem: calc(var(--deck-base-size) / 1.1);
+  /* colour */
+  --deck-bg: #ffffff;
+  --deck-fg: #181818;
+  --deck-muted: #6b6b6b;
+  --deck-accent: var(--theme-primary, #3ab9d5);
+  --deck-accent-2: #2993a3;
+  --deck-surface: #f5f5f5;
+  --deck-border: rgba(156, 163, 175, 0.2);
+  --deck-live: var(--theme-primary, #3ab9d5);
+  /* type: the fonts mechanism (config.fonts in package.json) points these at Helvetica Neue */
+  --deck-heading-font: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  --deck-body-font: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  --deck-mono-font: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 34.5px;
+  /* code */
+  --deck-code-bg: #f5f5f5;
+  --deck-code-fg: #1b1b1b;
+  --deck-code-active: rgba(24, 24, 24, 0.06);
+  /* shape: Slidev's 2.5rem × 3.5rem page padding; --deck-pad is the wider of the two */
+  --deck-radius: calc(var(--crisp-rem) * 0.25);
+  --deck-pad: calc(var(--crisp-rem) * 3.5);
+  --deck-transition: 500ms;
+  --deck-controls-color: var(--deck-fg);
+}
+.theme-crisp[data-color-scheme="dark"] {
+  --deck-bg: #121212;
+  --deck-fg: #dddddd;
+  --deck-muted: #9a9a9a;
+  --deck-accent-2: #54b1bf;
+  --deck-surface: #1b1b1b;
+  --deck-border: rgba(156, 163, 175, 0.2);
+  --deck-code-bg: #1b1b1b;
+  --deck-code-fg: #eeeeee;
+  --deck-code-active: rgba(221, 221, 221, 0.08);
+}
+
+/* ── the page ─────────────────────────────────────────────────────────── */
+.theme-crisp .deck-slide {
+  padding: calc(var(--crisp-rem) * 2.5) calc(var(--crisp-rem) * 3.5);
+  line-height: 1.5;
+}
+.theme-crisp .deck-slide-background {
+  inset: calc(var(--crisp-rem) * -2.5) calc(var(--crisp-rem) * -3.5);
+}
+
+/* ── type (the theme's styles/layout.css) ─────────────────────────────── */
+.theme-crisp .deck-slide :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--deck-heading-font);
+  font-size: 1em;
+  font-weight: 400;
+  line-height: inherit;
+  letter-spacing: normal;
+  margin: 0;
+  text-wrap: wrap;
+}
+.theme-crisp .deck-slide h1 {
+  font-size: calc(var(--crisp-rem) * 2.25);
+  line-height: calc(var(--crisp-rem) * 2.5);
+  font-weight: 700;
+  margin-bottom: var(--crisp-rem);
+  margin-inline-start: -0.05em;
+}
+.theme-crisp .deck-slide h1 + h2 {
+  margin-top: calc(var(--crisp-rem) * -1);
+}
+.theme-crisp .deck-slide h2 {
+  font-size: calc(var(--crisp-rem) * 1.5);
+  line-height: calc(var(--crisp-rem) * 2);
+  font-weight: 700;
+}
+.theme-crisp .deck-slide h3 {
+  font-size: calc(var(--crisp-rem) * 0.875);
+  line-height: calc(var(--crisp-rem) * 1.25);
+  padding-top: calc(var(--crisp-rem) * 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  margin-inline-start: -0.05em;
+}
+.theme-crisp .deck-slide h3:not(.opacity-100) {
+  opacity: 0.4;
+}
+.theme-crisp .deck-slide p {
+  margin: var(--crisp-rem) 0;
+  line-height: calc(var(--crisp-rem) * 1.5);
+}
+.theme-crisp .deck-slide h1 + p {
+  margin-top: calc(var(--crisp-rem) * -0.5);
+  margin-bottom: var(--crisp-rem);
+}
+.theme-crisp .deck-slide :is(p, ul, table) + h2 {
+  margin-top: calc(var(--crisp-rem) * 2.5);
+}
+.theme-crisp .deck-slide :is(ul, ol) {
+  margin: 0 0 var(--crisp-rem);
+  padding: 0;
+}
+.theme-crisp .deck-slide ul {
+  list-style: disc;
+}
+.theme-crisp .deck-slide ol {
+  list-style: decimal;
+}
+.theme-crisp .deck-slide li {
+  margin: 0 0 0 1.1em;
+  padding-inline-start: 0.2em;
+  line-height: 1.8em;
+}
+.theme-crisp .deck-slide li > :is(ul, ol) {
+  margin-bottom: 0;
+}
+.theme-crisp .deck-slide blockquote {
+  margin: 0;
+  padding: calc(var(--crisp-rem) * 0.25) calc(var(--crisp-rem) * 0.5);
+  font-size: calc(var(--crisp-rem) * 0.875);
+  line-height: calc(var(--crisp-rem) * 1.25);
+  font-style: normal;
+  color: inherit;
+  background: var(--deck-code-bg);
+  border: 0;
+  border-inline-start: 1px solid var(--deck-accent);
+  border-radius: calc(var(--crisp-rem) * 0.25);
+}
+.theme-crisp .deck-slide blockquote > * {
+  margin-block: 0;
+}
+.theme-crisp .deck-slide table {
+  width: 100%;
+  font-size: 1em;
+  line-height: calc(var(--crisp-rem) * 1.5);
+}
+.theme-crisp .deck-slide :is(th, td) {
+  padding: calc(var(--crisp-rem) * 0.75) calc(var(--crisp-rem) * 0.5);
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-crisp .deck-slide th {
+  text-align: left;
+  font-size: 1em;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+}
+.theme-crisp .deck-slide a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+}
+.theme-crisp .deck-slide a:hover {
+  color: var(--deck-accent);
+  border-bottom-style: solid;
+}
+.theme-crisp .deck-slide :is(b, strong) {
+  font-weight: 600;
+}
+.theme-crisp .deck-slide :not(pre) > code {
+  font-family: var(--deck-mono-font);
+  font-size: 0.9em;
+  font-weight: 300;
+  padding: calc(var(--crisp-rem) * 0.125) calc(var(--crisp-rem) * 0.375);
+  background: var(--deck-code-bg);
+  border-radius: calc(var(--crisp-rem) * 0.25);
+}
+.theme-crisp .deck-slide :is(kbd, .deck-kbd) {
+  font-family: var(--deck-mono-font);
+  font-size: calc(var(--crisp-rem) * 0.875);
+  padding: calc(var(--crisp-rem) * 0.125) calc(var(--crisp-rem) * 0.25);
+  border: 1px solid var(--deck-border);
+  border-bottom-width: 2px;
+  border-radius: calc(var(--crisp-rem) * 0.25);
+  background: rgba(156, 163, 175, 0.05);
+  box-shadow: none;
+}
+
+/* ── code ─────────────────────────────────────────────────────────────── */
+.theme-crisp .deck-code-block {
+  margin: calc(var(--crisp-rem) * 0.25) 0;
+  border: 0;
+  border-radius: calc(var(--crisp-rem) * 0.25);
+}
+.theme-crisp pre.deck-code,
+.theme-crisp .shiki-magic-move-wrap {
+  font-size: calc(var(--crisp-rem) * 0.75);
+  line-height: calc(var(--crisp-rem) * 1.125);
+  padding: calc(var(--crisp-rem) * 0.5) 0;
+}
+.theme-crisp .shiki-magic-move-wrap {
+  padding-inline: calc(var(--crisp-rem) * 0.5);
+}
+.theme-crisp pre.deck-code .line {
+  padding: 0 calc(var(--crisp-rem) * 0.5);
+}
+.theme-crisp pre.deck-code .line.is-dim {
+  opacity: 0.3;
+}
+.theme-crisp .deck-code-title {
+  font-size: calc(var(--crisp-rem) * 0.75);
+  padding: calc(var(--crisp-rem) * 0.5);
+}
+
+/* ── the layouts ──────────────────────────────────────────────────────── */
+.theme-crisp .deck-layout-default {
+  justify-content: flex-start;
+}
+/* Slidev's center does not centre the text by itself (its examples add `text-center`); Kadal's
+   does, which reads the same for a title and better for a line or two. */
+.theme-crisp .deck-layout-center {
+  justify-content: center;
+}
+/* intro and section: the words vertically centred, on the left */
+.theme-crisp :is(.deck-layout-cover, .deck-layout-intro, .deck-layout-section, .deck-layout-quote) {
+  align-items: stretch;
+  text-align: start;
+}
+.theme-crisp :is(.deck-layout-cover, .deck-layout-intro, .deck-layout-intro-image) h1 {
+  font-size: calc(var(--crisp-rem) * 3.75);
+  line-height: calc(var(--crisp-rem) * 5);
+  font-weight: 700;
+}
+.theme-crisp :is(.deck-layout-cover, .deck-layout-intro, .deck-layout-intro-image) h1 + p {
+  font-size: calc(var(--crisp-rem) * 1.5);
+  line-height: calc(var(--crisp-rem) * 2);
+  font-weight: 700;
+  margin-top: calc(var(--crisp-rem) * -1);
+}
+.theme-crisp .deck-layout-section h1 {
+  font-size: calc(var(--crisp-rem) * 3.75);
+  line-height: calc(var(--crisp-rem) * 5);
+  font-weight: 500;
+}
+.theme-crisp :is(.deck-layout-fact, .deck-layout-statement) {
+  text-align: center;
+}
+.theme-crisp .deck-layout-fact > :is(h1, h2, p, .deck-counter) {
+  letter-spacing: normal;
+}
+.theme-crisp .deck-layout-fact h1 {
+  font-size: calc(var(--crisp-rem) * 6);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-crisp .deck-layout-fact h1 + p {
+  font-size: calc(var(--crisp-rem) * 1.5);
+  line-height: calc(var(--crisp-rem) * 2);
+  font-weight: 700;
+}
+.theme-crisp .deck-layout-statement h1 {
+  font-size: calc(var(--crisp-rem) * 3.75);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-crisp .deck-layout-quote {
+  padding-inline: 0;
+  font-size: 1em;
+  font-style: normal;
+}
+.theme-crisp .deck-layout-quote h1 + p {
+  margin-top: calc(var(--crisp-rem) * 1.5);
+  margin-inline-start: calc(var(--crisp-rem) * 1.5);
+}
+/* bullets: a title-less list, hung 4.5rem below the top */
+.theme-crisp .deck-layout-bullets {
+  justify-content: flex-start;
+  padding-top: calc(var(--crisp-rem) * 4.5);
+}
+.theme-crisp .deck-slide.layout-end {
+  background: #000;
+}
+.theme-crisp .deck-layout-end {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: calc(var(--crisp-rem) * 1.25);
+  letter-spacing: 0.1em;
+  user-select: none;
+}
+.theme-crisp .deck-layout-end:empty::before {
+  content: "END";
+}
+.theme-crisp .deck-layout-full {
+  padding: 0;
+}
+.theme-crisp :is(.deck-layout-two-cols, .deck-layout-two-cols-header) {
+  column-gap: var(--crisp-rem);
+}
+.theme-crisp .deck-layout-two-cols-header > .deck-slot-bottom {
+  align-self: end;
+}
+
+/* The picture layouts are full-bleed: they cover the slide's padding and set their own. */
+.theme-crisp :is(.deck-layout-intro-image, .deck-layout-3-images, .deck-layout-image-right, .deck-layout-intro-image-right) {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  box-sizing: border-box;
+}
+.theme-crisp .crisp-picture {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  min-width: 0;
+  min-height: 0;
+}
+/* intro-image: the picture is the slide, the words white on it (no dim) */
+.theme-crisp .deck-layout-intro-image {
+  padding: calc(var(--crisp-rem) * 2.5) calc(var(--crisp-rem) * 3.5);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  color: #fff;
+  justify-content: flex-start;
+}
+/* image-right and intro-image-right: the words in the left half, the picture in the right half
+   inside a 3.5rem margin (top, right and bottom) */
+.theme-crisp :is(.deck-layout-image-right, .deck-layout-intro-image-right) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.theme-crisp .crisp-image-content {
+  padding: calc(var(--crisp-rem) * 2.5) calc(var(--crisp-rem) * 3.5);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.theme-crisp .deck-layout-intro-image-right .crisp-image-content {
+  justify-content: center;
+}
+.theme-crisp :is(.deck-layout-image-right, .deck-layout-intro-image-right) .crisp-picture {
+  margin: calc(var(--crisp-rem) * 3.5) calc(var(--crisp-rem) * 3.5) calc(var(--crisp-rem) * 3.5) 0;
+}
+/* 3-images: one tall picture on the left, two stacked on the right, 1.75rem between them */
+.theme-crisp .deck-layout-3-images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: calc(var(--crisp-rem) * 1.75);
+}
+.theme-crisp .crisp-3-left {
+  margin: calc(var(--crisp-rem) * 3.5) 0 calc(var(--crisp-rem) * 3.5) calc(var(--crisp-rem) * 3.5);
+}
+.theme-crisp .crisp-3-right {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  row-gap: calc(var(--crisp-rem) * 1.75);
+  min-height: 0;
+}
+.theme-crisp .crisp-3-top {
+  margin: calc(var(--crisp-rem) * 3.5) calc(var(--crisp-rem) * 3.5) 0 0;
+}
+.theme-crisp .crisp-3-bottom {
+  margin: 0 calc(var(--crisp-rem) * 3.5) calc(var(--crisp-rem) * 3.5) 0;
+}
+/* Words written on a 3-images slide (Slidev drops them) sit over the pictures. */
+.theme-crisp .crisp-3-content {
+  position: absolute;
+  inset: 0;
+  padding: calc(var(--crisp-rem) * 2.5) calc(var(--crisp-rem) * 3.5);
+  pointer-events: none;
+}
+.theme-crisp .crisp-3-content:empty {
+  display: none;
+}
+/* the engine's image-left and image (Slidev's own): flush picture, words from the top */
+.theme-crisp .deck-layout-image-left .deck-layout-image-content,
+.theme-crisp :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  justify-content: flex-start;
+  padding: calc(var(--crisp-rem) * 2.5) calc(var(--crisp-rem) * 3.5);
+}
+.theme-crisp .deck-layout-image .deck-layout-image-content {
+  inset: 0;
+  justify-content: flex-start;
+  padding: calc(var(--crisp-rem) * 2.5) calc(var(--crisp-rem) * 3.5);
+  background: none;
+}
+.theme-crisp .deck-layout-image .deck-layout-image-content:empty {
+  display: none;
+}
+.theme-crisp :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) {
+  padding: 0;
+  gap: 0;
+}
+.theme-crisp .deck-frame.deck-layout-iframe-pane {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+.theme-crisp .deck-progress span {
+  background: var(--deck-fg);
+}

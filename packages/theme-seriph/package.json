@@ -1,0 +1,89 @@
+{
+  "name": "@kadal/theme-seriph",
+  "version": "0.3.6",
+  "description": "Seriph: Slidev's seriph theme, ported to Kadal Deck. PT Serif, headings in a slate-teal primary, a centred cover; light and dark.",
+  "keywords": [
+    "kadal-theme",
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "theme",
+    "slidev-port"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/theme-seriph"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "MIT",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "files": [
+    "style.css",
+    "index.tsx",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
+  },
+  "kadal": {
+    "theme": {
+      "name": "seriph",
+      "title": "Seriph",
+      "description": "Slidev's seriph theme: PT Serif, headings in the primary colour, a centred cover.",
+      "colorScheme": "both",
+      "themeConfig": {
+        "primary": "#5d8392"
+      },
+      "config": {
+        "fonts": {
+          "sans": "PT Serif",
+          "serif": "PT Serif",
+          "mono": "PT Mono",
+          "italic": true,
+          "weights": "400,700"
+        }
+      },
+      "shiki": {
+        "light": "vitesse-light",
+        "dark": "vitesse-dark"
+      },
+      "defaults": {},
+      "layouts": [
+        "cover"
+      ],
+      "components": []
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "dev": "kadal-deck dev -C preview",
+    "build": "kadal-deck build -C preview",
+    "check": "kadal-deck check -C preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "^0.3.6",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}
