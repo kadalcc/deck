@@ -7,6 +7,8 @@ import {
   type GlossaryOptions,
   glossaryOptions,
 } from "../glossary/model.ts";
+import type { ManifestPackages } from "../theming/contract.ts";
+import type { FontsInput } from "../theming/fonts.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -78,6 +80,14 @@ export interface DeckManifest {
    * in a build). See src/remote/relay.ts.
    */
   relay?: DevRelay | null;
+
+  /**
+   * The deck's theme, the themes its menu offers, its addons and its own layer files, resolved
+   * (theming/contract.ts): by the Vite plugin from the deck's folder, or by the runtime compiler
+   * from the packages its page bundled. Absent in manifests built before 0.4: the headmatter's
+   * `theme` then names a stylesheet main.tsx imported, as it always did.
+   */
+  packages?: ManifestPackages;
 }
 
 /** A line to the dev server: Vite's HMR socket, event "kadal:remote". */
@@ -205,7 +215,10 @@ export interface DeckConfig {
    */
   scrollActivationWidth: number;
   theme: string;
-  /** Themes this deck ships (their CSS is imported by main.tsx); the theme menu lists them. */
+  /**
+   * The themes the theme menu offers, besides `theme`: built-ins, packages or folders, resolved
+   * like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines.
+   */
   themes: string[];
   colorScheme: ColorScheme;
   pdfSeparateFragments: boolean;
@@ -253,9 +266,22 @@ export interface DeckConfig {
    * and core/ads.ts). Only the play view shows them.
    */
   ads: boolean;
-  /** Google Fonts families to load, e.g. ["Inter:wght@400;600"]. */
-  fonts: string[];
+  /**
+   * Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or Slidev's object —
+   * `{ sans, heading, serif, mono, weights, italic, provider: google|bunny|none, local, fallbacks }`
+   * — which also points the theme's font tokens at them (theming/fonts.ts).
+   */
+  fonts: FontsInput;
   seoMeta: Record<string, string>;
+  /** Addon packages: `@kadal/addon-<name>`, `kadal-addon-<name>`, a package name or a folder. */
+  addons: string[];
+  /**
+   * The theme's knobs: each key becomes a `--theme-<kebab-key>` custom property on the deck root
+   * (`primary: "#0f766e"` → `--theme-primary`), over the theme's own defaults.
+   */
+  themeConfig: Record<string, unknown>;
+  /** Where the global and slide layers draw besides the deck, print and export. */
+  layers: { presenter: boolean; overview: boolean };
 }
 
 export const DEFAULT_CONFIG: DeckConfig = {
@@ -339,13 +365,17 @@ export const DEFAULT_CONFIG: DeckConfig = {
   ads: false,
   fonts: [],
   seoMeta: {},
+  addons: [],
+  themeConfig: {},
+  layers: { presenter: true, overview: false },
 };
 
 /** Headmatter and deck.config.ts both layer over the defaults; nested objects merge one level. */
 /** What a deck.config.ts or headmatter may set: any option, with the nested groups partial too. */
 export type DeckConfigInput = Partial<
-  Omit<DeckConfig, "live" | "drawings" | "seoMeta" | "glossary" | "narration">
+  Omit<DeckConfig, "live" | "drawings" | "seoMeta" | "glossary" | "narration" | "layers">
 > & {
+  layers?: Partial<DeckConfig["layers"]>;
   glossary?: Partial<GlossaryOptions> | string | false;
   live?: Partial<DeckConfig["live"]>;
   drawings?: Partial<DeckConfig["drawings"]>;
@@ -361,6 +391,8 @@ export function resolveConfig(
     live: { ...DEFAULT_CONFIG.live },
     drawings: { ...DEFAULT_CONFIG.drawings },
     narration: { ...DEFAULT_CONFIG.narration },
+    layers: { ...DEFAULT_CONFIG.layers },
+    themeConfig: {},
   };
   for (const layer of layers) {
     if (!layer) continue;
@@ -371,7 +403,12 @@ export function resolveConfig(
       else if (key === "narration" && typeof value === "boolean")
         out.narration = { ...out.narration, enabled: value };
       else if (
-        (key === "live" || key === "drawings" || key === "seoMeta" || key === "narration") &&
+        (key === "live" ||
+          key === "drawings" ||
+          key === "seoMeta" ||
+          key === "narration" ||
+          key === "layers" ||
+          key === "themeConfig") &&
         value &&
         typeof value === "object"
       ) {

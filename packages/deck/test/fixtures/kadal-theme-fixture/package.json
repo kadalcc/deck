@@ -1,0 +1,25 @@
+{
+  "name": "kadal-theme-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A fixture theme for the theme mechanism's tests.",
+  "keywords": ["kadal-theme"],
+  "type": "module",
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css"
+  },
+  "kadal": {
+    "theme": {
+      "name": "fixture",
+      "title": "Fixture",
+      "colorScheme": "both",
+      "themeConfig": { "primary": "#c2410c", "footerText": "Fixture footer", "band": { "height": "18px" } },
+      "defaults": { "class": "fx-slide" },
+      "config": { "transition": "fade" },
+      "shiki": { "light": "min-light", "dark": "min-dark" },
+      "layouts": ["banner"],
+      "components": ["FixtureBadge"]
+    }
+  }
+}

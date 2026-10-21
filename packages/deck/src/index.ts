@@ -108,3 +108,39 @@ export type { NavState, Position, Direction } from "./core/navigation.ts";
 export { HintLayer } from "./react/Hints.tsx";
 export { ThemeMenu } from "./react/ThemeMenu.tsx";
 export { FrameShell } from "./react/Frame.tsx";
+// Themes and addons (theming/contract.ts): the package contract, layers, and the merge rules.
+export {
+  BUILTIN_THEMES,
+  LAYER_NAMES,
+  normalizeModule as normalizePackageModule,
+  type AddonMeta,
+  type DeckLayers,
+  type LayerComponent,
+  type LayerName,
+  type LayerProps,
+  type ManifestPackages,
+  type PackageKind,
+  type PackageModule,
+  type PackageRef,
+  type ResolvedLayers,
+  type SetupApi,
+  type SetupResult,
+  type ThemeMeta,
+} from "./theming/contract.ts";
+export {
+  applySlideDefaults,
+  mergeComponents,
+  mergeDefaults,
+  mergeLayers,
+  mergeThemeConfig,
+  slideDefaultLayers,
+  themeConfigVars,
+} from "./theming/merge.ts";
+export {
+  resolveFonts,
+  type FontOptions,
+  type FontsInput,
+  type ResolvedFonts,
+} from "./theming/fonts.ts";
+export { deckFontsReady, extendSetupApi } from "./theming/react.tsx";
+export { useLayer } from "./react/Layers.tsx";

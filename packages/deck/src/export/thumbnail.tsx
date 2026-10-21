@@ -190,6 +190,7 @@ function Capture({ job, onDone }: { job: Job; onDone: () => void }) {
         active={false}
         click={999}
         preview
+        globalLayers
         className="is-tile"
       />
     </div>

@@ -2,10 +2,10 @@ import { compile } from "@mdx-js/mdx";
 import { renderToString as renderKatex } from "katex";
 import { cpSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Highlighter, createHighlighter } from "shiki";
-import type { Plugin, ViteDevServer } from "vite";
+import { type Plugin, type ViteDevServer, searchForWorkspaceRoot } from "vite";
 
 import { levelOf, titleOf } from "../compiler/index.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
@@ -19,6 +19,14 @@ import {
 import { plainText } from "../compiler/plain-text.ts";
 import { DEFAULT_GLOSSARY } from "../glossary/model.ts";
 import { createRelay, type RelayPeer } from "../remote/relay.ts";
+import { applySlideDefaults, shikiThemes, slideDefaultLayers } from "../theming/merge.ts";
+import {
+  type DeckPackageSet,
+  deckPackageSet,
+  isLayerCandidate,
+  packageRoots,
+  packagesCode,
+} from "./packages.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -72,7 +80,10 @@ function kokoroWorkerFile(): string {
 export interface DeckPluginOptions {
   /** The deck file, relative to the Vite root. Default `deck.mdx`. */
   entry?: string;
-  /** Shiki themes. Defaults suit the neutral theme; the deck's theme CSS can override the colours. */
+  /**
+   * Shiki themes. Without them the deck's theme package decides (`kadal.theme.shiki`), and
+   * without that GitHub's light and dark; the theme's CSS can still restyle the colours.
+   */
   shiki?: { light?: string; dark?: string; langs?: string[] };
 }
 
@@ -109,10 +120,9 @@ const RESOLVED = "\0virtual:deck";
 
 export function deck(options: DeckPluginOptions = {}): Plugin {
   const entry = options.entry ?? "deck.mdx";
-  const themes = {
-    light: options.shiki?.light ?? "github-light",
-    dark: options.shiki?.dark ?? "github-dark",
-  };
+  // The Shiki themes: the plugin's options, else the deck's theme package's, else GitHub's —
+  // decided again at every manifest build, since the headmatter's theme can change.
+  let themes = shikiThemes(options.shiki, null);
   let root = process.cwd();
   let entryPath = "";
   let base = "/";
@@ -122,16 +132,27 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   let server: ViteDevServer | null = null;
   let manifest: ReturnType<typeof build> | null = null;
   const included = new Set<string>();
+  /** The resolved themes' and addons' package.json files: their metadata is in the manifest. */
+  const packageFiles = new Set<string>();
   /** The glossary file the last build read (or looked for), watched like an included file. */
   let glossaryFile: string | null = null;
   /** Whether `kokoro-js` resolves from this package (decided once, at the first manifest). */
   let kokoro: Promise<boolean> | null = null;
 
+  let highlighterKey = "";
   const getHighlighter = async () => {
-    highlighter ??= await createHighlighter({
-      themes: [themes.light, themes.dark],
-      langs: options.shiki?.langs ?? DEFAULT_LANGS,
-    });
+    const key = `${themes.light}|${themes.dark}`;
+    if (!highlighter || key !== highlighterKey) {
+      highlighterKey = key;
+      highlighter = await createHighlighter({
+        themes: [themes.light, themes.dark],
+        langs: options.shiki?.langs ?? DEFAULT_LANGS,
+      }).catch((err: unknown) => {
+        throw new Error(
+          `[deck] Shiki could not load the code themes "${themes.light}" / "${themes.dark}" (from the plugin options or the theme package's kadal.theme.shiki): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      });
+    }
     return highlighter;
   };
 
@@ -147,7 +168,16 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         return { file, text: readFileSync(file, "utf8") };
       },
     });
-    return { headmatter, slides, glossary: readGlossary(headmatter) };
+    // Themes, addons and layer files (vite/packages.ts): resolved from the deck's folder, and the
+    // theme's slide defaults filled in under every slide's own before anything compiles.
+    const packages = deckPackageSet(headmatter, dirname(entryPath));
+    for (const f of packages.watch) {
+      packageFiles.add(f);
+      server?.watcher.add(f);
+    }
+    applySlideDefaults(slides, slideDefaultLayers(headmatter, packages.theme, packages.addons));
+    themes = shikiThemes(options.shiki, packages.theme);
+    return { headmatter, slides, glossary: readGlossary(headmatter), packages };
   }
 
   function readGlossary(headmatter: Record<string, unknown>) {
@@ -214,7 +244,23 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       building = config.command === "build";
     },
     async config(user, env) {
-      const out: { worker?: { format: "es" }; server?: { https: object } } = {};
+      const out: {
+        worker?: { format: "es" };
+        server?: { https?: object; fs?: { allow: string[] } };
+        resolve?: { dedupe: string[] };
+      } = {};
+      // A theme or addon package (or a layer file) brings modules from outside the deck's own
+      // tree: one React, one engine for all of them, and a `../my-theme` the dev server may serve.
+      const userRoot = resolve(user.root ?? process.cwd());
+      const peek = peekPackages(resolve(userRoot, entry));
+      if (peek) {
+        out.resolve = { dedupe: ["react", "react-dom", "@kadal/deck"] };
+        if (env.command === "serve" && !user.server?.fs?.allow) {
+          const workspace = searchForWorkspaceRoot(userRoot);
+          const outside = packageRoots(peek).filter((r) => !isWithin(workspace, r));
+          if (outside.length) out.server = { fs: { allow: [workspace, ...outside] } };
+        }
+      }
       // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
       // only an ES-module worker can do. A deck that set its own worker format keeps it.
       if (!user.worker?.format) out.worker = { format: "es" };
@@ -223,7 +269,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       if (env.command === "serve" && process.env.KADAL_DECK_HTTPS === "1" && !user.server?.https) {
         const { devCertificate } = await import("./https.ts");
         const https = devCertificate(resolve(user.root ?? process.cwd()));
-        if (https) out.server = { https };
+        if (https) out.server = { ...out.server, https };
       }
       return Object.keys(out).length ? out : undefined;
     },
@@ -252,7 +298,14 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       // The default glossary path is watched from the start, so creating the file is noticed too.
       s.watcher.add(resolve(dirname(entryPath), DEFAULT_GLOSSARY.src!));
       const changed = (file: string) => {
-        if (file === entryPath || included.has(file) || file === glossaryFile) invalidate();
+        if (
+          file === entryPath ||
+          included.has(file) ||
+          file === glossaryFile ||
+          packageFiles.has(file) ||
+          isLayerCandidate(file, dirname(entryPath))
+        )
+          invalidate();
       };
       s.watcher.on("change", changed);
       s.watcher.on("add", changed);
@@ -312,14 +365,17 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
     loadMagic: ${s.magic.length ? `() => import("${VIRTUAL}/magic/${i}")` : "null"},
   }`;
         });
-        return `export const headmatter = ${JSON.stringify(m.headmatter)};
+        const pk = packagesCode(m.packages);
+        return `${pk.imports}
+export const headmatter = ${JSON.stringify(m.headmatter)};
+export const packages = ${pk.value};
 export const slides = [
 ${entries.join(",\n")}
 ];
 export const glossary = ${JSON.stringify(m.glossary.entries)};
 ${building ? "export const relay = null;" : DEV_RELAY}
 export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
-export default { headmatter, slides, glossary, relay, kokoro };
+export default { headmatter, slides, glossary, relay, kokoro, packages };
 `;
       }
 
@@ -373,3 +429,34 @@ function remoteRelay(s: ViteDevServer) {
     if (peer) relay.leave(peer);
   });
 }
+
+/** Is `p` inside `dir` (or `dir` itself)? */
+function isWithin(dir: string, p: string): boolean {
+  const rel = relative(dir, p);
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+/**
+ * The deck's packages as the config hook needs them — before the manifest exists, and without
+ * failing: a theme that does not resolve is reported when the manifest is built, with the full
+ * message, not here. Null for a deck with only built-in themes and no layer files.
+ */
+function peekPackages(file: string): DeckPackageSet | null {
+  if (!existsSync(file)) return null;
+  try {
+    const { headmatter } = prepareDeck(readFileSync(file, "utf8"), {
+      file,
+      resolveInclude: () => null,
+    });
+    const set = deckPackageSet(headmatter, dirname(file));
+    const external =
+      set.themes.some((t) => !t.builtin) ||
+      set.addons.length > 0 ||
+      Object.keys(set.layers).length > 0;
+    return external ? set : null;
+  } catch {
+    return null;
+  }
+}
+
+export { deckPackages, type DeckPackagesOptions } from "./packages.ts";
