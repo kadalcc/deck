@@ -248,6 +248,11 @@ export interface DeckConfig {
   slug: string;
   /** Show the "Made with Kadal Deck" link in the corner (set by the host, see `withHostOverride`). */
   badge: boolean;
+  /**
+   * Frame the first and last slides with the host's ads (set by the host, see `withHostOverride`
+   * and core/ads.ts). Only the play view shows them.
+   */
+  ads: boolean;
   /** Google Fonts families to load, e.g. ["Inter:wght@400;600"]. */
   fonts: string[];
   seoMeta: Record<string, string>;
@@ -331,6 +336,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   audienceNotes: false,
   slug: "",
   badge: false,
+  ads: false,
   fonts: [],
   seoMeta: {},
 };
@@ -620,7 +626,8 @@ export function resolveSlideOptions(
   const visibility = str(fm.visibility);
   const transition = str(fm.transition);
   const transitionSpeed = str(fm.transitionSpeed) as TransitionSpeed | null;
-  const colorScheme = fm.colorScheme === "dark" || fm.colorScheme === "light" ? fm.colorScheme : null;
+  const colorScheme =
+    fm.colorScheme === "dark" || fm.colorScheme === "light" ? fm.colorScheme : null;
   return {
     layout: str(fm.layout) ?? (isFirst ? "cover" : "default"),
     className: Array.isArray(fm.class) ? fm.class.join(" ") : (str(fm.class) ?? ""),
@@ -647,7 +654,10 @@ export function resolveSlideOptions(
     colorScheme,
     zoom: num(fm.zoom) ?? 1,
     background: colorScheme
-      ? { ...(resolveBackground(fm) ?? resolveBackground({ background: "transparent" })!), scheme: colorScheme }
+      ? {
+          ...(resolveBackground(fm) ?? resolveBackground({ background: "transparent" })!),
+          scheme: colorScheme,
+        }
       : resolveBackground(fm),
   };
 }
@@ -726,6 +736,8 @@ export interface HostOverride {
   room?: string;
   api?: string;
   badge?: boolean;
+  /** Frame the first and last slides with the host's ads (core/ads.ts). */
+  ads?: boolean;
   /** The host's viewer-verification page (a same-site path), see `DeckConfig.live.verify`. */
   verify?: string;
 }
@@ -739,6 +751,7 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (typeof o.room === "string" && /^[a-z0-9][a-z0-9-]{0,63}$/.test(o.room)) out.room = o.room;
   if (typeof o.api === "string" && o.api.length > 0) out.api = o.api;
   if (typeof o.badge === "boolean") out.badge = o.badge;
+  if (typeof o.ads === "boolean") out.ads = o.ads;
   if (typeof o.verify === "string" && /^\/(?!\/)[\w./-]*$/.test(o.verify)) out.verify = o.verify;
   return out;
 }
@@ -747,7 +760,11 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
 export function withHostOverride(config: DeckConfig, override: HostOverride | null): DeckConfig {
   if (
     !override ||
-    (!override.room && !override.api && !override.verify && override.badge === undefined)
+    (!override.room &&
+      !override.api &&
+      !override.verify &&
+      override.badge === undefined &&
+      override.ads === undefined)
   )
     return config;
   return {
@@ -759,6 +776,7 @@ export function withHostOverride(config: DeckConfig, override: HostOverride | nu
       ...(override.verify ? { verify: override.verify } : {}),
     },
     ...(override.badge !== undefined ? { badge: override.badge } : {}),
+    ...(override.ads !== undefined ? { ads: override.ads } : {}),
   };
 }
 

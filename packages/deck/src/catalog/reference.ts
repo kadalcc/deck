@@ -664,6 +664,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   polls: "Polls and quizzes in the live room.",
   slug: "The deck's slug; set by the build from the Vite base.",
   badge: "Set by the host; leave it alone.",
+  ads: "Set by the host; leave it alone.",
   fonts: 'Google Fonts families to load, e.g. ["Inter:wght@400;600"].',
   seoMeta: "Extra <meta> tags.",
 };

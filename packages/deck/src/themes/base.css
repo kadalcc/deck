@@ -1818,3 +1818,285 @@ pre.deck-code.has-lines .line::before {
   color: var(--deck-fg);
   font-family: var(--deck-body-font);
 }
+
+/* ── the play view's chrome area ──────────────────────────────────────────────
+   The controls, slide number and progress bar sit in the area the slide does. That is the whole
+   viewport, unless the ad frame has taken a column and a row (react/AdFrame.tsx). The area itself
+   lets clicks through to the stage; what is in it takes its own. */
+.deck-chrome-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.deck-chrome-area > * {
+  pointer-events: auto;
+}
+
+/* ── the ad frame (core/ads.ts) ───────────────────────────────────────────────
+   The first and last slides of a deck its host funds with ads: the slide shrinks to the top-left,
+   a tall ad takes the right-hand column, a wide one the bottom row, a QR code the corner. Each
+   slot is a size container, so a card shows what fits: image, label, title, line, button. */
+.deck-ad-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  animation: deck-ad-in 0.35s ease both;
+}
+@keyframes deck-ad-in {
+  from {
+    opacity: 0;
+  }
+}
+.deck-ad-slot,
+.deck-ad-slot * {
+  box-sizing: border-box;
+}
+.deck-ad-slot {
+  position: absolute;
+  pointer-events: auto;
+  padding: 10px;
+  container-type: size;
+  background: color-mix(in oklab, var(--deck-bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+}
+.deck-ad-slot.is-tall {
+  top: 0;
+  right: 0;
+  width: var(--ad-right);
+  bottom: var(--ad-bottom);
+  border-left: 1px solid var(--deck-border);
+}
+.deck-ad-slot.is-wide {
+  left: 0;
+  bottom: 0;
+  right: var(--ad-right);
+  height: var(--ad-bottom);
+  border-top: 1px solid var(--deck-border);
+}
+.deck-ad-slot.is-qr {
+  right: 0;
+  bottom: 0;
+  width: var(--ad-right);
+  height: var(--ad-bottom);
+  border-left: 1px solid var(--deck-border);
+  border-top: 1px solid var(--deck-border);
+  display: grid;
+  place-items: center;
+}
+.deck-ad-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  text-decoration: none;
+  font-family: var(--deck-body-font, system-ui, sans-serif);
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+.deck-ad-card:hover {
+  border-color: var(--deck-accent);
+}
+.deck-ad-slot.is-wide .deck-ad-card {
+  flex-direction: row;
+  align-items: center;
+}
+.deck-ad-image {
+  flex: none;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--deck-surface);
+}
+.deck-ad-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.deck-ad-slot.is-tall .deck-ad-image {
+  aspect-ratio: 16 / 10;
+}
+.deck-ad-slot.is-wide .deck-ad-image {
+  height: 100%;
+  aspect-ratio: 1;
+}
+.deck-ad-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+.deck-ad-label {
+  font: 600 10.5px/1.2 var(--deck-body-font, system-ui, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.deck-ad-title {
+  font: 700 clamp(13px, 7cqi, 20px) / 1.25 var(--deck-heading-font, system-ui, sans-serif);
+}
+.deck-ad-slot.is-wide .deck-ad-title {
+  font-size: clamp(13px, 16cqb, 22px);
+}
+.deck-ad-body {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--deck-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.deck-ad-slot.is-wide .deck-ad-body {
+  -webkit-line-clamp: 2;
+}
+.deck-ad-cta {
+  align-self: flex-start;
+  margin-top: auto;
+  font: 600 12.5px/1 var(--deck-body-font, system-ui, sans-serif);
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--deck-accent);
+  /* the slide's own background on the accent reads in both schemes (a dark theme's accent is pale) */
+  color: var(--deck-bg);
+  white-space: nowrap;
+}
+.deck-ad-slot.is-wide .deck-ad-cta {
+  margin-top: 2px;
+}
+/* small slots keep what matters: the title, then the button */
+@container (max-height: 300px) {
+  .deck-ad-slot.is-tall .deck-ad-body {
+    display: none;
+  }
+}
+@container (max-height: 200px) {
+  .deck-ad-slot.is-tall .deck-ad-image {
+    display: none;
+  }
+}
+@container (max-height: 110px) {
+  .deck-ad-slot.is-wide .deck-ad-body {
+    display: none;
+  }
+}
+@container (max-width: 140px) {
+  .deck-ad-slot.is-tall .deck-ad-card {
+    padding: 8px;
+  }
+  .deck-ad-slot.is-tall .deck-ad-cta,
+  .deck-ad-slot.is-tall .deck-ad-body {
+    display: none;
+  }
+}
+@container (max-width: 360px) {
+  .deck-ad-slot.is-wide .deck-ad-image {
+    display: none;
+  }
+}
+
+.deck-ad-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--deck-muted);
+  max-height: 100%;
+}
+.deck-ad-qr-code {
+  display: block;
+  padding: 6px;
+  border-radius: 8px;
+  background: #fff;
+  width: min(100cqh - 36px, 100cqi - 24px);
+  aspect-ratio: 1;
+}
+.deck-ad-qr-code .deck-qr {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: pixelated;
+}
+.deck-ad-qr-caption {
+  font: 600 11px/1.2 var(--deck-body-font, system-ui, sans-serif);
+  text-align: center;
+  max-width: 100cqi;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A phone, or any portrait window: the slide spans the width at the top, the ads stack below. */
+.deck-ad-frame[data-mode="stack"] {
+  top: auto;
+  height: var(--ad-bottom);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* the bottom strip stays clear: the controls, the slide number and the follow bar are there */
+  padding: 8px 8px 72px;
+  overflow-y: auto;
+  pointer-events: auto;
+  background: color-mix(in oklab, var(--deck-bg) 88%, transparent);
+  border-top: 1px solid var(--deck-border);
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-slot {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  backdrop-filter: none;
+  container-type: inline-size;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-slot:empty {
+  display: none;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-card {
+  flex-direction: row;
+  align-items: center;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-image {
+  width: 30%;
+  max-width: 120px;
+  aspect-ratio: 1;
+  height: auto;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-title {
+  font-size: 16px;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-body {
+  -webkit-line-clamp: 2;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-qr {
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-qr-code {
+  width: 110px;
+}
+.deck-ad-frame[data-mode="stack"] .deck-ad-qr-caption {
+  white-space: normal;
+  max-width: 160px;
+  text-align: left;
+}
+
+@media print {
+  .deck-ad-frame {
+    display: none;
+  }
+}

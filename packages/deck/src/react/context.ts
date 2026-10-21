@@ -162,6 +162,21 @@ export interface DeckRuntime {
   glossary: Map<string, GlossaryEntry>;
   /** Tabs a host adds to the presenter's sidebar (a hosted assistant). See core/panels.ts. */
   panels: PanelRegistry;
+  /**
+   * Room the play view keeps clear of the slide, in px from the viewport's right and bottom edges:
+   * the ad frame's (core/ads.ts). The layout fits the slide into what is left.
+   */
+  stageInset: Store<StageInset>;
+}
+
+export interface StageInset {
+  right: number;
+  bottom: number;
+  /**
+   * Whether the controls keep to the slide's area too. They do beside a side frame; under a
+   * stacked one (a phone) they stay along the bottom of the screen, below the ads.
+   */
+  chrome?: boolean;
 }
 
 export const DeckContext = createContext<DeckRuntime | null>(null);
