@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { dropSlide, parseDeck, slideAtLine, slideHash, slideLabel, slideTree } from "./deck.ts";
@@ -201,8 +202,19 @@ describe("tools", () => {
     expect(cliCommand("/nowhere", ["check", "--json"])).toBe(
       "npx -y -p @kadal/deck kadal-deck check --json",
     );
-    const starter = join(import.meta.dir, "..", "..", "..", "..", "examples", "starter");
-    expect(cliCommand(starter, ["dev"])).toMatch(/node_modules\/\.bin\/kadal-deck dev$/);
+    // A deck with its own CLI, found up the tree. Made here rather than borrowed from the starter,
+    // whose node_modules/.bin link exists only if the workspace was installed after a build.
+    const root = mkdtempSync(join(tmpdir(), "kadal-vscode-"));
+    const bin = join(root, "node_modules", ".bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, process.platform === "win32" ? "kadal-deck.cmd" : "kadal-deck"), "");
+    const deck = join(root, "talks", "one");
+    mkdirSync(deck, { recursive: true });
+    try {
+      expect(cliCommand(deck, ["dev"])).toMatch(/node_modules[\\/]\.bin[\\/]kadal-deck(\.cmd)? dev$/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("check --json → problems by file, 0-based", () => {
