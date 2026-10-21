@@ -1,0 +1,74 @@
+{
+  "name": "@kadal/prettier-plugin",
+  "version": "0.3.6",
+  "description": "Prettier for Kadal Deck decks (deck.mdx): separators and frontmatter normalised, YAML formatted with its comments, and every slide's Markdown formatted, with code, notes, magic-move and ::slot:: sugar left exactly as written.",
+  "keywords": [
+    "prettier",
+    "prettier-plugin",
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "mdx"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/pmithunish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/prettier-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "test": "bun test",
+    "prepack": "tsdown"
+  },
+  "dependencies": {
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "prettier": "^3.0.0"
+  }
+}

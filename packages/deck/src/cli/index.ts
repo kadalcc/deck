@@ -7,6 +7,7 @@
  *   kadal-deck dev [vite flags]           the deck with live reload (vite)
  *   kadal-deck build [vite flags]         dist/ for any static host (vite build); --without-notes
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
+ *   kadal-deck format [files] [--check]   format deck files (@kadal/prettier-plugin)
  *   kadal-deck info [topic]               the catalog: components, layouts, backgrounds, keys…
  *   kadal-deck screenshot                 PNGs of slides (headless Chromium)
  *   kadal-deck export [--format …]        PDF/PNG/PPTX/editable PPTX/Markdown into export/ (Playwright)
@@ -23,7 +24,7 @@
  * credentials, which is how CI publishes.
  */
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 
 import { type FlagSpecs, UsageError, bool, num, parseArgs, str } from "./args.ts";
 import {
@@ -54,6 +55,9 @@ export const HELP = `kadal-deck <command> [options]
               (\`download: true\` in the deck does the same; --no-download skips it)
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
+  format      format deck.mdx (and the files it includes) or the files named: separators,
+              frontmatter YAML, each slide's Markdown; code, notes and sugar kept as written
+              --check  write nothing; exit 1 if a file would change
   info        the reference: info [components|layouts|backgrounds|themes|transitions|clicks|code|
               deck|slide|keys|routes|live|cli|exit] [name]   --search <words>   --markdown
   screenshot  PNGs of slides into screenshots/   --slide <N|all> --out <dir> --theme <t>
@@ -104,6 +108,7 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     pm: { kind: "string" },
   },
   check: { compile: { kind: "boolean" } },
+  format: { check: { kind: "boolean" } },
   info: { search: { kind: "string" }, markdown: { kind: "boolean" } },
   screenshot: {
     slide: { kind: "string", multiple: true },
@@ -357,6 +362,33 @@ async function run(
         });
       else say(formatDiagnostics(result, (f) => rel(project, f)));
       return result.ok ? EXIT.ok : EXIT.failed;
+    }
+    case "format": {
+      const { formatFiles } = await import("./format.ts");
+      const check = flags.check === true;
+      // Files are named relative to the deck folder (`-C` runs there), as `check` reports them.
+      const run = await formatFiles(dir, positionals, { check });
+      const name = (f: string) => {
+        const r = relative(dir, f);
+        return r && !r.startsWith("..") ? r : f;
+      };
+      if (json)
+        emit({
+          ok: !check || run.changed === 0,
+          check,
+          files: run.files.map((f) => ({ ...f, file: name(f.file) })),
+        });
+      else {
+        for (const f of run.files) {
+          say(
+            `${f.changed ? (check ? "would change" : "formatted   ") : "unchanged   "} ${name(f.file)}`,
+          );
+          for (const k of f.kept) say(`  slide ${k.slide} (line ${k.line}): ${k.reason}`);
+        }
+        if (check && run.changed)
+          say(`\n${run.changed} file(s) need formatting. Run \`kadal-deck format\`.`);
+      }
+      return check && run.changed ? EXIT.failed : EXIT.ok;
     }
     case "narrate": {
       const { narrate, setupKokoro } = await import("./narrate.ts");

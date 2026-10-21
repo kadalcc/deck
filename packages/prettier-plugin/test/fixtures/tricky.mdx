@@ -1,0 +1,104 @@
+
+
+---
+# the deck's settings
+title:   Tricky   deck
+theme: minimal   # trailing comment
+transition:    slide
+---
+# First slide
+Some *emphasis* and __strong__ text.
+* one
+* two
+
+---   
+layout: center
+class:   hero
+---
+
+## Centred
+-----
+
+### Beneath (five dashes)
+
+----
+background: mesh
+---
+### Beneath with settings
+---
+
+```yaml
+id: block-fm
+layout: two-cols
+```
+
+# Block frontmatter
+
+Left side
+
+::right::
+
+Right side
+
+---
+
+```yaml [example.yml]
+# a YAML example, not settings
+---
+key: value
+---
+```
+
+````md magic-move {at:2}
+```ts
+const a = 1
+```
+```ts
+const a = 2
+```
+````
+
+<Notes>
+A note with *markdown*   and --- inside.
+</Notes>
+
+---
+
+
+---
+layout: end
+---
+
+***
+
+Thanks!   
+| a | b |
+|--|--|
+| 1 | 2 |
+
+<!-- not notes: in the middle -->
+
+$$ {1|3}
+a = 1 \\
+b = 2 \\
+c = 3
+$$
+
+::code-group
+
+```sh [npm]
+npm i @kadal/deck
+```
+
+```sh [bun]
+bun add @kadal/deck
+```
+
+::
+
+<<< @/snippets/tide.ts#ask {2,3}
+
+<!--
+Trailing comment notes, Slidev style.
+[click] And a click.
+-->
