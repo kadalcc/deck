@@ -1,0 +1,108 @@
+{
+  "name": "@kadal/theme-folio",
+  "version": "0.3.6",
+  "description": "Folio, a theme for Kadal Deck (@kadal/deck). An editorial serif theme for essays and keynotes: warm paper, a high-contrast display serif, generous whitespace.",
+  "keywords": [
+    "kadal-theme",
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "theme",
+    "editorial",
+    "serif",
+    "essay",
+    "keynote"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/pmithunish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/theme-folio"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "style.css",
+    "index.tsx",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "kadal": {
+    "theme": {
+      "name": "folio",
+      "title": "Folio",
+      "description": "An editorial serif theme for essays and keynotes: warm paper, a high-contrast display serif, generous whitespace.",
+      "colorScheme": "both",
+      "config": {
+        "transition": "fade",
+        "fonts": {
+          "heading": "Playfair Display, Georgia, serif",
+          "serif": "Newsreader, Georgia",
+          "mono": "IBM Plex Mono",
+          "local": [
+            "Georgia"
+          ],
+          "weights": "400,500,600,700",
+          "italic": true
+        }
+      },
+      "themeConfig": {
+        "paper": "#f6f0e4"
+      },
+      "shiki": {
+        "light": "gruvbox-light-soft",
+        "dark": "gruvbox-dark-soft"
+      },
+      "defaults": {},
+      "layouts": [
+        "pull-quote",
+        "essay",
+        "chapter"
+      ],
+      "components": [
+        "Byline",
+        "Lede"
+      ]
+    }
+  },
+  "scripts": {
+    "dev": "kadal-deck dev -C preview",
+    "check": "kadal-deck check -C preview",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "^0.3.6",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}
