@@ -35,8 +35,11 @@ and `slide_render` (pictures of slides).
    clipped, crowding, tiny type, low contrast, empty halves, broken images or components. Fix and
    look again. Try `--scheme dark` if the deck allows dark mode.
 6. **Ship** when the user asks: `npx kadal-deck build` (static `dist/`), `npx kadal-deck export
-   --png --pptx` (PDF/PNG/PPTX in `export/`), or `npx kadal-deck publish` (a URL with a live room
-   on deck.kadal.cc). Publishing needs the user to have run `npx kadal-deck login` once — never
+   --png --pptx` (PDF/PNG/PPTX in `export/`; `--format pptx-editable` for a PowerPoint file with
+   native, editable text, `--format md` for Markdown with the notes, `--range 1,3-5`, `--dark`),
+   or `npx kadal-deck publish` (a URL with a live room on deck.kadal.cc). `download: true` in the
+   headmatter adds a Download button and makes `build` write `dist/deck.pdf` for it; any deck
+   also exports from the browser at `/<deck>/export`. Publishing needs the user to have run `npx kadal-deck login` once — never
    try to sign in yourself; if `kadal-deck whoami` exits 3, ask them to.
 
 `npx kadal-deck dev` serves the deck with live reload for the user (MCP `deck_preview` returns

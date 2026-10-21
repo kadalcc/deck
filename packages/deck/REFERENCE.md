@@ -1334,6 +1334,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `slug` | `string` | `""` | The deck's slug on the host, from the Vite base — decks/<slug>. |
 | `badge` | `boolean` | `false` | Show the "Made with Kadal Deck" link in the corner (set by the host, see `withHostOverride`). |
 | `ads` | `boolean` | `false` | Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them. |
+| `download` | `string \| boolean` | `false` | A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there is none; a URL links that file instead. A host may switch it off, or on, for the decks it serves (`window.__KADAL_DECK__.download`). See core/download.ts. |
 | `fonts` | `string[]` | `[]` | Google Fonts families to load, e.g. ["Inter:wght@400;600"]. |
 | `seoMeta` | `Record<string, string>` | `{}` | Extra <meta> tags. |
 | `aspectRatio` | `number` |  | Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…). |
@@ -1429,11 +1430,17 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `/<slug>/join` — The audience page (also /audience): follow along, react, ask, vote.
 - `/<slug>/remote` — The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev`. One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.
 - `/<slug>/notes` — Every speaker note on one page.
+- `/<slug>/export` — The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.
 - `/<slug>/stats` — Views, dwell per slide, sessions, questions, reactions.
 
 ## Query parameters
 
 - `?print-pdf` — Every slide (and click step) as a printable page; what export drives. Also ?print=pdf.
+- `?range=1,3-5` — With ?print-pdf: only those slides (1-based, in play order; `8-` runs to the end).
+- `?clicks=0|1` — With ?print-pdf: a page per click step (1) or one per slide at its last step (0); overrides pdfSeparateFragments.
+- `?notes=0|1|page` — With ?print-pdf: notes off, in a box on each slide, or on pages of their own; overrides showNotes.
+- `?omit-background` — With ?print-pdf: no page colour and no background layer (transparent PNGs).
+- `?scheme=light|dark` — Open in that colour scheme (also ?dark), without changing the viewer's remembered choice.
 - `?view=scroll` — Read the deck as a scrolling page (?view=slide forces the stage).
 - `?presenter` — Open as presenter.
 - `?embedded` — Embedded mode: no global key handling.
@@ -1458,11 +1465,11 @@ YAML right after a slide's `---` separator, closed by another `---`.
 
 - `kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun]` — Scaffold a deck (non-interactive). `--json`
 - `kadal-deck dev [--https] [vite flags]` — The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.
-- `kadal-deck build [vite flags]` — dist/ for any static host.
+- `kadal-deck build [--download] [--port n] [vite flags]` — dist/ for any static host. --download (or `download: true` in the deck) also prints dist/deck.pdf for the deck's Download button; --no-download skips it.
 - `kadal-deck check [--json] [--no-compile]` — Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--json`
 - `kadal-deck info [topic] [--search q] [--json]` — Print the catalog: components, layouts, backgrounds, frontmatter… `--json`
 - `kadal-deck screenshot [--slide N|all] [--out dir] [--theme t] [--scheme light|dark] [--width px] [--url u] [--dev] [--json]` — PNG of slides, every click revealed (build + preview, headless Chromium). `--json`
-- `kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u] [--json]` — PDF/PNG/PPTX into export/. The PDF looks like the web in every viewer: each page is a picture of the slide with its text printed over it as text. --vector-pdf prints with the browser alone. `--json`
+- `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--png] [--pptx] [--pptx-editable] [--md] [--no-pdf] [--vector-pdf] [--range 1,3-5] [--dark | --scheme light|dark] [--with-clicks | --no-with-clicks] [--omit-background] [--no-with-toc] [--per-slide] [--out dir] [--output name] [--scale n] [--timeout ms] [--wait ms] [--wait-until networkidle|load|domcontentloaded|none] [--executable-path path] [--url u] [--port n] [--json]` — PDF/PNG/PPTX/Markdown into export/. The PDF looks like the web in every viewer (each page a picture of the slide with its text printed over it as text), with bookmarks from the slide titles and levels (--no-with-toc for none) and the deck's metadata; --vector-pdf prints with the browser alone. --format pptx-editable rebuilds the slides as native PowerPoint text, lists, shapes, pictures and tables (what cannot be, it places as a picture where it stood) with the notes. --format md writes a .md file of the PNGs with each slide's notes. --range picks slides, --dark the dark scheme, --no-with-clicks one page per slide, --omit-background transparent pages, --per-slide one page load per slide. `--json`
 - `kadal-deck login [--host url] [--json]` — Sign this machine in (opens the browser). `--json`
 - `kadal-deck logout [--json]` — Forget the saved token. `--json`
 - `kadal-deck whoami [--json]` — Who is signed in (exit 3 when nobody). `--json`

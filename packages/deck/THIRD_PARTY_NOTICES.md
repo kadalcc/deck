@@ -58,3 +58,21 @@ What that means for you:
   installed contains none of it.
 - **Baked audio** (`kadal-deck narrate` output: MP3/Opus/WAV files) is the output of the model,
   not a copy of eSpeak NG; the Kokoro weights' Apache-2.0 licence places no restriction on it.
+
+## Export
+
+The exporters use three ordinary dependencies of `@kadal/deck`. Two of them can end up inside a
+deck's **build output**, in chunks that load only when someone exports from the browser (`/export`)
+or makes a picture of a slide:
+
+| Component | Version checked | Licence | Source | Where it runs |
+| --- | --- | --- | --- | --- |
+| pptxgenjs | 3.12.0 | MIT | https://github.com/gitbrent/PptxGenJS | `kadal-deck export` (PPTX, editable PPTX); the browser exporter's PowerPoint (a lazy chunk in `dist/assets/`) |
+| JSZip (bundled by pptxgenjs) | 3.10.2 | MIT (dual-licensed MIT or GPL-3.0; used under MIT) | https://github.com/Stuk/jszip | with pptxgenjs |
+| modern-screenshot | 4.7.0 | MIT | https://github.com/qq15725/modern-screenshot | the browser exporter and `export.thumbnail` (lazy chunks) |
+| pdf-lib | 1.17.1 | MIT | https://github.com/Hopding/pdf-lib | `kadal-deck export` only (PDF bookmarks, metadata, `--per-slide` merging); never bundled for the browser |
+
+The command-line flags of `kadal-deck export` (`--format`, `--range`, `--with-clicks`,
+`--with-toc`, `--omit-background`, `--per-slide`, `--wait-until`, `--executable-path`) and the shape
+of the Markdown export follow Slidev's (MIT, https://github.com/slidevjs/slidev) so that a
+Slidev user's habits carry over; no Slidev code is copied.

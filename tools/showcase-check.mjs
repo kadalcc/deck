@@ -7,6 +7,7 @@
  *   node tools/showcase-check.mjs --no-export       leave out `kadal-deck export` (the slowest part)
  *   node tools/showcase-check.mjs --out <dir>       where screenshots and exports go
  *                                                   (default examples/showcase/check-output, gitignored)
+ *   node tools/showcase-check.mjs --port <n>        serve the deck on that port (default: any free one)
  *
  * Needs the engine built (`bun run build`) and Playwright's Chromium (`npx playwright install chromium`).
  * Prints a table and exits non-zero on any failure.
@@ -107,7 +108,7 @@ const server = createServer(async (req, res) => {
   if (extname(rel)) return res.writeHead(404).end();
   res.writeHead(200, { "content-type": "text/html" }).end(await readFile(join(dist, "index.html")));
 });
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
+await new Promise((r) => server.listen(Number(val("--port", 0)), "127.0.0.1", r));
 const port = server.address().port;
 const base = `http://127.0.0.1:${port}/showcase/`;
 console.log(`serve  ${base}`);
@@ -748,11 +749,36 @@ await step("print: ?print-pdf has a page per click step", async () => {
   await context.close();
 });
 
+await step("export: /export, the browser exporter, previews and packs a range", async () => {
+  const { page, context, take } = await openPage({ viewport: { width: 1440, height: 900 } });
+  await page.goto(`${base}export`);
+  await page.waitForSelector(".deck-export .deck-print-pages[data-ready]", { timeout: 120_000 });
+  const all = await page.locator(".deck-export-preview .deck-print-page").count();
+  expect(all === expectedPages(), `the preview has ${all} pages, expected ${expectedPages()}`);
+  await page.fill(".deck-export-panel input[type=text]", "1-2");
+  await page.check("input[name=deck-export-format][value=png]");
+  await page.waitForTimeout(1000);
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 120_000 }),
+    page.click(".deck-export-actions button.is-primary"),
+  ]);
+  const zip = await download.path();
+  expect(/-png\.zip$/.test(download.suggestedFilename()), `downloaded ${download.suggestedFilename()}`);
+  expect(zip && statSync(zip).size > 20_000, "the PNG zip is empty");
+  await page.screenshot({ path: join(out, "export-page.png") });
+  for (const p of take()) expect(false, p);
+  await context.close();
+});
+
 if (!flag("--no-export")) {
-  await step("export: kadal-deck export — PDF, PNG, PPTX", async () => {
+  await step("export: kadal-deck export — PDF, PNG, PPTX, editable PPTX, Markdown", async () => {
     const dir = join(out, "export");
     const bin = join(root, "packages/deck/dist/cli/bin.js");
-    await run("node", [bin, "export", "--url", base, "--no-posters", "--png", "--pptx", "--scale", "1", "--out", dir], deckDir);
+    await run(
+      "node",
+      [bin, "export", "--url", base, "--no-posters", "--format", "pdf,png,pptx,pptx-editable,md", "--scale", "1", "--out", dir],
+      deckDir,
+    );
     const pdf = join(dir, "showcase.pdf");
     const pptx = join(dir, "showcase.pptx");
     const want = expectedPages();
@@ -774,6 +800,10 @@ if (!flag("--no-export")) {
       expect(n(/\/Type\s*\/Mask/g) === 0, `the PDF has ${n(/\/Type\s*\/Mask/g)} soft-mask groups; effects were printed`);
       expect(n(/\/ShadingType/g) === 0, `the PDF has ${n(/\/ShadingType/g)} shadings; gradients were printed`);
       expect(n(/\/Type\s*\/Font/g) > 0, "the PDF has no fonts: its text was not printed as text");
+      // Bookmarks from the slide titles (export/outline.ts), and the deck's metadata.
+      expect(n(/\/Type\s*\/Outlines/g) === 1, "the PDF has no outline");
+      expect(n(/\/Parent\s+\d+\s+0\s+R\s*\/?/g) > 0 && n(/\/Dest\s*\[/g) >= 20, `the PDF outline has ${n(/\/Dest\s*\[/g)} entries, expected one per titled slide`);
+      expect(/\/Title\s*[(<]/.test(text), "the PDF has no title in its metadata");
     }
     const pngs = existsSync(join(dir, "png")) ? readdirSync(join(dir, "png")).filter((f) => f.endsWith(".png")) : [];
     expect(pngs.length === want, `${pngs.length} PNGs, expected ${want}`);
@@ -782,6 +812,37 @@ if (!flag("--no-export")) {
     if (existsSync(pptx)) {
       const slides = new Set(readFileSync(pptx).toString("latin1").match(/ppt\/slides\/slide\d+\.xml/g) ?? []);
       expect(slides.size === want, `the PPTX has ${slides.size} slides, expected ${want}`);
+    }
+    // The editable PPTX: a slide per page, and its words are words (text runs), not pictures.
+    const editable = join(dir, "showcase.editable.pptx");
+    expect(existsSync(editable) && statSync(editable).size > 100_000, "no editable PPTX, or a tiny one");
+    if (existsSync(editable)) {
+      const listing = await new Promise((done) => {
+        const p = spawn("unzip", ["-l", editable]);
+        let s = "";
+        p.stdout.on("data", (d) => (s += d));
+        p.on("close", () => done(s));
+        p.on("error", () => done(""));
+      });
+      const slides = (listing.match(/ppt\/slides\/slide\d+\.xml/g) ?? []).length;
+      if (listing) expect(slides === want, `the editable PPTX has ${slides} slides, expected ${want}`);
+      const runs = await new Promise((done) => {
+        const p = spawn("unzip", ["-p", editable, "ppt/slides/*.xml"]);
+        let s = "";
+        p.stdout.on("data", (d) => (s += d));
+        p.on("close", () => done((s.match(/<a:t>[^<]*\S[^<]*<\/a:t>/g) ?? []).length));
+        p.on("error", () => done(-1));
+      });
+      if (runs >= 0) expect(runs > want * 3, `the editable PPTX has ${runs} text runs over ${want} slides: its text is not native`);
+    }
+    // Markdown: a picture per page, the notes as text.
+    const md = join(dir, "showcase.md");
+    expect(existsSync(md), "no Markdown export");
+    if (existsSync(md)) {
+      const text = readFileSync(md, "utf8");
+      const pics = (text.match(/!\[[^\]]*\]\(\.\/png\/[^)]+\.png\)/g) ?? []).length;
+      expect(pics === want, `the Markdown has ${pics} pictures, expected ${want}`);
+      expect(/^---$/m.test(text), "the Markdown does not separate its slides");
     }
   });
 }

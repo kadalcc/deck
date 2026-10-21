@@ -254,6 +254,7 @@ export const GENERATED: GeneratedData = {
     {"name":"slug","type":{"text":"string","variants":[{"type":"string"}]},"description":"The deck's slug on the host, from the Vite base — decks/<slug>."},
     {"name":"badge","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Show the \"Made with Kadal Deck\" link in the corner (set by the host, see `withHostOverride`)."},
     {"name":"ads","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them."},
+    {"name":"download","type":{"text":"string | boolean","variants":[{"type":"string"},{"type":"boolean"}]},"description":"A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there is none; a URL links that file instead. A host may switch it off, or on, for the decks it serves (`window.__KADAL_DECK__.download`). See core/download.ts."},
     {"name":"fonts","type":{"text":"string[]","variants":[{"type":"array"}]},"description":"Google Fonts families to load, e.g. [\"Inter:wght@400;600\"]."},
     {"name":"seoMeta","type":{"text":"Record<string, string>","variants":[{"type":"object"}]}},
   ],
