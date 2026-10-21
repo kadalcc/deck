@@ -364,6 +364,54 @@ export const CODE_META: CodeMetaOption[] = [
     example: '```js data-line-numbers="1|2"\na\nb\n```',
   },
   {
+    syntax: "// [!code ++]",
+    summary:
+      "Shiki notation comments, at the end of a line (any comment style): `[!code ++]` / `[!code --]` added and removed lines, `[!code highlight]` (or `highlight:3` for 3 lines), `[!code focus]` blurs the rest until hover, `[!code error]` / `[!code warning]`, `[!code word:name]` marks every `name`. The comment is removed. Works with click steps; `deck({ shiki: { transformers } })` adds your own transformers.",
+    example: "```ts\nconst a = 1 // [!code --]\nconst a = 2 // [!code ++]\nconst b = a // [!code highlight]\n```",
+  },
+  {
+    syntax: "::code-group",
+    summary:
+      "Fences between `::code-group` and `::` (or `:::`) become tabs (`<CodeGroup>`), named by each fence's `[title]`. Options after the opener: `{clicks:true}` turns tabs on clicks, `{print:'all'}` prints every tab.",
+    example: "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
+  },
+  {
+    syntax: "<<< @/snippets/file.ts#region",
+    summary:
+      "Import code from a file (`@` = the deck's folder; `./x` relative to the slide's file), optionally one `#region` (marked `// #region name` … `// #endregion` in any comment style). A language word and any fence meta may follow: `<<< @/a.js ts {2|4}{lines:true} [a.ts]`. Watched in dev; in the hosted shell the file must be published beside deck.mdx.",
+    example: "<<< @/snippets/tide.ts#ask {2-3} [tide.ts]",
+  },
+  {
+    syntax: "twoslash",
+    summary:
+      "TypeScript type information rendered at build time: hover (or Tab to) a name for its type, errors underlined with the compiler's message, `// ^?` pins a type under the token above. Needs `typescript` installed; the hosted shell renders the block plain.",
+    example: "```ts twoslash\nconst tide = { height: 6.1 }\n//    ^?\n```",
+  },
+  {
+    syntax: "{monaco}",
+    summary:
+      "A Monaco editor on the slide (lazy-loaded; print, export and the phone remote show the highlighted code). Options: height (CSS or 'auto' to grow), lines, editorOptions (Monaco IEditorOptions), readonly. Esc gives the keys back to the deck.",
+    example: "```ts {monaco}{height:'auto'}\nconst greeting = 'hello'\n```",
+  },
+  {
+    syntax: "{monaco-diff}",
+    summary:
+      "A Monaco diff editor: the original code, a line of `~~~`, then the modified code. Print shows a unified line diff. `{sideBySide:false}` for inline.",
+    example: "```ts {monaco-diff}\nconst tide = 6.1\n~~~\nconst tide = 6.4\n```",
+  },
+  {
+    syntax: "{monaco-run}",
+    summary:
+      "An editor with a Run button (Ctrl/⌘+Enter) and the output under it: JS/TS run in a Web Worker (console captured, timeouts), Python in Pyodide; other languages through `registerCodeRunner` or setup/code-runners.ts. Options: autorun (default true, re-runs on edit), showOutputAt (a click, e.g. '+1'), outputHeight, outputPosition ('bottom' | 'right'), timeout (ms), runnerOptions.",
+    example: "```ts {monaco-run}{showOutputAt:'+1'}\nconsole.log([1, 2, 3].map((n) => n * 2))\n```",
+  },
+  {
+    syntax: "{monaco-write}",
+    summary:
+      "An editor whose edits are saved back to the source in `kadal-deck dev` (the imported file with `<<<`, else the fence in deck.mdx); read-only in a build and in the hosted shell.",
+    example: "<<< @/snippets/tide.ts#ask {monaco-write}",
+  },
+  {
     syntax: "````md magic-move",
     summary:
       "A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.",

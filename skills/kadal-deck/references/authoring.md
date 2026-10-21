@@ -70,6 +70,16 @@
 - Fenced code is highlighted at build time (Shiki). Meta: `{lines:true}`, `[file.ts]` title,
   `{2|4-6}` steps, `{maxHeight:'400px'}`. A ````md magic-move fence morphs between the code fences
   it contains, one per click.
+- Marks at a line's end: `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`,
+  `[!code error]`, `[!code word:name]` (any comment style; the comment is removed).
+- Tabs: `::code-group` … `::` around fences titled `[npm]`, `[bun]`… (`{clicks:true}` turns them
+  on clicks). Real files: `<<< @/snippets/x.ts#region {2|4} [x.ts]` (`@` = the deck folder;
+  `// #region name` … `// #endregion`); keep code that also lives in the repo this way.
+- ```ts twoslash: type hovers and compiler errors at build time; `// ^?` pins a type.
+- Live code: ```ts {monaco} (editor), {monaco-diff} (original, a `~~~` line, modified),
+  {monaco-run} (Run button, output below; JS/TS/Python built in; `{autorun:false}`,
+  `{showOutputAt:'+1'}`), `<<< ./x.ts {monaco-write}` (saves to the file in dev). Esc hands the
+  keys back to the deck. Keep editors to a few lines: they are for showing, not writing apps.
 - Maths: `$inline$` and `$$display$$` (KaTeX at build time).
 - Diagrams: `<Mermaid>{`flowchart LR; A --> B`}</Mermaid>`; hand-drawn `<Sketch>{`flowchart LR; A --> B`}</Sketch>`
   or `<Sketch src="/diagram.excalidraw" />`.

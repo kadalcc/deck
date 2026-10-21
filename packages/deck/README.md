@@ -64,6 +64,9 @@ login, which is how CI publishes.
   `removeSlide` / `moveSlide` / `setNotes` / `updateHeadmatter` over a `{ entry, read }` file
   interface; edits return new file text and never touch bytes outside the slide.
 - `@kadal/deck/schema/frontmatter.json` — JSON Schema (`$defs.headmatter`, `$defs.slide`).
+- `@kadal/deck/monaco` — `createMonacoHost`, `bundledGrammar`, `bundledThemes`, `registerMonacoLoader`:
+  for a page that bundles Monaco itself and compiles decks in the browser (the prebuilt shell does).
+  A deck built with the Vite plugin needs none of it.
 
 ## Writing slides
 
@@ -74,6 +77,11 @@ Markdown, with these on top:
 | Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` |
 | Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ```` |
 | Magic move | ````` ````md magic-move ````` holding one fence per step |
+| Code marks | `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`, `[!code error]` / `warning`, `[!code word:x]` at a line's end (Shiki's notation transformers); add your own with `deck({ shiki: { transformers } })` |
+| Code groups | `::code-group` … `::` around titled fences (```` ```sh [npm] ````): tabs with file badges, ←/→ between them; `{clicks:true}`, `{print:'all'}`; or `<CodeGroup>` |
+| Snippets | `<<< @/snippets/x.ts#region {2\|4} [x.ts]` — a file (or one `#region` of it, any comment style) as a fence; `@` is the deck folder; watched in dev |
+| TwoSlash | ```` ```ts twoslash ```` — type hovers (also on Tab), compiler errors, `// ^?`, rendered at build time (needs `typescript`) |
+| Monaco | ```` ```ts {monaco} ```` an editor; `{monaco-diff}` (original `~~~` modified); `{monaco-run}` runs JS/TS (Web Worker) and Python (Pyodide) with the output below, `{autorun:false,showOutputAt:'+1',outputHeight:'200px'}`; `{monaco-write}` saves edits back to the file in `kadal-deck dev`. Lazy: never in the main bundle. More runners: `registerCodeRunner(lang, fn)` or `setup/code-runners.ts` |
 | Math | `$inline$`, `$$ display $$`, `<Tex tex="…" />` |
 | Diagrams | `<Mermaid>{`flowchart LR …`}</Mermaid>`; hand-drawn: `<Sketch scene={…} steps={[…]} />`, `<Sketch src="x.excalidraw" />`, `<Sketch>{`flowchart …`}</Sketch>` |
 | Notes | `<Notes>… [click] …</Notes>` — the presenter view splits them at `[click]` |
