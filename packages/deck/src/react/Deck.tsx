@@ -836,8 +836,11 @@ function useDeckEffects(
   }, [config.title]);
 
   // Layout: scale to the viewport (or the embedding element), less whatever the ad frame keeps.
+  // The presenter view lays its own canvas out (presenter/index.tsx sets scale 1 inside a box it
+  // fits itself); measuring the window there too scaled the current slide twice, to ~83% of its pane.
   useEffect(() => {
     const measure = () => {
+      if (mode === "presenter") return;
       const vp = viewport();
       const inset = stageInset.get();
       layout.set(
