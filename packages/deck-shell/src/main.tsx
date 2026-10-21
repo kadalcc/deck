@@ -12,7 +12,10 @@ import { AudiencePage } from "@kadal/deck/audience";
 import { LiveProvider } from "@kadal/deck/live";
 import { NotesPage, PresenterPage, StatsPage } from "@kadal/deck/presenter";
 import { RemotePage } from "@kadal/deck/remote";
-import { startShell } from "@kadal/deck/runtime";
+import { registerMonacoLoader, startShell } from "@kadal/deck/runtime";
+
+// `{monaco…}` blocks: Monaco is a lazy chunk of its own, fetched when an editor is first shown.
+registerMonacoLoader(() => import("./monaco.ts").then((m) => m.default()));
 
 startShell({
   root: document.getElementById("root")!,

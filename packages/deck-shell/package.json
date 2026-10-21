@@ -49,6 +49,7 @@
   "devDependencies": {
     "@kadal/deck": "workspace:*",
     "@types/node": "^25.9.3",
+    "monaco-editor": "0.57.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "typescript": "^6.0.3",
