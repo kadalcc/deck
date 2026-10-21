@@ -85,6 +85,40 @@ describe("settings without their closing ---", () => {
   });
 });
 
+describe("the code kit in the browser", () => {
+  const deck =
+    "# One\n\n<<< @/snippets/a.ts#r {1}\n\n::code-group\n\n```sh [npm]\nnpm i\n```\n\n::\n\n```ts\nconst a = 1 // [!code ++]\n```\n";
+  test("a snippet not in `files` is reported missing, then read from it", async () => {
+    const first = await compileDeck(deck);
+    expect(first.missing).toEqual(["snippets/a.ts"]);
+    expect(first.ok).toBe(true);
+    expect(first.diagnostics.map((d) => d.severity)).toEqual(["warning"]);
+    const second = await compileDeck(deck, {
+      files: { "snippets/a.ts": "// #region r\nexport const a = 1\n// #endregion r\n" },
+    });
+    expect(second.missing).toEqual([]);
+    expect(second.diagnostics).toEqual([]);
+  });
+
+  test("custom transformers run after the notation ones", async () => {
+    let ran = 0;
+    const out = await compileDeck("```ts\nconst a = 1\n```", {
+      shiki: {
+        transformers: [
+          {
+            name: "count",
+            pre() {
+              ran++;
+            },
+          },
+        ],
+      },
+    });
+    expect(out.ok).toBe(true);
+    expect(ran).toBe(1);
+  });
+});
+
 describe("shellBase", () => {
   test("works out the deck root from the address", () => {
     expect(shellBase("/@me/talk/")).toBe("/@me/talk/");

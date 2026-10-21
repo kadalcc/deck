@@ -128,11 +128,15 @@ function Shell({
           if (!res.ok) throw new Error(`deck.mdx: ${res.status}`);
           const text = await res.text();
           const files: Record<string, string> = {};
+          // A file that is not there stays out of `files`, so the compiler reports it as missing
+          // (a `<<<` snippet then shows its notice) — and is asked for once, not every round.
+          const tried = new Set<string>();
           const fetchAll = (names: string[]) =>
             Promise.all(
               names.map(async (name) => {
-                const r = await fetch(`${base}${name}`);
-                files[name] = r.ok ? await r.text() : "";
+                tried.add(name);
+                const r = await fetch(`${base}${name}`).catch(() => null);
+                if (r?.ok) files[name] = await r.text();
               }),
             );
           // The host lists what it published beside deck.mdx; otherwise ask the compiler what
@@ -142,7 +146,7 @@ function Shell({
           if (Array.isArray(listed)) await fetchAll(listed.filter((f) => typeof f === "string"));
           for (let round = 0; round < 3; round++) {
             const { missing } = await compileDeck(text, { files });
-            const todo = missing.filter((m) => !(m in files));
+            const todo = missing.filter((m) => !(m in files) && !tried.has(m));
             if (!todo.length) break;
             await fetchAll(todo);
           }
