@@ -283,6 +283,10 @@
         "narration": {
           "type": "boolean",
           "description": "false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck."
+        },
+        "dragPos": {
+          "type": "object",
+          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">` (Slidev's v-drag): \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
         }
       },
       "additionalProperties": true
@@ -366,10 +370,10 @@
         "transition": {
           "type": "string",
           "enum": [
-            "zoom",
-            "none",
-            "fade",
             "slide",
+            "fade",
+            "none",
+            "zoom",
             "convex",
             "concave",
             "view-transition"
@@ -399,10 +403,10 @@
         "backgroundTransition": {
           "type": "string",
           "enum": [
-            "zoom",
-            "none",
-            "fade",
             "slide",
+            "fade",
+            "none",
+            "zoom",
             "convex",
             "concave",
             "view-transition"
@@ -472,9 +476,9 @@
         "colorScheme": {
           "type": "string",
           "enum": [
-            "auto",
             "light",
-            "dark"
+            "dark",
+            "auto"
           ],
           "description": "\"auto\" (follow the system), \"light\" or \"dark\".",
           "default": "auto"
@@ -655,6 +659,10 @@
           ],
           "description": "Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled (\"auto\" = when some slide has notes; false turns it off), engine (\"auto\" · \"baked\" · \"kokoro\" · \"browser\" · \"silent\"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: \"estimate\", \"skip\" or ms), model (Hugging Face id), dtype (\"auto\" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser's own voice reads. `kadal-deck narrate` bakes clips."
         },
+        "dragPos": {
+          "type": "object",
+          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">` (Slidev's v-drag): \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
+        },
         "author": {
           "type": "string",
           "description": "Who gives the talk.",
@@ -727,9 +735,9 @@
         "controlsBackArrows": {
           "type": "string",
           "enum": [
+            "visible",
             "faded",
-            "hidden",
-            "visible"
+            "hidden"
           ],
           "description": "How the back arrows look.",
           "default": "faded"
@@ -744,10 +752,10 @@
             {
               "type": "string",
               "enum": [
-                "h.v",
-                "h/v",
                 "c",
-                "c/t"
+                "c/t",
+                "h.v",
+                "h/v"
               ]
             },
             {
@@ -761,8 +769,8 @@
           "type": "string",
           "enum": [
             "all",
-            "speaker",
-            "print"
+            "print",
+            "speaker"
           ],
           "description": "Where slide numbers show.",
           "default": "all"

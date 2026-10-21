@@ -166,6 +166,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them. |
 | `say` | `string` |  | What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent. |
 | `narration` | `false` |  | false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck. |
+| `dragPos` | `Record<string, string>` |  | Named positions for `<Drag pos="name">` / `<DragArrow pos="name">` (Slidev's v-drag): "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged. |
 
 ## Deck frontmatter (headmatter)
 
@@ -185,10 +186,10 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `controls` | `boolean \| "speaker"` | `true` | Show the navigation arrows; "speaker" shows them only in the presenter view. Values: `speaker` |
 | `controlsLayout` | `"bottom-right" \| "edges"` | `"bottom-right"` | Where the arrows sit. Values: `bottom-right` `edges` |
 | `controlsTutorial` | `boolean` | `true` | Hint at vertical slides the first time. |
-| `controlsBackArrows` | `"faded" \| "hidden" \| "visible"` | `"faded"` | How the back arrows look. Values: `faded` `hidden` `visible` |
+| `controlsBackArrows` | `"visible" \| "faded" \| "hidden"` | `"faded"` | How the back arrows look. Values: `visible` `faded` `hidden` |
 | `progress` | `boolean` | `true` | The progress bar along the bottom. |
-| `slideNumber` | `boolean \| SlideNumberFormat` | `false` | Show slide numbers: true, or a format — "h.v", "h/v", "c" (current), "c/t" (current/total). Values: `h.v` `h/v` `c` `c/t` |
-| `showSlideNumber` | `"all" \| "speaker" \| "print"` | `"all"` | Where slide numbers show. Values: `all` `speaker` `print` |
+| `slideNumber` | `boolean \| SlideNumberFormat` | `false` | Show slide numbers: true, or a format — "h.v", "h/v", "c" (current), "c/t" (current/total). Values: `c` `c/t` `h.v` `h/v` |
+| `showSlideNumber` | `"all" \| "print" \| "speaker"` | `"all"` | Where slide numbers show. Values: `all` `print` `speaker` |
 | `hash` | `boolean` | `true` | Keep the URL hash in step with the slide. |
 | `hashOneBasedIndex` | `boolean` | `false` | 1-based slide numbers in the hash. |
 | `history` | `boolean` | `false` | Push a history entry per slide (Back walks the slides). |
@@ -216,9 +217,9 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `totalTime` | `number \| null` | `null` | Total seconds for the pacing timer, or null. |
 | `mouseWheel` | `boolean` | `false` | Scroll-wheel navigation. |
 | `previewLinks` | `boolean` | `false` | Open links in an overlay. |
-| `transition` | `Transition` | `"slide"` | Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`). Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
+| `transition` | `Transition` | `"slide"` | Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`). Values: `slide` `fade` `none` `zoom` `convex` `concave` `view-transition` |
 | `transitionSpeed` | `TransitionSpeed` | `"default"` | default · fast · slow. Values: `default` `fast` `slow` |
-| `backgroundTransition` | `Transition` | `"fade"` | Transition for backgrounds. Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
+| `backgroundTransition` | `Transition` | `"fade"` | Transition for backgrounds. Values: `slide` `fade` `none` `zoom` `convex` `concave` `view-transition` |
 | `viewDistance` | `number` | `3` | Slides kept mounted on either side. |
 | `mobileViewDistance` | `number` | `2` | The same, on phones. |
 | `hideInactiveCursor` | `boolean` | `true` | Hide an idle cursor. |
@@ -229,7 +230,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `scrollActivationWidth` | `number` | `0` | Viewport width under which the scroll view switches on by itself; 0 (the default) never does — a phone gets the same stage, letterboxed, and `?view=scroll` stays an explicit choice. |
 | `theme` | `string` | `"minimal"` | The theme: a built-in (minimal, rla, stack, none), a package (`seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then a package of that name), a folder (`./theme`), or a class your own CSS defines (.theme-<name>). The Vite plugin imports a package's CSS and module for you; `kadal-deck theme eject` copies it into the deck. Values: e.g. `minimal` `rla` `stack` |
 | `themes` | `string[]` | `["minimal","rla","stack"]` | The themes the theme menu offers, besides `theme`: built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines. |
-| `colorScheme` | `ColorScheme` | `"auto"` | "auto" (follow the system), "light" or "dark". Values: `auto` `light` `dark` |
+| `colorScheme` | `ColorScheme` | `"auto"` | "auto" (follow the system), "light" or "dark". Values: `light` `dark` `auto` |
 | `pdfSeparateFragments` | `boolean` | `true` | A page per click step in print/PDF. |
 | `pdfMaxPagesPerSlide` | `number` | `1` | Pages a tall slide may spill onto. |
 | `jumpToSlide` | `boolean` | `true` | `:12` / g jumps. |
