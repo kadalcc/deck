@@ -108,6 +108,10 @@ const GUARDED_PAGES = ["presenter", "notes", "notes-edit", "overview"];
 
 /** Whether `path` (no query) is a page or an endpoint the password guards. */
 export function guarded(path: string, base: string): "page" | "api" | null {
+  // Any `__kadal/` segment, wherever it sits: some endpoints match the end of the URL
+  // (monaco-dev.ts), so `/x/__kadal/monaco-write` must not slip past as "not under the base".
+  const login = [LOGIN, LOGOUT].some((p) => path.replace(/\/+$/, "").endsWith(`/${p}`));
+  if (!login && /(^|\/)__kadal\//.test(path)) return "api";
   for (const b of new Set([base, "/"])) {
     if (!path.startsWith(b)) continue;
     const rest = path.slice(b.length).replace(/\/+$/, "");

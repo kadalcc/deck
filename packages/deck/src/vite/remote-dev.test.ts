@@ -102,6 +102,9 @@ describe("the pieces", () => {
     expect(guarded("/__kadal/source", "/")).toBe("api");
     expect(guarded("/talk/__kadal/notes", "/talk/")).toBe("api");
     expect(guarded("/__kadal/login", "/")).toBeNull();
+    // An endpoint that matches the end of the URL (monaco-write) is guarded under any prefix.
+    expect(guarded("/x/__kadal/monaco-write", "/talk/")).toBe("api");
+    expect(guarded("/talk/x/y/__kadal/drag", "/talk/")).toBe("api");
     expect(guarded("/", "/")).toBeNull();
     expect(guarded("/remote", "/")).toBeNull();
     expect(guarded("/join", "/")).toBeNull();
