@@ -111,8 +111,8 @@ id: draw
 
 <Clicks>
 
-- <Kbd>C</Kbd> the pen — draw anywhere on this slide
-- <Kbd>⇧</Kbd><Kbd>C</Kbd> clears it, <Kbd>Ctrl</Kbd><Kbd>Z</Kbd> takes back a stroke
+- <Kbd>C</Kbd> the pen — then <Kbd>1</Kbd>–<Kbd>7</Kbd>: pen, highlighter, line, arrow, box, ellipse, eraser (<Kbd>⇧</Kbd> keeps a shape straight or square)
+- <Kbd>⇧</Kbd><Kbd>C</Kbd> clears it, <Kbd>Ctrl</Kbd><Kbd>Z</Kbd> undoes, <Kbd>Ctrl</Kbd><Kbd>⇧</Kbd><Kbd>Z</Kbd> redoes
 - <Kbd>X</Kbd> a laser pointer that follows you
 - <Kbd>Alt</Kbd> + click zooms there; <Kbd>Esc</Kbd> comes back
 
@@ -132,6 +132,58 @@ id: draw
 <Notes>
 Drawings belong to the slide they were made on and are kept per deck. With a room, they reach every screen — the projector, the phones — unless `drawings.presenterOnly` is set.
 [click] clearing and undo [click] the laser [click] and zoom.
+</Notes>
+
+----
+id: draw-files
+---
+
+<p className="sc-eyebrow">Presenting · saved drawings</p>
+
+## Drawings that stay
+
+<Cols cols="1fr 1fr" gap="3rem" align="center">
+<Col>
+
+- With `drawings: { persist: "files" }`, what you pin on `kadal-deck dev` is written to `drawings/<slide>.svg`
+- Saved drawings sit under your live strokes, ship with the build, and print — PDF, PNG and PPTX
+- `perClick: true` ties each stroke to the click it was drawn on
+
+</Col>
+<Col>
+
+<div className="sc-flow">
+  <span>deck.mdx</span>
+  <span>drawings/</span>
+  <span>PDF · PPTX</span>
+</div>
+
+</Col>
+</Cols>
+
+<Notes>
+The marks on this slide are not part of the slide: they are `drawings/draw-files.svg`, an ordinary SVG file the dev server wrote when they were pinned. Export the deck and they are on its page.
+</Notes>
+
+----
+id: camera
+---
+
+<p className="sc-eyebrow">Presenting · camera and recording</p>
+
+## Your face on the slide
+
+<Clicks>
+
+- <Kbd>V</Kbd> puts your camera in a bubble on the slide — drag it, resize it from its corner; a circle, a rounded box or a plain one, mirrored or not
+- The presenter view's **Camera** shows it on every window of the deck; the arrow beside it picks the camera and the microphone
+- **Record**: the screen with your voice, the camera alone, or both as two files — with pause, a clock, and WebM or MP4
+
+</Clicks>
+
+<Notes>
+The bubble sits on the slide itself, so a recording or a screen share of the audience's view has you in it. It never prints.
+[click] from the presenter view [click] and the recorder.
 </Notes>
 
 ---

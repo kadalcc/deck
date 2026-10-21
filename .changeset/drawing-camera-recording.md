@@ -1,0 +1,11 @@
+---
+"@kadal/deck": minor
+---
+
+Drawing tools, saved drawings, the camera on the slide, and a better recorder.
+
+- **Shapes and an eraser**: the pen's toolbar now has line, arrow, rectangle and ellipse (hold Shift to keep a line at 45° steps, a rectangle square, an ellipse round; arrowheads grow with the stroke), an eraser that takes whole strokes or, with the scissors on, cuts only where it passes, redo next to undo, any colour, and more widths. While the pen is on, 1–7 pick the tools, E toggles the eraser, [ and ] change the width, Ctrl Z undoes and Ctrl Shift Z (or Ctrl Y) redoes — strokes, shapes, erases and clears alike. A stylus's eraser end erases. The phone remote's pen has the same shapes, the eraser and redo.
+- **Drawings shared between windows**: what you draw in the presenter view shows on the play view and any shared window in the same browser at once, with or without a live room. Shapes travel through the room like strokes.
+- **Saved drawings**: `drawings: { persist: "files" }` writes pinned drawings to `drawings/<slide>.svg` beside deck.mdx while you run `kadal-deck dev`. Files in `drawings/` are shown under the live strokes, are bundled by `kadal-deck build` (so hosted and published copies have them), and are printed, so PDF, PNG, PPTX and the `/export` page include them. Ordinary SVGs work too — a Slidev drawing loads. `drawings: { perClick: true }` ties each stroke to the click step it was drawn on. `drawings: { enabled: "dev" }` turns the pen on only on the dev server.
+- **Camera on the slide**: V (or the presenter's Camera button) shows your camera in a bubble on the slide itself — on the play view, any shared window and the presenter's preview at once — so a recording or a screen share has you in it. Drag it, resize it from its corner, make it a circle, a rounded box or a rectangle, mirror it or not; it is remembered per deck and never printed. The arrow beside Camera picks the camera and microphone.
+- **Recording**: record the screen with your voice, the camera alone, or both as two separate files; pause and resume, a clock, WebM or MP4 where the browser supports it, the shared tab's sound mixed in, and clear file names. WebM recordings now carry their duration, so players show the length and can seek.
