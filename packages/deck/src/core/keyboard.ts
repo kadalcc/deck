@@ -34,7 +34,8 @@ export type KeyAction =
   | "themeMenu"
   | "narrate"
   | "settings"
-  | "contextMenu";
+  | "contextMenu"
+  | "camera";
 
 export interface KeyBinding {
   keys: string[];
@@ -158,6 +159,12 @@ export const KEY_BINDINGS: KeyBinding[] = [
     action: "contextMenu",
     label: "Shift F10",
     description: "The context menu (or right-click a slide)",
+  },
+  {
+    keys: ["KeyV"],
+    action: "camera",
+    label: "V",
+    description: "Your camera in a bubble on the slide (drag to move, drag its corner to resize)",
   },
 ];
 

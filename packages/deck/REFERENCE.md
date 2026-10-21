@@ -1450,7 +1450,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `autoFit` | `boolean` | `true` | Scale a slide whose content overflows so it fits (measured after render). |
 | `magicMoveDuration` | `number` | `800` | Milliseconds per magic-move morph. |
 | `live` | `{ api: string \| null; room: string \| null; turnstile: string \| null; verify?: string \| null; }` | `{"api":"/api","room":null,"turnstile":null}` | Live room: the backend base (same origin `/api` on the host), or null for an offline deck. `verify` is a host page that checks a viewer (Turnstile) and sends them back with a pass — how a host that serves decks sandboxed keeps the check, since Turnstile can't run in an opaque origin. Set by the host (`window.__KADAL_DECK__.verify`), never by a deck. |
-| `drawings` | `{ enabled: boolean; persist: boolean; presenterOnly: boolean; syncAll: boolean; }` | `{"enabled":true,"persist":true,"presenterOnly":false,"syncAll":true}` | Drawing: { enabled, persist, presenterOnly, syncAll }. |
+| `drawings` | `DrawingsConfig` | `{"enabled":true,"persist":true,"presenterOnly":false,"syncAll":true,"perClick":false}` | Drawing: { enabled: true \| false \| "dev", persist: true (browser storage) \| "files" (drawings/<slide>.svg beside deck.mdx, written on `kadal-deck dev`, bundled into the build, printed into every export) \| false, presenterOnly, syncAll, perClick (a stroke shows from the click step it was drawn on) }. Files in drawings/ are always shown under the live strokes. |
 | `narration` | `NarrationConfig \| boolean` | `{"enabled":"auto","engine":"auto","voice":"af_heart","rate":1,"gap":600,"silent":"estimate","model":"onnx-community/Kokoro-82M-v1.0-ONNX","dtype":"auto"}` | Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled ("auto" = when some slide has notes; false turns it off), engine ("auto" · "baked" · "kokoro" · "browser" · "silent"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: "estimate", "skip" or ms), model (Hugging Face id), dtype ("auto" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser's own voice reads. `kadal-deck narrate` bakes clips. |
 | `glossary` | `GlossaryOptions \| string \| false` | `{"src":"glossary.yaml","repeat":"first","headings":"fallback","skip":[],"delay":700,"sync":false}` | Term cards. The runtime reads `delay` and `sync`; the rest steers the compiler, which sees the headmatter only — set those there. `glossary: false` or a path are shorthands. Values: `false` |
 | `reactions` | `boolean` | `true` | Audience reactions in the live room. |
@@ -1562,6 +1562,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `R` — Read the notes aloud and turn the pages (narration), or pause it
 - `,` — Display settings: brightness, contrast, colour for a projector
 - `Shift F10` — The context menu (or right-click a slide)
+- `V` — Your camera in a bubble on the slide (drag to move, drag its corner to resize)
 
 ## Routes
 
@@ -1574,6 +1575,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `/<slug>/overview` — Every slide in order with a slider through its click steps and its notes beside it (editable under `kadal-deck dev`); a thumbnail opens the deck at that step.
 - `/<slug>/export` — The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.
 - `/<slug>/stats` — Views, dwell per slide, sessions, questions, reactions.
+- `/<slug>/__kadal/drawings` — `kadal-deck dev` only: GET every `drawings/*.svg`; PUT `{ file, svg }` writes one (same origin, JSON; the SVG is re-serialised, never written as sent) and tells every open page. Used by `drawings.persist: "files"`.
 
 ## Query parameters
 
@@ -1599,7 +1601,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - **Polls** — Choice, multi-choice, rating and word polls, opened from the presenter view. (`<Poll>`, `<WordCloud>`)
 - **Quizzes** — Timed questions with points for speed and a leaderboard. (`<Quiz>`, `<Leaderboard>`)
 - **Pace and hands** — Slower/faster feedback and raised hands in the presenter's room panel. (`<Pace>`)
-- **Shared ink** — The presenter's drawings, confetti and shared term cards reach every screen. (`<Confetti>`, `<Term>`)
+- **Shared ink** — The presenter's drawings (pen, highlighter, line, arrow, rectangle, ellipse; erasing, undo and redo), confetti and shared term cards reach every screen. Without a room, the deck's windows in one browser share the drawing and the camera bubble over the window bus. (`<Confetti>`, `<Term>`)
 - **Phone remote** — The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). One phone at a time: the QR's code works once and changes every 30 seconds, the newest phone to scan takes over, and a paired phone reconnects with its lease. With a room the room pairs it; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).
 - **Turning it on** — `kadal-deck publish` gives a deck a room on deck.kadal.cc; self-hosted, set `live.api` (and run a room server against @kadal/deck/protocol). Offline decks render live components as placeholders.
 

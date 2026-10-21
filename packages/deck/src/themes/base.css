@@ -15,6 +15,8 @@
 @import "./export.css";
 @import "./code.css";
 @import "./presenting.css";
+@import "./draw.css";
+@import "./media.css";
 
 :root {
   --deck-bg: #ffffff;

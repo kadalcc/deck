@@ -29,6 +29,7 @@ import {
   plantUmlServer,
 } from "../compiler/setup.ts";
 import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
+import { sourceFromFiles } from "../draw/source.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
 import { applySlideDefaults, shikiThemes, slideDefaultLayers } from "../theming/merge.ts";
 import {
@@ -73,7 +74,7 @@ export interface Diagnostic {
 export interface CompileDeckOptions extends DeckSetup {
   /** The deck file's name, for diagnostics. Default "deck.mdx". */
   file?: string;
-  /** Other files the deck reads by path: `src:` includes, `<<<` snippets and the glossary. */
+  /** Other files the deck reads by path: `src:` includes, `<<<` snippets, the glossary, `drawings/*.svg`. */
   files?: Record<string, string>;
   /** As `deck({ shiki })`: themes, languages, and transformers after the notation ones. */
   shiki?: { light?: string; dark?: string; langs?: string[]; transformers?: ShikiTransformer[] };
@@ -383,6 +384,8 @@ export async function compileDeck(
       glossary: glossary.entries,
       styles: prepared.styles,
       ...(runtimePackages ? { packages: runtimePackages.packages } : {}),
+      // Saved drawings among the files (`drawings/<slide>.svg`): shown under the live strokes.
+      drawings: sourceFromFiles(files),
     },
     diagnostics,
     missing: [...missing],

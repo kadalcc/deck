@@ -549,6 +549,11 @@ export const ROUTES: RouteInfo[] = [
       "The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.",
   },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
+  {
+    path: "/<slug>/__kadal/drawings",
+    summary:
+      '`kadal-deck dev` only: GET every `drawings/*.svg`; PUT `{ file, svg }` writes one (same origin, JSON; the SVG is re-serialised, never written as sent) and tells every open page. Used by `drawings.persist: "files"`.',
+  },
 ];
 
 export const QUERY_PARAMS: QueryParamInfo[] = [
@@ -639,7 +644,8 @@ export const LIVE: LiveFeature[] = [
   },
   {
     name: "Shared ink",
-    summary: "The presenter's drawings, confetti and shared term cards reach every screen.",
+    summary:
+      "The presenter's drawings (pen, highlighter, line, arrow, rectangle, ellipse; erasing, undo and redo), confetti and shared term cards reach every screen. Without a room, the deck's windows in one browser share the drawing and the camera bubble over the window bus.",
     components: ["Confetti", "Term"],
   },
   {
@@ -849,7 +855,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   selectable: "Text can be selected.",
   lineNumbers: "Line numbers on every code block.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
-  drawings: "Drawing: { enabled, persist, presenterOnly, syncAll }.",
+  drawings:
+    'Drawing: { enabled: true | false | "dev", persist: true (browser storage) | "files" (drawings/<slide>.svg beside deck.mdx, written on `kadal-deck dev`, bundled into the build, printed into every export) | false, presenterOnly, syncAll, perClick (a stroke shows from the click step it was drawn on) }. Files in drawings/ are always shown under the live strokes.',
   narration:
     'Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled ("auto" = when some slide has notes; false turns it off), engine ("auto" · "baked" · "kokoro" · "browser" · "silent"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: "estimate", "skip" or ms), model (Hugging Face id), dtype ("auto" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser\'s own voice reads. `kadal-deck narrate` bakes clips.',
   reactions: "Audience reactions in the live room.",

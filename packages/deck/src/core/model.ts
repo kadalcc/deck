@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 
 import type { Frontmatter } from "../compiler/split.ts";
 import { parseDuration, parseTimerMode } from "./timer.ts";
+import type { DrawingSource } from "../draw/source.ts";
 import {
   DEFAULT_GLOSSARY,
   type GlossaryEntry,
@@ -118,6 +119,12 @@ export interface DeckManifest {
   notesApi?: string | null;
   /** Served by `kadal-deck dev` (true) rather than built (false or absent). */
   dev?: boolean;
+
+  /**
+   * The deck's saved drawings, `drawings/*.svg` (src/draw/source.ts): read from the dev server,
+   * bundled into a build, or taken from the runtime compiler's files. Null or absent without any.
+   */
+  drawings?: DrawingSource | null;
 }
 
 /** A line to the dev server: Vite's HMR socket, event "kadal:remote". */
@@ -126,6 +133,31 @@ export interface DevRelay {
   on(listener: (message: unknown) => void): () => void;
   /** Hears the connection to the dev server come back (true) or drop (false). */
   onStatus(listener: (open: boolean) => void): () => void;
+}
+
+/**
+ * `drawings`: the pen, the shapes and where strokes are kept (src/draw/). Slidev's keys, plus
+ * `persist: "files"` and `perClick`.
+ */
+export interface DrawingsConfig {
+  /** The pen and its toolbar; `"dev"`: only on the dev server. */
+  enabled: boolean | "dev";
+  /**
+   * Where pinned strokes are kept. `true` (the default): this browser's storage. `"files"`:
+   * `drawings/<slide>.svg` beside deck.mdx, written by the dev server, bundled into a build and
+   * so into the hosted copy and every export (browser storage where files cannot be written).
+   * `false`: nowhere — a reload starts clean. Files in `drawings/` are shown whatever this says.
+   */
+  persist: boolean | "files";
+  /** Only the presenter draws; the audience sees. */
+  presenterOnly: boolean;
+  /** Every window that draws is synced, not only the presenter's. */
+  syncAll: boolean;
+  /**
+   * Strokes belong to the click step they were drawn on, and show from that step on (in the
+   * print view too, a page per step). Off: a slide has one drawing, whatever its step.
+   */
+  perClick: boolean;
 }
 
 /** `narration`: the autoplay rehearsal — notes read aloud, the deck turning its own pages. */
@@ -274,7 +306,7 @@ export interface DeckConfig {
     turnstile: string | null;
     verify?: string | null;
   };
-  drawings: { enabled: boolean; persist: boolean; presenterOnly: boolean; syncAll: boolean };
+  drawings: DrawingsConfig;
   // Described in catalog/reference.ts (DECK_KEY_DOCS), where the long form fits.
   narration: NarrationConfig;
   /**
@@ -427,7 +459,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   autoFit: true,
   magicMoveDuration: 800,
   live: { api: "/api", room: null, turnstile: null },
-  drawings: { enabled: true, persist: true, presenterOnly: false, syncAll: true },
+  drawings: { enabled: true, persist: true, presenterOnly: false, syncAll: true, perClick: false },
   narration: DEFAULT_NARRATION,
   glossary: DEFAULT_GLOSSARY,
   reactions: true,

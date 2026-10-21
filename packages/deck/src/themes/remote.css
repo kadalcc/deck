@@ -647,3 +647,26 @@
 .deck-remote-dialog-panel .deck-remote-count i.is-on {
   background: #22c55e;
 }
+
+/* ── the pen's tools (pen mode): what it draws, then undo, redo, clear ── */
+.deck-remote-pen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.deck-remote-pen-shapes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.deck-remote .deck-remote-pen-shapes button {
+  min-height: 44px;
+  padding: 0;
+  justify-content: center;
+}
+.deck-remote .deck-remote-pen .deck-remote-pen-tools {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.deck-remote .deck-remote-pen .deck-remote-pen-tools button {
+  min-height: 48px;
+}

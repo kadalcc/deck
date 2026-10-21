@@ -6,6 +6,7 @@ import { key as navKey } from "../core/navigation.ts";
 import { readItem, writeItem } from "../core/storage.ts";
 import { useStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
+import { type ShapeKind, shapePoints } from "../draw/shapes.ts";
 import type { RemoteState } from "../live/protocol.ts";
 import { presenterTicket, splitFromHash } from "../live/ticket.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
@@ -260,6 +261,17 @@ const buzz = (on: boolean, pattern: number | number[] = 8) => {
 
 type Mode = "point" | "pen" | "zoom";
 
+/** What the pen draws on the phone: a stroke, a shape dragged out, or the eraser. */
+type PenTool = "pen" | ShapeKind | "eraser";
+const PEN_TOOLS: { tool: PenTool; icon: string; label: string }[] = [
+  { tool: "pen", icon: "pencil", label: "Freehand" },
+  { tool: "line", icon: "slash", label: "Line" },
+  { tool: "arrow", icon: "move-up-right", label: "Arrow" },
+  { tool: "rect", icon: "square", label: "Rectangle" },
+  { tool: "ellipse", icon: "circle", label: "Ellipse" },
+  { tool: "eraser", icon: "eraser", label: "Eraser" },
+];
+
 function Console({ link }: { link: RemoteLink }) {
   const deck = useDeck();
   const status = useStore(link.status);
@@ -267,6 +279,7 @@ function Console({ link }: { link: RemoteLink }) {
   const state = useStore(link.state);
   const [settings, set] = useSettings();
   const [mode, setMode] = useState<Mode>("point");
+  const [penTool, setPenTool] = useState<PenTool>("pen");
   const [sheet, setSheet] = useState<"overview" | "settings" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const flash = (m: string) => {
@@ -312,7 +325,14 @@ function Console({ link }: { link: RemoteLink }) {
       <Header state={state} status={status} settings={settings} run={run} />
       <div className="deck-remote-body">
         <section className="deck-remote-view">
-          <MiniSlide state={state} link={link} mode={mode} settings={settings} run={run} />
+          <MiniSlide
+            state={state}
+            link={link}
+            mode={mode}
+            penTool={penTool}
+            settings={settings}
+            run={run}
+          />
           <div className="deck-remote-modes" role="radiogroup" aria-label="What a touch does">
             <ModeButton
               mode="point"
@@ -336,13 +356,38 @@ function Console({ link }: { link: RemoteLink }) {
           {/* Drawing has no use for holding to point, so the pen's Undo and Clear take that place:
               the layout does not change between modes and the notes keep their room. */}
           {mode === "pen" ? (
-            <div className="deck-remote-row deck-remote-pen-tools">
-              <button type="button" onClick={() => run("draw.undo")}>
-                <Icon name="undo-2" /> Undo
-              </button>
-              <button type="button" onClick={() => run("draw.clear")}>
-                <Icon name="eraser" /> Clear
-              </button>
+            <div className="deck-remote-pen">
+              <div
+                className="deck-remote-pen-shapes"
+                role="radiogroup"
+                aria-label="What the pen draws"
+              >
+                {PEN_TOOLS.map((t) => (
+                  <button
+                    type="button"
+                    key={t.tool}
+                    role="radio"
+                    aria-checked={penTool === t.tool}
+                    aria-label={t.label}
+                    title={t.label}
+                    className={penTool === t.tool ? "is-on" : ""}
+                    onClick={() => setPenTool(t.tool)}
+                  >
+                    <Icon name={t.icon} />
+                  </button>
+                ))}
+              </div>
+              <div className="deck-remote-row deck-remote-pen-tools">
+                <button type="button" onClick={() => run("draw.undo")}>
+                  <Icon name="undo-2" /> Undo
+                </button>
+                <button type="button" onClick={() => run("draw.redo")}>
+                  <Icon name="redo-2" /> Redo
+                </button>
+                <button type="button" onClick={() => run("draw.clear")}>
+                  <Icon name="trash-2" /> Clear
+                </button>
+              </div>
             </div>
           ) : (
             <AirButton link={link} settings={settings} flash={flash} />
@@ -550,12 +595,14 @@ function MiniSlide({
   state,
   link,
   mode,
+  penTool = "pen",
   settings,
   run,
 }: {
   state: RemoteState | null;
   link: RemoteLink;
   mode: Mode;
+  penTool?: PenTool;
   settings: Settings;
   run: (id: string, params?: Record<string, unknown>) => void;
 }) {
@@ -612,8 +659,13 @@ function MiniSlide({
       laser.flush();
       setDot(p);
     } else if (mode === "pen") {
-      link.fire("draw.pen", { phase: "start", ...p });
-      setInk([[p.x, p.y]]);
+      link.fire("draw.pen", {
+        phase: "start",
+        ...p,
+        ...(penTool === "eraser" ? { erase: true } : penTool !== "pen" ? { shape: penTool } : {}),
+      });
+      if (penTool === "eraser") setDot(p);
+      else setInk([[p.x, p.y]]);
     }
   };
   const onMove = (e: React.PointerEvent) => {
@@ -626,7 +678,13 @@ function MiniSlide({
       setDot(p);
     } else if (mode === "pen") {
       pen.push(p);
-      setInk((pts) => (pts ? [...pts, [p.x, p.y]] : pts));
+      if (penTool === "eraser") setDot(p);
+      else if (penTool === "pen") setInk((pts) => (pts ? [...pts, [p.x, p.y]] : pts));
+      else {
+        // The shape as it will land: drawn in slide pixels (so an arrowhead keeps its angle), shown in 0..1.
+        const pts = shapePoints(penTool, [t.x * W, t.y * H], [p.x * W, p.y * H], 8);
+        setInk(pts.map(([x, y]) => [x / W, y / H]));
+      }
     }
   };
   const onUp = (e: React.PointerEvent) => {
@@ -645,6 +703,7 @@ function MiniSlide({
       pen.flush();
       link.fire("draw.pen", { phase: "end", ...p });
       setInk(null);
+      setDot(null);
     } else if (mode === "zoom" && !t.moved) {
       run(state?.zoomed ? "view.zoomOut" : "view.zoom", state?.zoomed ? {} : p);
     } else if (mode === "zoom" && dir) {

@@ -1109,19 +1109,42 @@
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "dev"
+                  ]
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
             },
             "persist": {
-              "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "files"
+                  ]
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
             },
             "presenterOnly": {
               "type": "boolean"
             },
             "syncAll": {
               "type": "boolean"
+            },
+            "perClick": {
+              "type": "boolean"
             }
           },
-          "description": "Drawing: { enabled, persist, presenterOnly, syncAll }."
+          "description": "Drawing: { enabled: true | false | \"dev\", persist: true (browser storage) | \"files\" (drawings/<slide>.svg beside deck.mdx, written on `kadal-deck dev`, bundled into the build, printed into every export) | false, presenterOnly, syncAll, perClick (a stroke shows from the click step it was drawn on) }. Files in drawings/ are always shown under the live strokes."
         },
         "glossary": {
           "anyOf": [

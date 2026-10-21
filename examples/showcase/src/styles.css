@@ -691,6 +691,22 @@
   color: var(--deck-muted);
   font-size: 0.8em;
 }
+/* The saved-drawings slide: three steps a drawing file travels through (marked by drawings/draw-files.svg). */
+.sc-flow {
+  display: grid;
+  gap: 1.4em;
+  justify-items: center;
+}
+.sc-flow span {
+  display: block;
+  min-width: 8em;
+  padding: 0.5em 1em;
+  border: 2px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  text-align: center;
+  font-family: var(--deck-mono-font, ui-monospace, monospace);
+  font-size: 0.8em;
+}
 .sc-views {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

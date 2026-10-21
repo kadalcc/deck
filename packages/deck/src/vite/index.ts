@@ -44,6 +44,7 @@ import { monacoInstalled, monacoLangs, monacoModule, setupFile } from "./monaco.
 import { monacoWriteDev } from "./monaco-dev.ts";
 import { loadTwoslash } from "./twoslash.ts";
 import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } from "./notes-dev.ts";
+import { drawingsDev, drawingsDir, drawingsExport, drawingsModule } from "./drawings-dev.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } fro
  *   virtual:deck/monaco      Monaco for `{monaco…}` blocks (vite/monaco.ts) — only when a slide has
  *                            one; otherwise the manifest says `monaco: null`
  *   virtual:deck/kokoro      the narrator's Kokoro worker — only when the deck has `kokoro-js`
+ *   virtual:deck/drawings    the saved drawings, `drawings/*.svg` — in a build (vite/drawings-dev.ts)
  *                            installed; otherwise the manifest says `kokoro: null` and nothing of
  *                            it is built (it is an optional peer: ~400 MB of ONNX runtime)
  *
@@ -417,6 +419,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       server = s;
       remoteRelay(s);
       monacoWriteDev(s, { root: () => root, entry: () => entryPath, quiet: (f, t) => quietWrites.set(f, t) });
+      drawingsDev(s, { dir: () => drawingsDir(entryPath), base: () => base });
       const dist = excalidrawDist();
       s.middlewares.use((req, res, next) => {
         const url = (req.url ?? "").split("?")[0]!;
@@ -556,9 +559,12 @@ export const codeRunners = ${runnersFile && existsSync(runnersFile) ? `() => imp
 export const dev = ${building ? "false" : "true"};
 export const notesApi = ${building ? "null" : JSON.stringify(`${base}${NOTES_PATH}`)};
 ${building ? "" : DEV_NOTES}
-export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi };
+${drawingsExport({ building, base, dir: drawingsDir(entryPath) })}
+export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, drawings };
 `;
       }
+
+      if (id === `${RESOLVED}/drawings`) return drawingsModule(drawingsDir(entryPath));
 
       if (!id.startsWith("\0virtual:deck/")) return null;
       // A hot notes update asks for `notes/N?t=…`: the query only busts the browser's cache.
