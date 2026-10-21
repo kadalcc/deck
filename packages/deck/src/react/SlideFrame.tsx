@@ -52,6 +52,8 @@ export interface SlideFrameProps {
    * is a preview in every other respect and turns this on.
    */
   terms?: boolean;
+  /** Which way the deck moved, on the slides taking part in the move (core/direction.ts). */
+  navDirection?: "forward" | "backward";
   className?: string;
   style?: React.CSSProperties;
   children?: ReactNode;
@@ -212,6 +214,7 @@ export function SlideFrame({
   prefetch = false,
   reportTotal = !preview,
   terms = !preview,
+  navDirection,
   className,
   style,
   children,
@@ -397,6 +400,7 @@ export function SlideFrame({
         data-layout={options.layout}
         data-active={active ? "true" : undefined}
         data-click={click}
+        data-nav-direction={navDirection}
         data-color-scheme={options.colorScheme ?? undefined}
         aria-hidden={active ? undefined : true}
         style={{ ...style, ...(options.zoom !== 1 ? { zoom: options.zoom } : null) }}

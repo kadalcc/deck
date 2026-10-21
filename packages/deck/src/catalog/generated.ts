@@ -256,6 +256,9 @@ export const GENERATED: GeneratedData = {
     {"name":"ads","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them."},
     {"name":"fonts","type":{"text":"string[]","variants":[{"type":"array"}]},"description":"Google Fonts families to load, e.g. [\"Inter:wght@400;600\"]."},
     {"name":"seoMeta","type":{"text":"Record<string, string>","variants":[{"type":"object"}]}},
+    {"name":"timer","type":{"text":"\"stopwatch\" | \"countdown\"","variants":[{"type":"string","enum":["stopwatch","countdown"]}]},"description":"The presenter's timer: \"stopwatch\" counts up, \"countdown\" counts down from `duration` (Slidev's `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either."},
+    {"name":"duration","type":{"text":"number | null","variants":[{"type":"number"},{"type":"null"}]},"description":"How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes."},
+    {"name":"contextMenu","type":{"text":"boolean | \"dev\" | \"build\"","variants":[{"type":"string","enum":["dev","build"]},{"type":"boolean"}]},"description":"The right-click menu on the slides: true (always), false (never), \"dev\" (only under `kadal-deck dev`) or \"build\" (only in a built deck). Shift + right-click always gives the browser's own menu."},
   ],
   frontmatterReads: [
     "aspectRatio",

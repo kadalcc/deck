@@ -10,6 +10,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { flushSync } from "react-dom";
@@ -18,7 +19,8 @@ import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
 import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
 import { createPanelRegistry } from "../core/panels.ts";
-import { actionFor, isEditable, type KeyAction } from "../core/keyboard.ts";
+import { isEditable, type KeyAction } from "../core/keyboard.ts";
+import { createShortcutRegistry, type ShortcutsInput } from "../core/shortcuts.ts";
 import { computeLayout, type Layout, toStage } from "../core/layout.ts";
 import {
   type Column,
@@ -62,6 +64,9 @@ import { useBuiltinCommands } from "./commands.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 import { ThumbnailHost } from "../export/thumbnail.tsx";
+import { createMenuRegistry, type MenuInput } from "./menu.ts";
+import { devNotesEditor, type NotesEditor } from "./notes.ts";
+import { PresentingLayer, usePresentingRoot } from "./Presenting.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +81,8 @@ import { ThumbnailHost } from "../export/thumbnail.tsx";
  *   /<slug>/presenter      the presenter view  (notes, timer, next slide, drawing, the room)
  *   /<slug>/join           the audience page   (follow along, react, ask, vote)
  *   /<slug>/notes          every note on one page
+ *   /<slug>/notes-edit     every note, editable, on one page (`kadal-deck dev`, or a notesEditor)
+ *   /<slug>/overview       every slide in a list, with a step slider and its notes
  *   /<slug>/stats          the deck's numbers
  *   /<slug>/remote         the phone remote    (#ticket=… hosted, ?pair=CODE on `kadal-deck dev`)
  *
@@ -99,6 +106,19 @@ export interface DeckProps {
    * that was not built for its address (the prebuilt shell) works it out and passes it here.
    */
   base?: string;
+  /**
+   * Custom keyboard shortcuts (core/shortcuts.ts): an array is laid over the defaults, a function
+   * gets the defaults and returns the whole list — `defineShortcuts((d) => [...d, {…}])`.
+   */
+  shortcuts?: ShortcutsInput;
+  /** Items for the right-click menu (react/menu.ts): an array is added, a function gets the defaults. */
+  contextMenu?: MenuInput;
+  /**
+   * Where edited speaker notes go (react/notes.ts). Default: the dev server under
+   * `kadal-deck dev`, none in a build (the notes views are read-only there). A host's builder
+   * passes its own; `null` turns editing off even in dev.
+   */
+  notesEditor?: NotesEditor | null;
 }
 
 function baseOf(): string {
@@ -115,6 +135,13 @@ function baseOf(): string {
 const FallbackRemote = lazy(() =>
   import("../remote/index.tsx").then((m) => ({ default: m.RemotePage })),
 );
+/** The engine's own /overview and /notes-edit, each a chunk of its own, for any deck. */
+const FallbackOverview = lazy(() =>
+  import("./OverviewPage.tsx").then((m) => ({ default: m.OverviewPage })),
+);
+const FallbackNotesEdit = lazy(() =>
+  import("./NotesEditPage.tsx").then((m) => ({ default: m.NotesEditPage })),
+);
 
 /** The page for a route: the deck's own, else the remote the presenter needs, else none. */
 export function pageFor(
@@ -122,7 +149,10 @@ export function pageFor(
   pages: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>,
 ): ComponentType | null {
   if (mode === "play" || mode === "print") return null;
-  return pages[mode] ?? (mode === "remote" && pages.presenter ? FallbackRemote : null);
+  if (pages[mode]) return pages[mode]!;
+  if (mode === "overview") return FallbackOverview;
+  if (mode === "notes-edit") return FallbackNotesEdit;
+  return mode === "remote" && pages.presenter ? FallbackRemote : null;
 }
 
 function modeFromLocation(base: string): ViewMode {
@@ -133,6 +163,8 @@ function modeFromLocation(base: string): ViewMode {
   if (first === "presenter") return "presenter";
   if (first === "join" || first === "audience") return "audience";
   if (first === "notes") return "notes";
+  if (first === "notes-edit") return "notes-edit";
+  if (first === "overview") return "overview";
   if (first === "stats") return "stats";
   if (first === "remote") return "remote";
   if (parseFlags(window.location.search).print) return "print";
@@ -146,6 +178,9 @@ export function Deck({
   pages = {},
   children,
   base: baseIn,
+  shortcuts: shortcutsIn,
+  contextMenu: menuIn,
+  notesEditor: notesEditorIn,
 }: DeckProps) {
   const base = useMemo(
     () => (baseIn ? (baseIn.endsWith("/") ? baseIn : `${baseIn}/`) : baseOf()),
@@ -448,6 +483,21 @@ export function Deck({
 
   // One registry for the page's life: a host registers its panels once, whatever re-renders.
   const [panels] = useState(createPanelRegistry);
+  // The same for the keyboard's shortcuts and the context menu's items (an addon adds to them).
+  const [shortcuts] = useState(createShortcutRegistry);
+  const [menu] = useState(createMenuRegistry);
+  // `keyboard: { KeyQ: overview }` in the config is a map of single-key changes.
+  shortcuts.configure({ prop: shortcutsIn ?? null, keyboard: config.keyboard });
+  menu.configure(menuIn ?? null);
+  const notesEditor = useMemo<NotesEditor | null>(
+    () =>
+      notesEditorIn !== undefined
+        ? notesEditorIn
+        : manifest.notesApi
+          ? devNotesEditor(manifest.notesApi)
+          : null,
+    [notesEditorIn, manifest.notesApi],
+  );
 
   const runtime = useMemo<DeckRuntime>(
     () => ({
@@ -472,6 +522,9 @@ export function Deck({
       glossary,
       panels,
       stageInset,
+      shortcuts,
+      menu,
+      notesEditor,
     }),
     [
       manifest,
@@ -493,6 +546,9 @@ export function Deck({
       glossary,
       panels,
       stageInset,
+      shortcuts,
+      menu,
+      notesEditor,
     ],
   );
 
@@ -601,6 +657,8 @@ function useContextStrict(): DeckRuntime {
 
 function DeckRoot({ children }: { children: ReactNode }) {
   const deck = useContextStrict();
+  const root = useRef<HTMLDivElement>(null);
+  usePresentingRoot(deck, root);
   const [scheme, setScheme] = useState(deck.ui.get().colorScheme);
   const [theme, setTheme] = useState(deck.ui.get().theme);
   const [cursorHidden, setCursorHidden] = useState(false);
@@ -635,8 +693,10 @@ function DeckRoot({ children }: { children: ReactNode }) {
         .join(" ")}
       data-color-scheme={scheme}
       dir={deck.config.rtl ? "rtl" : undefined}
+      ref={root}
     >
       {children}
+      {deck.mode !== "print" ? <PresentingLayer /> : null}
     </div>
   );
 }
@@ -856,6 +916,8 @@ function useDeckEffects(
       if (isEditable(e.target)) return;
       const u = ui.get();
       const s = nav.get();
+      // The binding this key has here (core/shortcuts.ts): the defaults, the deck's own changes.
+      const hit = deck.shortcuts.match(e, mode);
       if (u.lightbox) {
         if (e.code === "Escape") actions.closeLightbox();
         return;
@@ -870,8 +932,21 @@ function useDeckEffects(
         actions.toggleThemeMenu(false);
         return;
       }
+      // A custom binding (a command or a function of the deck's own) runs as it is, before vim's g.
+      if (hit && !hit.action && (hit.command || hit.run)) {
+        if (s.paused) {
+          actions.togglePause(false);
+          return;
+        }
+        e.preventDefault();
+        if (hit.run) hit.run(e);
+        else void deck.commands.run(hit.command!, hit.params ?? {}, "keyboard");
+        return;
+      }
       // vim's gg: a second g within a beat goes to the first slide; a lone g is the jump prompt.
-      if (e.code === "KeyG" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      // A deck that bound G to something else has that instead (above, or as an action below).
+      const gIsVim = !hit || hit.action === "jump";
+      if (gIsVim && e.code === "KeyG" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         if (pendingG && Date.now() - pendingG < 450) {
           pendingG = 0;
@@ -887,11 +962,7 @@ function useDeckEffects(
         }
         return;
       }
-      const action = actionFor(
-        e,
-        (config as unknown as { keyboardOverrides?: Record<string, KeyAction | null> })
-          .keyboardOverrides ?? {},
-      );
+      const action: KeyAction | null = hit?.action ?? null;
       if (!action) return;
       if (s.overview && action !== "overview" && action !== "escape") {
         if (["next", "prev", "left", "right", "up", "down", "first", "last"].includes(action)) {
@@ -916,7 +987,7 @@ function useDeckEffects(
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [config, nav, ui, actions, mode, deck.projector]);
+  }, [config, nav, ui, actions, mode, deck.projector, deck.shortcuts, deck.commands]);
 
   // Touch swipes, mouse wheel, alt+click zoom, lightbox delegation, idle cursor.
   useEffect(() => {

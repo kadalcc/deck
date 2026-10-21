@@ -11,6 +11,7 @@
 @import "./listbox.css";
 @import "./remote.css";
 @import "./narrate.css";
+@import "./presenting.css";
 
 :root {
   --deck-bg: #ffffff;
@@ -609,12 +610,17 @@ body {
 }
 
 /* ── clicks (fragments) ──────────────────────────────────────────────────── */
-.deck-click {
-  transition:
-    opacity 0.4s ease,
-    transform 0.4s ease,
-    color 0.4s ease,
-    filter 0.4s ease;
+/* The timing sits in a layer of its own: a layer always yields to rules outside it and to layers
+   declared after it — Tailwind's utilities among them — so `delay-300`, `duration-0` and the
+   direction variants (`forward:delay-300`, themes/presenting.css) can change a click's timing. */
+@layer deck-clicks {
+  .deck-click {
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease,
+      color 0.4s ease,
+      filter 0.4s ease;
+  }
 }
 .deck-click.is-hidden {
   opacity: 0;
@@ -1831,7 +1837,11 @@ pre.deck-code.has-lines .line::before {
   bottom: 0;
   pointer-events: none;
 }
-.deck-chrome-area > * {
+/* With no weight of its own (`:where`), so a layer in the area that lets clicks through — the
+   confetti canvas, the toast, the curtain while it is up — keeps its own `pointer-events: none`.
+   At full weight this rule came later and won: the confetti canvas covered the slide and took
+   the pen's strokes and the scroll view's clicks. */
+:where(.deck-chrome-area) > * {
   pointer-events: auto;
 }
 

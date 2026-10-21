@@ -379,7 +379,7 @@ export const ROUTES: RouteInfo[] = [
   {
     path: "/<slug>/presenter",
     summary:
-      "Presenter view: current + next slide, notes with click markers, timer, tools, the room panel.",
+      "Presenter view: current + next slide, notes with click markers (click one to jump to its step; Edit under `kadal-deck dev`), a stopwatch or countdown timer with pause, reset, progress and pacing, tools, the room panel.",
   },
   {
     path: "/<slug>/join",
@@ -390,7 +390,21 @@ export const ROUTES: RouteInfo[] = [
     summary:
       "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev`. One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
   },
-  { path: "/<slug>/notes", summary: "Every speaker note on one page." },
+  {
+    path: "/<slug>/notes",
+    summary:
+      "Every speaker note on one page, following the presenter: the current part marked, markers jump to their step; editable per slide under `kadal-deck dev`.",
+  },
+  {
+    path: "/<slug>/notes-edit",
+    summary:
+      "The batch notes editor: every slide's notes as Markdown on one scrolling page, saved into deck.mdx as you type (`kadal-deck dev`, or a host's `notesEditor`; read-only elsewhere).",
+  },
+  {
+    path: "/<slug>/overview",
+    summary:
+      "Every slide in order with a slider through its click steps and its notes beside it (editable under `kadal-deck dev`); a thumbnail opens the deck at that step.",
+  },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
 ];
 
