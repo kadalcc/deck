@@ -22,6 +22,7 @@ import {
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
 import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
+import { sourceFromFiles } from "../draw/source.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
 
 /**
@@ -56,7 +57,7 @@ export interface Diagnostic {
 export interface CompileDeckOptions {
   /** The deck file's name, for diagnostics. Default "deck.mdx". */
   file?: string;
-  /** Other files the deck reads by path: `src:` includes and the glossary. */
+  /** Other files the deck reads by path: `src:` includes, the glossary, `drawings/*.svg`. */
   files?: Record<string, string>;
   shiki?: { light?: string; dark?: string; langs?: string[] };
 }
@@ -261,7 +262,13 @@ export async function compileDeck(
   );
 
   return {
-    manifest: { headmatter: prepared.headmatter, slides, glossary: glossary.entries },
+    manifest: {
+      headmatter: prepared.headmatter,
+      slides,
+      glossary: glossary.entries,
+      // Saved drawings among the files (`drawings/<slide>.svg`): shown under the live strokes.
+      drawings: sourceFromFiles(files),
+    },
     diagnostics,
     missing: [...missing],
     ok: !diagnostics.some((d) => d.severity === "error"),

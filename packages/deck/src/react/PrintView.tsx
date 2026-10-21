@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { key as navKey } from "../core/navigation.ts";
 import { type PrintOptions, parseRange, readPrintOptions } from "../core/print-options.ts";
+import { PrintDrawings } from "../draw/PrintDrawings.tsx";
+import { fileDrawings } from "../draw/source.ts";
 import { BackgroundLayer } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
 import { loadSlide, SlideFrame } from "./SlideFrame.tsx";
@@ -65,11 +67,14 @@ export function PrintView({
   useEffect(() => {
     let alive = true;
     const grace = setTimeout(() => alive && setSettled(true), 15_000);
-    Promise.allSettled(flat.map((s) => loadSlide(s.meta))).then(() => {
-      if (!alive) return;
-      clearTimeout(grace);
-      setSettled(true);
-    });
+    // The saved drawings (drawings/*.svg) are part of the page too.
+    Promise.allSettled([...flat.map((s) => loadSlide(s.meta)), fileDrawings(deck).ready]).then(
+      () => {
+        if (!alive) return;
+        clearTimeout(grace);
+        setSettled(true);
+      },
+    );
     return () => {
       alive = false;
       clearTimeout(grace);
@@ -138,6 +143,7 @@ export function PrintView({
               // A page per step shows each step as it is; one page per slide shows everything.
               className={separate ? "is-print" : "is-print is-print-all"}
             />
+            <PrintDrawings h={p.h} v={p.v} click={p.click} allSteps={!separate} />
             {showNotes === true && meta.hasNotes ? <PrintNotes meta={meta} /> : null}
           </div>
         );

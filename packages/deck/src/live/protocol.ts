@@ -27,6 +27,13 @@ export interface Stroke {
   points: [number, number][];
   /** A scribble that lingers a few seconds, then unwinds along its own path on every screen. */
   fade?: boolean;
+  /**
+   * Drawn with a shape tool (draw/shapes.ts). `points` is still the full outline, so a room or a
+   * screen that drops this field draws the same figure; with it, the edges are drawn straight.
+   */
+  shape?: "line" | "arrow" | "rect" | "ellipse";
+  /** A shape's drag, from where the pointer went down to where it lifted (stage pixels). */
+  anchor?: [[number, number], [number, number]];
 }
 
 export interface Question {

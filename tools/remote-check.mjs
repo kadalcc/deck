@@ -365,7 +365,7 @@ await step("blackout goes on and off", async () => {
   expect(await until(async () => !(await pos(presenter)).paused && !(await pos(play)).paused), "blackout did not lift");
 });
 
-await step("the pen draws a stroke both screens show", async () => {
+await step("the pen draws a stroke and a shape both screens show", async () => {
   const count = (page, sel) => page.locator(sel).count();
   const pBefore = await count(presenter, ".deck-presenter-canvas svg.deck-drawing path");
   const dBefore = await count(play, "svg.deck-drawing path");
@@ -388,6 +388,25 @@ await step("the pen draws a stroke both screens show", async () => {
   });
   expect(span > 400, `the stroke is only ${Math.round(span)}px wide`);
   await phone.locator(".deck-remote-row button", { hasText: "Undo" }).tap();
+  // A shape from the phone: the arrow tool drags out an arrow on both screens, straight-edged.
+  await phone.getByRole("radio", { name: "Arrow" }).tap();
+  await phone.screenshot({ path: join(out, "remote-pen.png") });
+  const before = await count(play, "svg.deck-drawing g[data-stroke]");
+  await finger("touchStart", [[pad.x + pad.width * 0.2, pad.y + pad.height * 0.7]]);
+  for (let i = 1; i <= 6; i++) {
+    await finger("touchMove", [[pad.x + pad.width * (0.2 + i * 0.08), pad.y + pad.height * (0.7 - i * 0.06)]]);
+    await new Promise((r) => setTimeout(r, 30));
+  }
+  await finger("touchEnd", []);
+  const arrow = await until(async () => (await count(play, "svg.deck-drawing g[data-stroke]")) > before);
+  expect(arrow, "no arrow on the play window");
+  const straight = await presenter.evaluate(() => {
+    const d = [...document.querySelectorAll(".deck-presenter-canvas svg.deck-drawing > g path")].at(-1)?.getAttribute("d") ?? "";
+    return !d.includes("Q") && (d.match(/L/g) ?? []).length >= 3;
+  });
+  expect(straight, "the arrow is not drawn as straight edges with a head");
+  await phone.locator(".deck-remote-row button", { hasText: "Undo" }).tap();
+  await phone.getByRole("radio", { name: "Freehand" }).tap();
   await phone.locator("[data-mode='point']").tap();
 });
 

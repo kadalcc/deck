@@ -1,0 +1,87 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   @kadal/deck — drawing: the tools and shapes on the toolbar, the eraser, and the
+   saved drawing on printed pages (src/draw/). Loaded by base.css, after live.css.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* More tools than fit one row on a phone: the toolbar wraps instead of running off the screen. */
+.deck-draw-toolbar {
+  flex-wrap: wrap;
+  justify-content: center;
+  /* Centred with left: 50%, an absolute box would shrink to half the screen; it takes its own
+     width, up to the screen's. */
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  border-radius: 24px;
+  row-gap: 2px;
+}
+.deck-draw-toolbar button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.deck-draw-toolbar button:focus-visible,
+.deck-draw-custom:focus-within {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+}
+
+/* Any colour: a rainbow swatch over the native picker, which stays reachable by keyboard. */
+.deck-draw-custom {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.deck-draw-custom .deck-draw-swatch {
+  background: conic-gradient(#ef4444, #f59e0b, #22c55e, #06b6d4, #3b82f6, #a855f7, #ef4444);
+}
+.deck-draw-custom.is-on .deck-draw-swatch {
+  border-color: var(--deck-accent);
+  box-shadow: 0 0 0 2px var(--deck-accent);
+}
+.deck-draw-custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.deck-draw-size {
+  min-width: 22px;
+  text-align: center;
+  font: 600 12px/1 var(--deck-font-sans, system-ui, sans-serif);
+  color: var(--deck-muted);
+}
+
+/* What the pointer is about to do. */
+.deck-drawing[data-tool="pen"],
+.deck-drawing[data-tool="highlighter"],
+.deck-drawing[data-tool="line"],
+.deck-drawing[data-tool="arrow"],
+.deck-drawing[data-tool="rect"],
+.deck-drawing[data-tool="ellipse"] {
+  cursor: crosshair;
+}
+.deck-drawing[data-tool="eraser"] {
+  cursor: none;
+}
+.deck-draw-eraser {
+  fill: color-mix(in srgb, var(--deck-bg) 35%, transparent);
+  stroke: var(--deck-fg);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  pointer-events: none;
+}
+
+/* The saved drawing on a printed page sits over the slide like the live one. */
+.deck-print-page .deck-print-drawing {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+}

@@ -12,6 +12,8 @@
 @import "./remote.css";
 @import "./narrate.css";
 @import "./export.css";
+@import "./draw.css";
+@import "./media.css";
 
 :root {
   --deck-bg: #ffffff;

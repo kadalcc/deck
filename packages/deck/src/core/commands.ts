@@ -241,4 +241,5 @@ export const KEY_COMMANDS = {
   hints: "view.hints",
   themeMenu: "view.themeMenu",
   narrate: "narrate.toggle",
+  camera: "media.camera",
 } as const;

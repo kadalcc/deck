@@ -31,7 +31,8 @@ export type KeyAction =
   | "zoomOut"
   | "hints"
   | "themeMenu"
-  | "narrate";
+  | "narrate"
+  | "camera";
 
 export interface KeyBinding {
   keys: string[];
@@ -143,6 +144,12 @@ export const KEY_BINDINGS: KeyBinding[] = [
     action: "narrate",
     label: "R",
     description: "Read the notes aloud and turn the pages (narration), or pause it",
+  },
+  {
+    keys: ["KeyV"],
+    action: "camera",
+    label: "V",
+    description: "Your camera in a bubble on the slide (drag to move, drag its corner to resize)",
   },
 ];
 

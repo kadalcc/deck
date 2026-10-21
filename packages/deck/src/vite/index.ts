@@ -19,6 +19,7 @@ import {
 import { plainText } from "../compiler/plain-text.ts";
 import { DEFAULT_GLOSSARY } from "../glossary/model.ts";
 import { createRelay, type RelayPeer } from "../remote/relay.ts";
+import { drawingsDev, drawingsDir, drawingsExport, drawingsModule } from "./drawings-dev.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -36,6 +37,7 @@ import { createRelay, type RelayPeer } from "../remote/relay.ts";
  *   virtual:deck/notes/N     slide N's notes, compiled MDX (default export)
  *   virtual:deck/magic/N     slide N's precomputed magic-move steps
  *   virtual:deck/kokoro      the narrator's Kokoro worker — only when the deck has `kokoro-js`
+ *   virtual:deck/drawings    the saved drawings, `drawings/*.svg` — in a build (vite/drawings-dev.ts)
  *                            installed; otherwise the manifest says `kokoro: null` and nothing of
  *                            it is built (it is an optional peer: ~400 MB of ONNX runtime)
  *
@@ -230,6 +232,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     configureServer(s) {
       server = s;
       remoteRelay(s);
+      drawingsDev(s, { dir: () => drawingsDir(entryPath), base: () => base });
       const dist = excalidrawDist();
       s.middlewares.use((req, res, next) => {
         const url = (req.url ?? "").split("?")[0]!;
@@ -319,9 +322,12 @@ ${entries.join(",\n")}
 export const glossary = ${JSON.stringify(m.glossary.entries)};
 ${building ? "export const relay = null;" : DEV_RELAY}
 export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
-export default { headmatter, slides, glossary, relay, kokoro };
+${drawingsExport({ building, base, dir: drawingsDir(entryPath) })}
+export default { headmatter, slides, glossary, relay, kokoro, drawings };
 `;
       }
+
+      if (id === `${RESOLVED}/drawings`) return drawingsModule(drawingsDir(entryPath));
 
       if (!id.startsWith("\0virtual:deck/")) return null;
       const slide = /^(slide|notes|magic)\/(\d+)$/.exec(id.slice("\0virtual:deck/".length));

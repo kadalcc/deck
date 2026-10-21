@@ -248,6 +248,14 @@ describe("lint", () => {
     expect(r).toMatchObject({ ok: true, errors: 0, slides: 4 });
   });
 
+  test("the drawing options lint clean; a wrong one is named", async () => {
+    const head = (d: string) => `---\ntitle: T\ndrawings:\n${d}---\n\n# One\n`;
+    expect(
+      await codes(head("  persist: files\n  perClick: true\n  enabled: dev\n  syncAll: false\n")),
+    ).toEqual([]);
+    expect((await codes(head("  persist: disk\n"))).length).toBeGreaterThan(0);
+  });
+
   test("slide settings with no closing --- are a warning at their line", async () => {
     const d = await codes("# A\n\n---\nbackground: spotlight\n\n## B\n");
     expect(d).toEqual(["warning:frontmatter-unclosed:4"]);

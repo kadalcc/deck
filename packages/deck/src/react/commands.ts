@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { CommandInfo, CommandSpec } from "../core/commands.ts";
 import { flatIndex, fromFlat, totalSlides } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
+import { drawingsOn } from "../draw/source.ts";
 import { type DeckRuntime, useDeck } from "./context.ts";
 
 /** A point on the slide, 0–1 from the top-left corner. */
@@ -202,7 +203,7 @@ export function builtinCommands(rt: DeckRuntime): CommandSpec[] {
       group: "draw",
       keys: "C",
       params: force,
-      enabled: () => c.drawings.enabled && isPresenting(),
+      enabled: () => drawingsOn(rt) && isPresenting(),
       run: (p) => {
         a.toggleDrawing(p.on);
         return { drawing: rt.ui.get().drawing };

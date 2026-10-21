@@ -6,6 +6,8 @@ import { useStore } from "../core/store.ts";
 import { copyText, shareLink } from "../live/analytics.tsx";
 import { isEditable } from "../core/keyboard.ts";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
+import { CameraBubble } from "../media/CameraBubble.tsx";
+import { CameraControl, RecordControl } from "../media/MediaControls.tsx";
 import { useLiveOptional } from "../live/context.ts";
 import { PointerLayer } from "../live/LiveProvider.tsx";
 import { isTicket, presenterTicket, setTicket, ticketHeaders, withTicket } from "../live/ticket.ts";
@@ -311,6 +313,7 @@ function ScaledStage() {
         <DrawingLayer inCanvas />
         <PointerLayer inCanvas />
         <ConfettiLayer inCanvas />
+        <CameraBubble inCanvas />
       </div>
     </div>
   );
@@ -581,51 +584,8 @@ function PresenterTools({
   const paused = useNav((s) => s.paused);
   const notesPublic = useStore(live?.client.state ?? noStore, (s) => (s ? s.notesPublic : false));
   const started = useStore(live?.client.state ?? noStore, (s) => (s ? s.startedAt : null));
-  const [rec, setRec] = useState<MediaRecorder | null>(null);
-  const [camera, setCamera] = useState(false);
   const toggle = (key: "drawing" | "pointer" | "spotlight") =>
     deck.ui.update((s) => ({ ...s, [key]: !s[key] }));
-  const record = async () => {
-    if (rec) {
-      rec.stop();
-      setRec(null);
-      return;
-    }
-    try {
-      const screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-      let mic: MediaStream | null = null;
-      try {
-        mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch {
-        mic = null;
-      }
-      const tracks = [
-        ...screen.getVideoTracks(),
-        ...screen.getAudioTracks(),
-        ...(mic?.getAudioTracks() ?? []),
-      ];
-      const stream = new MediaStream(tracks);
-      const r = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-          ? "video/webm;codecs=vp9"
-          : "video/webm",
-      });
-      const chunks: Blob[] = [];
-      r.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-      r.onstop = () => {
-        for (const t of tracks) t.stop();
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `${deck.config.slug || "deck"}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.webm`;
-        a.click();
-      };
-      r.start(1000);
-      setRec(r);
-    } catch {
-      actions.toast("Recording was not allowed");
-    }
-  };
   return (
     <div className="deck-presenter-tools" role="toolbar">
       <ThemeMenu compact />
@@ -716,22 +676,9 @@ function PresenterTools({
       >
         <Icon name="projector" /> Share window
       </button>
-      <button
-        type="button"
-        className={camera ? "is-on" : ""}
-        onClick={() => setCamera((c) => !c)}
-        title="Camera view"
-      >
-        <Icon name="video" /> Camera
-      </button>
-      <button
-        type="button"
-        className={rec ? "is-on is-rec" : ""}
-        onClick={record}
-        title="Record the screen"
-      >
-        <Icon name={rec ? "square" : "circle"} /> {rec ? "Stop" : "Record"}
-      </button>
+      {/* The camera bubble on the slide (every window) and the recorder: src/media/. */}
+      <CameraControl />
+      <RecordControl />
       <button
         type="button"
         className={mirror ? "is-on" : ""}
@@ -764,48 +711,12 @@ function PresenterTools({
       >
         <Icon name="chart-column" /> Stats
       </a>
-      {camera ? <CameraView onClose={() => setCamera(false)} /> : null}
     </div>
   );
 }
 
 import { createStore } from "../core/store.ts";
 const noStore = createStore<null>(null);
-
-/** A draggable camera window (Slidev's camera view), for recording with a face. */
-function CameraView({ onClose }: { onClose: () => void }) {
-  const video = useRef<HTMLVideoElement>(null);
-  const [pos, setPos] = useState({ x: 24, y: 80 });
-  useEffect(() => {
-    let stream: MediaStream | null = null;
-    navigator.mediaDevices
-      .getUserMedia({ video: { width: 640, height: 480 }, audio: false })
-      .then((s) => {
-        stream = s;
-        if (video.current) video.current.srcObject = s;
-      })
-      .catch(() => onClose());
-    return () => stream?.getTracks().forEach((t) => t.stop());
-  }, [onClose]);
-  const drag = (e: React.PointerEvent) => {
-    const start = { x: e.clientX - pos.x, y: e.clientY - pos.y };
-    const move = (ev: PointerEvent) => setPos({ x: ev.clientX - start.x, y: ev.clientY - start.y });
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-  return (
-    <div className="deck-camera" style={{ left: pos.x, top: pos.y }} onPointerDown={drag}>
-      <video ref={video} autoPlay muted playsInline />
-      <button type="button" onClick={onClose} aria-label="Close camera">
-        ×
-      </button>
-    </div>
-  );
-}
 
 /** Show another screen or window inside the presenter view (Slidev's screen mirror). */
 function ScreenMirror() {

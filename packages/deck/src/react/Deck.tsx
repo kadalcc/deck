@@ -56,6 +56,8 @@ import { Lightbox } from "./Lightbox.tsx";
 import { NarrationGate } from "./NarrationGate.tsx";
 import { Overview } from "./Overview.tsx";
 import { PrintView } from "./PrintView.tsx";
+import { CameraLayer } from "../media/CameraBubble.tsx";
+import { drawingsOn } from "../draw/source.ts";
 import { ScrollView } from "./ScrollView.tsx";
 import { Stage } from "./Stage.tsx";
 import { useBuiltinCommands } from "./commands.ts";
@@ -407,7 +409,7 @@ export function Deck({
         ui.update((s) => ({ ...s, toast: message }));
         setTimeout(() => ui.update((s) => (s.toast === message ? { ...s, toast: null } : s)), 1800);
       },
-      toggleDrawing: (force) => config.drawings.enabled && uiToggle("drawing", force),
+      toggleDrawing: (force) => drawingsOn({ config, manifest }) && uiToggle("drawing", force),
       togglePointer: (force) => uiToggle("pointer", force),
       toggleColorScheme: () =>
         ui.update((s) => {
@@ -603,6 +605,8 @@ function PlayView() {
       <AdFrame />
       <NarrationGate />
       <Lightbox />
+      {/* The camera bubble on the slide (V, or the presenter's Camera): src/media/. */}
+      <CameraLayer />
     </>
   );
 }
