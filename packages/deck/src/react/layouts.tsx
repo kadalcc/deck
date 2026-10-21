@@ -10,11 +10,13 @@ import type { SlideOptions } from "../core/model.ts";
  * Layouts, the Slidev set, as React components a slide's frontmatter picks by name:
  *
  *   default · center · cover · intro · section · end · fact · quote · statement · full · none ·
- *   two-cols · image · image-left · image-right · iframe · iframe-left · iframe-right
+ *   two-cols · two-cols-header · image · image-left · image-right · iframe · iframe-left ·
+ *   iframe-right
  *
  * Every layout wraps the slide's MDX in `.deck-layout` with a modifier class the theme styles;
  * the image/iframe ones read `image` / `url` / `backgroundSize` from the frontmatter. A deck adds
- * its own by passing `components={{ "layout:name": Component }}` to `<Deck>`.
+ * its own by passing `components={{ "layout:name": Component }}` to `<Deck>`; a theme or an
+ * addon by exporting `layouts` (theming/contract.ts), which merge in under the deck's.
  */
 export interface LayoutProps {
   frontmatter: Frontmatter;
@@ -33,6 +35,11 @@ const simple = (name: string) =>
 
 function TwoCols({ children }: LayoutProps) {
   return <div className="deck-layout deck-layout-two-cols">{children}</div>;
+}
+
+/** A header across the top (the default slot), then `::left::` and `::right::` (Slidev's). */
+function TwoColsHeader({ children }: LayoutProps) {
+  return <div className="deck-layout deck-layout-two-cols-header">{children}</div>;
 }
 
 function makeImage(side: "left" | "right" | "full") {
@@ -107,6 +114,7 @@ export const LAYOUTS: Record<string, ComponentType<LayoutProps>> = {
   full: simple("full"),
   none: ({ children }) => <>{children}</>,
   "two-cols": TwoCols,
+  "two-cols-header": TwoColsHeader,
   image: makeImage("full"),
   "image-left": makeImage("left"),
   "image-right": makeImage("right"),

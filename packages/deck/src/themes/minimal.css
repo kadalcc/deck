@@ -81,3 +81,12 @@
 .theme-minimal .deck-controls {
   --deck-controls-color: var(--deck-fg);
 }
+/* two-cols-header: a hairline under the header, the columns hung from it */
+.theme-minimal .deck-layout-two-cols-header > .deck-slot-default {
+  padding-bottom: 0.45em;
+  margin-bottom: 0.35em;
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-minimal .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding-top: 0.2em;
+}
