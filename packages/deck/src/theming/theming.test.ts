@@ -19,6 +19,7 @@ import { ejectTheme } from "./eject.ts";
 import { googleFamily, resolveFonts } from "./fonts.ts";
 import {
   applySlideDefaults,
+  fontsForTheme,
   kebab,
   mergeComponents,
   mergeLayers,
@@ -398,6 +399,46 @@ describe("fonts", () => {
     });
     expect(nf.families).toEqual(["Fraunces", "Fira Code"]);
     expect(googleFamily("Inter", [300, 400], false)).toBe("Inter:wght@300;400");
+  });
+  test("a theme picked from the menu brings its own fonts; the deck's own choice stays", () => {
+    const ref = (name: string, fonts?: Record<string, unknown>) => ({
+      kind: "theme" as const,
+      name,
+      spec: name,
+      package: `@kadal/theme-${name}`,
+      builtin: false,
+      meta: { name, colorScheme: "both" as const, ...(fonts ? { config: { fonts } } : {}) },
+      module: null,
+      load: null,
+    });
+    const paper = ref("paper", { sans: "Newsreader" });
+    const grid = ref("grid", { sans: "Inter Tight", mono: "JetBrains Mono" });
+    const plain = ref("plain");
+    const packages = {
+      theme: paper,
+      themes: [paper, grid, plain],
+      addons: [],
+      layers: {},
+      warnings: [],
+    };
+    // the deck's own theme: whatever the config says
+    expect(fontsForTheme(packages, "paper", { sans: "Newsreader" })).toEqual({
+      sans: "Newsreader",
+    });
+    // the deck's theme's fonts go with it
+    expect(fontsForTheme(packages, "grid", { sans: "Newsreader" })).toEqual(
+      grid.meta.config!.fonts,
+    );
+    expect(fontsForTheme(packages, "plain", { sans: "Newsreader" })).toEqual([]);
+    expect(fontsForTheme(packages, "minimal", [])).toEqual([]);
+    // the headmatter's own keys stay over the picked theme's
+    expect(fontsForTheme(packages, "grid", { sans: "Newsreader", mono: "Fira Code" })).toEqual({
+      sans: "Inter Tight",
+      mono: "Fira Code",
+    });
+    // a list the deck wrote is the deck's
+    expect(fontsForTheme(packages, "grid", ["Roboto"])).toEqual(["Roboto"]);
+    expect(fontsForTheme(null, "grid", ["Roboto"])).toEqual(["Roboto"]);
   });
 });
 

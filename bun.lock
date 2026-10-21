@@ -74,6 +74,30 @@
         "vite": "^8.0.16",
       },
     },
+    "examples/themes": {
+      "name": "kadal-deck-themes",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kadal/deck": "workspace:*",
+        "@kadal/theme-brand": "workspace:*",
+        "@kadal/theme-crayon": "workspace:*",
+        "@kadal/theme-folio": "workspace:*",
+        "@kadal/theme-lecture": "workspace:*",
+        "@kadal/theme-neon": "workspace:*",
+        "@kadal/theme-ocean": "workspace:*",
+        "@kadal/theme-swiss": "workspace:*",
+        "@kadal/theme-terminal": "workspace:*",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+      },
+      "devDependencies": {
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+    },
     "packages/create-deck": {
       "name": "@kadal/create-deck",
       "version": "0.3.6",
@@ -307,6 +331,24 @@
         "prettier": "^3.0.0",
       },
     },
+    "packages/theme-brand": {
+      "name": "@kadal/theme-brand",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
     "packages/theme-bricks": {
       "name": "@kadal/theme-bricks",
       "version": "0.3.6",
@@ -343,8 +385,98 @@
         "react": "^19.2.0",
       },
     },
+    "packages/theme-crayon": {
+      "name": "@kadal/theme-crayon",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
     "packages/theme-crisp": {
       "name": "@kadal/theme-crisp",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-folio": {
+      "name": "@kadal/theme-folio",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-lecture": {
+      "name": "@kadal/theme-lecture",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-neon": {
+      "name": "@kadal/theme-neon",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-ocean": {
+      "name": "@kadal/theme-ocean",
       "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
@@ -381,6 +513,42 @@
     },
     "packages/theme-shibainu": {
       "name": "@kadal/theme-shibainu",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-swiss": {
+      "name": "@kadal/theme-swiss",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-terminal": {
+      "name": "@kadal/theme-terminal",
       "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
@@ -626,15 +794,31 @@
 
     "@kadal/prettier-plugin": ["@kadal/prettier-plugin@workspace:packages/prettier-plugin"],
 
+    "@kadal/theme-brand": ["@kadal/theme-brand@workspace:packages/theme-brand"],
+
     "@kadal/theme-bricks": ["@kadal/theme-bricks@workspace:packages/theme-bricks"],
 
     "@kadal/theme-classic": ["@kadal/theme-classic@workspace:packages/theme-classic"],
 
+    "@kadal/theme-crayon": ["@kadal/theme-crayon@workspace:packages/theme-crayon"],
+
     "@kadal/theme-crisp": ["@kadal/theme-crisp@workspace:packages/theme-crisp"],
+
+    "@kadal/theme-folio": ["@kadal/theme-folio@workspace:packages/theme-folio"],
+
+    "@kadal/theme-lecture": ["@kadal/theme-lecture@workspace:packages/theme-lecture"],
+
+    "@kadal/theme-neon": ["@kadal/theme-neon@workspace:packages/theme-neon"],
+
+    "@kadal/theme-ocean": ["@kadal/theme-ocean@workspace:packages/theme-ocean"],
 
     "@kadal/theme-seriph": ["@kadal/theme-seriph@workspace:packages/theme-seriph"],
 
     "@kadal/theme-shibainu": ["@kadal/theme-shibainu@workspace:packages/theme-shibainu"],
+
+    "@kadal/theme-swiss": ["@kadal/theme-swiss@workspace:packages/theme-swiss"],
+
+    "@kadal/theme-terminal": ["@kadal/theme-terminal@workspace:packages/theme-terminal"],
 
     "@lezer/common": ["@lezer/common@1.5.3", "", {}, "sha512-H0iErY4e43LpXbYDyBci5W4v/RwTgGV3YzYOlJPiGZ8RY8w51kVE+xLn1tg3Z6UmSfyETvtsUK3r7YsgDQEI7Q=="],
 
@@ -1737,6 +1921,8 @@
     "kadal-deck-showcase": ["kadal-deck-showcase@workspace:examples/showcase"],
 
     "kadal-deck-starter": ["kadal-deck-starter@workspace:examples/starter"],
+
+    "kadal-deck-themes": ["kadal-deck-themes@workspace:examples/themes"],
 
     "katex": ["katex@0.16.47", "", { "dependencies": { "commander": "^8.3.0" }, "bin": { "katex": "cli.js" } }, "sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg=="],
 

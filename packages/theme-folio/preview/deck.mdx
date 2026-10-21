@@ -1,0 +1,257 @@
+---
+title: Folio · a Kadal Deck theme
+author: Kadal
+info: The Folio theme's preview deck — every built-in layout, styled, then the theme's own.
+theme: ../
+slideNumber: c/t
+layout: cover
+---
+
+#### Kadal Deck · theme preview
+
+# Folio
+
+An editorial theme for essays and keynotes: warm paper, a high-contrast display serif, and room to breathe.
+
+---
+
+## Body text, lists and links
+
+A paragraph in the body face sets the rhythm for everything else: **strong words**, *emphasis*, `inline code`, a [link to the docs](https://deck.kadal.cc/docs/) and a key, <Kbd>T</Kbd>, for the theme menu.
+
+- A first point, kept to one line
+- A second, with a nested list
+  - which sits one step in
+  - and stays quieter
+- A third, to end on
+
+---
+
+## Code, with a title and highlights
+
+```ts {2-4|6}{lines:true} [tide.ts]
+export function tide(hour: number): number {
+  // two highs and two lows a day, more or less
+  const period = 12.42;
+  return Math.sin((hour / period) * 2 * Math.PI);
+}
+export const high = tide(6.21) > 0.99;
+```
+
+A highlighted range, line numbers, and the file's name in the bar.
+
+---
+layout: two-cols
+---
+
+## Two columns
+
+The left column carries the argument, a paragraph or a list.
+
+- One reason
+- Another reason
+- And a third
+
+::right::
+
+## The other side
+
+> A quote on the right sets one idea against another.
+
+<Callout kind="tip" title="Tip">Callouts sit in columns too.</Callout>
+
+---
+layout: two-cols-header
+---
+
+## Two columns under a header
+
+The header spans both columns; `::left::` and `::right::` sit beneath it.
+
+::left::
+
+### Before
+
+- Slides as files no one could diff
+- A theme that broke on export
+
+::right::
+
+### After
+
+- Slides in MDX, reviewed like code
+- Themes as packages, printed as designed
+
+---
+
+## Tables and callouts
+
+| Layout | For | Since |
+| --- | --- | --- |
+| `cover` | the first slide | 0.1 |
+| `two-cols-header` | a header over two columns | 0.4 |
+| `image-right` | words beside a picture | 0.1 |
+
+<Cols cols="1fr 1fr 1fr" gap="1rem">
+<Col><Callout kind="info" title="Info">The accent, for what to notice.</Callout></Col>
+<Col><Callout kind="warn" title="Warn">Amber, for what to watch.</Callout></Col>
+<Col><Callout kind="danger" title="Danger">Red, for what breaks.</Callout></Col>
+</Cols>
+
+---
+
+## Contents
+
+<Toc maxDepth={1} columns={2} />
+
+---
+layout: section
+---
+
+# A section begins
+
+A line under the title, to say what it covers.
+
+---
+layout: intro
+---
+
+# An introduction
+
+Who is speaking, and why this talk exists — the intro layout, for the second slide.
+
+---
+layout: quote
+---
+
+> The sea does not reward those who are too anxious, too greedy, or too impatient.
+
+Anne Morrow Lindbergh
+
+---
+layout: fact
+---
+
+# 94%
+
+of slides are read, not watched — so the type has to carry them.
+
+---
+layout: statement
+---
+
+# One idea, said plainly, fills the slide.
+
+---
+layout: center
+---
+
+## Centred
+
+Anything that should sit in the middle: a diagram, a single line, a pause.
+
+---
+layout: image-right
+image: ./picture.svg
+---
+
+## Words beside a picture
+
+The image fills its half edge to edge; the words keep the theme's margins.
+
+- `image-right`, and its mirror `image-left`
+- `backgroundSize: contain` to fit instead
+
+---
+layout: image-left
+image: ./picture.svg
+---
+
+## The mirror
+
+The picture on the left, the words on the right.
+
+---
+layout: image
+image: ./picture.svg
+---
+
+## A full-bleed picture
+
+With the words over a shade, at the foot.
+
+---
+
+## Headings, all four
+
+### A third-level heading
+#### A fourth-level label
+
+<Badge tone="accent">accent</Badge> <Badge tone="good">good</Badge> <Badge tone="warn">warn</Badge> <Badge tone="bad">bad</Badge>
+
+---
+
+## Magic move
+
+````md magic-move {lines: true}
+```ts
+const depth = 200;
+```
+```ts
+const depth = 200;
+const zone = depth > 200 ? "twilight" : "sunlit";
+```
+````
+
+Click to watch the code change in place.
+
+---
+layout: chapter
+---
+
+# The long way round
+
+> We tell ourselves stories in order to live.
+
+Joan Didion
+
+---
+layout: essay
+---
+
+## On writing slides as prose
+
+A deck read on a phone, days after the talk, is an essay with pictures. Folio sets it as one: a column kept to reading measure, a drop cap to start, and the margin left for a note.
+
+The rest of the slide stays empty on purpose. White space is not waste; it is where the eye rests between ideas.
+
+::aside::
+
+The `essay` layout. An `::aside::` slot lands in the margin, set small and italic.
+
+---
+layout: pull-quote
+by: "Ursula K. Le Guin, 1976"
+---
+
+> The only thing that makes life possible is permanent, intolerable uncertainty.
+
+---
+
+## A byline and a lede
+
+<Byline author="Kadal" date="22 October 2026" place="Chennai" />
+
+<Lede>
+
+Every essay begins somewhere: a scene, a question, a sentence that will not leave. The lede sets it larger, with a drop cap, and lets the rest of the page follow at reading size.
+
+</Lede>
+
+---
+layout: end
+---
+
+# Thank you
+
+Folio · a theme for Kadal Deck

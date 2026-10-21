@@ -20,9 +20,11 @@ const packagesDir = join(repo, "packages");
 
 /** The stylesheet without comments, so a word in prose never passes for a rule. */
 function cssOf(name: string): string {
-  return readFileSync(join(packagesDir, `theme-${name}`, "style.css"), "utf8").replace(
-    /\/\*[\s\S]*?\*\//g,
-    "",
+  return (
+    readFileSync(join(packagesDir, `theme-${name}`, "style.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      // a @keyframes block's steps (`from`, `50%`) are not selectors
+      .replace(/@keyframes[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, "")
   );
 }
 

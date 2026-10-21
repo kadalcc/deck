@@ -1,0 +1,718 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Neon — a dark synthwave theme for meetups and launches. Midnight violet, a striped sunset sun
+   over a grid that runs to the horizon, Orbitron for display, Space Grotesk for text, the
+   Synthwave '84 code colours. The glows are kept legible on purpose: the letters stay near
+   white and only their halo takes the colour, so body text reads at full contrast.
+
+   Dark only (`colorScheme: "dark"`): the tokens sit on .theme-neon itself. Every glow, blur and
+   animation is dropped on a still copy — the print view, an export, an overview tile — so a
+   PDF gets solid colour and clean edges rather than grey halos.
+   themeConfig: `primary` (--theme-primary, magenta), `secondary` (--theme-secondary, cyan),
+   `grid: false` (--theme-grid: 0) hides the floor grid.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-neon {
+  --neon-pink: var(--theme-primary, #ff3ec8);
+  --neon-cyan: var(--theme-secondary, #2de2e6);
+  --neon-amber: #ffd319;
+  --neon-violet: #8c1eff;
+  --neon-ink: #fff5fd;
+  --deck-bg: #0d0221;
+  --deck-fg: #f4ecff;
+  --deck-muted: #b9a8dc;
+  --deck-accent: var(--neon-pink);
+  --deck-accent-2: var(--neon-cyan);
+  --deck-surface: rgba(255, 255, 255, 0.05);
+  --deck-border: color-mix(in oklab, var(--neon-pink) 32%, transparent);
+  --deck-live: var(--neon-cyan);
+  --deck-controls-color: var(--neon-cyan);
+  --neon-glow-pink: 0 0 0.08em color-mix(in oklab, var(--neon-pink) 85%, transparent),
+    0 0 0.4em color-mix(in oklab, var(--neon-pink) 45%, transparent);
+  --neon-glow-cyan: 0 0 0.08em color-mix(in oklab, var(--neon-cyan) 85%, transparent),
+    0 0 0.4em color-mix(in oklab, var(--neon-cyan) 45%, transparent);
+  --neon-box-glow: 0 0 0 1px color-mix(in oklab, var(--neon-pink) 30%, transparent),
+    0 0 28px -6px color-mix(in oklab, var(--neon-pink) 45%, transparent);
+  --neon-sunset: linear-gradient(180deg, #ffd319 0%, #ff8c2b 30%, #ff2975 62%, #c21fd8 100%);
+  --neon-ground:
+    radial-gradient(70% 45% at 50% 108%, color-mix(in oklab, var(--neon-pink) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, #0a011a 0%, #120430 55%, #1f0b45 100%);
+  --deck-heading-font: "Orbitron", "Audiowide", ui-sans-serif, system-ui, sans-serif;
+  --deck-body-font: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --deck-mono-font: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 34px;
+  --deck-code-bg: #1a1233;
+  --deck-code-fg: #f0e6ff;
+  --deck-code-active: color-mix(in oklab, var(--neon-cyan) 13%, transparent);
+  --deck-radius: 12px;
+  --deck-pad: 84px;
+  --deck-transition: 500ms;
+  color-scheme: dark;
+}
+/* One scheme: a viewer's light toggle changes nothing, Shiki colours included. */
+.theme-neon[data-color-scheme] .shiki,
+.theme-neon[data-color-scheme] .shiki span {
+  color: var(--shiki-dark, inherit);
+}
+
+/* ── the ground ────────────────────────────────────────────────────────── */
+.theme-neon :is(
+    .deck-backgrounds,
+    .deck-print-page,
+    .deck-overview-tile,
+    .deck-scroll-sticky,
+    .deck-thumbnail-capture
+  ),
+.theme-neon .deck-background[data-color-scheme],
+.theme-neon.deck-background[data-color-scheme] {
+  background: var(--neon-ground);
+  background-color: var(--deck-bg);
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-neon .deck-slide {
+  line-height: 1.48;
+}
+.theme-neon .deck-slide :is(h1, h2, h3) {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.12;
+  color: var(--neon-ink);
+}
+.theme-neon .deck-slide h1 {
+  font-size: 2.6em;
+  text-shadow: var(--neon-glow-pink);
+}
+.theme-neon .deck-slide h2 {
+  font-size: 1.6em;
+  margin-bottom: 0.7em;
+  text-shadow: var(--neon-glow-pink);
+}
+.theme-neon .deck-slide h3 {
+  font-family: var(--deck-body-font);
+  font-size: 1.15em;
+  letter-spacing: 0;
+  color: var(--neon-cyan);
+}
+.theme-neon .deck-slide h4 {
+  font-family: var(--deck-mono-font);
+  font-size: 0.6em;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  text-shadow: var(--neon-glow-cyan);
+}
+.theme-neon .deck-layout-default > :is(p, ul, ol) {
+  max-width: 36em;
+}
+.theme-neon .deck-slide ul {
+  list-style: none;
+  padding-inline-start: 1.2em;
+}
+.theme-neon .deck-slide ul > li {
+  position: relative;
+}
+.theme-neon .deck-slide ul > li::before {
+  content: "";
+  position: absolute;
+  left: -1.05em;
+  top: 0.5em;
+  width: 0.42em;
+  height: 0.42em;
+  transform: rotate(45deg);
+  background: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+.theme-neon .deck-slide ul ul > li::before {
+  background: transparent;
+  border: 2px solid var(--neon-pink);
+  box-sizing: border-box;
+  box-shadow: none;
+}
+.theme-neon .deck-slide ol > li::marker {
+  font-family: var(--deck-mono-font);
+  color: var(--neon-cyan);
+}
+.theme-neon .deck-slide strong {
+  font-weight: 700;
+  color: var(--neon-ink);
+}
+.theme-neon .deck-slide em {
+  font-style: normal;
+  color: var(--neon-amber);
+}
+.theme-neon .deck-slide a {
+  color: var(--neon-cyan);
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.2em;
+}
+.theme-neon .deck-slide a:hover {
+  text-shadow: var(--neon-glow-cyan);
+}
+.theme-neon .deck-slide blockquote {
+  margin: 0.6em 0;
+  padding: 0.5em 1em;
+  border: 0;
+  border-inline-start: 3px solid var(--neon-pink);
+  border-radius: 0 var(--deck-radius) var(--deck-radius) 0;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--neon-pink) 12%, transparent), transparent);
+  color: var(--deck-fg);
+  box-shadow: -6px 0 18px -8px var(--neon-pink);
+}
+.theme-neon .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+.theme-neon .deck-slide hr {
+  border: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-pink), var(--neon-cyan), transparent);
+}
+.theme-neon .deck-slide table {
+  font-size: 0.72em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: rgba(13, 2, 33, 0.55);
+}
+.theme-neon .deck-slide th {
+  font: 600 0.72em var(--deck-mono-font);
+  letter-spacing: 0.14em;
+  color: var(--neon-cyan);
+  background: color-mix(in oklab, var(--neon-cyan) 8%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--neon-cyan) 45%, transparent);
+}
+.theme-neon .deck-slide :is(th, td) {
+  padding: 0.55em 0.95em;
+}
+.theme-neon .deck-slide td {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+.theme-neon .deck-slide tbody tr:last-child td {
+  border-bottom: 0;
+}
+.theme-neon .deck-slide :not(pre) > code {
+  font-size: 0.8em;
+  padding: 0.1em 0.4em;
+  border-radius: 6px;
+  color: var(--neon-amber);
+  background: rgba(255, 211, 25, 0.08);
+  border: 1px solid rgba(255, 211, 25, 0.25);
+}
+.theme-neon .deck-kbd {
+  color: var(--neon-ink);
+  border-color: color-mix(in oklab, var(--neon-cyan) 50%, transparent);
+  background: rgba(45, 226, 230, 0.08);
+}
+.theme-neon .deck-slide :is(img, video) {
+  border-radius: var(--deck-radius);
+}
+
+/* ── code ──────────────────────────────────────────────────────────────── */
+.theme-neon .deck-code-block {
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  box-shadow: var(--neon-box-glow);
+}
+.theme-neon .deck-code-title {
+  font: 500 0.48em var(--deck-mono-font);
+  letter-spacing: 0.06em;
+  color: var(--deck-muted);
+  padding: 0.6em 1.2em;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--neon-pink) 14%, transparent), color-mix(in oklab, var(--neon-cyan) 10%, transparent));
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-neon .deck-code-title-dot {
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+.theme-neon pre.deck-code,
+.theme-neon .shiki-magic-move-wrap {
+  font-size: 0.6em;
+  line-height: 1.7;
+}
+.theme-neon pre.deck-code .line.is-active {
+  box-shadow: inset 0.22em 0 0 var(--neon-cyan);
+}
+.theme-neon pre.deck-code .line.is-dim {
+  opacity: 0.3;
+}
+
+/* ── components ────────────────────────────────────────────────────────── */
+.theme-neon .deck-callout {
+  padding: 0.65em 1em;
+  border: 1px solid color-mix(in oklab, var(--neon-kind) 55%, transparent);
+  border-radius: var(--deck-radius);
+  background: color-mix(in oklab, var(--neon-kind) 8%, rgba(13, 2, 33, 0.6));
+  box-shadow: 0 0 22px -8px var(--neon-kind);
+  font-size: 0.8em;
+  --neon-kind: var(--neon-cyan);
+}
+.theme-neon .deck-callout.kind-tip {
+  --neon-kind: #4dff9a;
+}
+.theme-neon .deck-callout.kind-warn {
+  --neon-kind: var(--neon-amber);
+}
+.theme-neon .deck-callout.kind-danger {
+  --neon-kind: var(--neon-pink);
+}
+.theme-neon .deck-callout.kind-note {
+  --neon-kind: #b9a8dc;
+}
+.theme-neon .deck-callout-title {
+  font: 600 0.72em var(--deck-mono-font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--neon-kind);
+  margin-bottom: 0.3em;
+}
+.theme-neon .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-neon .deck-badge {
+  font-family: var(--deck-mono-font);
+  letter-spacing: 0.14em;
+  border-color: color-mix(in oklab, currentColor 60%, transparent);
+}
+.theme-neon .deck-badge.tone-accent {
+  color: var(--neon-pink);
+}
+.theme-neon .deck-badge.tone-good {
+  color: #4dff9a;
+}
+.theme-neon .deck-badge.tone-warn {
+  color: var(--neon-amber);
+}
+.theme-neon .deck-badge.tone-bad {
+  color: #ff5c7a;
+}
+.theme-neon .deck-toc {
+  counter-reset: neon-toc;
+}
+.theme-neon .deck-toc li {
+  margin: 0.3em 0;
+}
+.theme-neon .deck-toc li.level-1 {
+  counter-increment: neon-toc;
+}
+.theme-neon .deck-toc li.level-1 > a::before {
+  content: counter(neon-toc, decimal-leading-zero);
+  display: inline-block;
+  min-width: 2.2em;
+  font: 600 0.7em var(--deck-mono-font);
+  letter-spacing: 0.08em;
+  color: var(--neon-cyan);
+}
+.theme-neon .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 2em;
+  color: var(--deck-muted);
+}
+.theme-neon .deck-toc li.is-current > a {
+  color: var(--neon-pink);
+  text-shadow: var(--neon-glow-pink);
+}
+.theme-neon .deck-mark {
+  --mark-color: var(--neon-cyan);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-neon .deck-progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.theme-neon .deck-progress span {
+  background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan));
+  box-shadow: 0 0 12px var(--neon-pink);
+}
+.theme-neon .deck-slide-number {
+  font: 500 13px var(--deck-mono-font);
+  letter-spacing: 0.1em;
+  color: var(--neon-cyan);
+  background: rgba(13, 2, 33, 0.7);
+  border: 1px solid color-mix(in oklab, var(--neon-cyan) 40%, transparent);
+}
+
+/* ── the sun and the grid (cover, end, launch, horizon) ────────────────── */
+.theme-neon .neon-sun,
+.theme-neon .deck-slide:is(.layout-cover, .layout-end)::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 30%;
+  width: 7.5em;
+  height: 7.5em;
+  margin-left: -3.75em;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0 55%,
+      #170635 55% 58%,
+      transparent 58% 65%,
+      #170635 65% 69.5%,
+      transparent 69.5% 76%,
+      #170635 76% 81.5%,
+      transparent 81.5% 87%,
+      #170635 87% 94%,
+      transparent 94%
+    ),
+    var(--neon-sunset);
+  box-shadow: 0 0 80px -10px rgba(255, 41, 117, 0.6);
+  z-index: -1;
+  pointer-events: none;
+}
+.theme-neon .neon-floor,
+.theme-neon .deck-slide:is(.layout-cover, .layout-end)::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--deck-pad) * -2);
+  right: calc(var(--deck-pad) * -2);
+  bottom: calc(var(--deck-pad) * -1);
+  height: calc(30% + var(--deck-pad));
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--theme-grid, 1);
+  background:
+    linear-gradient(180deg, #170635 0%, transparent 40%),
+    linear-gradient(color-mix(in oklab, var(--neon-pink) 70%, transparent) 2px, transparent 2px) 0 0 / 100% 2.2em,
+    linear-gradient(90deg, color-mix(in oklab, var(--neon-pink) 55%, transparent) 2px, transparent 2px) 50% 0 / 2.6em 100%,
+    linear-gradient(180deg, #170635, #2b0d55);
+  transform: perspective(14em) rotateX(58deg);
+  transform-origin: 50% 0;
+  animation: neon-run 2.6s linear infinite;
+}
+@keyframes neon-run {
+  to {
+    background-position:
+      0 0,
+      0 2.2em,
+      50% 0,
+      0 0;
+  }
+}
+/* The cover's and the last slide's sun and floor are painted on the slide itself, outside the
+   layout's box (decoration hung past the layout read as overflow to the auto-fit); the theme's
+   own layouts draw theirs as placed elements (index.tsx). Either way, behind the words. */
+.theme-neon :is(.deck-layout-launch, .deck-layout-horizon),
+.theme-neon .deck-slide:is(.layout-cover, .layout-end) {
+  isolation: isolate;
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+.theme-neon .deck-layout-cover {
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  padding-top: 0.6em;
+}
+.theme-neon .deck-layout-cover h1,
+.theme-neon .deck-layout-launch h1 {
+  font-size: 3.6em;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe3fb 42%, var(--neon-pink) 58%, var(--neon-violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 0.08em color-mix(in oklab, var(--neon-pink) 90%, transparent))
+    drop-shadow(0 0 0.35em color-mix(in oklab, var(--neon-pink) 45%, transparent));
+  margin-bottom: 0.2em;
+  padding-bottom: 0.05em;
+}
+.theme-neon .deck-layout-cover > p {
+  max-width: 32em;
+  margin-inline: auto;
+  color: var(--deck-fg);
+}
+.theme-neon .deck-slide.layout-cover::before {
+  bottom: 26%;
+  width: 8.4em;
+  height: 8.4em;
+  margin-left: -4.2em;
+}
+.theme-neon .deck-slide:is(.layout-cover, .layout-end)::after {
+  bottom: 0;
+  height: 26%;
+}
+.theme-neon .deck-layout-intro {
+  align-items: flex-start;
+}
+.theme-neon .deck-layout-intro h1 {
+  font-size: 2.6em;
+}
+.theme-neon .deck-layout-intro > p {
+  max-width: 32em;
+  color: var(--deck-muted);
+}
+.theme-neon .deck-layout-section {
+  align-items: flex-start;
+}
+.theme-neon .deck-layout-section :is(h1, h2) {
+  font-size: 3em;
+  text-transform: uppercase;
+  text-shadow: var(--neon-glow-pink);
+  max-width: 16ch;
+}
+.theme-neon .deck-layout-section :is(h1, h2)::after {
+  content: "";
+  display: block;
+  width: 3em;
+  height: 0.08em;
+  margin-top: 0.35em;
+  background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan));
+  box-shadow: 0 0 14px var(--neon-pink);
+}
+.theme-neon .deck-layout-section > p {
+  color: var(--deck-muted);
+  max-width: 32em;
+}
+.theme-neon .deck-layout-end {
+  justify-content: flex-start;
+  padding-top: 1.2em;
+}
+.theme-neon .deck-layout-end :is(h1, h2) {
+  font-size: 3em;
+  text-transform: uppercase;
+}
+.theme-neon .deck-layout-end > p {
+  color: var(--deck-muted);
+}
+.theme-neon .deck-slide.layout-end::before {
+  bottom: 26%;
+  width: 5em;
+  height: 5em;
+  margin-left: -2.5em;
+}
+.theme-neon .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  font-family: var(--deck-heading-font);
+  font-size: 4.8em;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--neon-sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 0.12em rgba(255, 41, 117, 0.55));
+  margin-bottom: 0.15em;
+}
+.theme-neon .deck-layout-fact > :not(:first-child) {
+  font-size: 1em;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--deck-muted);
+  max-width: 30em;
+}
+.theme-neon .deck-layout-quote {
+  padding-inline: 10%;
+  font-style: normal;
+  font-size: 1.2em;
+}
+.theme-neon .deck-layout-quote blockquote {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 1.1em;
+  font-weight: 500;
+  color: var(--neon-ink);
+}
+.theme-neon .deck-layout-quote blockquote::before {
+  content: "\201C";
+  display: block;
+  height: 0.5em;
+  font: 900 2.6em/1 var(--deck-heading-font);
+  color: var(--neon-cyan);
+  text-shadow: var(--neon-glow-cyan);
+}
+.theme-neon .deck-layout-quote > p {
+  margin-top: 0.7em;
+  font: 500 0.55em var(--deck-mono-font);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--neon-pink);
+}
+.theme-neon .deck-layout-statement :is(h1, h2) {
+  font-size: 2.6em;
+  max-width: 20ch;
+  margin-inline: auto;
+  text-transform: uppercase;
+}
+.theme-neon .deck-layout-full {
+  padding: 0;
+}
+.theme-neon .deck-layout-two-cols {
+  column-gap: 2.2em;
+}
+.theme-neon .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) > :first-child {
+  margin-top: 0;
+}
+.theme-neon .deck-layout-two-cols-header {
+  column-gap: 1.4em;
+}
+.theme-neon .deck-layout-two-cols-header > .deck-slot-default {
+  padding-bottom: 0.5em;
+  margin-bottom: 0.3em;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan) 50%, transparent) 1;
+}
+.theme-neon .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding: 0.7em 0.95em;
+  border: 1px solid color-mix(in oklab, var(--neon-cyan) 35%, transparent);
+  border-radius: var(--deck-radius);
+  background: rgba(13, 2, 33, 0.5);
+}
+.theme-neon .deck-layout-two-cols-header > .deck-slot-left {
+  border-color: color-mix(in oklab, var(--neon-pink) 40%, transparent);
+}
+.theme-neon .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) > :last-child {
+  margin-bottom: 0;
+}
+.theme-neon .deck-layout-image .deck-layout-image-content {
+  background: linear-gradient(180deg, transparent, rgba(13, 2, 33, 0.88));
+}
+.theme-neon :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: calc(var(--deck-pad) * 0.9);
+}
+.theme-neon .deck-layout-image-pane {
+  background-color: #1a0838;
+}
+.theme-neon .deck-layout-image-left .deck-layout-image-pane {
+  box-shadow: 1px 0 0 var(--neon-pink), 6px 0 24px -6px var(--neon-pink);
+}
+.theme-neon .deck-layout-image-right .deck-layout-image-pane {
+  box-shadow: -1px 0 0 var(--neon-cyan), -6px 0 24px -6px var(--neon-cyan);
+}
+.theme-neon :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  box-shadow: var(--neon-box-glow);
+}
+.theme-neon :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── the theme's own layouts and components (index.tsx) ───────────────── */
+/* launch: the title over the sun, a date chip, the grid running */
+.theme-neon .deck-layout-launch {
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  padding-top: 0.2em;
+}
+.theme-neon .deck-layout-launch .neon-sun {
+  bottom: 20%;
+  width: 9em;
+  height: 9em;
+  margin-left: -4.5em;
+}
+.theme-neon .deck-layout-launch .neon-floor {
+  height: calc(20% + var(--deck-pad));
+}
+.theme-neon .deck-layout-launch h1 {
+  font-size: 4.2em;
+}
+.theme-neon .deck-layout-launch > p {
+  max-width: 30em;
+  margin-inline: auto;
+}
+.theme-neon .neon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 0.8em;
+  padding: 0.3em 0.9em;
+  font: 600 0.55em var(--deck-mono-font);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  border: 1px solid color-mix(in oklab, var(--neon-cyan) 60%, transparent);
+  border-radius: 999px;
+  background: rgba(13, 2, 33, 0.7);
+  box-shadow: 0 0 18px -6px var(--neon-cyan);
+}
+.theme-neon .neon-chip::before {
+  content: "";
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: var(--neon-pink);
+  box-shadow: 0 0 8px var(--neon-pink);
+  animation: neon-pulse 1.6s ease-in-out infinite;
+}
+@keyframes neon-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+/* horizon: an ordinary content slide with the grid along its foot */
+.theme-neon .deck-layout-horizon .neon-floor {
+  height: calc(16% + var(--deck-pad));
+  opacity: calc(var(--theme-grid, 1) * 0.7);
+}
+.theme-neon .deck-layout-horizon > :not(.neon-floor) {
+  position: relative;
+}
+/* Glow: a word in neon */
+.theme-neon .neon-glow {
+  color: var(--neon-ink);
+  text-shadow: var(--neon-glow-pink);
+}
+.theme-neon .neon-glow.tone-cyan {
+  text-shadow: var(--neon-glow-cyan);
+}
+.theme-neon .neon-glow.tone-amber {
+  text-shadow:
+    0 0 0.08em rgba(255, 211, 25, 0.85),
+    0 0 0.4em rgba(255, 211, 25, 0.45);
+}
+
+/* ── still copies: solid colour, no glow, no motion ─────────────────────
+   A print page (?print-pdf, an export) and an overview tile hold still copies of the slides. */
+.theme-neon :is(.deck-print-page, .deck-slide.is-print, .deck-slide.is-tile) :is(h1, h2, h3, h4, a, .neon-glow, .deck-toc li > a) {
+  text-shadow: none;
+}
+.theme-neon :is(.deck-print-page, .deck-slide.is-print, .deck-slide.is-tile) :is(.deck-layout-cover h1, .deck-layout-launch h1, .deck-layout-fact > :first-child) {
+  filter: none;
+}
+.theme-neon :is(.deck-print-page, .deck-slide.is-print, .deck-slide.is-tile) :is(.deck-code-block, .deck-callout, blockquote, .deck-frame, .neon-chip, .neon-sun, .deck-progress span) {
+  box-shadow: none;
+}
+.theme-neon .deck-slide:is(.is-print, .is-tile):is(.layout-cover, .layout-end)::before,
+.theme-neon :is(.deck-print-page, .deck-slide.is-print, .deck-slide.is-tile) ul > li::before {
+  box-shadow: none;
+}
+.theme-neon :is(.deck-print-page, .deck-slide.is-print, .deck-slide.is-tile) .neon-floor,
+.theme-neon .deck-slide:is(.is-print, .is-tile):is(.layout-cover, .layout-end)::after,
+.theme-neon :is(.deck-print-page, .deck-slide.is-print, .deck-slide.is-tile) .neon-chip::before {
+  animation: none;
+}
+@media print {
+  .theme-neon * {
+    text-shadow: none !important;
+    animation: none !important;
+  }
+  .theme-neon :is(.deck-code-block, .deck-callout, blockquote, .deck-frame, .neon-chip, .neon-sun) {
+    box-shadow: none !important;
+  }
+  .theme-neon :is(h1, .deck-layout-fact > :first-child) {
+    filter: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-neon .neon-floor,
+  .theme-neon .deck-slide:is(.layout-cover, .layout-end)::after,
+  .theme-neon .neon-chip::before {
+    animation: none;
+  }
+}
+
+/* centred: the built-in placement, in this theme's rhythm */
+.theme-neon .deck-layout-center > :is(h1, h2) {
+  margin-bottom: 0.3em;
+}

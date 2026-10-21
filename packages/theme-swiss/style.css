@@ -1,0 +1,723 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Swiss — the International Typographic Style for design talks. Huge grotesk headings set tight
+   and flush left, a strict grid (twelve columns, a gutter of one em), black hairlines and heavy
+   rules, and one signal colour used sparingly: a square, a number, a rule. Asymmetric on
+   purpose: facts, statements and quotes sit flush left, not centred.
+
+   Inter Tight for display, Inter for text, JetBrains Mono for code. Scoped under .theme-swiss;
+   dark is .theme-swiss[data-color-scheme="dark"] (white on black, the signal brighter).
+   themeConfig: `signal` / `signalDark` (--theme-signal, --theme-signal-dark); `header: false`
+   hides the running header the layer draws.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-swiss {
+  --deck-bg: #f4f4ef;
+  --deck-fg: #111111;
+  --deck-muted: #575752;
+  --deck-accent: var(--theme-signal, #d70017);
+  --deck-accent-2: #111111;
+  --deck-surface: #e8e8e1;
+  --deck-border: #c9c9c1;
+  --deck-live: var(--theme-signal, #d70017);
+  --deck-controls-color: var(--deck-fg);
+  --swiss-ink: #111111;
+  --swiss-on-signal: #ffffff;
+  --swiss-col: calc((100% - 11em) / 12);
+  --deck-heading-font: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --deck-body-font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --deck-mono-font: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 34px;
+  --deck-code-bg: #e8e8e1;
+  --deck-code-fg: #111111;
+  --deck-code-active: rgba(215, 0, 23, 0.1);
+  /* the section's ground: white text on it stays above 4.5:1 in either scheme */
+  --swiss-signal-ground: var(--theme-signal, #d70017);
+  --deck-radius: 0px;
+  --deck-pad: 88px;
+  --deck-transition: 380ms;
+}
+.theme-swiss[data-color-scheme="dark"] {
+  --deck-bg: #0e0e0e;
+  --deck-fg: #f4f4ef;
+  --deck-muted: #a6a6a0;
+  /* a signal set in themeConfig, lifted for the dark ground; invalid (so skipped) when unset */
+  --swiss-signal-lifted: color-mix(in oklab, var(--theme-signal) 80%, white);
+  --deck-accent: var(--theme-signal-dark, var(--swiss-signal-lifted, #ff3b2f));
+  --deck-accent-2: #f4f4ef;
+  --deck-surface: #1b1b1b;
+  --deck-border: #3a3a38;
+  --deck-live: var(--deck-accent);
+  --swiss-ink: #f4f4ef;
+  --deck-code-bg: #161616;
+  --deck-code-fg: #f4f4ef;
+  --deck-code-active: rgba(255, 59, 47, 0.16);
+  color-scheme: dark;
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-swiss .deck-slide {
+  line-height: 1.38;
+  font-feature-settings: "ss01", "cv11", "tnum";
+}
+.theme-swiss .deck-slide :is(h1, h2, h3) {
+  font-weight: 800;
+  letter-spacing: -0.038em;
+  word-spacing: 0.06em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+.theme-swiss .deck-slide h1 {
+  font-size: 4em;
+}
+.theme-swiss .deck-slide h2 {
+  font-size: 2.6em;
+  margin-bottom: 0.5em;
+}
+.theme-swiss .deck-slide h3 {
+  font-size: 1.25em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.4em;
+}
+.theme-swiss .deck-slide h4 {
+  font-family: var(--deck-body-font);
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--deck-fg);
+  margin-bottom: 0.9em;
+}
+.theme-swiss .deck-slide h4::before {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.6em;
+  vertical-align: -0.08em;
+  background: var(--deck-accent);
+}
+.theme-swiss .deck-layout-default > :is(p, ul, ol) {
+  max-width: calc(var(--swiss-col) * 8 + 7em);
+}
+.theme-swiss .deck-slide ul {
+  list-style: none;
+  padding-inline-start: 1.1em;
+}
+.theme-swiss .deck-slide ul > li {
+  position: relative;
+}
+.theme-swiss .deck-slide ul > li::before {
+  content: "";
+  position: absolute;
+  left: -1.1em;
+  top: 0.5em;
+  width: 0.36em;
+  height: 0.36em;
+  background: var(--deck-accent);
+}
+.theme-swiss .deck-slide ul ul > li::before {
+  background: var(--deck-fg);
+  width: 0.3em;
+  height: 2px;
+  top: 0.68em;
+}
+.theme-swiss .deck-slide ol {
+  padding-inline-start: 1.6em;
+}
+.theme-swiss .deck-slide ol > li::marker {
+  font-weight: 700;
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-slide strong {
+  font-weight: 700;
+}
+.theme-swiss .deck-slide em {
+  font-style: normal;
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-slide a {
+  color: inherit;
+  text-decoration-color: var(--deck-accent);
+  text-decoration-thickness: 0.12em;
+  text-underline-offset: 0.12em;
+}
+.theme-swiss .deck-slide a:hover {
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-slide blockquote {
+  position: relative;
+  margin: 0.6em 0;
+  padding: 0 0 0 1.1em;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--deck-fg);
+  font-size: 1.15em;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+.theme-swiss .deck-slide blockquote::before {
+  content: "\201C";
+  position: absolute;
+  left: -0.05em;
+  top: -0.12em;
+  font-weight: 800;
+  font-size: 1.6em;
+  line-height: 1;
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+.theme-swiss .deck-slide hr {
+  border-top: 3px solid var(--swiss-ink);
+  margin: 0.8em 0;
+}
+.theme-swiss .deck-slide table {
+  font-size: 0.72em;
+  border-top: 3px solid var(--swiss-ink);
+}
+.theme-swiss .deck-slide th {
+  color: var(--deck-fg);
+  font-weight: 700;
+  font-size: 0.78em;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--swiss-ink);
+}
+.theme-swiss .deck-slide :is(th, td) {
+  padding: 0.5em 1em 0.5em 0;
+}
+.theme-swiss .deck-slide td {
+  border-bottom-color: var(--deck-border);
+}
+.theme-swiss .deck-slide :not(pre) > code {
+  font-size: 0.8em;
+  padding: 0.06em 0.3em;
+  border-radius: 0;
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+}
+.theme-swiss .deck-kbd {
+  border-radius: 0;
+  border-color: var(--swiss-ink);
+  border-bottom-width: 2px;
+}
+.theme-swiss .deck-slide :is(img, video) {
+  border-radius: 0;
+}
+
+/* ── code ──────────────────────────────────────────────────────────────── */
+.theme-swiss .deck-code-block {
+  border-radius: 0;
+  border: 0;
+  border-top: 3px solid var(--swiss-ink);
+}
+.theme-swiss .deck-code-title {
+  font: 700 0.46em var(--deck-body-font);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--deck-fg);
+  padding: 0.7em 1.2em;
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-swiss .deck-code-title-dot {
+  border-radius: 0;
+  width: 0.75em;
+  height: 0.75em;
+  background: var(--deck-accent);
+}
+.theme-swiss pre.deck-code,
+.theme-swiss .shiki-magic-move-wrap {
+  font-size: 0.58em;
+  line-height: 1.65;
+}
+.theme-swiss pre.deck-code {
+  padding: 0.9em 0;
+}
+.theme-swiss pre.deck-code .line {
+  padding: 0 1.3em;
+}
+.theme-swiss .shiki-magic-move-wrap {
+  padding: 0.9em 1.3em;
+}
+.theme-swiss pre.deck-code .line.is-active {
+  box-shadow: inset 0.3em 0 0 var(--deck-accent);
+}
+.theme-swiss pre.deck-code .line.is-dim {
+  opacity: 0.28;
+}
+.theme-swiss .deck-code-copy {
+  border-radius: 0;
+}
+
+/* ── components ────────────────────────────────────────────────────────── */
+.theme-swiss .deck-callout {
+  padding: 0.6em 0.9em 0.7em;
+  border: 0;
+  border-top: 0.32em solid var(--swiss-kind, var(--swiss-ink));
+  border-radius: 0;
+  background: var(--deck-surface);
+  font-size: 0.8em;
+  --swiss-kind: var(--swiss-ink);
+}
+.theme-swiss .deck-callout:is(.kind-danger, .kind-warn) {
+  --swiss-kind: var(--deck-accent);
+}
+.theme-swiss .deck-callout.kind-note {
+  --swiss-kind: var(--deck-muted);
+}
+.theme-swiss .deck-callout-title {
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.3em;
+}
+.theme-swiss .deck-callout.kind-danger .deck-callout-title {
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-swiss .deck-badge {
+  border-radius: 0;
+  border: 2px solid currentColor;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.theme-swiss .deck-toc {
+  counter-reset: swiss-toc;
+}
+.theme-swiss .deck-toc li {
+  margin: 0;
+  padding: 0.28em 0;
+  border-top: 1px solid var(--deck-border);
+}
+.theme-swiss .deck-toc li.level-1 {
+  counter-increment: swiss-toc;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.theme-swiss .deck-toc li.level-1 > a::before {
+  content: counter(swiss-toc, decimal-leading-zero);
+  display: inline-block;
+  width: 2.4em;
+  font-weight: 700;
+  color: var(--deck-accent);
+  font-variant-numeric: tabular-nums;
+}
+.theme-swiss .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 2.4em;
+  font-weight: 400;
+}
+.theme-swiss .deck-toc li.is-current > a {
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-mark {
+  --mark-color: var(--deck-accent);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-swiss .deck-progress {
+  height: 6px;
+  background: transparent;
+}
+.theme-swiss .deck-progress span {
+  background: var(--deck-accent);
+}
+.theme-swiss .deck-slide-number {
+  font: 700 14px var(--deck-body-font);
+  font-variant-numeric: tabular-nums;
+  color: var(--deck-fg);
+  background: none;
+  border-radius: 0;
+  padding: 4px 6px;
+}
+
+/* ── the running header (index.tsx's slide-top layer) ─────────────────── */
+.theme-swiss .swiss-header {
+  position: absolute;
+  top: calc(var(--deck-pad) * 0.42);
+  left: var(--deck-pad);
+  right: var(--deck-pad);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: 1em;
+  padding-top: 0.35em;
+  border-top: 2px solid var(--swiss-ink);
+  font: 700 0.42em/1.2 var(--deck-body-font);
+  letter-spacing: 0.02em;
+  color: var(--deck-fg);
+}
+.theme-swiss .swiss-header-title {
+  grid-column: 1 / span 6;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.theme-swiss .swiss-header-section {
+  grid-column: 7 / span 4;
+  color: var(--deck-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.theme-swiss .swiss-header-page {
+  grid-column: 11 / span 2;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.theme-swiss .swiss-header-page b {
+  color: var(--deck-accent);
+}
+/* ── layouts ───────────────────────────────────────────────────────────── */
+.theme-swiss .deck-layout-center :is(h1, h2) {
+  letter-spacing: -0.04em;
+}
+.theme-swiss .deck-layout-cover {
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+.theme-swiss .deck-layout-cover::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1.4em;
+  height: 1.4em;
+  background: var(--deck-accent);
+}
+.theme-swiss .deck-layout-cover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(var(--swiss-col) * 6 + 6em);
+  right: 0;
+  border-top: 3px solid var(--swiss-ink);
+}
+.theme-swiss .deck-layout-cover h1 {
+  font-size: 7em;
+  letter-spacing: -0.055em;
+  line-height: 0.86;
+  margin-bottom: 0.18em;
+  max-width: 10ch;
+}
+.theme-swiss .deck-layout-cover > p {
+  max-width: calc(var(--swiss-col) * 7 + 6em);
+  font-size: 1.05em;
+  font-weight: 500;
+  color: var(--deck-fg);
+}
+.theme-swiss .deck-layout-cover h4 {
+  margin-bottom: 1.2em;
+}
+.theme-swiss .deck-layout-intro {
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+.theme-swiss .deck-layout-intro h1 {
+  font-size: 4.6em;
+  max-width: 12ch;
+}
+.theme-swiss .deck-layout-intro > p {
+  max-width: calc(var(--swiss-col) * 7 + 6em);
+}
+/* a section is the signal colour, edge to edge: painted on the slide itself, so the layout keeps
+   its own box (a ground hung past it read as overflow to the auto-fit) */
+.theme-swiss .deck-slide.layout-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--swiss-signal-ground);
+  pointer-events: none;
+}
+.theme-swiss .deck-layout-section {
+  justify-content: flex-end;
+  align-items: flex-start;
+  color: var(--swiss-on-signal);
+}
+.theme-swiss .deck-layout-section :is(h1, h2) {
+  font-size: 6em;
+  letter-spacing: -0.06em;
+  line-height: 0.88;
+  max-width: 9ch;
+  color: var(--swiss-on-signal);
+}
+.theme-swiss .deck-layout-section > p {
+  max-width: calc(var(--swiss-col) * 6 + 5em);
+  font-weight: 500;
+}
+.theme-swiss .deck-layout-section :not(pre) > code {
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+}
+.theme-swiss .deck-layout-end {
+  align-items: flex-start;
+  justify-content: flex-end;
+  text-align: start;
+}
+.theme-swiss .deck-layout-end :is(h1, h2) {
+  font-size: 7em;
+  letter-spacing: -0.06em;
+  line-height: 0.86;
+}
+.theme-swiss .deck-layout-end > p {
+  font-weight: 700;
+}
+.theme-swiss .deck-layout-end > p::before {
+  content: "";
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.5em;
+  background: var(--deck-accent);
+}
+.theme-swiss .deck-layout-fact {
+  align-items: flex-start;
+  text-align: start;
+  justify-content: flex-end;
+}
+.theme-swiss .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  font-family: var(--deck-heading-font);
+  font-size: 9em;
+  font-weight: 800;
+  letter-spacing: -0.07em;
+  line-height: 0.8;
+  margin-bottom: 0.12em;
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-layout-fact > :not(:first-child) {
+  max-width: calc(var(--swiss-col) * 6 + 5em);
+  font-size: 1.1em;
+  font-weight: 500;
+}
+.theme-swiss .deck-layout-quote {
+  padding-inline: 0 calc(var(--swiss-col) * 3 + 3em);
+  justify-content: center;
+  font-style: normal;
+  font-size: 1em;
+}
+.theme-swiss .deck-layout-quote blockquote {
+  padding-left: 0;
+  font-size: 2.3em;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+.theme-swiss .deck-layout-quote blockquote::before {
+  position: static;
+  display: block;
+  font-size: 1.8em;
+  line-height: 0.8;
+  height: 0.45em;
+}
+.theme-swiss .deck-layout-quote > p {
+  margin-top: 0.9em;
+  font-weight: 700;
+}
+.theme-swiss .deck-layout-quote > p::before {
+  content: "\2014\2009";
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-layout-statement {
+  align-items: flex-start;
+  text-align: start;
+}
+.theme-swiss .deck-layout-statement :is(h1, h2) {
+  font-size: 5em;
+  letter-spacing: -0.055em;
+  line-height: 0.92;
+  max-width: 13ch;
+}
+.theme-swiss .deck-layout-full {
+  padding: 0;
+}
+.theme-swiss .deck-layout-two-cols {
+  column-gap: 2em;
+}
+.theme-swiss .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) {
+  padding-top: 0.5em;
+  border-top: 3px solid var(--swiss-ink);
+}
+.theme-swiss .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) > :first-child {
+  margin-top: 0;
+}
+.theme-swiss .deck-layout-two-cols :is(h2) {
+  font-size: 1.9em;
+}
+.theme-swiss .deck-layout-two-cols-header {
+  column-gap: 2em;
+}
+.theme-swiss .deck-layout-two-cols-header > .deck-slot-default {
+  margin-bottom: 0.4em;
+}
+.theme-swiss .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding-top: 0.45em;
+  border-top: 3px solid var(--swiss-ink);
+}
+.theme-swiss .deck-layout-two-cols-header > .deck-slot-left {
+  border-top-color: var(--deck-accent);
+}
+.theme-swiss .deck-layout-image .deck-layout-image-content {
+  background: linear-gradient(180deg, transparent 30%, rgba(0, 0, 0, 0.72));
+}
+.theme-swiss .deck-layout-image .deck-layout-image-content :is(h1, h2) {
+  font-size: 3.4em;
+  max-width: 12ch;
+}
+.theme-swiss :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: var(--deck-pad);
+  justify-content: flex-end;
+}
+.theme-swiss :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content :is(h1, h2) {
+  font-size: 2.4em;
+}
+.theme-swiss .deck-layout-image-pane {
+  background-color: var(--deck-surface);
+}
+.theme-swiss :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border-radius: 0;
+  border: 3px solid var(--swiss-ink);
+  box-shadow: none;
+}
+.theme-swiss :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── the theme's own layouts (index.tsx) ───────────────────────────────── */
+/* poster: one word or number, as large as the slide allows, and a line of small print */
+.theme-swiss .deck-layout-poster {
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+.theme-swiss .deck-layout-poster :is(h1, h2) {
+  font-size: var(--swiss-poster-size, 18em);
+  letter-spacing: -0.075em;
+  line-height: 0.78;
+  margin: 0 0 0.05em -0.06em;
+  max-width: none;
+  white-space: nowrap;
+}
+.theme-swiss .deck-layout-poster.is-signal :is(h1, h2) {
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-layout-poster > :not(h1, h2) {
+  max-width: calc(var(--swiss-col) * 6 + 5em);
+  font-weight: 500;
+}
+.theme-swiss .deck-layout-poster .deck-slot-meta {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: calc(var(--swiss-col) * 4 + 3em);
+  padding-top: 0.4em;
+  border-top: 3px solid var(--swiss-ink);
+  font-size: 0.62em;
+  font-weight: 600;
+}
+/* index: a numbered list set as a grid of cells, each with its rule and number */
+.theme-swiss .deck-layout-index :is(ol, ul) {
+  display: grid;
+  grid-template-columns: repeat(var(--swiss-index-cols, 3), 1fr);
+  column-gap: 1em;
+  row-gap: 1em;
+  list-style: none;
+  padding: 0;
+  margin: 0.4em 0 0;
+  counter-reset: swiss-index;
+}
+.theme-swiss .deck-layout-index :is(ol, ul) > li {
+  counter-increment: swiss-index;
+  margin: 0;
+  padding-top: 0.4em;
+  border-top: 3px solid var(--swiss-ink);
+  font-size: 0.82em;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.theme-swiss .deck-layout-index :is(ol, ul) > li::before {
+  content: counter(swiss-index, decimal-leading-zero);
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  background: none;
+  margin-bottom: 0.35em;
+  font: 800 2em/1 var(--deck-heading-font);
+  letter-spacing: -0.04em;
+  color: var(--deck-accent);
+}
+.theme-swiss .deck-layout-index :is(ol, ul) > li strong {
+  display: block;
+  font-size: 1.1em;
+  margin-bottom: 0.15em;
+}
+/* grid: a header across, then each slot a column under a heavy rule */
+.theme-swiss .deck-layout-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--swiss-grid-cols, 3), minmax(0, 1fr));
+  column-gap: 1em;
+  row-gap: 0.6em;
+  align-content: start;
+}
+.theme-swiss .deck-layout-grid > .deck-slot-default {
+  grid-column: 1 / -1;
+}
+/* as many columns as the slide has slots, two to five */
+.theme-swiss .deck-layout-grid:has(> .deck-slot-default + .deck-slot + .deck-slot:last-child) {
+  --swiss-grid-cols: 2;
+}
+.theme-swiss .deck-layout-grid:has(> .deck-slot-default + .deck-slot + .deck-slot + .deck-slot + .deck-slot:last-child) {
+  --swiss-grid-cols: 4;
+}
+.theme-swiss .deck-layout-grid:has(> .deck-slot-default + .deck-slot + .deck-slot + .deck-slot + .deck-slot + .deck-slot:last-child) {
+  --swiss-grid-cols: 5;
+}
+.theme-swiss .deck-layout-grid > .deck-slot:not(.deck-slot-default) {
+  padding-top: 0.4em;
+  border-top: 3px solid var(--swiss-ink);
+  font-size: 0.82em;
+}
+.theme-swiss .deck-layout-grid > .deck-slot:not(.deck-slot-default) > :first-child {
+  margin-top: 0;
+}
+.theme-swiss .deck-layout-grid > .deck-slot:nth-child(2) {
+  border-top-color: var(--deck-accent);
+}
+/* Rule: a heavy rule, with a label */
+.theme-swiss .swiss-rule {
+  display: flex;
+  align-items: baseline;
+  gap: 1em;
+  margin: 0.7em 0;
+  padding-top: 0.3em;
+  border-top: 3px solid var(--swiss-ink);
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.theme-swiss .swiss-rule.is-signal {
+  border-top-color: var(--deck-accent);
+}
+.theme-swiss .swiss-rule span:last-child {
+  margin-left: auto;
+  color: var(--deck-muted);
+}
+
+/* ── narrow screens (the scroll view on a phone) ──────────────────────── */
+@media (max-width: 640px) {
+  .theme-swiss .deck-slide.is-scroll .deck-layout-index :is(ol, ul),
+  .theme-swiss .deck-slide.is-scroll .deck-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-swiss .deck-progress span {
+    transition: none;
+  }
+}

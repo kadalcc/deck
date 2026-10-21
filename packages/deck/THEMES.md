@@ -73,8 +73,9 @@ earlier one) > the theme. Layers are stacked, not replaced: the theme's lowest, 
 then the deck's (`<Deck layers>` or `global-top.tsx`… beside deck.mdx); the deck can hide one with
 `layers={{ "global-bottom": false }}`. Config: theme `config` < headmatter < deck.config.ts.
 Slide frontmatter: theme `defaults` < addon `defaults` < headmatter `defaults` < the slide.
-When a viewer picks another theme from the menu, its layouts and layers apply; the deck's own
-theme's *components* stay available so no slide breaks.
+When a viewer picks another theme from the menu, its layouts, layers and fonts (its `config.fonts`,
+unless the deck chose its own) apply; the deck's own theme's *components* stay available so no
+slide breaks.
 
 **`setup(api)`** gets `deck` (the live runtime), `commands` (register commands), `panels`
 (presenter sidebar tabs), `registerRenderer`/`registerLazyRenderer` (islands),
@@ -220,3 +221,14 @@ theme. Sizes are Slidev's exactly: each port measures in a "Slidev rem" worked o
 a deck that changes the base size scales the whole theme. The catalog lists them as
 `THEME_PACKAGES` (`kadal-deck info themes`); the ported code is MIT, with the notice in each
 package's LICENSE and in THIRD_PARTY_NOTICES.md.
+
+For the first-party themes (`packages/theme-*`), `bun tools/theme-lint.ts packages/theme-<name>`
+checks the contract statically (each package's `bun test` runs it), and
+`node tools/theme-shots.mjs [names]` runs every preview deck in Chromium: a PNG of each slide in
+light and dark, WCAG contrast of the resolved tokens, anything that overflows or that the
+auto-fit had to shrink, the presenter, print and phone views, and contact sheets.
+
+Decoration that reaches past the slide's padding (a ground, a wave along the foot) belongs on
+the slide, `.theme-x .deck-slide.layout-cover::after`, or on an element with the `deck-absolute`
+class: anything hung off `.deck-layout` past its box counts as overflow, and the engine's
+auto-fit shrinks the whole slide to make room for it.

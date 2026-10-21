@@ -67,7 +67,7 @@ import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 import { ThumbnailHost } from "../export/thumbnail.tsx";
 import type { DeckLayers } from "../theming/contract.ts";
-import { packageConfigLayer } from "../theming/merge.ts";
+import { fontsForTheme, packageConfigLayer } from "../theming/merge.ts";
 import { useDeckFonts, useDeckPackages, usePackageSetup, useRootVars } from "../theming/react.tsx";
 import { ThemeNotice } from "./ThemeNotice.tsx";
 import { readScheme } from "../core/print-options.ts";
@@ -592,7 +592,6 @@ export function Deck({
 
   useBuiltinCommands(runtime);
   usePackageSetup(runtime, merged.modules);
-  useDeckFonts(config.fonts);
   useDeckEffects(runtime, flags, wantedAtLoad, related);
   useTermEffects(runtime);
   // A share window the viewer closed themselves: the button that opened it stops looking lit.
@@ -719,8 +718,14 @@ function DeckRoot({ children }: { children: ReactNode }) {
     [deck.ui],
   );
   useEffect(() => deck.nav.subscribe((s) => setPaused(s.paused)), [deck.nav]);
+  // The fonts of the theme on show (a theme picked from the menu brings its own), loaded here;
   // `--theme-*` from themeConfig, and the font tokens `fonts` points at its families.
-  const vars = useRootVars(deck.manifest, theme, deck.config.themeConfig, deck.config.fonts);
+  const fonts = useMemo(
+    () => fontsForTheme(deck.manifest.packages, theme, deck.config.fonts),
+    [deck.manifest.packages, theme, deck.config.fonts],
+  );
+  useDeckFonts(fonts);
+  const vars = useRootVars(deck.manifest, theme, deck.config.themeConfig, fonts);
   useEffect(() => {
     document.documentElement.dataset.colorScheme = scheme;
     document.documentElement.classList.toggle("dark", scheme === "dark");

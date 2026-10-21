@@ -1,0 +1,266 @@
+---
+title: Swiss · a Kadal Deck theme
+author: Kadal
+info: The Swiss theme's preview deck — every built-in layout, styled, then the theme's own.
+theme: ../
+layout: cover
+slideNumber: false
+---
+
+#### Kadal Deck · theme preview
+
+# Swiss
+
+The International Typographic Style: huge grotesk headings, a strict grid, and one signal colour.
+
+---
+
+## Body text, lists and links
+
+A paragraph in the body face sets the rhythm for everything else: **strong words**, *emphasis*, `inline code`, a [link to the docs](https://deck.kadal.cc/docs/) and a key, <Kbd>T</Kbd>, for the theme menu.
+
+- A first point, kept to one line
+- A second, with a nested list
+  - which sits one step in
+  - and stays quieter
+- A third, to end on
+
+---
+
+## Code, with a title and highlights
+
+```ts {2-4|6}{lines:true} [tide.ts]
+export function tide(hour: number): number {
+  // two highs and two lows a day, more or less
+  const period = 12.42;
+  return Math.sin((hour / period) * 2 * Math.PI);
+}
+export const high = tide(6.21) > 0.99;
+```
+
+A highlighted range, line numbers, and the file's name in the bar.
+
+---
+layout: two-cols
+---
+
+## Two columns
+
+The left column carries the argument, a paragraph or a list.
+
+- One reason
+- Another reason
+- And a third
+
+::right::
+
+## The other side
+
+> A quote on the right sets one idea against another.
+
+<Callout kind="tip" title="Tip">Callouts sit in columns too.</Callout>
+
+---
+layout: two-cols-header
+---
+
+## Two columns under a header
+
+The header spans both columns; `::left::` and `::right::` sit beneath it.
+
+::left::
+
+### Before
+
+- Slides as files no one could diff
+- A theme that broke on export
+
+::right::
+
+### After
+
+- Slides in MDX, reviewed like code
+- Themes as packages, printed as designed
+
+---
+
+## Tables and callouts
+
+| Layout | For | Since |
+| --- | --- | --- |
+| `cover` | the first slide | 0.1 |
+| `two-cols-header` | a header over two columns | 0.4 |
+| `image-right` | words beside a picture | 0.1 |
+
+<Cols cols="1fr 1fr 1fr" gap="1rem">
+<Col><Callout kind="info" title="Info">The accent, for what to notice.</Callout></Col>
+<Col><Callout kind="warn" title="Warn">Amber, for what to watch.</Callout></Col>
+<Col><Callout kind="danger" title="Danger">Red, for what breaks.</Callout></Col>
+</Cols>
+
+---
+
+## Contents
+
+<Toc maxDepth={1} columns={2} />
+
+---
+layout: section
+---
+
+# A section begins
+
+A line under the title, to say what it covers.
+
+---
+layout: intro
+---
+
+# An introduction
+
+Who is speaking, and why this talk exists — the intro layout, for the second slide.
+
+---
+layout: quote
+---
+
+> The sea does not reward those who are too anxious, too greedy, or too impatient.
+
+Anne Morrow Lindbergh
+
+---
+layout: fact
+---
+
+# 94%
+
+of slides are read, not watched — so the type has to carry them.
+
+---
+layout: statement
+---
+
+# One idea, said plainly, fills the slide.
+
+---
+layout: center
+---
+
+## Centred
+
+Anything that should sit in the middle: a diagram, a single line, a pause.
+
+---
+layout: image-right
+image: ./picture.svg
+---
+
+## Words beside a picture
+
+The image fills its half edge to edge; the words keep the theme's margins.
+
+- `image-right`, and its mirror `image-left`
+- `backgroundSize: contain` to fit instead
+
+---
+layout: image-left
+image: ./picture.svg
+---
+
+## The mirror
+
+The picture on the left, the words on the right.
+
+---
+layout: image
+image: ./picture.svg
+---
+
+## A full-bleed picture
+
+With the words over a shade, at the foot.
+
+---
+
+## Headings, all four
+
+### A third-level heading
+#### A fourth-level label
+
+<Badge tone="accent">accent</Badge> <Badge tone="good">good</Badge> <Badge tone="warn">warn</Badge> <Badge tone="bad">bad</Badge>
+
+---
+
+## Magic move
+
+````md magic-move {lines: true}
+```ts
+const depth = 200;
+```
+```ts
+const depth = 200;
+const zone = depth > 200 ? "twilight" : "sunlit";
+```
+````
+
+Click to watch the code change in place.
+
+---
+layout: poster
+signal: true
+---
+
+# 1957
+
+The year a typeface was drawn to be neutral, and became the opposite.
+
+::meta::
+
+The `poster` layout. One word or number, as large as the slide allows.
+
+---
+layout: index
+---
+
+## Six principles
+
+1. **Grid** Every element sits on it.
+2. **Asymmetry** Balance without a centre.
+3. **Sans serif** One family, many weights.
+4. **White space** As active as type.
+5. **Photography** Over illustration.
+6. **Signal** One colour, used once.
+
+---
+layout: grid
+---
+
+## Three columns on the grid
+
+<Rule label="The grid layout" right="03 columns" signal />
+
+::one::
+
+### Structure
+
+Each slot is a column under a heavy rule.
+
+::two::
+
+### Rhythm
+
+The first column takes the signal colour.
+
+::three::
+
+### Order
+
+Columns follow the number of slots, two to five.
+
+---
+layout: end
+---
+
+# Thank you
+
+Swiss · a theme for Kadal Deck
