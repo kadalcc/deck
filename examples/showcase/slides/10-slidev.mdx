@@ -309,3 +309,49 @@ A transition is two CSS animations, one for the slide arriving and one for the s
 <!--
 This slide arrived with a transition the engine does not ship: flip. The keyframes and the two hooks are a global style block on this slide; the stage writes the transition's name and the direction on itself, and the stylesheet does the rest. Speeds, reduced motion and print all behave as they do for the built-in transitions.
 -->
+
+----
+id: slidev-build
+---
+
+<p className="sc-eyebrow">Slidev's build · and a little more</p>
+
+## One build, any host, no network
+
+<Cols cols="1fr 1.1fr" gap="2.5rem" align="start">
+<Col>
+
+<How>
+
+```yaml
+seoMeta:
+  ogImage: auto        # slide 1 → og-image.png
+  ogUrl: https://you.dev/talk/
+pwa: true              # installable, presents offline
+bundleRemoteAssets: true
+```
+
+```sh
+kadal-deck build --base /talk/
+kadal-deck build a.mdx b.mdx   # dist/a/, dist/b/
+kadal-deck ci github-pages
+kadal-deck serve
+```
+
+</How>
+
+</Col>
+<Col>
+
+- The headmatter becomes the page's head: title, description, Open Graph and Twitter cards, canonical, `lang`
+- `ogImage: auto` photographs this deck's first slide at 1200×630
+- `pwa`: a manifest, icons in the theme's colours, and a service worker that never touches the live room
+- Remote pictures, video and Google Fonts copied into the build
+- Every route (`/presenter`, `/notes`…) works on GitHub Pages, S3 or nginx, with no rewrites
+
+</Col>
+</Cols>
+
+<!--
+What Slidev's build does, and a little more. The headmatter writes the page's head, so a link to the deck shows its title, its description and a picture of its first slide, taken at build time. With pwa on, the deck installs like an app and presents with no network at all; with bundleRemoteAssets, the pictures and fonts it borrows from the web come along in the build. Several decks build in one command, under any base path, and kadal-deck ci writes the files a host needs: GitHub Pages, Netlify, Vercel, Cloudflare, or a Docker image.
+-->
