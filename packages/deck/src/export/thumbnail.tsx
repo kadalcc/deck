@@ -56,7 +56,20 @@ interface Job {
 
 /** How long a slide may take to settle (its module, fonts, images, a diagram) before it is taken. */
 const SETTLE_MS = 4000;
-const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+/** How long one picture may take in all, after which it fails and the next one may start. */
+export const JOB_MS = 30_000;
+/**
+ * The next painted frame, or a beat later when none comes: a hidden tab (a window behind others,
+ * the person switching tabs as they publish) paints nothing, and a picture must not wait on it.
+ */
+export const nextFrame = (fallbackMs = 50) =>
+  new Promise<void>((r) => {
+    const t = setTimeout(r, fallbackMs);
+    requestAnimationFrame(() => {
+      clearTimeout(t);
+      r();
+    });
+  });
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Registers `export.thumbnail` and renders the slide it is asked for, off-screen, one at a time. */
@@ -79,9 +92,29 @@ export function ThumbnailHost() {
         if (!flat.length) throw new Error("This deck has no slides.");
         const slide = Math.min(flat.length - 1, p.slide ?? 0);
         const { width } = thumbnailSize(p.width, deck.config);
-        // One at a time: each needs the off-screen frame to itself.
+        // One at a time: each needs the off-screen frame to itself. A picture that never finishes
+        // fails at the deadline and gives the frame up, so the ones after it still get theirs.
         const next = chain.current.then(
-          () => new Promise<Thumbnail>((done, fail) => setJob({ slide, width, done, fail })),
+          () =>
+            new Promise<Thumbnail>((done, fail) => {
+              const job: Job = {
+                slide,
+                width,
+                done: (t) => {
+                  clearTimeout(timer);
+                  done(t);
+                },
+                fail: (e) => {
+                  clearTimeout(timer);
+                  fail(e);
+                },
+              };
+              const timer = setTimeout(() => {
+                fail(new Error("The slide picture took too long."));
+                setJob((j) => (j === job ? null : j));
+              }, JOB_MS);
+              setJob(job);
+            }),
         );
         chain.current = next.catch(() => {});
         return next;
@@ -112,8 +145,8 @@ function Capture({ job, onDone }: { job: Job; onDone: () => void }) {
           [...el.querySelectorAll("img")].map((img) => img.decode().catch(() => undefined)),
         );
         // Diagrams, maths and code settle a beat after they mount.
-        await frame();
-        await frame();
+        await nextFrame();
+        await nextFrame();
         await sleep(250);
         if (!alive) return;
         const { domToPng } = await import("modern-screenshot");

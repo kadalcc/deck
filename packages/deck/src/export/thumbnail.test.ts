@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
-import { thumbnailParams, thumbnailSize } from "./thumbnail.tsx";
+import { nextFrame, thumbnailParams, thumbnailSize } from "./thumbnail.tsx";
 
 const deck = { width: 980, height: 551.25 };
 
@@ -20,5 +20,29 @@ describe("export.thumbnail", () => {
     expect(thumbnailSize(9999, deck)).toEqual({ width: 1920, height: 1080 });
     expect(thumbnailSize(Number.NaN, deck)).toEqual({ width: 640, height: 360 });
     expect(thumbnailSize(400, { width: 1000, height: 1000 })).toEqual({ width: 400, height: 400 });
+  });
+
+  describe("nextFrame", () => {
+    const real = globalThis.requestAnimationFrame;
+    afterEach(() => {
+      globalThis.requestAnimationFrame = real;
+    });
+
+    test("a hidden tab paints no frame: it goes on after the fallback instead of waiting", async () => {
+      globalThis.requestAnimationFrame = (() => 0) as typeof requestAnimationFrame;
+      const t0 = performance.now();
+      await nextFrame(20);
+      expect(performance.now() - t0).toBeLessThan(1000);
+    });
+
+    test("a painted frame ends the wait before the fallback", async () => {
+      globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+        queueMicrotask(() => cb(0));
+        return 1;
+      }) as typeof requestAnimationFrame;
+      const t0 = performance.now();
+      await nextFrame(5000);
+      expect(performance.now() - t0).toBeLessThan(1000);
+    });
   });
 });
