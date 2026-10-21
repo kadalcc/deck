@@ -354,6 +354,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       code: "The source as a prop (what a ```mermaid fence compiles to).",
       theme: "A Mermaid theme for this diagram: default, neutral, dark, forest, base.",
       config: "Mermaid configuration for this diagram, over the deck's `mermaid:`.",
+      alt: "What the diagram shows, for screen readers (a fence's `{alt: '…'}`, Slidev's spelling); default its first line.",
     },
   },
   KatexLines: {

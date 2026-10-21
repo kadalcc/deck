@@ -255,8 +255,13 @@
   background: linear-gradient(rgba(0, 0, 0, 0.333), rgba(0, 0, 0, 0.533));
   pointer-events: none;
 }
-.theme-seriph .seriph-on-image > :not(.seriph-dim) {
-  position: relative;
+/* The dim sits under the words without lifting each one (`position: relative` on every child
+   would pin a deck's own `absolute` corners, Slidev's `abs-br`, back into the flow). */
+.theme-seriph .deck-layout-cover.seriph-on-image {
+  isolation: isolate;
+}
+.theme-seriph .seriph-on-image > .seriph-dim {
+  z-index: -1;
 }
 .theme-seriph .deck-layout-section {
   align-items: stretch;

@@ -33,7 +33,7 @@ export interface RemarkFencesOptions {
 }
 
 /** Fence keys a mermaid fence reads itself; any other key is Mermaid configuration. */
-export const MERMAID_FENCE_KEYS = ["theme", "scale", "className"];
+export const MERMAID_FENCE_KEYS = ["theme", "scale", "className", "alt"];
 
 /**
  * Mermaid's top-level configuration keys (mermaid 11's `MermaidConfig`), so a typo in a fence's
@@ -149,7 +149,7 @@ export function remarkDeckFences(options: RemarkFencesOptions = {}) {
       const warn = (m: string) => options.warn?.(m, line);
       if (node.type === "code" && node.lang === "mermaid") {
         const opts = fenceOptions(braceGroups(node.meta ?? "")[0], warn, "Mermaid");
-        const { theme, scale, className, ...config } = opts;
+        const { theme, scale, className, alt, ...config } = opts;
         for (const k of Object.keys(config))
           if (!MERMAID_CONFIG_KEYS.includes(k))
             warn(`Unknown mermaid option "${k}" (scale, theme, or a Mermaid config key).`);
@@ -158,6 +158,7 @@ export function remarkDeckFences(options: RemarkFencesOptions = {}) {
           theme: typeof theme === "string" ? theme : undefined,
           scale: typeof scale === "number" ? scale : undefined,
           className: typeof className === "string" ? className : undefined,
+          alt: typeof alt === "string" ? alt : undefined,
           config: Object.keys(config).length ? config : undefined,
         });
         return;

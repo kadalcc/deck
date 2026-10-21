@@ -243,6 +243,10 @@ export function mdxPlugins(
   };
 }
 
+/** `{lines: true}` on the outer fence numbers every step; an inner fence can ask for itself. */
+const numbered = (block: MagicMoveBlock, own: boolean) =>
+  own || block.options.lines === "true" || block.options.lines === "1";
+
 /** A slide's magic-move steps with their keyed tokens, precomputed for both themes. */
 export function magicMoveData(
   blocks: MagicMoveBlock[],
@@ -259,9 +263,21 @@ export function magicMoveData(
         lang: step.lang,
         lines: meta.lines,
         highlight: meta.steps ? serialiseSteps(meta.steps) : null,
+        // Line numbers are part of the keyed tokens (shiki-magic-move numbers them when it
+        // tokenises), so `{lines: true}` must reach here, not only the renderer's options.
         tokens: {
-          light: codeToKeyedTokens(hl, step.code, { lang: lang as never, theme: themes.light }),
-          dark: codeToKeyedTokens(hl, step.code, { lang: lang as never, theme: themes.dark }),
+          light: codeToKeyedTokens(
+            hl,
+            step.code,
+            { lang: lang as never, theme: themes.light },
+            numbered(block, meta.lines),
+          ),
+          dark: codeToKeyedTokens(
+            hl,
+            step.code,
+            { lang: lang as never, theme: themes.dark },
+            numbered(block, meta.lines),
+          ),
         },
       };
     }),

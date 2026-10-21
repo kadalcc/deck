@@ -269,6 +269,15 @@ describe("lint", () => {
     expect((await codes(head("  persist: disk\n"))).length).toBeGreaterThan(0);
   });
 
+  test("Slidev syntax that compiles but does nothing is a warning pointing at the importer", async () => {
+    const r = await lint(
+      '# A\n\n<div v-click>x</div>\n\n<v-clicks>\n\n- a\n\n</v-clicks>\n\n<img v-drag src="/a.png" />\n',
+    );
+    const slidev = r.diagnostics.filter((d) => d.code === "slidev-syntax");
+    expect(slidev.map((d) => `${d.severity}:${d.line}`)).toEqual(["warning:3", "warning:5"]);
+    expect(slidev[0]!.hint).toContain("kadal-deck import slidev");
+  });
+
   test("slide settings with no closing --- are a warning at their line", async () => {
     const d = await codes("# A\n\n---\nbackground: spotlight\n\n## B\n");
     expect(d).toEqual(["warning:frontmatter-unclosed:4"]);

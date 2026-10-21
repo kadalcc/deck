@@ -309,3 +309,30 @@ describe("code groups", () => {
     expect(out).toContain('data-title="bun"');
   });
 });
+
+describe("magic move line numbers", () => {
+  test("`{lines: true}` numbers the keyed tokens (shiki-magic-move numbers them when it tokenises)", async () => {
+    const { findMagicMoves } = await import("./magic-move.ts");
+    const { magicMoveData } = await import("./pipeline.ts");
+    const text = [
+      "````md magic-move {lines: true}",
+      "```ts",
+      "let a = 1",
+      "```",
+      "```ts",
+      "const a = 1",
+      "```",
+      "````",
+    ].join("\n");
+    const numbered = magicMoveData(findMagicMoves(text).blocks, highlighter, themes)[0]!;
+    expect(
+      numbered.steps.every((s) => (s.tokens.light as { lineNumbers?: boolean }).lineNumbers),
+    ).toBe(true);
+    const plain = magicMoveData(
+      findMagicMoves(text.replace(" {lines: true}", "")).blocks,
+      highlighter,
+      themes,
+    )[0]!;
+    expect((plain.steps[0]!.tokens.light as { lineNumbers?: boolean }).lineNumbers).toBe(false);
+  });
+});

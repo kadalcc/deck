@@ -51,6 +51,7 @@ export function Mermaid({
   theme,
   config,
   className,
+  alt,
 }: {
   children?: ReactNode;
   /** The diagram's source, when it is not the children. */
@@ -61,6 +62,8 @@ export function Mermaid({
   /** Mermaid configuration for this diagram (themeVariables, look, flowchart…). */
   config?: Record<string, unknown>;
   className?: string;
+  /** What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. */
+  alt?: string;
 }) {
   const source =
     code ??
@@ -106,7 +109,7 @@ export function Mermaid({
       className={["deck-mermaid", className].filter(Boolean).join(" ")}
       style={{ zoom: scale }}
       role="img"
-      aria-label={source.trim().split("\n")[0] || "Diagram"}
+      aria-label={alt || source.trim().split("\n")[0] || "Diagram"}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

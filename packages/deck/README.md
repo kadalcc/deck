@@ -29,6 +29,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | command | what |
 | --- | --- |
 | `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun] [--ci host]` | a deck from the starter, no questions asked; `--ci` adds a host's deploy files |
+| `kadal-deck import slidev <slides.md \| folder> [--out dir] [--force] [--install]` | a Kadal deck from a Slidev one, with `IMPORT-REPORT.md` for what did not carry over; see [Coming from Slidev](#coming-from-slidev) |
 | `kadal-deck dev [--https] [--tunnel] [--remote [password]]` | Vite dev server for the deck in this folder, with the [side editor](#editors) (E). `--tunnel`: on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`), with a QR in the terminal and the phone remote pairing through it; `--remote [password]`: on the network, the presenter and editing behind the password (a tunnel always has one) |
 | `kadal-deck build [deck files…] [--base /path/] [--out dir] [--without-notes] [--download] [--pwa] [--bundle-remote-assets]` | `dist/` for any static host; several deck files build into folders; `--without-notes` leaves the speaker notes out; `--download` (or `download: true`) also prints `dist/deck.pdf` for the deck's Download button. See [Build and host](#build-and-host) |
 | `kadal-deck serve [folder] [--port n] [--host addr] [--base /path/]` | serve a build as a static host would (routes, Range, cache headers), for checking it or a container |
@@ -50,6 +51,33 @@ take `--no-` to turn off. Exit codes: **0** ok (check: no errors) · **1** faile
 
 `KADAL_DECK_TOKEN` (an API token from the dashboard) and `KADAL_DECK_HOST` override the saved
 login, which is how CI publishes.
+
+## Coming from Slidev
+
+Kadal reads much of Slidev's Markdown as it is — `---` slides and frontmatter, comment notes with
+`[click]`, ```` ```ts {2|3} ```` / `{monaco-run}` / `twoslash` / magic-move fences, `<<<`
+snippets, `::right::` slots, mermaid and plantuml, `$$ {1|3}`, `v-drag`, `<mdi-icon />` tags, the
+ported themes. The rest of a Slidev deck is Vue, and one command converts it:
+
+```sh
+npx kadal-deck import slidev ./my-slidev-talk          # → ./my-slidev-talk-kadal
+cd my-slidev-talk-kadal && npm install && npm run dev
+```
+
+It writes a deck folder the way `kadal-deck new` makes one and converts: the headmatter (theme →
+its Kadal port, `colorSchema`, `transition` (Slidev's way out of a slide becomes Kadal's way in),
+`drawings`, `aspectRatio`/`canvasWidth`, `fonts`, `defaults`, `exportFilename`…); the directives
+and their component forms (`v-click` with every value and modifier, `v-after`, `v-clicks`,
+`v-switch`, `v-mark`, `v-motion`, `v-drag`, `clicks:`); Slidev's components by their Kadal names;
+Vue's template syntax (`{{ $slidev.nav.currentPage }}`, `$frontmatter`, `:prop` bindings, the
+slide's `<script setup>` constants, `v-for`/`v-if` that can be decided now, `$slidev.nav` click
+handlers); UnoCSS classes and attributify, written into `src/slidev.css` at Kadal's scale (Slidev
+draws on a 980px canvas, Kadal on 1920px, so every length and position is scaled); the project's
+`components/`, `layouts/` and `global-top.vue` as TSX (simple props, refs and handlers convert;
+anything else becomes a marked stub); `styles/`, `public/` and `snippets/`. What it cannot carry
+over stays in the slide as an MDX comment and gets a line in `IMPORT-REPORT.md`. Nothing in the
+Slidev project is run. The converter itself is a pure function, `convertSlidev` in
+`@kadal/deck/import`, for tools and pages that want it.
 
 ## For AI agents and tools
 

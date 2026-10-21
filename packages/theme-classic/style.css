@@ -248,8 +248,13 @@
   background: linear-gradient(rgba(0, 0, 0, 0.333), rgba(0, 0, 0, 0.533));
   pointer-events: none;
 }
-.theme-classic .classic-on-image > :not(.classic-dim) {
-  position: relative;
+/* The dim sits under the words without lifting each one (`position: relative` on every child
+   would pin a deck's own `absolute` corners, Slidev's `abs-br`, back into the flow). */
+.theme-classic .deck-layout-cover.classic-on-image {
+  isolation: isolate;
+}
+.theme-classic .classic-on-image > .classic-dim {
+  z-index: -1;
 }
 .theme-classic .deck-layout-section {
   align-items: stretch;
