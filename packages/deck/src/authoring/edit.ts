@@ -219,8 +219,11 @@ function rawBody(doc: Doc, s: RawSlide): string {
   return doc.lines(s.range.file).lines.slice(s.range.body, s.range.end).join("\n");
 }
 
-/** A body without its notes blocks (those outside code fences), and the blocks verbatim. */
-function withoutNotes(body: string): { body: string; notes: string[] } {
+/**
+ * A body without its notes blocks (those outside code fences: `<Notes>` and the trailing HTML
+ * comments Slidev reads as notes), the blocks verbatim, and whether they were all comments.
+ */
+function withoutNotes(body: string): { body: string; notes: string[]; comments: boolean } {
   const blocks = notesBlocks(body);
   let out = "";
   let at = 0;
@@ -232,6 +235,7 @@ function withoutNotes(body: string): { body: string; notes: string[] } {
   return {
     body: out.replace(/\n{3,}/g, "\n\n"),
     notes: blocks.map((b) => body.slice(b.start, b.end)),
+    comments: blocks.length > 0 && blocks.every((b) => b.kind === "comment"),
   };
 }
 
@@ -248,8 +252,9 @@ function writeFrontmatter(
     const next = edit(current);
     const empty = !next || !YAML.isMap(next.contents) || next.contents.items.length === 0;
     if (empty) {
-      // Drop the block: the fence lines too (a slide keeps its separator).
-      if (r.head)
+      // Drop the block: the fence lines too (a slide keeps its separator; a ```yaml block has
+      // its own two fence lines, both of which go).
+      if (r.head || r.frontmatter.block)
         doc.splice(r.file, r.frontmatter.open, r.frontmatter.close - r.frontmatter.open + 1, []);
       else doc.splice(r.file, yamlStart, r.frontmatter.close - yamlStart + 1, []);
       return;
@@ -344,13 +349,22 @@ export function updateSlide(
   return doc.result(index, notes, { count: n, same: untouched(n, index) });
 }
 
-/** Set (or with null/"" remove) a slide's speaker notes. `[click]` markers pace them. */
+/**
+ * Set (or with null/"" remove) a slide's speaker notes. `[click]` markers pace them. A slide whose
+ * notes were HTML comments (Slidev's spelling) keeps that spelling; any other gets `<Notes>`.
+ */
 export function setNotes(files: DeckFiles, ref: SlideRef, notes: string | null): EditResult {
   const doc = new Doc(files);
   const s = require(doc.before.slides, ref);
   if (notes) assertNotes(notes);
-  const body = withoutNotes(rawBody(doc, s)).body.replace(/\s+$/, "");
-  const next = notes?.trim() ? `${body}\n\n<Notes>\n${notes.trim()}\n</Notes>` : body;
+  const old = withoutNotes(rawBody(doc, s));
+  const body = old.body.replace(/\s+$/, "");
+  const asComment = old.comments && !notes?.includes("-->");
+  const next = notes?.trim()
+    ? asComment
+      ? `${body}\n\n<!--\n${notes.trim()}\n-->`
+      : `${body}\n\n<Notes>\n${notes.trim()}\n</Notes>`
+    : body;
   if (!next.trim() && !s.range.frontmatter)
     throw new EditError("Removing the notes would leave an empty slide; remove the slide instead.");
   doc.splice(

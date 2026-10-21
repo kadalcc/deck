@@ -14,6 +14,7 @@ import {
 import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
+import { checkDeckSyntax, checkSlideSyntax, deckTransitionNames, maskSlideBody } from "./lint-syntax.ts";
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
 import { checkValue, closest } from "./validate.ts";
 
@@ -27,7 +28,8 @@ import { checkValue, closest } from "./validate.ts";
  * themes and transitions the engine does not have; MDX that does not compile (with the line in
  * the file, not in the slide); JSX tags that are neither built in, the deck's own, nor imported;
  * includes that cannot be read; local images and videos that will not be served; glossary
- * problems; code-fence options the highlighter will ignore. Errors break the deck; warnings are
+ * problems; code-fence options the highlighter will ignore; and the Slidev syntax the compiler
+ * reads natively (lint-syntax.ts). Errors break the deck; warnings are
  * worth a look. Pure apart from the MDX compiler, which is imported only when `compile` is on.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -61,6 +63,8 @@ export interface DeckExtensions {
   components: string[];
   layouts: string[];
   backgrounds: string[];
+  /** Transitions registered with `registerTransition("name", …)` in the deck's source. */
+  transitions?: string[];
   /** True when the components map could not be read completely (a spread, a computed key). */
   open: boolean;
 }
@@ -98,6 +102,7 @@ const LANG_ALIASES = new Set([
   "txt",
   "plain",
   "mermaid",
+  "plantuml",
   "math",
 ]);
 
@@ -184,7 +189,11 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         ? "include-outside"
         : /cannot include/.test(p.message)
           ? "include-missing"
-          : "yaml",
+          : p.message.startsWith("circular include")
+            ? "include-circular"
+            : p.message.startsWith('src "')
+              ? "include-range"
+              : "yaml",
       message: p.message,
       file: p.file,
       line: p.line,
@@ -202,7 +211,10 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const deckKeys = new Map(cat.deckFrontmatter.map((k) => [k.name, k]));
   const layouts = new Set([...cat.layouts.map((l) => l.name), ...ext.layouts]);
   const bgs = new Set([...backgroundNames(cat), ...ext.backgrounds]);
-  const transitions = new Set(cat.transitions.map((t) => t.name));
+  const transitions = new Set([
+    ...cat.transitions.map((t) => t.name),
+    ...deckTransitionNames(deck.headmatter, deck.slides, ext.transitions),
+  ]);
   const themes = new Set(options.themes ?? cat.themes.map((t) => t.name));
   const components = new Set([...builtinComponentNames(cat), ...ext.components]);
   // Built-in components the deck has not replaced with its own of the same name.
@@ -211,6 +223,16 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   );
 
   // ── frontmatter ──────────────────────────────────────────────────────────────────────────
+  if (deck.slides[0]?.range.head)
+    checkDeckSyntax(
+      deck.headmatter,
+      {
+        file: deck.slides[0].range.file,
+        line: deck.slides[0].range.frontmatter ? deck.slides[0].range.frontmatter.open + 2 : 1,
+      },
+      slideKeys,
+      add,
+    );
   const ids = new Map<string, RawSlide>();
   for (const s of deck.slides) {
     const head = s.index === 0 && s.range.head;
@@ -393,11 +415,13 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       { default: remarkGfm },
       { default: remarkMath },
       { rehypeGlossary },
+      { remarkDeckFences },
     ] = await Promise.all([
       import("@mdx-js/mdx"),
       import("remark-gfm"),
       import("remark-math"),
       import("../compiler/rehype-glossary.ts"),
+      import("../compiler/remark-fences.ts"),
     ]);
     const lineCache = new Map<string, string[]>();
     const linesOf = (file: string) => {
@@ -409,9 +433,16 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       return l;
     };
     for (const s of deck.slides) {
-      const body = linesOf(s.range.file).slice(s.range.body, s.range.end).join("\n");
+      const raw = linesOf(s.range.file).slice(s.range.body, s.range.end).join("\n");
       const offset = s.range.body;
       const file = s.range.file;
+      checkSlideSyntax(
+        raw,
+        { file, offset, slide: s.index, head: s.range.head, hasFence: !!s.range.frontmatter },
+        add,
+      );
+      // What the compiler compiles: HTML comments and <style> blocks out, lines kept.
+      const body = maskSlideBody(raw);
       const nodes: Node[] = [];
       const collect = () => (tree: Node) => {
         const walk = (n: Node) => {
@@ -422,10 +453,19 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       };
       const terms = s.frontmatter.terms;
       const termWarnings: string[] = [];
+      const fenceWarnings: Array<{ message: string; line?: number }> = [];
       const processor = createProcessor({
         format: "mdx",
         jsx: false,
-        remarkPlugins: [remarkGfm, remarkMath, collect],
+        remarkPlugins: [
+          remarkGfm,
+          remarkMath,
+          collect,
+          [
+            remarkDeckFences,
+            { warn: (message: string, line?: number) => fenceWarnings.push({ message, line }) },
+          ],
+        ],
         rehypePlugins: [
           [
             rehypeGlossary,
@@ -471,6 +511,19 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         });
         continue;
       }
+      for (const w of fenceWarnings)
+        add({
+          severity: "warning",
+          code: /mermaid/i.test(w.message)
+            ? "mermaid-option"
+            : /plantuml/i.test(w.message)
+              ? "plantuml-option"
+              : "math-steps",
+          message: w.message,
+          file,
+          line: offset + (w.line ?? 1),
+          slide: s.index,
+        });
       for (const m of termWarnings)
         add({
           severity: "warning",
@@ -548,6 +601,8 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
           const lang = n.lang ?? "";
           const meta = n.meta ?? "";
           if (lang === "md" && /magic-move/.test(meta)) continue;
+          // Diagram fences take options of their own; remark-fences.ts checked them above.
+          if (lang === "mermaid" || lang === "plantuml") continue;
           if (lang && !DEFAULT_LANGS.includes(lang) && !LANG_ALIASES.has(lang))
             add({
               ...at,
@@ -666,8 +721,11 @@ export function readExtensions(
       }
     } else if (!/export\s+const\s+components/.test(src)) out.open = true;
   }
-  for (const s of [componentsSource ?? "", ...otherSources])
+  for (const s of [componentsSource ?? "", ...otherSources]) {
     for (const m of s.matchAll(/registerBackground\(\s*["']([^"']+)["']/g))
       out.backgrounds.push(m[1]!);
+    for (const m of s.matchAll(/registerTransition\(\s*["']([^"']+)["']/g))
+      (out.transitions ??= []).push(m[1]!);
+  }
   return out;
 }
