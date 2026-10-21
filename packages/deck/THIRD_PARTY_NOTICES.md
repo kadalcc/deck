@@ -65,8 +65,9 @@ Five first-party theme packages are ports of Slidev's official themes. They are 
 packages, not part of `@kadal/deck`, and each is MIT-licensed with this notice in its LICENSE:
 the look, the layouts (their names, slots and frontmatter), the bricks block drawings and the
 shibainu background drawings come from the originals; the stylesheets and the React layouts were
-rewritten for Kadal Deck, and the SVG drawings are copied unchanged (shibainu's lifted out of
-their Vue wrappers).
+rewritten for Kadal Deck, and the SVG drawings are copied with only their wrappers changed
+(shibainu's lifted out of their Vue templates; bricks' without the clip-path group, which an
+inlined data: URL cannot resolve).
 
 | Kadal package | ported from | version read | licence | source |
 |---|---|---|---|---|

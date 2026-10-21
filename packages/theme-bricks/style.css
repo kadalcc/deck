@@ -4,7 +4,8 @@
    words. Light only, as in Slidev.
 
    Every layout has its own arrangement of blocks behind it (assets/page-*.svg, the theme's own
-   drawings), painted on the slide itself so it reaches the edges whatever the padding.
+   drawings, without their clip-path group: Vite inlines files this small as data: URLs, where a
+   `url(#clip0)` breaks), painted on the slide itself so it reaches the edges whatever the padding.
 
    Units. Slidev draws on a 980px-wide canvas with a 16px rem and a 1.1rem body; Kadal draws on a
    1920px one. Everything here is in `--bricks-rem`, one Slidev rem at Kadal's scale, worked out

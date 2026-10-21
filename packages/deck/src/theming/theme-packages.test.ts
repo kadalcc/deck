@@ -125,6 +125,9 @@ describe("first-party theme packages", () => {
         for (const m of css.matchAll(/url\("?(\.[^")]+)"?\)/g)) {
           const file = join(root, m[1]!);
           expect(existsSync(file)).toBe(true);
+          // Vite inlines a small SVG as a data: URL, where `url(#id)` inside it breaks the CSS
+          // (the shell asked the server for "#clip0"): a background drawing refers to no ids.
+          if (file.endsWith(".svg")) expect(readFileSync(file, "utf8")).not.toMatch(/url\(#/);
           expect((pkg.files as string[]).some((f) => m[1]!.slice(2).startsWith(f))).toBe(true);
         }
       });
