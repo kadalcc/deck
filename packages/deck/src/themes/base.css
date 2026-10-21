@@ -11,6 +11,7 @@
 @import "./listbox.css";
 @import "./remote.css";
 @import "./narrate.css";
+@import "./export.css";
 
 :root {
   --deck-bg: #ffffff;
@@ -1831,7 +1832,9 @@ pre.deck-code.has-lines .line::before {
   bottom: 0;
   pointer-events: none;
 }
-.deck-chrome-area > * {
+/* No specificity of its own (:where): an overlay's own `pointer-events: none` (the confetti canvas,
+   the pause curtain at rest) still wins, or a screen-wide layer would swallow every click. */
+:where(.deck-chrome-area) > * {
   pointer-events: auto;
 }
 
