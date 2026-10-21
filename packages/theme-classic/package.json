@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-classic",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "description": "Classic: Slidev's default theme, ported to Kadal Deck. Avenir Next, light headings, square bullets, light and dark.",
   "keywords": [
     "kadal-theme",
@@ -72,7 +72,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.3.6",
+    "@kadal/deck": "^0.4.0",
     "react": "^19.2.0"
   },
   "devDependencies": {

@@ -1,0 +1,46 @@
+# @kadal/theme-seriph
+
+## 0.4.0
+
+### Minor Changes
+
+- e3e6cc8: Slidev's five official themes, ported as Kadal theme packages: `@kadal/theme-classic` (Slidev's default theme), `@kadal/theme-seriph`, `@kadal/theme-crisp`, `@kadal/theme-bricks` and `@kadal/theme-shibainu`. Each keeps its Slidev original's layouts with the same names, slots and frontmatter (crisp's `intro-image`, `3-images` and `bullets`; bricks' `items` and `<Polygon1>`–`<Polygon11>`; shibainu's fourteen backgrounds), its `themeConfig` (`primary`), colour schemes, fonts and Shiki themes, and Slidev's proportions exactly. Install one and write `theme: seriph`; the prebuilt shell bundles all five. Each package has a preview deck that reproduces the original theme's example deck. THEMES.md has the Slidev → Kadal name mapping, and the catalog lists the packages (`THEME_PACKAGES`, `kadal-deck info themes`).
+
+  Fixed: slides now take the theme's text colour and body face. They used to inherit the base stylesheet's #111 and system-ui whatever the theme or the headmatter's `fonts` said, because html and body read those tokens before the theme's class applies.
+
+### Patch Changes
+
+- 28b93c0: Import a Slidev deck in one command: `kadal-deck import slidev <slides.md | folder>` writes a new
+  deck folder (the way `kadal-deck new` makes one) and an `IMPORT-REPORT.md` listing, slide by
+  slide, whatever did not carry over exactly. It converts the headmatter (the theme to its Kadal
+  port, colour scheme, transitions — Slidev's way out of a slide becomes Kadal's way in — drawings,
+  canvas size, fonts, defaults, export options), every click directive and its component form
+  (`v-click` with its values and modifiers, `v-after`, `v-clicks`, `v-switch`, `v-mark`, `v-motion`,
+  `v-drag`), Slidev's components by their Kadal names, icons, Vue's template syntax (mustaches,
+  bindings, the slide's `<script setup>` constants, `v-for` and `v-if` that can be decided at
+  import, `$slidev.nav` click handlers), UnoCSS classes and attributify (written into
+  `src/slidev.css` at Kadal's scale), and the project's Vue components, layouts and global layers
+  as TSX. Nothing in the Slidev project is run. The converter is also a pure function,
+  `convertSlidev` in the new `@kadal/deck/import` entry. Slidev's starter template converts with
+  16 of its 17 slides needing nothing further.
+
+  Also: `kadal-deck check` warns about Slidev syntax that compiles but does nothing (`<div v-click>`,
+  `<v-clicks>`); a ` ```mermaid {alt: '…'} ` fence's `alt` labels the diagram for screen
+  readers; ````md magic-move {lines: true}`numbers its lines;`<Click as="img">` (a void element)
+  renders again; and the classic and seriph covers no longer pin a slide's own absolutely placed
+  elements (`abs-br`) back into the flow when the cover has a picture.
+
+- Updated dependencies [e08452a]
+- Updated dependencies [fb92912]
+- Updated dependencies [f78ff3e]
+- Updated dependencies [e42ad6a]
+- Updated dependencies [479e4ae]
+- Updated dependencies [62d24fc]
+- Updated dependencies [9d6191f]
+- Updated dependencies [6f74216]
+- Updated dependencies [28b93c0]
+- Updated dependencies [9042c0b]
+- Updated dependencies [e3e6cc8]
+- Updated dependencies [1e304e3]
+- Updated dependencies [cb39d7d]
+  - @kadal/deck@0.4.0
