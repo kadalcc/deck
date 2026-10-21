@@ -1,5 +1,24 @@
 # @kadal/deck-angular
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [e08452a]
+- Updated dependencies [fb92912]
+- Updated dependencies [f78ff3e]
+- Updated dependencies [e42ad6a]
+- Updated dependencies [479e4ae]
+- Updated dependencies [62d24fc]
+- Updated dependencies [9d6191f]
+- Updated dependencies [6f74216]
+- Updated dependencies [28b93c0]
+- Updated dependencies [9042c0b]
+- Updated dependencies [e3e6cc8]
+- Updated dependencies [1e304e3]
+- Updated dependencies [cb39d7d]
+  - @kadal/deck@0.4.0
+
 ## 0.3.6
 
 ### Patch Changes
