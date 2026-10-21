@@ -1,12 +1,16 @@
 /**
  * The prebuilt shell's entry: every engine stylesheet, theme, background and page, then
  * `startShell`. Nothing here is deck-specific — the deck arrives as deck.mdx at run time.
+ *
+ * The built-in themes load with the page; theme and addon packages (packages/theme-*) are
+ * registered by the generated `virtual:kadal-packages` and load only when a deck names one.
  */
 import "@kadal/deck/styles.css";
 import "@kadal/deck/themes/minimal.css";
 import "@kadal/deck/themes/rla.css";
 import "@kadal/deck/themes/stack.css";
 import "@kadal/deck/backgrounds";
+import "virtual:kadal-packages";
 
 import { AudiencePage } from "@kadal/deck/audience";
 import { LiveProvider } from "@kadal/deck/live";
