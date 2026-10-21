@@ -8,6 +8,7 @@ import { BackgroundLayer } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
 import { loadSlide, SlideFrame } from "./SlideFrame.tsx";
 import { useFontsReady } from "../theming/react.tsx";
+import { MDXProvider } from "./mdx.tsx";
 
 /**
  * `?print-pdf`: every slide laid out as a page at the authored size, one page per click step when
@@ -225,7 +226,9 @@ function PrintNotes({
   return (
     <aside className={["deck-print-notes", full ? "is-full" : ""].join(" ")}>
       {full && meta.title ? <h3>{meta.title}</h3> : null}
-      <Notes />
+      <MDXProvider>
+        <Notes />
+      </MDXProvider>
     </aside>
   );
 }

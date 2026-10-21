@@ -8,6 +8,7 @@ import { ConfettiLayer } from "./ConfettiLayer.tsx";
 import { ThemeMenu } from "./ThemeMenu.tsx";
 import { useActions, useCurrentSlide, useNav, useUi } from "./hooks.ts";
 import { loadSlide } from "./SlideFrame.tsx";
+import { MDXProvider } from "./mdx.tsx";
 
 /**
  * The chrome around the slides: arrows, progress, the slide number, the pause curtain, the
@@ -385,7 +386,9 @@ export function NotesFooter() {
   if (!Notes) return null;
   return (
     <aside className="deck-notes-footer">
-      <Notes />
+      <MDXProvider>
+        <Notes />
+      </MDXProvider>
     </aside>
   );
 }

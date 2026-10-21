@@ -4,6 +4,7 @@ import { Icon } from "../components/bling.tsx";
 import type { SlideMeta } from "../core/model.ts";
 import { CLICK_MARKER, currentPart } from "../core/notes-markers.ts";
 import { type NotesDraft, useNotesEditor, useSlideNotes } from "./notes.ts";
+import { MDXProvider } from "./mdx.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -324,7 +325,9 @@ export function NotesView({
             onDoubleClick={editor && !bare ? () => void begin() : undefined}
           >
             {Notes ? (
-              <Notes key={revision} />
+              <MDXProvider>
+                <Notes key={revision} />
+              </MDXProvider>
             ) : (
               <p className="deck-muted">
                 {empty}
