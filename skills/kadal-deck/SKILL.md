@@ -29,7 +29,9 @@ and `slide_render` (pictures of slides).
    `deck_reference`. With MCP, edit through `slide_update` / `slide_add` / `notes_set` (they
    touch only that slide and lint it); otherwise edit `deck.mdx` directly.
 4. **Check.** `npx kadal-deck check` (MCP `deck_check`). Fix every error; read the warnings.
-   Exit code 1 means errors remain.
+   Exit code 1 means errors remain. `npx kadal-deck format` tidies the file (separators,
+   frontmatter YAML, each slide's Markdown; code, notes and sugar stay as written); `--check`
+   only reports.
 5. **Look.** `npx kadal-deck screenshot --slide all` writes `screenshots/slide-NNN.png` (MCP
    `slide_render` returns the images). Open and inspect every picture: text overflowing or
    clipped, crowding, tiny type, low contrast, empty halves, broken images or components. Fix and
@@ -43,7 +45,10 @@ and `slide_render` (pictures of slides).
    try to sign in yourself; if `kadal-deck whoami` exits 3, ask them to.
 
 `npx kadal-deck dev` serves the deck with live reload for the user (MCP `deck_preview` returns
-the URL). `?` in the browser lists keys; `S` opens the presenter view; `R` narrates — reads each
+the URL); `--tunnel` gives it a public https address (Cloudflare Quick Tunnel, needs `cloudflared`;
+the presenter is password-guarded), `--remote <password>` puts it on the network with the
+presenter behind a password. `?` in the browser lists keys; `E` opens the side editor (the
+slide's source beside it, Cmd/Ctrl+S saves into the file); `S` opens the presenter view; `R` narrates — reads each
 `[click]` part of the notes aloud and turns the pages, for rehearsal. `npx kadal-deck narrate`
 bakes that speech into `public/narration/` (it needs `kokoro-js`: run it with `--setup` first,
 which installs a few hundred MB — only when the user wants recorded narration).

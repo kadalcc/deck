@@ -123,3 +123,16 @@ the `monaco-editor` package) with it.
 
 The CSS for TwoSlash's popups and the notation marks is written for this engine (it uses the class
 names TwoSlash and Shiki's transformers emit); no stylesheet of theirs is copied.
+
+## The side editor and the formatter
+
+`kadal-deck dev`'s side editor (press E) is CodeMirror 6; `kadal-deck format` is Prettier with
+`@kadal/prettier-plugin`. All are ordinary dependencies of `@kadal/deck`, used as they are:
+CodeMirror is served to the browser by the dev server only, and is **never in a built deck**;
+Prettier runs in Node only.
+
+| Package | Version | Licence | Source | Where it runs |
+|---|---|---|---|---|
+| @codemirror/state, view, commands, language, search, lang-markdown, lang-yaml, lang-javascript, lang-css, lang-html | 6.43.15 (view) | MIT | https://github.com/codemirror | the dev server's browser page (lazy, dev only) |
+| @lezer/highlight | 1.x | MIT | https://github.com/lezer-parser/highlight | with CodeMirror |
+| prettier | 3.9.10 | MIT | https://github.com/prettier/prettier | Node (`kadal-deck format`) |
