@@ -528,6 +528,22 @@ describe("the project: includes, Vue files, styles", () => {
     expect(what(r).join()).toContain("setup/main.ts configures Slidev's app in code");
   });
 
+  test("files <<< reads are copied; a missing one is a warning; a root style.css is imported", () => {
+    const r = convert(
+      "<<< @/src/a.ts#one\n\n<<< ./nope.ts",
+      project({
+        "src/a.ts": "// #region one\nx\n// #endregion one",
+        "style.css": ".big { @apply text-3xl; }",
+      }),
+    );
+    expect(r.info.copy).toEqual(["src/a.ts"]);
+    expect(what(r).join()).toContain("<<< ./nope.ts: the file is not in the project.");
+    expect(r.files["src/styles/style.css"]).toContain(
+      ".big { font-size: calc(1.875 * var(--slidev-rem));",
+    );
+    expect(r.info.styleImports).toContain("./styles/style.css");
+  });
+
   test("the utility stylesheet holds what the slides use; unknown classes are named once", () => {
     const r = convert(
       '---\nclass: text-center\n---\n\n<div class="abs-br my-own">x</div>\n\n<style>\n.my-own { color: red }\n</style>\n\n<p class="who-knows">y</p>\n',

@@ -219,11 +219,38 @@ export function convertSlidev(text: string, options: SlidevImportOptions = {}): 
         : "Do the same in src/main.tsx or deck.config.ts.",
     });
   for (const f of list("public")) copy.add(`public/${f}`);
+  // Slidev loads a style.css at the project's root by itself
+  for (const f of ["style.css", "styles.css"]) {
+    const css = read(f);
+    if (css === null) continue;
+    const { css: next, unknown } = convertCss(css, canvas.scale);
+    for (const m of css.matchAll(/\.([A-Za-z_][\w-]*)/g)) customClasses.add(m[1]!);
+    if (unknown.length)
+      deckReport({
+        severity: "warning",
+        file: f,
+        what: `@apply names classes the importer has no CSS for: ${unknown.join(", ")}.`,
+      });
+    files[`src/styles/${f}`] = next;
+    styleImports.push(`./styles/${f}`);
+  }
   if (list("snippets").length) for (const f of list("snippets")) copy.add(`snippets/${f}`);
 
   // ── the slides ─────────────────────────────────────────────────────────────────────────
   const headScope: Record<string, Value> = {
     $slidev: { configs: head as Value, themeConfigs: ((head.themeConfig as Value) ?? {}) as Value },
+  };
+  /** A `<<<` line of `file` reads `p`: copy it beside deck.mdx (or say it is missing). */
+  const snippetRead = (file: string, p: string) => {
+    const target = p.startsWith("@/") ? p.slice(2) : posix.join(posix.dirname(file), p);
+    if (read(target) !== null) copy.add(target);
+    else
+      deckReport({
+        severity: "warning",
+        file,
+        what: `<<< ${p}: the file is not in the project.`,
+        suggestion: "Copy it in beside deck.mdx.",
+      });
   };
   let totalSlides = 0;
   const titles: string[] = [];
@@ -335,6 +362,7 @@ export function convertSlidev(text: string, options: SlidevImportOptions = {}): 
         helpers,
         components,
         typeImports,
+        onSnippet: (p: string) => snippetRead(path, p),
         clickAnimation: mapped.clickAnimation ?? settings.clickAnimation,
         dragNames: mapped.dragNames,
       };
@@ -377,7 +405,8 @@ export function convertSlidev(text: string, options: SlidevImportOptions = {}): 
         }
       }
       records.push({ fm, content: `${body.trim()}${note}`.trim() });
-      if (!includes && shown && !items.slice(before).some((r) => r.severity !== "info")) cleanSlides++;
+      if (!includes && shown && !items.slice(before).some((r) => r.severity !== "info"))
+        cleanSlides++;
     });
     return { records, transitions, hidden };
   };

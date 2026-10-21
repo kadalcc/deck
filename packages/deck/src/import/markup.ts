@@ -57,6 +57,8 @@ export interface MarkupContext {
   components: Set<string>;
   /** Packages `twoslash` fences import (their types must be installed for TwoSlash). */
   typeImports?: Set<string>;
+  /** Hears each file a `<<<` line reads (as written: `@/snippets/a.ts`, `./b.ts`). */
+  onSnippet?: (path: string) => void;
   /** `clickAnimation:` of the slide (or the deck): the default v-click presets. */
   clickAnimation: string[];
   /** The slide's `dragPos` names (their positions are scaled in the frontmatter). */
@@ -403,8 +405,12 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
         if (steps) blockStep(steps.split("|").length - 1, ctx.lineAt(span.start));
         return text;
       }
+      case "snippet": {
+        const path = /^\s*<<<\s+(\S+)/.exec(text)?.[1]?.split("#")[0];
+        if (path) ctx.onSnippet?.(path);
+        return text;
+      }
       case "code":
-      case "snippet":
         return text;
       case "comment":
         return mdxComment(text.slice(4, text.endsWith("-->") ? -3 : undefined));
@@ -1276,7 +1282,7 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
     if (kadal === "Click" || kadal === "After") {
       const own = el.attrs.filter((a) => a.name !== "at" && a.name !== "hide");
       const at = el.attrs.find((a) => a.name === "at" || a.name === ":at");
-      const atValue = at ? (at.name === ":at" ? at.value : at.value) : undefined;
+      const atValue = at?.value;
       const mods = el.attrs.some((a) => a.name === "hide") ? ["hide"] : [];
       const cAttrs =
         clickProps(
