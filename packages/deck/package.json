@@ -110,6 +110,10 @@
       "types": "./dist/renderers/contract.d.ts",
       "import": "./dist/renderers/contract.js"
     },
+    "./monaco": {
+      "types": "./dist/monaco/index.d.ts",
+      "import": "./dist/monaco/index.js"
+    },
     "./sketch": {
       "types": "./dist/sketch/index.d.ts",
       "import": "./dist/sketch/index.js"
@@ -145,10 +149,15 @@
     "@excalidraw/mermaid-to-excalidraw": "2.2.2",
     "@mdx-js/mdx": "^3.1.1",
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "@shikijs/monaco": "^3.23.0",
+    "@shikijs/transformers": "^3.23.0",
+    "@shikijs/twoslash": "^3.23.0",
+    "dompurify": "^3.4.16",
     "katex": "^0.16.22",
     "lucide-react": "^1.18.0",
     "mermaid": "^11.4.1",
     "modern-screenshot": "^4.7.0",
+    "monaco-editor": "0.57.0",
     "motion": "^12.23.24",
     "qrcode": "^1.5.4",
     "rehype-katex": "^7.0.1",
@@ -157,6 +166,7 @@
     "remark-math": "^6.0.0",
     "shiki": "^3.13.0",
     "shiki-magic-move": "^1.1.0",
+    "sucrase": "^3.35.1",
     "unist-util-visit": "^5.0.0",
     "yaml": "^2.8.0",
     "zod": "^4.1.12"
@@ -180,7 +190,8 @@
     "vite": "^7.0.0 || ^8.0.0",
     "playwright": "^1.50.0",
     "pptxgenjs": "^3.12.0",
-    "kokoro-js": "^1.2.1"
+    "kokoro-js": "^1.2.1",
+    "typescript": ">=5.5.0"
   },
   "peerDependenciesMeta": {
     "playwright": {
@@ -190,6 +201,9 @@
       "optional": true
     },
     "kokoro-js": {
+      "optional": true
+    },
+    "typescript": {
       "optional": true
     }
   }

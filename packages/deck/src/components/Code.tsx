@@ -1,15 +1,22 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ShikiMagicMovePrecompiled } from "shiki-magic-move/react";
 
 import { deserialiseSteps, type LineSet } from "../compiler/code-meta.ts";
 import { useSlide } from "../react/context.ts";
 import { useClick, useUi } from "../react/hooks.ts";
+import { CodeGroupContext } from "./CodeGroup.tsx";
+import { CodeTitle } from "./file-icons.tsx";
+import { MonacoCode } from "./MonacoCode.tsx";
+import { useTwoslashPopups } from "./twoslash.ts";
 
 /**
  * The `pre` mapping: a code block highlighted at build time, with the fence meta carried in data
  * attributes. `{2-3|5|all}` reserves one click per step after the first and lights the lines of
- * the current step; `{lines:true}` numbers lines; `[title]` adds a title bar; `{maxHeight}` scrolls;
- * `{hide|…}` keeps the block hidden until its first click.
+ * the current step; `{lines:true}` numbers lines; `[title]` adds a title bar (with a file-type
+ * badge); `{maxHeight}` scrolls; `{hide|…}` keeps the block hidden until its first click.
+ * Notation marks (`// [!code ++]`…) arrive as classes and are pure CSS; a `twoslash` block's
+ * type popups open on hover and on keyboard focus. A `{monaco…}` block is handed to
+ * `MonacoCode`, which keeps this same face until (and wherever) the editor is not loaded.
  */
 export interface CodeProps {
   children?: ReactNode;
@@ -22,10 +29,25 @@ export interface CodeProps {
   "data-hide-until-step"?: string;
   "data-lang"?: string;
   "data-total"?: string;
+  /** `editor`, `diff`, `run` or `write`: the block is a Monaco editor (see MonacoCode). */
+  "data-monaco"?: string;
+  /** The block's source for the editor (the modified side of a diff). */
+  "data-code"?: string;
+  /** The original side of a `{monaco-diff}`. */
+  "data-original"?: string;
+  /** The editor's and runner's options, as JSON. */
+  "data-monaco-options"?: string;
+  /** Where a `<<<` import read the code from: `path#region`. */
+  "data-snippet"?: string;
+  "data-twoslash"?: string;
   [key: string]: unknown;
 }
 
 export function Code(props: CodeProps) {
+  return props["data-monaco"] ? <MonacoCode {...props} /> : <PlainCode {...props} />;
+}
+
+function PlainCode(props: CodeProps) {
   const {
     children,
     className,
@@ -37,8 +59,10 @@ export function Code(props: CodeProps) {
     "data-hide-until-step": hideUntil,
     "data-lang": lang,
     "data-total": total,
+    "data-twoslash": twoslash,
     ...rest
   } = props;
+  const inGroup = useContext(CodeGroupContext);
   const steps = useMemo<LineSet[] | null>(
     () => (stepsAttr ? deserialiseSteps(stepsAttr) : null),
     [stepsAttr],
@@ -47,6 +71,7 @@ export function Code(props: CodeProps) {
   const { range, click } = useClick(clickCount > 0 ? { span: clickCount } : { at: 0 });
   const pre = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
+  useTwoslashPopups(pre, !!twoslash);
 
   // rel: 0 before the block's first click, then 1..clickCount.
   const rel = clickCount > 0 ? Math.min(clickCount, Math.max(0, click - range.start + 1)) : 0;
@@ -67,7 +92,15 @@ export function Code(props: CodeProps) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(pre.current?.innerText ?? "");
+      // Removed lines of a diff are not part of the code you would paste.
+      const el = pre.current;
+      const text = el
+        ? [...el.querySelectorAll<HTMLElement>(".line")]
+            .filter((l) => !l.classList.contains("remove"))
+            .map((l) => l.innerText.replace(/\n$/, ""))
+            .join("\n")
+        : "";
+      await navigator.clipboard.writeText(text || (el?.innerText ?? ""));
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
@@ -76,19 +109,15 @@ export function Code(props: CodeProps) {
   };
 
   const start = Number(startAttr ?? 1);
+  const showTitle = !!title && !inGroup;
   return (
     <div
-      className={["deck-code-block", hidden ? "is-hidden" : "", title ? "has-title" : ""]
+      className={["deck-code-block", hidden ? "is-hidden" : "", showTitle ? "has-title" : ""]
         .filter(Boolean)
         .join(" ")}
       data-lang={lang ?? "text"}
     >
-      {title ? (
-        <div className="deck-code-title">
-          <span className="deck-code-title-dot" />
-          <span>{title}</span>
-        </div>
-      ) : null}
+      {showTitle ? <CodeTitle title={title} lang={lang} /> : null}
       <pre
         ref={pre}
         {...rest}
@@ -134,12 +163,7 @@ export function MagicMove({ block }: { block: number }) {
         .filter(Boolean)
         .join(" ")}
     >
-      {data.title ? (
-        <div className="deck-code-title">
-          <span className="deck-code-title-dot" />
-          <span>{data.title}</span>
-        </div>
-      ) : null}
+      {data.title ? <CodeTitle title={data.title} lang={data.steps[0]?.lang} /> : null}
       <div className="deck-code shiki-magic-move-wrap">
         <ShikiMagicMovePrecompiled
           steps={steps}

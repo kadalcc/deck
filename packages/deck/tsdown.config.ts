@@ -22,6 +22,7 @@ export default defineConfig({
     "renderers/index": "src/renderers/index.ts",
     "renderers/contract": "src/renderers/contract.ts",
     "sketch/index": "src/sketch/index.ts",
+    "monaco/index": "src/monaco/index.ts",
     "export/index": "src/export/index.ts",
     "cli/index": "src/cli/index.ts",
     "cli/bin": "src/cli/bin.ts",

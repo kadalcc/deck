@@ -16,3 +16,4 @@ export {
   isToPreview,
 } from "./protocol.ts";
 export { type ShellOptions, shellBase, startShell } from "./shell.tsx";
+export { type MonacoHost, type MonacoLoader, registerMonacoLoader } from "../monaco/loader.ts";
