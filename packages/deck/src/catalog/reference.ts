@@ -92,6 +92,14 @@ export const LAYOUT_META: Record<string, Omit<LayoutInfo, "name">> = {
     example:
       "---\nlayout: two-cols\n---\n\n## Before\n\nThe old way.\n\n::right::\n\n## After\n\nThe new way.",
   },
+  "two-cols-header": {
+    summary:
+      "A header across the top (everything before the first slot), then `::left::` and `::right::` side by side; an optional `::bottom::` spans both again.",
+    keys: [],
+    slots: ["default", "left", "right", "bottom"],
+    example:
+      "---\nlayout: two-cols-header\n---\n\n## Then and now\n\n::left::\n\nThe old way.\n\n::right::\n\nThe new way.",
+  },
   image: {
     summary: "A full-slide image (frontmatter `image`) with the content over it.",
     keys: ["image", "backgroundSize"],
@@ -481,8 +489,17 @@ export const LIVE: LiveFeature[] = [
 export const CLI: CliCommand[] = [
   {
     name: "new",
-    usage: "kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun]",
-    summary: "Scaffold a deck (non-interactive).",
+    usage:
+      "kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun] · kadal-deck new --theme <name> [dir] · kadal-deck new --addon <name> [dir]",
+    summary:
+      "Scaffold a deck (non-interactive); with --theme or --addon, a package ready to publish: package.json per the contract, a stylesheet with every token and layout class in light and dark, a layout, a layer, a README and a preview deck.",
+    json: true,
+  },
+  {
+    name: "theme",
+    usage: "kadal-deck theme eject [--dir ./theme] [--force] [--theme name] [-C deck] [--json]",
+    summary:
+      "Copy the deck's theme (a package, or a built-in as a package-shaped folder) into the deck and point the headmatter at it, to change it there.",
     json: true,
   },
   {
@@ -508,7 +525,8 @@ export const CLI: CliCommand[] = [
   {
     name: "info",
     usage: "kadal-deck info [topic] [--search q] [--json]",
-    summary: "Print the catalog: components, layouts, backgrounds, frontmatter…",
+    summary:
+      "Print the catalog: components, layouts, backgrounds, frontmatter… `info themes` adds the theme and addon packages the deck can see, with their layouts.",
     json: true,
   },
   {
@@ -644,8 +662,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   view: '"slide" (the stage) or "scroll" (a page).',
   scrollProgress: "The scroll view's progress bar.",
   scrollSnap: "Scroll snapping in the scroll view.",
-  theme: "The theme: minimal, rla, stack, or one your CSS defines as .theme-<name>.",
-  themes: "Themes the theme menu offers (main.tsx must import their CSS).",
+  theme:
+    "The theme: a built-in (minimal, rla, stack, none), a package (`seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then a package of that name), a folder (`./theme`), or a class your own CSS defines (.theme-<name>). The Vite plugin imports a package's CSS and module for you; `kadal-deck theme eject` copies it into the deck.",
   colorScheme: '"auto" (follow the system), "light" or "dark".',
   pdfSeparateFragments: "A page per click step in print/PDF.",
   pdfMaxPagesPerSlide: "Pages a tall slide may spill onto.",
@@ -665,7 +683,14 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   slug: "The deck's slug; set by the build from the Vite base.",
   badge: "Set by the host; leave it alone.",
   ads: "Set by the host; leave it alone.",
-  fonts: 'Google Fonts families to load, e.g. ["Inter:wght@400;600"].',
+  fonts:
+    'Web fonts. A list of Google Fonts families as written (["Inter:wght@400;600"]), or Slidev\'s object, which also points the theme\'s font tokens at them: { sans, heading, serif, mono, weights: "300,400,600,700", italic, provider: google | bunny | none, local: [families already installed], fallbacks: true }. Exports wait for them.',
+  addons:
+    "Addon packages, in order (a later one wins a name clash): `qr` finds @kadal/addon-qr, then kadal-addon-qr, then a package of that name; `./my-addon` is a folder. Each brings components, layouts, layers, CSS and a setup.",
+  themeConfig:
+    'The theme\'s knobs, over its own defaults: each key becomes a CSS custom property `--theme-<kebab-key>` on the deck root (`primaryColor: "#0f766e"` → `--theme-primary-color`; nested keys join with dashes). What a theme reads is in its README.',
+  layers:
+    "Where the global and slide layers (global-top.tsx and friends, or a theme's or addon's) draw besides the deck, print and export: { presenter: true, overview: false }.",
   seoMeta: "Extra <meta> tags.",
 };
 
