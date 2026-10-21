@@ -110,7 +110,13 @@ export function goto(state: NavState, columns: Column[], to: Partial<Position>):
           ? "down"
           : p.v < state.v
             ? "up"
-            : "none";
+            : // On the same slide, a jump to a later step is a step forward and an earlier one a
+              // step back (a [click] marker in the notes, the overview's step slider).
+              p.click > state.click
+              ? "forward"
+              : p.click < state.click
+                ? "back"
+                : "none";
   return { ...state, ...p, direction, seq: state.seq + 1 };
 }
 
