@@ -2,6 +2,7 @@ import { type ComponentType, createContext, useContext } from "react";
 
 import type { ClickRegistry } from "../core/clicks.ts";
 import type { CommandRegistry } from "../core/commands.ts";
+import type { PanelRegistry } from "../core/panels.ts";
 import type { Layout } from "../core/layout.ts";
 import type {
   Column,
@@ -16,14 +17,7 @@ import type { Store } from "../core/store.ts";
 import type { GlossaryEntry } from "../glossary/model.ts";
 
 /** Which page of the deck app is showing. */
-export type ViewMode =
-  | "play"
-  | "presenter"
-  | "audience"
-  | "print"
-  | "stats"
-  | "notes"
-  | "remote";
+export type ViewMode = "play" | "presenter" | "audience" | "print" | "stats" | "notes" | "remote";
 
 /** What the lightbox can show; "sketch" is an Excalidraw canvas keyed by its sketch. */
 export type LightboxKind = "image" | "video" | "iframe" | "sketch";
@@ -166,6 +160,8 @@ export interface DeckRuntime {
   terms: Store<TermReveal | null>;
   /** Definitions by id: the deck's glossary, plus every mounted one-off `<Term def>`. */
   glossary: Map<string, GlossaryEntry>;
+  /** Tabs a host adds to the presenter's sidebar (a hosted assistant). See core/panels.ts. */
+  panels: PanelRegistry;
 }
 
 export const DeckContext = createContext<DeckRuntime | null>(null);
