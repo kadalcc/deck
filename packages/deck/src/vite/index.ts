@@ -45,6 +45,7 @@ import { monacoWriteDev } from "./monaco-dev.ts";
 import { loadTwoslash } from "./twoslash.ts";
 import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } from "./notes-dev.ts";
 import { SIDE_EDITOR_DEPS, SOURCE_PATH, sideEditorCode, sourceEndpoint } from "./source-dev.ts";
+import { type RemoteGate, remoteGate, remoteSettings } from "./remote-dev.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -376,7 +377,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     async config(user, env) {
       const out: {
         worker?: { format: "es" };
-        server?: { https?: object; fs?: { allow: string[] } };
+        server?: { https?: object; fs?: { allow: string[] }; allowedHosts?: string[] };
         resolve?: { dedupe: string[] };
         optimizeDeps?: { include: string[] };
       } = {};
@@ -411,6 +412,13 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       // not reload the page.
       if (env.command === "serve")
         out.optimizeDeps = { include: [...(out.optimizeDeps?.include ?? []), ...SIDE_EDITOR_DEPS] };
+      // `kadal-deck dev --tunnel` (vite/remote-dev.ts): requests arrive with the tunnel's host name,
+      // which Vite's DNS-rebinding guard would turn away.
+      if (env.command === "serve" && remoteSettings().tunnel && user.server?.allowedHosts !== true)
+        out.server = {
+          ...out.server,
+          allowedHosts: [...(user.server?.allowedHosts || []), ".trycloudflare.com"],
+        };
       if (env.command === "serve" && process.env.KADAL_DECK_HTTPS === "1" && !user.server?.https) {
         const { devCertificate } = await import("./https.ts");
         const https = devCertificate(resolve(user.root ?? process.cwd()));
@@ -420,7 +428,9 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     },
     configureServer(s) {
       server = s;
-      remoteRelay(s);
+      // First: the password gate stands in front of every endpoint registered after it.
+      const gate = remoteGate(s, { base: () => base });
+      remoteRelay(s, gate);
       monacoWriteDev(s, { root: () => root, entry: () => entryPath, quiet: (f, t) => quietWrites.set(f, t) });
       const dist = excalidrawDist();
       s.middlewares.use((req, res, next) => {
@@ -601,8 +611,14 @@ export default deck;
  * HMR socket every page of the deck already holds, so it listens wherever Vite does — and nowhere
  * Vite does not. Only `serve` has it; a build has no relay.
  */
-function remoteRelay(s: ViteDevServer) {
-  const relay = createRelay({ urls: () => s.resolvedUrls?.network ?? [] });
+function remoteRelay(s: ViteDevServer, gate?: RemoteGate) {
+  // The tunnel's address first, when there is one: a phone can reach it from any network.
+  const relay = createRelay({
+    urls: () => {
+      const tunnel = gate?.publicUrl();
+      return [...(tunnel ? [tunnel] : []), ...(s.resolvedUrls?.network ?? [])];
+    },
+  });
   const peers = new WeakMap<object, RelayPeer>();
   type Client = { send(event: string, payload?: unknown): void };
   const peerOf = (client: Client): RelayPeer => {

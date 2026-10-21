@@ -4,7 +4,7 @@
  *   kadal-deck new <dir>                  a deck from the starter, no questions asked
  *   kadal-deck new --theme <name> [dir]   a theme package, ready to publish (--addon: an addon)
  *   kadal-deck theme eject [--dir theme]  copy the deck's theme into the deck, to change it
- *   kadal-deck dev [vite flags]           the deck with live reload (vite)
+ *   kadal-deck dev [vite flags]           the deck with live reload (vite); --tunnel, --remote [pwd]
  *   kadal-deck build [vite flags]         dist/ for any static host (vite build); --without-notes
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
  *   kadal-deck format [files] [--check]   format deck files (@kadal/prettier-plugin)
@@ -49,6 +49,10 @@ export const HELP = `kadal-deck <command> [options]
               deck and point the headmatter at it   (-C <deck> for a deck elsewhere)
   dev         run the deck locally with live reload (Vite flags pass through)
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
+              --tunnel  on the internet through a Cloudflare Quick Tunnel (needs cloudflared): an
+              https address and QR in the terminal, used by the phone remote; always password-guarded
+              --remote [password]  on your network; with a password, the presenter, notes and
+              editing ask for it from any other device (and over the tunnel)
   build       build the deck into dist/ (any static host can serve it)
               --without-notes  leave the speaker notes out of the build
               --download  also print it to dist/deck.pdf for the deck's Download button
@@ -229,7 +233,7 @@ async function run(
         rest,
         command === "build"
           ? { dir: GLOBAL.dir!, download: { kind: "boolean" }, port: { kind: "number" } }
-          : { dir: GLOBAL.dir! },
+          : { dir: GLOBAL.dir!, tunnel: { kind: "boolean" }, remote: { kind: "optional-string" } },
         { passthrough: true },
       );
       const dir = resolve(cwd, str(flags.dir) ?? ".");
@@ -241,9 +245,24 @@ async function run(
       if (command === "build" && vite.includes("--without-notes"))
         process.env.KADAL_DECK_WITHOUT_NOTES = "1";
       const passed = vite.filter((a) => a !== "--https" && a !== "--without-notes");
+      // `dev --tunnel` and `--remote [password]`: checked now, carried out by the deck's plugin
+      // (cli/remote.ts → vite/remote-dev.ts).
+      const extra: string[] = [];
+      if (command === "dev" && (flags.tunnel === true || flags.remote !== undefined)) {
+        const { devRemote } = await import("./remote.ts");
+        const r = devRemote({
+          tunnel: flags.tunnel === true,
+          remote: flags.remote,
+          viteArgs: passed,
+        });
+        Object.assign(process.env, r.env);
+        extra.push(...r.args);
+      }
       await runVite(
         dir,
-        command === "build" ? ["build", ...positionals, ...passed] : [...positionals, ...passed],
+        command === "build"
+          ? ["build", ...positionals, ...passed]
+          : [...positionals, ...passed, ...extra],
       );
       // `--download` (or `download: true` in the deck): the PDF its Download button offers.
       if (command === "build" && flags.download !== false) {
