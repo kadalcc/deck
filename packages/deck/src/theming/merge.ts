@@ -227,3 +227,34 @@ export function shikiThemes(
     dark: explicit?.dark ?? fromTheme?.dark ?? "github-dark",
   };
 }
+
+/**
+ * The `fonts` for the theme on show. The deck's config carries its own theme's `config.fonts`
+ * under the headmatter's; when a viewer picks another theme from the menu, what came from the
+ * deck's theme goes with it and the picked theme's comes instead (or nothing, and that theme's
+ * CSS tokens speak). Families the deck chose itself (headmatter, deck.config.ts) stay, whichever
+ * theme is shown. Without this, a theme picked from the menu never loaded its fonts and wore the
+ * deck theme's families, which the root's inline font variables forced over its own tokens.
+ */
+export function fontsForTheme(
+  packages: ManifestPackages | null | undefined,
+  shown: string,
+  fonts: unknown,
+): unknown {
+  const declared = packages?.theme;
+  if (!packages || !declared || declared.name === shown) return fonts;
+  const isObj = (v: unknown): v is Record<string, unknown> =>
+    !!v && typeof v === "object" && !Array.isArray(v);
+  const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const own = (declared.meta as ThemeMeta).config?.fonts;
+  const picked = (packages.themes.find((t) => t.name === shown)?.meta as ThemeMeta | undefined)
+    ?.config?.fonts;
+  const nothing = fonts == null || (Array.isArray(fonts) && fonts.length === 0);
+  if (nothing || same(fonts, own)) return picked ?? [];
+  // The headmatter's object merged one level over the theme's: keep only the deck's own keys.
+  if (isObj(fonts) && isObj(own)) {
+    const authored = Object.fromEntries(Object.entries(fonts).filter(([k, v]) => !same(own[k], v)));
+    return isObj(picked) ? { ...picked, ...authored } : authored;
+  }
+  return fonts;
+}
