@@ -12,13 +12,14 @@ import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { useDeck } from "../react/context.ts";
 import { Listbox } from "../react/Listbox.tsx";
 import { useFit } from "../react/fit.ts";
+import { currentPart, splitNotes } from "../core/notes-markers.ts";
+import { formatClock, fromRemote, readTimer } from "../core/timer.ts";
 import { expectedElapsed, formatElapsed, formatPace, paceTone } from "../react/pacing.ts";
 import { SlideFrame } from "../react/SlideFrame.tsx";
 import {
   type Aim,
   createCoalescer,
   createOneEuro,
-  notesSegment,
   orientationToPoint,
   readOrientation,
 } from "./air.ts";
@@ -206,7 +207,7 @@ function useSettings(): [Settings, (patch: Partial<Settings>) => void] {
   const deck = useDeck();
   const key = `deck.remote.${deck.config.slug || "deck"}`;
   const [settings, setSettings] = useState<Settings>(() => {
-    const base = defaults(deck.config.totalTime || null);
+    const base = defaults(deck.config.totalTime || deck.config.duration || null);
     try {
       return { ...base, ...(JSON.parse(readItem(key) ?? "{}") as Partial<Settings>) };
     } catch {
@@ -308,7 +309,7 @@ function Console({ link }: { link: RemoteLink }) {
 
   return (
     <>
-      <Header state={state} status={status} settings={settings} />
+      <Header state={state} status={status} settings={settings} run={run} />
       <div className="deck-remote-body">
         <section className="deck-remote-view">
           <MiniSlide state={state} link={link} mode={mode} settings={settings} run={run} />
@@ -324,7 +325,12 @@ function Console({ link }: { link: RemoteLink }) {
             <ModeButton mode="pen" current={mode} set={setMode} icon="pencil" label="Pen" />
             <ModeButton mode="zoom" current={mode} set={setMode} icon="zoom-in" label="Zoom" />
           </div>
-          <Notes state={state} size={settings.notes} setSize={(notes) => set({ notes })} />
+          <Notes
+            state={state}
+            size={settings.notes}
+            setSize={(notes) => set({ notes })}
+            run={run}
+          />
         </section>
         <section className="deck-remote-controls">
           {/* Drawing has no use for holding to point, so the pen's Undo and Clear take that place:
@@ -440,10 +446,12 @@ function Header({
   state,
   status,
   settings,
+  run,
 }: {
   state: RemoteState | null;
   status: string;
   settings: Settings;
+  run: (id: string, params?: Record<string, unknown>) => void;
 }) {
   const deck = useDeck();
   const [now, setNow] = useState(() => Date.now());
@@ -451,7 +459,18 @@ function Header({
     const t = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(t);
   }, []);
-  const elapsed = state?.startedAt ? (now - state.startedAt) / 1000 : null;
+  // The presenter's timer as it was sent, counted on from when it ARRIVED (core/timer.ts): paused
+  // stays paused, a countdown counts down, and the phone's own clock never matters.
+  const timer = useMemo(
+    () => (state?.timer ? fromRemote(state.timer, Date.now()) : null),
+    [state?.timer],
+  );
+  const reading = timer ? readTimer(timer, now) : null;
+  const elapsed = reading
+    ? reading.elapsed
+    : state?.startedAt
+      ? (now - state.startedAt) / 1000
+      : null;
   const expected = state ? expectedElapsed(deck, state.slide) : null;
   const pace = elapsed === null || expected === null ? null : elapsed - expected;
 
@@ -493,10 +512,33 @@ function Header({
             </small>
           ) : null}
         </span>
-        <span className={["deck-remote-timer", paceTone(pace), alarm ? "is-alarm" : ""].join(" ")}>
-          {elapsed === null ? "--:--:--" : formatElapsed(elapsed)}
-          {pace !== null ? <small>{formatPace(pace)}</small> : null}
-        </span>
+        <button
+          type="button"
+          className={[
+            "deck-remote-timer",
+            paceTone(pace),
+            alarm ? "is-alarm" : "",
+            reading && !reading.running ? "is-paused" : "",
+            reading?.overtime ? "is-overtime" : "",
+          ].join(" ")}
+          onClick={() => timer && run("present.timer", { action: "toggle" })}
+          disabled={!timer}
+          aria-label={
+            !timer
+              ? "Timer"
+              : reading!.running
+                ? "Pause the presenter's timer"
+                : "Resume the presenter's timer"
+          }
+        >
+          {elapsed === null
+            ? "--:--:--"
+            : reading && timer?.mode === "countdown"
+              ? formatClock(reading.shown, reading.overtime)
+              : formatElapsed(elapsed)}
+          {reading && !reading.running ? <small>paused</small> : null}
+          {pace !== null && reading?.running !== false ? <small>{formatPace(pace)}</small> : null}
+        </button>
       </div>
       <div className="deck-remote-slide-title">{state?.slide.title ?? " "}</div>
     </header>
@@ -878,18 +920,46 @@ function AirButton({
 const MOTION_REFUSED =
   "Motion was not allowed. To ask again, close Safari completely (swipe it away), reopen the remote and tap Allow. Until then, touch the slide to point.";
 
+/**
+ * The notes on the phone: every part of this slide's notes, the current step's marked and kept in
+ * view, the ones already said dimmed. Tapping a part takes the deck to its step.
+ */
 function Notes({
   state,
   size,
   setSize,
+  run,
 }: {
   state: RemoteState | null;
   size: number;
   setSize: (n: number) => void;
+  run: (id: string, params?: Record<string, unknown>) => void;
 }) {
   const deck = useDeck();
   const meta = state ? deck.columns[state.slide.h]?.slides[state.slide.v] : null;
-  const text = notesSegment(meta?.notesText ?? null, state?.slide.click ?? 0);
+  const click = state?.slide.click ?? 0;
+  const parts = useMemo(
+    () =>
+      meta?.notesText
+        ? splitNotes(meta.notesText)
+            .map((p, i) => ({ ...p, i, text: p.text.trim() }))
+            .filter((p) => p.text)
+        : [],
+    [meta?.notesText],
+  );
+  const now = currentPart(
+    parts.map((p) => p.click),
+    click,
+  );
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current?.querySelector<HTMLElement>(".is-current");
+    const scroller = box.current?.closest<HTMLElement>(".deck-remote-notes");
+    if (!el || !scroller || scroller.scrollHeight <= scroller.clientHeight) return;
+    const top =
+      el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    scroller.scrollTo({ top: Math.max(0, top - 36), behavior: "smooth" });
+  }, [now, meta]);
   return (
     <div className="deck-remote-notes">
       <div className="deck-remote-notes-tools">
@@ -909,9 +979,40 @@ function Notes({
           A+
         </button>
       </div>
-      <p style={{ fontSize: size }} className={text ? "" : "deck-remote-muted"}>
-        {text ?? (meta?.hasNotes ? "No note for this step." : "No notes for this slide.")}
-      </p>
+      <div ref={box} className="deck-remote-notes-parts" style={{ fontSize: size }}>
+        {parts.length ? (
+          parts.map((p, k) => {
+            const tone = k === now ? "is-current" : p.click <= click ? "is-past" : "is-future";
+            const go = () => state && run("nav.goto", { index: state.slide.index, click: p.click });
+            // A paragraph that acts as a button: the notes scroll, and a real button is held to
+            // fitting on screen whole.
+            return parts.length > 1 && state ? (
+              <p
+                key={p.i}
+                role="button"
+                tabIndex={0}
+                className={`deck-remote-note-part ${tone}`}
+                onClick={go}
+                onKeyDown={(e) =>
+                  (e.key === "Enter" || e.key === " ") && (e.preventDefault(), go())
+                }
+                aria-label={`Go to step ${p.click}: ${p.text}`}
+              >
+                {p.click > 0 ? <b aria-hidden>{p.click}</b> : null}
+                {p.text}
+              </p>
+            ) : (
+              <p key={p.i} className="deck-remote-note-part is-current">
+                {p.text}
+              </p>
+            );
+          })
+        ) : (
+          <p className="deck-remote-muted">
+            {meta?.hasNotes ? "No note for this step." : "No notes for this slide."}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
