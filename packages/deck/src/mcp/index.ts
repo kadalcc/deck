@@ -923,17 +923,29 @@ export function createServer(options: McpOptions): {
     {
       title: "Export the deck",
       description:
-        "Export to PDF (default), PNG (one per printed page) and/or PPTX (images + notes) into export/. Needs Playwright + Chromium, and pptxgenjs for PPTX.",
+        "Export to PDF (default; with bookmarks from the slide titles), PNG (one per printed page), PPTX (images + notes), editable PPTX (native text, lists, shapes, pictures and tables + notes) and/or Markdown (the PNGs with each slide's notes) into export/. Needs Playwright + Chromium.",
       inputSchema: {
         dir: DIR,
         formats: z
-          .array(z.enum(["pdf", "png", "pptx"]))
+          .array(z.enum(["pdf", "png", "pptx", "pptx-editable", "md"]))
           .optional()
           .describe('Default ["pdf"].'),
         out: z
           .string()
           .optional()
           .describe("Output folder, relative to the deck (default export)."),
+        range: z
+          .string()
+          .optional()
+          .describe("Slides to export, e.g. 1,3-5 (1-based); all when omitted."),
+        scheme: z
+          .enum(["light", "dark"])
+          .optional()
+          .describe("Colour scheme (default the deck's)."),
+        withClicks: z
+          .boolean()
+          .optional()
+          .describe("A page per click step (true) or one per slide (false); default the deck's."),
       },
       outputSchema: out({
         ok: z.boolean(),
@@ -953,23 +965,31 @@ export function createServer(options: McpOptions): {
         dir,
         formats,
         out,
+        range,
+        scheme,
+        withClicks,
       }: {
         dir?: string;
-        formats?: Array<"pdf" | "png" | "pptx">;
+        formats?: Array<"pdf" | "png" | "pptx" | "pptx-editable" | "md">;
         out?: string;
+        range?: string;
+        scheme?: "light" | "dark";
+        withClicks?: boolean;
       }) => {
         const p = project(dir);
         if (out && confine && !isInside(p.dir, resolve(p.dir, out)))
           throw new OutsideError(
             `"${out}" is outside the deck folder; export into a folder inside it.`,
           );
-        const f = new Set(formats?.length ? formats : ["pdf"]);
+        const f = formats?.length ? formats : ["pdf"];
         const { runExport } = await import("../export/run.ts");
         const args = [
-          ...(f.has("pdf") ? [] : ["--no-pdf"]),
-          ...(f.has("png") ? ["--png"] : []),
-          ...(f.has("pptx") ? ["--pptx"] : []),
+          "--format",
+          f.join(","),
           ...(out ? ["--out", out] : []),
+          ...(range ? ["--range", range] : []),
+          ...(scheme ? ["--scheme", scheme] : []),
+          ...(withClicks === undefined ? [] : [`--with-clicks=${withClicks}`]),
         ];
         const r = await runExport(args, p.dir, (l) => console.error(l));
         const files = r.files.map((x) => ({ kind: x.kind, path: x.path, size: x.size }));

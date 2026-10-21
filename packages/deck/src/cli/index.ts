@@ -9,7 +9,7 @@
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
  *   kadal-deck info [topic]               the catalog: components, layouts, backgrounds, keys…
  *   kadal-deck screenshot                 PNGs of slides (headless Chromium)
- *   kadal-deck export [--png] [--pptx]    PDF/PNG/PPTX into export/ (needs playwright, pptxgenjs)
+ *   kadal-deck export [--format …]        PDF/PNG/PPTX/editable PPTX/Markdown into export/ (Playwright)
  *   kadal-deck login [--host URL]         sign this machine in to a Kadal Deck host
  *   kadal-deck logout                     forget the saved token
  *   kadal-deck whoami                     who and which workspace the token is for
@@ -50,6 +50,8 @@ export const HELP = `kadal-deck <command> [options]
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
   build       build the deck into dist/ (any static host can serve it)
               --without-notes  leave the speaker notes out of the build
+              --download  also print it to dist/deck.pdf for the deck's Download button
+              (\`download: true\` in the deck does the same; --no-download skips it)
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
   info        the reference: info [components|layouts|backgrounds|themes|transitions|clicks|code|
@@ -57,6 +59,11 @@ export const HELP = `kadal-deck <command> [options]
   screenshot  PNGs of slides into screenshots/   --slide <N|all> --out <dir> --theme <t>
               --scheme <light|dark> --width <px> --url <deck url> --dev
   export      PDF (and --png, --pptx) into export/   --out <dir> --scale <n> --url <deck url> --no-pdf
+              --format pdf,png,pptx,pptx-editable,md   or the switches --pptx-editable --md
+              --range 1,3-5   --dark / --scheme light|dark   --with-clicks / --no-with-clicks
+              --omit-background (transparent)   --no-with-toc (no PDF bookmarks)   --per-slide
+              --output <name>   --timeout <ms> --wait <ms> --wait-until networkidle|load|domcontentloaded|none
+              --executable-path <chrome>   --port <n> (the local preview server)
               --vector-pdf (print with the browser alone: all vector, effects vary by viewer)
   login       sign in to a Kadal Deck host (opens the browser)   --host <url>
   logout      forget the saved token on this machine
@@ -213,7 +220,13 @@ async function run(
         flags,
         rest: vite,
         positionals,
-      } = parseArgs(rest, { dir: GLOBAL.dir! }, { passthrough: true });
+      } = parseArgs(
+        rest,
+        command === "build"
+          ? { dir: GLOBAL.dir!, download: { kind: "boolean" }, port: { kind: "number" } }
+          : { dir: GLOBAL.dir! },
+        { passthrough: true },
+      );
       const dir = resolve(cwd, str(flags.dir) ?? ".");
       // `dev --https`: Vite dropped its own flag, so the deck's plugin makes a certificate
       // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
@@ -227,6 +240,14 @@ async function run(
         dir,
         command === "build" ? ["build", ...positionals, ...passed] : [...positionals, ...passed],
       );
+      // `--download` (or `download: true` in the deck): the PDF its Download button offers.
+      if (command === "build" && flags.download !== false) {
+        const { buildDownload, deckWantsDownload, outDirOf } = await import("./download.ts");
+        if (flags.download === true || (await deckWantsDownload(dir))) {
+          const port = num(flags.port);
+          await buildDownload(dir, { outDir: outDirOf(passed), ...(port ? { port } : {}), say });
+        }
+      }
       return EXIT.ok;
     }
     case undefined:
@@ -246,8 +267,8 @@ async function run(
     case "theme":
       return themeCommand(rest, cwd, io);
     case "export": {
-      const { EXPORT_FLAGS, runExport } = await import("../export/run.ts");
-      const { flags } = parseArgs(rest, { ...GLOBAL, ...EXPORT_FLAGS });
+      const { EXPORT_FLAGS, joinSwitchValues, runExport } = await import("../export/run.ts");
+      const { flags } = parseArgs(joinSwitchValues(rest), { ...GLOBAL, ...EXPORT_FLAGS });
       if (flags.help) {
         say(HELP);
         return EXIT.ok;
@@ -261,6 +282,8 @@ async function run(
           outDir: result.outDir,
           files: result.files,
           posters: result.posters,
+          ...(result.outline !== undefined ? { outline: result.outline } : {}),
+          ...(result.editable ? { editable: result.editable } : {}),
         });
       return EXIT.ok;
     }

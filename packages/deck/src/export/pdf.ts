@@ -151,8 +151,16 @@ export async function printFaithfulPdf(
   page: Page,
   path: string,
   size: { width: number; height: number },
-  { quality = 90 }: { quality?: number } = {},
+  {
+    quality = 90,
+    transparent = false,
+  }: {
+    quality?: number;
+    /** `--omit-background`: the art as PNG over nothing, so the pages have no backdrop. */
+    transparent?: boolean;
+  } = {},
 ): Promise<void> {
+  const type = transparent ? "png" : "jpeg";
   await page.addStyleTag({ content: PDF_LAYER_CSS });
   // Gradient text is found before the text layer's `background: none` resets its clip.
   await page.evaluate(
@@ -169,19 +177,21 @@ export async function printFaithfulPdf(
     const pages = await page.$$(".deck-print-page");
     for (let i = 0; i < pages.length; i++) {
       await showPrintPage(page, i);
-      const shot = await pages[i]!.screenshot({ type: "jpeg", quality });
+      const shot = await pages[i]!.screenshot(
+        transparent ? { type: "png", omitBackground: true } : { type: "jpeg", quality },
+      );
       // A blob URL per page: same-origin, so no content policy refuses it, and no network.
       await page.evaluate(
-        async ({ i, b64 }) => {
+        async ({ i, b64, type }) => {
           const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-          const url = URL.createObjectURL(new Blob([bytes], { type: "image/jpeg" }));
+          const url = URL.createObjectURL(new Blob([bytes], { type: `image/${type}` }));
           const img = new Image();
           img.src = url;
           await img.decode();
           const el = document.querySelectorAll<HTMLElement>(".deck-print-page")[i]!;
           el.dataset.kadalPdfArt = url;
         },
-        { i, b64: shot.toString("base64") },
+        { i, b64: shot.toString("base64"), type },
       );
     }
 

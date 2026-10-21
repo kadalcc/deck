@@ -48,14 +48,26 @@ export class DeckServer {
   static async start(
     dir: string,
     mode: "dev" | "preview",
-    { build = true, timeout = 90_000 }: { build?: boolean; timeout?: number } = {},
+    {
+      build = true,
+      timeout = 90_000,
+      port: fixed,
+      args: extra = [],
+    }: {
+      build?: boolean;
+      timeout?: number;
+      /** A port to listen on; any free one when absent. */
+      port?: number;
+      /** More Vite flags (`--outDir` for a preview of another folder). */
+      args?: string[];
+    } = {},
   ): Promise<DeckServer> {
     if (mode === "preview" && build) await runVite(dir, ["build"]);
-    const port = await freePort();
+    const port = fixed ?? (await freePort());
     const args =
       mode === "dev"
-        ? ["--port", String(port), "--strictPort", "--host", "127.0.0.1"]
-        : ["preview", "--port", String(port), "--strictPort", "--host", "127.0.0.1"];
+        ? ["--port", String(port), "--strictPort", "--host", "127.0.0.1", ...extra]
+        : ["preview", "--port", String(port), "--strictPort", "--host", "127.0.0.1", ...extra];
     const child = spawnVite(dir, args, "pipe");
     // However we exit, the server goes with us (an orphaned Vite would hold its port forever).
     const reap = () => child.kill();

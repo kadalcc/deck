@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { useDeck } from "./context.ts";
+import { DownloadButton } from "./Download.tsx";
 import { useActions, useUi } from "./hooks.ts";
 
 /**
@@ -69,6 +70,7 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
         </svg>
         {compact ? null : <span>{themeLabel(theme, title(theme))}</span>}
       </button>
+      <DownloadButton compact={compact} />
       {open ? (
         <div className="deck-theme-popover" role="menu">
           <div className="deck-theme-section">Theme</div>

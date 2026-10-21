@@ -2,7 +2,7 @@
 
 **Kadal Deck** — presentations written in MDX. Every reveal.js and Slidev feature, a live room so
 the audience can follow, react, ask and vote from their phones, islands in any framework, and
-export to PDF, PNG and PPTX. Docs: **https://deck.kadal.cc/docs/**
+export to PDF, PNG, PPTX (pictures or editable) and Markdown. Docs: **https://deck.kadal.cc/docs/**
 
 [![npm](https://img.shields.io/npm/v/@kadal/deck?color=0e7490)](https://www.npmjs.com/package/@kadal/deck)
 [![CI](https://img.shields.io/github/actions/workflow/status/kadalcc/deck/ci.yml?branch=main&label=CI)](https://github.com/kadalcc/deck/actions/workflows/ci.yml)
@@ -30,11 +30,11 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | --- | --- |
 | `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun]` | a deck from the starter, no questions asked |
 | `kadal-deck dev` | Vite dev server for the deck in this folder |
-| `kadal-deck build [--without-notes]` | `dist/` for any static host; `--without-notes` leaves the speaker notes out |
+| `kadal-deck build [--without-notes] [--download]` | `dist/` for any static host; `--without-notes` leaves the speaker notes out; `--download` (or `download: true`) also prints `dist/deck.pdf` for the deck's Download button |
 | `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
 | `kadal-deck info [topic] [name] [--search words] [--markdown]` | the reference (components, layouts, backgrounds, themes, transitions, clicks, code, deck, slide, keys, routes, live, cli, exit) |
 | `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium) |
-| `kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX). Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable; `--vector-pdf` prints with the browser alone |
+| `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--range 1,3-5] [--dark] [--no-with-clicks] [--omit-background] [--per-slide] [--out dir] [--output name] [--scale n] [--url u]` | PDF (and PNG, PPTX, editable PPTX, Markdown) into `export/` — install `playwright`. Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable, with bookmarks from the slide titles; `--vector-pdf` prints with the browser alone. See [Export](#export) |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
 | `kadal-deck publish [--slug] [--workspace] [--title] [--host] [--without-notes]` | build for the host and publish; only changed files are uploaded |
 | `kadal-deck narrate [--voice id] [--dtype q8\|fp32…] [--force] [--setup]` | bake the narration: each notes segment spoken by Kokoro into `public/narration/` (MP3/Opus with ffmpeg, else WAV) + `public/narration.json`; skips clips that exist. `--setup` installs `kokoro-js` |
@@ -170,7 +170,7 @@ Embedded pages (`layout: iframe*`, `<Iframe>`) load when their slide shows, unlo
 
 ## Views
 
-- `/<slug>/?print-pdf` — every slide as a page; on screen the pages are zoomed to the window, the browser's print dialog gets them at full size.
+- `/<slug>/?print-pdf` — every slide as a page; on screen the pages are zoomed to the window, the browser's print dialog gets them at full size. `&range=1,3-5`, `&clicks=0|1` (a page per click step or not), `&notes=0|1|page`, `&omit-background` and `&scheme=dark` narrow it — the same options every exporter passes.
 - `/<slug>/` — the deck. The stage is authored at 1920 × 1080 and scaled uniformly to every window: edge to edge on a 16:9 screen, centred between bars on any other shape — a phone, a tall window, a projector at 4:3 — never reflowed. `?view=scroll` reads it as a page, `?print-pdf` lays it out for print.
 - `/<slug>/presenter` — current + next, notes with click markers, timer with pacing, tools (draw, laser, spotlight, blackout, share notes, share terms, confetti, camera, record, mirror, link), the room panel (QR, presence, pace, questions, polls; collapses to a rail with badges for hands, open questions and open polls, and the current-slide card grows). Passcode-gated on a host. Drawing: each pen is a colour family and a stroke drifts through it as it travels; strokes are scribbles that linger five seconds and unwind along their own path on every screen — the pin keeps them.
 - `/<slug>/join` — the audience page: the deck at the presenter's slide in a stage-exact mirror (same scale, auto-fit and backgrounds as the projector; embedded pages load live, staggered so a room of phones does not hit a site at once), tap or ⤢ to fill the screen sideways with the reactions floating, plus reactions, ask + upvote, polls, quiz with nickname, pace, raise a hand, bookmarks, the notes when shared.
@@ -184,6 +184,7 @@ The one rule underneath: a move with no `sync.source` is a person, here, and end
 
 - `/<slug>/?projector` — a window that exists to be LOOKED at: a second screen, or the one window to share on a call. It renders the deck exactly as `/<slug>/` does — backgrounds, controls, progress, slide number, the presenter's laser and pen, reactions — and gives up only input: no key, swipe, wheel or click reaches navigation, and the follow can never be broken, because a stray press on a shared window in the middle of a call is not a thing to be recoverable from. It shows no cursor. The presenter view's **Share window** button opens and closes one with a plain `window.open`, so it works in any browser; a desktop shell that wants to give it a frame of its own only has to recognise the URL.
 - `/<slug>/notes` — every note on one page. `/<slug>/stats` — views, dwell per slide, sessions, questions, reactions, exports, share links.
+- `/<slug>/export` — the browser exporter, on every deck (hosted ones too, no Playwright): PDF through the browser's print, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs; range, click steps, colour scheme, notes, picture size and a transparent background, previewed live, with progress and Cancel.
 
 ## Narration
 
@@ -221,13 +222,47 @@ come from the Hugging Face Hub at run time; see `THIRD_PARTY_NOTICES.md` for the
 ## Export
 
 ```sh
-npx kadal-deck export                  # PDF into export/ (builds + previews the deck itself)
-npx kadal-deck export --png --pptx     # also PNGs and a PPTX (one image per slide, notes attached)
-npx kadal-deck export --posters        # only capture posters for the embedded pages
+npx kadal-deck export                         # PDF into export/ (builds + previews the deck itself)
+npx kadal-deck export --png --pptx            # also PNGs and a PPTX (one image per slide, notes attached)
+npx kadal-deck export --format pptx-editable  # PowerPoint you can edit: native text, lists, shapes, tables
+npx kadal-deck export --format md             # export/<name>.md + export/png/: the slides with their notes
+npx kadal-deck export --range 1,3-5 --dark    # some slides, in the dark scheme
+npx kadal-deck export --png --omit-background # transparent PNGs
+npx kadal-deck export --posters               # only capture posters for the embedded pages
 ```
 
-Needs `playwright` (and `pptxgenjs` for PPTX) installed in the deck: they are optional peers, so
-a deck that never exports never downloads a browser.
+- **PDF**: each page is a picture of the slide with its text printed over it as text, so it looks
+  the same in Preview, Acrobat, Chrome and Poppler and stays searchable. It carries bookmarks — a
+  slide's title at its first page, vertical stacks and `level`s nested, `hideInToc` slides left
+  out (`--no-with-toc` for none) — and the deck's title, author, `info` and `keywords`.
+  `--vector-pdf` prints with the browser alone.
+- **Editable PPTX** (`--format pptx-editable`, written as `<name>.editable.pptx`): every slide is
+  measured in the browser and rebuilt as PowerPoint objects — text boxes with their runs (font,
+  size, colour, bold, italic, underline, strike, links, letter spacing), alignment and line
+  height; lists with real bullets, numbering and levels; rectangles, rounded rectangles and
+  ellipses with their fill, border and shadow; pictures as the original files, cropped as
+  `object-fit` and `background-size` crop them; tables as tables; code as coloured monospace runs.
+  What PowerPoint cannot draw — SVG, canvas, maths, diagrams, embedded pages, gradients, filters,
+  masks, rotated or blended things, pseudo-element decorations — is photographed where it stands,
+  so nothing goes missing. The speaker notes are attached. `data-export="image"` on an element
+  photographs it whole; `data-export="skip"` leaves it out. A .pptx names its fonts without
+  carrying them, so the export lists the families its recipients need.
+- **Markdown** (`--format md`): `<name>.md` with a picture of every page (from `png/`) and each
+  slide's notes under it, slides separated by `---` (Slidev's shape).
+- **Every format**: `--range 1,3-5`, `--dark` / `--scheme light|dark`, `--with-clicks` /
+  `--no-with-clicks` (a page per click step, or one per slide; the deck's `pdfSeparateFragments`
+  by default), `--omit-background`, `--per-slide` (one page load per slide, for very large decks),
+  `--timeout <ms>`, `--wait <ms>`, `--wait-until networkidle|load|domcontentloaded|none`,
+  `--executable-path <chrome>`, `--output <name>`, `--scale <n>`, `--json`.
+- **In the browser**: `/<slug>/export` does PDF, PNG, image PPTX and Markdown with no Playwright.
+- **A Download button**: `download: true` in the headmatter shows one beside the theme menu;
+  `kadal-deck build` then prints `dist/deck.pdf` for it (or `kadal-deck build --download` without
+  the key), and without one it opens `/export`. `download: "talk.pdf"` (or a URL) links that file.
+  A host can turn it off or point it elsewhere (`window.__KADAL_DECK__.download`).
+
+Needs `playwright` installed in the deck: it is an optional peer, so a deck that never exports
+never downloads a browser. `pptxgenjs` and `pdf-lib` come with the engine (and load only when
+used).
 
 ## Publish
 
@@ -270,7 +305,8 @@ the engine is built for it:
 - `src/presenter`, `src/audience` — the pages
 - `src/backgrounds` — the background components
 - `src/themes` — base.css (engine), live.css, minimal / rla / stack
-- `src/export` — Playwright export to PDF, PNG, PPTX
+- `src/export` — Playwright export to PDF, PNG, PPTX, editable PPTX (`pptx/`), Markdown; the
+  browser exporter (`browser/`)
 - `src/catalog` — `@kadal/deck/catalog`; `generated.ts` comes from `tools/catalog-extract.ts` (`bun run catalog`)
 - `src/authoring` — `@kadal/deck/authoring`: outline, lint and line-exact edits of a deck as text
 - `src/cli` — the `kadal-deck` CLI (commands, args, render, new, host/login/publish)

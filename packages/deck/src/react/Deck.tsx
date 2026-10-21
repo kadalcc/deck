@@ -66,6 +66,7 @@ import type { DeckLayers } from "../theming/contract.ts";
 import { packageConfigLayer } from "../theming/merge.ts";
 import { useDeckFonts, useDeckPackages, usePackageSetup, useRootVars } from "../theming/react.tsx";
 import { ThemeNotice } from "./ThemeNotice.tsx";
+import { readScheme } from "../core/print-options.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -82,6 +83,7 @@ import { ThemeNotice } from "./ThemeNotice.tsx";
  *   /<slug>/notes          every note on one page
  *   /<slug>/stats          the deck's numbers
  *   /<slug>/remote         the phone remote    (#ticket=… hosted, ?pair=CODE on `kadal-deck dev`)
+ *   /<slug>/export         the browser exporter (PDF, PNG, PPTX, Markdown; no Playwright)
  *
  * Extra pages plug in through `pages` so the presenter, audience and stats modules stay optional
  * imports; a deck that never goes live ships without them.
@@ -126,12 +128,21 @@ const FallbackRemote = lazy(() =>
   import("../remote/index.tsx").then((m) => ({ default: m.RemotePage })),
 );
 
+/**
+ * The browser exporter: every deck has it (a lazy chunk of its own, loaded on /export only), so a
+ * deck built before it existed, or hosted where no Playwright runs, can still be saved as a file.
+ */
+const FallbackExport = lazy(() =>
+  import("../export/browser/ExportPage.tsx").then((m) => ({ default: m.ExportPage })),
+);
+
 /** The page for a route: the deck's own, else the remote the presenter needs, else none. */
 export function pageFor(
   mode: ViewMode,
   pages: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>,
 ): ComponentType | null {
   if (mode === "play" || mode === "print") return null;
+  if (mode === "export") return pages.export ?? FallbackExport;
   return pages[mode] ?? (mode === "remote" && pages.presenter ? FallbackRemote : null);
 }
 
@@ -145,6 +156,7 @@ function modeFromLocation(base: string): ViewMode {
   if (first === "notes") return "notes";
   if (first === "stats") return "stats";
   if (first === "remote") return "remote";
+  if (first === "export") return "export";
   if (parseFlags(window.location.search).print) return "print";
   return "play";
 }
@@ -256,7 +268,9 @@ export function Deck({
         laser: null,
         spotlight: false,
         colorScheme:
-          stored(config, "scheme", ["light", "dark"]) ?? resolveScheme(config.colorScheme),
+          (typeof location === "undefined" ? null : readScheme(location.search)) ??
+          stored(config, "scheme", ["light", "dark"]) ??
+          resolveScheme(config.colorScheme),
         cursorHidden: false,
         fullscreen: false,
         hints: false,

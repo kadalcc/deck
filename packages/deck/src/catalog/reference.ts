@@ -399,6 +399,11 @@ export const ROUTES: RouteInfo[] = [
       "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev`. One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
   },
   { path: "/<slug>/notes", summary: "Every speaker note on one page." },
+  {
+    path: "/<slug>/export",
+    summary:
+      "The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.",
+  },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
 ];
 
@@ -407,6 +412,26 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
     param: "?print-pdf",
     summary:
       "Every slide (and click step) as a printable page; what export drives. Also ?print=pdf.",
+  },
+  {
+    param: "?range=1,3-5",
+    summary: "With ?print-pdf: only those slides (1-based, in play order; `8-` runs to the end).",
+  },
+  {
+    param: "?clicks=0|1",
+    summary: "With ?print-pdf: a page per click step (1) or one per slide at its last step (0); overrides pdfSeparateFragments.",
+  },
+  {
+    param: "?notes=0|1|page",
+    summary: "With ?print-pdf: notes off, in a box on each slide, or on pages of their own; overrides showNotes.",
+  },
+  {
+    param: "?omit-background",
+    summary: "With ?print-pdf: no page colour and no background layer (transparent PNGs).",
+  },
+  {
+    param: "?scheme=light|dark",
+    summary: "Open in that colour scheme (also ?dark), without changing the viewer's remembered choice.",
   },
   {
     param: "?view=scroll",
@@ -511,9 +536,9 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "build",
-    usage: "kadal-deck build [--without-notes] [vite flags]",
+    usage: "kadal-deck build [--without-notes] [--download] [--port n] [vite flags]",
     summary:
-      "dist/ for any static host. `--without-notes` leaves the speaker notes out of the build (no notes modules; the presenter and narrator have none).",
+      "dist/ for any static host. `--without-notes` leaves the speaker notes out of the build (no notes modules; the presenter and narrator have none). --download (or `download: true` in the deck) also prints dist/deck.pdf for the deck's Download button; --no-download skips it.",
     json: false,
   },
   {
@@ -540,9 +565,9 @@ export const CLI: CliCommand[] = [
   {
     name: "export",
     usage:
-      "kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u] [--json]",
+      "kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--png] [--pptx] [--pptx-editable] [--md] [--no-pdf] [--vector-pdf] [--range 1,3-5] [--dark | --scheme light|dark] [--with-clicks | --no-with-clicks] [--omit-background] [--no-with-toc] [--per-slide] [--out dir] [--output name] [--scale n] [--timeout ms] [--wait ms] [--wait-until networkidle|load|domcontentloaded|none] [--executable-path path] [--url u] [--port n] [--json]",
     summary:
-      "PDF/PNG/PPTX into export/. The PDF looks like the web in every viewer: each page is a picture of the slide with its text printed over it as text. --vector-pdf prints with the browser alone.",
+      "PDF/PNG/PPTX/Markdown into export/. The PDF looks like the web in every viewer (each page a picture of the slide with its text printed over it as text), with bookmarks from the slide titles and levels (--no-with-toc for none) and the deck's metadata; --vector-pdf prints with the browser alone. --format pptx-editable rebuilds the slides as native PowerPoint text, lists, shapes, pictures and tables (what cannot be, it places as a picture where it stood) with the notes. --format md writes a .md file of the PNGs with each slide's notes. --range picks slides, --dark the dark scheme, --no-with-clicks one page per slide, --omit-background transparent pages, --per-slide one page load per slide.",
     json: true,
   },
   {

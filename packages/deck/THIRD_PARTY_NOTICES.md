@@ -81,3 +81,21 @@ What that means for you:
   into the image's address. The diagram source therefore leaves the browser for that server;
   point `plantUmlServer` at your own (the `plantuml/plantuml-server` image) for private decks.
   No PlantUML code is in the package.
+
+## Export
+
+The exporters use three ordinary dependencies of `@kadal/deck`. Two of them can end up inside a
+deck's **build output**, in chunks that load only when someone exports from the browser (`/export`)
+or makes a picture of a slide:
+
+| Component | Version checked | Licence | Source | Where it runs |
+| --- | --- | --- | --- | --- |
+| pptxgenjs | 3.12.0 | MIT | https://github.com/gitbrent/PptxGenJS | `kadal-deck export` (PPTX, editable PPTX); the browser exporter's PowerPoint (a lazy chunk in `dist/assets/`) |
+| JSZip (bundled by pptxgenjs) | 3.10.2 | MIT (dual-licensed MIT or GPL-3.0; used under MIT) | https://github.com/Stuk/jszip | with pptxgenjs |
+| modern-screenshot | 4.7.0 | MIT | https://github.com/qq15725/modern-screenshot | the browser exporter and `export.thumbnail` (lazy chunks) |
+| pdf-lib | 1.17.1 | MIT | https://github.com/Hopding/pdf-lib | `kadal-deck export` only (PDF bookmarks, metadata, `--per-slide` merging); never bundled for the browser |
+
+The command-line flags of `kadal-deck export` (`--format`, `--range`, `--with-clicks`,
+`--with-toc`, `--omit-background`, `--per-slide`, `--wait-until`, `--executable-path`) and the shape
+of the Markdown export follow Slidev's (MIT, https://github.com/slidevjs/slidev) so that a
+Slidev user's habits carry over; no Slidev code is copied.

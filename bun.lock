@@ -74,14 +74,14 @@
     },
     "packages/create-deck": {
       "name": "@kadal/create-deck",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "bin": {
         "create-deck": "src/index.mjs",
       },
     },
     "packages/deck": {
       "name": "@kadal/deck",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "bin": {
         "kadal-deck": "dist/cli/bin.js",
       },
@@ -95,6 +95,8 @@
         "mermaid": "^11.4.1",
         "modern-screenshot": "^4.7.0",
         "motion": "^12.23.24",
+        "pdf-lib": "^1.17.1",
+        "pptxgenjs": "^3.12.0",
         "qrcode": "^1.5.4",
         "rehype-katex": "^7.0.1",
         "remark-frontmatter": "^5.0.0",
@@ -113,7 +115,6 @@
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
         "playwright": "1.61.1",
-        "pptxgenjs": "^3.12.0",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
         "typescript": "^6.0.3",
@@ -122,7 +123,6 @@
       "peerDependencies": {
         "kokoro-js": "^1.2.1",
         "playwright": "^1.50.0",
-        "pptxgenjs": "^3.12.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "vite": "^7.0.0 || ^8.0.0",
@@ -130,12 +130,11 @@
       "optionalPeers": [
         "kokoro-js",
         "playwright",
-        "pptxgenjs",
       ],
     },
     "packages/deck-angular": {
       "name": "@kadal/deck-angular",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@angular/compiler": "^22.2.1",
         "@angular/core": "^22.2.1",
@@ -147,12 +146,12 @@
         "@angular/compiler": "^20.0.0 || ^21.0.0 || ^22.0.0",
         "@angular/core": "^20.0.0 || ^21.0.0 || ^22.0.0",
         "@angular/platform-browser": "^20.0.0 || ^21.0.0 || ^22.0.0",
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
       },
     },
     "packages/deck-fresh": {
       "name": "@kadal/deck-fresh",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@kadal/deck-preact": "workspace:*",
@@ -160,45 +159,45 @@
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
-        "@kadal/deck-preact": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
+        "@kadal/deck-preact": "^0.3.6",
         "preact": "^10.0.0 || ^11.0.0",
       },
     },
     "packages/deck-preact": {
       "name": "@kadal/deck-preact",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "preact": "^11.0.0",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
         "preact": "^10.0.0 || ^11.0.0",
       },
     },
     "packages/deck-python": {
       "name": "@kadal/deck-python",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
       },
     },
     "packages/deck-qwik": {
       "name": "@kadal/deck-qwik",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@qwik.dev/core": "2.0.0-rc.0",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
         "@qwik.dev/core": "^2.0.0-rc.0",
       },
     },
@@ -216,52 +215,52 @@
     },
     "packages/deck-solid": {
       "name": "@kadal/deck-solid",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "solid-js": "^1.9.15",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
         "solid-js": "^1.9.0",
       },
     },
     "packages/deck-svelte": {
       "name": "@kadal/deck-svelte",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "svelte": "^5.57.1",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
         "svelte": "^5.0.0",
       },
     },
     "packages/deck-vue": {
       "name": "@kadal/deck-vue",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
         "vue": "^3.5.22",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
         "vue": "^3.5.0",
       },
     },
     "packages/deck-wasm": {
       "name": "@kadal/deck-wasm",
-      "version": "0.3.3",
+      "version": "0.3.6",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.3.3",
+        "@kadal/deck": "^0.3.6",
       },
     },
   },
@@ -589,6 +588,10 @@
     "@oxlint/binding-win32-ia32-msvc": ["@oxlint/binding-win32-ia32-msvc@1.87.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-daptNsEOuru4/nJTxV4DBHNJ5GepzmaBVQf+jjgKQGi9NRlZKik+RFq4hUL7ewsF1pwjKM+SkYaMbF82UwFGnw=="],
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.87.0", "", { "os": "win32", "cpu": "x64" }, "sha512-k+m/EShyXE29J/r1fjk0HlAzhN5JhIvj044oSJkXTEkCLrWZQgXb/3r4q5LTw/eaKW/4GuMXG2xmiJs3s5rPNw=="],
+
+    "@pdf-lib/standard-fonts": ["@pdf-lib/standard-fonts@1.0.0", "", { "dependencies": { "pako": "^1.0.6" } }, "sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA=="],
+
+    "@pdf-lib/upng": ["@pdf-lib/upng@1.0.1", "", { "dependencies": { "pako": "^1.0.10" } }, "sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ=="],
 
     "@pnpm/deps.graph-sequencer": ["@pnpm/deps.graph-sequencer@1100.0.1", "", {}, "sha512-pOr5+q1fLYKwFN3LAJuGZEnfXDcQ73zqgDHMtGy+K+uIoUqyY+6MeDCWFwfu+4EFuq76I5EPFofoNAI+Bmmq4A=="],
 
@@ -1636,6 +1639,8 @@
 
     "pathe": ["pathe@2.0.3", "", {}, "sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w=="],
 
+    "pdf-lib": ["pdf-lib@1.17.1", "", { "dependencies": { "@pdf-lib/standard-fonts": "^1.0.0", "@pdf-lib/upng": "^1.0.1", "pako": "^1.0.11", "tslib": "^1.11.1" } }, "sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw=="],
+
     "perfect-freehand": ["perfect-freehand@1.2.0", "", {}, "sha512-h/0ikF1M3phW7CwpZ5MMvKnfpHficWoOEyr//KVNTxV4F6deRK1eYMtHyBKEAKFK0aXIEUK9oBvlF6PNXMDsAw=="],
 
     "pica": ["pica@7.1.1", "", { "dependencies": { "glur": "^1.1.2", "inherits": "^2.0.3", "multimath": "^2.0.0", "object-assign": "^4.1.1", "webworkify": "^1.5.0" } }, "sha512-WY73tMvNzXWEld2LicT9Y260L43isrZ85tPuqRyvtkljSDLmnNFQmZICt4xUJMVulmcc6L9O7jbBrtx3DOz/YQ=="],
@@ -1994,6 +1999,10 @@
 
     "@excalidraw/mermaid-to-excalidraw/nanoid": ["nanoid@4.0.2", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-7ZtY5KTCNheRGfEFxnedV5zFiORN1+Y1N6zvPTnHQd8ENUvfaDBeuJDZb2bN/oXwXxu3qkTXDzy57W5vAmDTBw=="],
 
+    "@pdf-lib/standard-fonts/pako": ["pako@1.0.11", "", {}, "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="],
+
+    "@pdf-lib/upng/pako": ["pako@1.0.11", "", {}, "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="],
+
     "@radix-ui/react-collection/@radix-ui/react-compose-refs": ["@radix-ui/react-compose-refs@1.0.0", "", { "dependencies": { "@babel/runtime": "^7.13.10" }, "peerDependencies": { "react": "^16.8 || ^17.0 || ^18.0" } }, "sha512-0KaSv6sx787/hK3eF53iOkiSLwAGlFMx5lotrqD2pTjB18KbybKoEIgkNZTKC60YECDQTKGTRcDBILwZVqVKvA=="],
 
     "@radix-ui/react-collection/@radix-ui/react-context": ["@radix-ui/react-context@1.0.0", "", { "dependencies": { "@babel/runtime": "^7.13.10" }, "peerDependencies": { "react": "^16.8 || ^17.0 || ^18.0" } }, "sha512-1pVM9RfOQ+n/N5PJK33kRSKsr1glNxomxONs5c49MliinBY6Yw2Q995qfBUUo0/Mbg05B/sGA0gkgPI7kmSHBg=="],
@@ -2091,6 +2100,10 @@
     "parse-entities/@types/unist": ["@types/unist@2.0.11", "", {}, "sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA=="],
 
     "parse5/entities": ["entities@6.0.1", "", {}, "sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g=="],
+
+    "pdf-lib/pako": ["pako@1.0.11", "", {}, "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="],
+
+    "pdf-lib/tslib": ["tslib@1.14.1", "", {}, "sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg=="],
 
     "points-on-path/points-on-curve": ["points-on-curve@0.2.0", "", {}, "sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A=="],
 

@@ -274,6 +274,13 @@ export interface DeckConfig {
    */
   ads: boolean;
   /**
+   * A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build
+   * --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there
+   * is none; a URL links that file instead. A host may switch it off, or on, for the decks it
+   * serves (`window.__KADAL_DECK__.download`). See core/download.ts.
+   */
+  download: boolean | string;
+  /**
    * Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or Slidev's object —
    * `{ sans, heading, serif, mono, weights, italic, provider: google|bunny|none, local, fallbacks }`
    * — which also points the theme's font tokens at them (theming/fonts.ts).
@@ -388,6 +395,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   slug: "",
   badge: false,
   ads: false,
+  download: false,
   fonts: [],
   seoMeta: {},
   defaults: {},
@@ -810,6 +818,11 @@ export interface HostOverride {
   ads?: boolean;
   /** The host's viewer-verification page (a same-site path), see `DeckConfig.live.verify`. */
   verify?: string;
+  /**
+   * The Download button: `false` hides it whatever the deck says (a free plan), `true` allows
+   * the deck's own, a URL (https, or a same-site path) points it at the host's copy of the PDF.
+   */
+  download?: boolean | string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -823,6 +836,9 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (typeof o.badge === "boolean") out.badge = o.badge;
   if (typeof o.ads === "boolean") out.ads = o.ads;
   if (typeof o.verify === "string" && /^\/(?!\/)[\w./-]*$/.test(o.verify)) out.verify = o.verify;
+  if (typeof o.download === "boolean") out.download = o.download;
+  else if (typeof o.download === "string" && /^(https:\/\/|\/(?!\/))\S+$/.test(o.download))
+    out.download = o.download;
   return out;
 }
 
@@ -834,7 +850,8 @@ export function withHostOverride(config: DeckConfig, override: HostOverride | nu
       !override.api &&
       !override.verify &&
       override.badge === undefined &&
-      override.ads === undefined)
+      override.ads === undefined &&
+      override.download === undefined)
   )
     return config;
   return {
@@ -847,6 +864,14 @@ export function withHostOverride(config: DeckConfig, override: HostOverride | nu
     },
     ...(override.badge !== undefined ? { badge: override.badge } : {}),
     ...(override.ads !== undefined ? { ads: override.ads } : {}),
+    // `true` lets the deck's own choice stand, and turns a plain `true` on when the deck said nothing.
+    ...(override.download === false
+      ? { download: false }
+      : typeof override.download === "string"
+        ? { download: override.download }
+        : override.download === true
+          ? { download: config.download || true }
+          : {}),
   };
 }
 
