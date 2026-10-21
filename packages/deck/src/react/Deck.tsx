@@ -3,8 +3,10 @@ import {
   cloneElement,
   type ComponentType,
   isValidElement,
+  lazy,
   type ReactElement,
   type ReactNode,
+  Suspense,
   useContext,
   useEffect,
   useMemo,
@@ -82,7 +84,10 @@ export interface DeckProps {
   manifest: DeckManifest;
   config?: DeckConfigInput | Frontmatter;
   components?: Record<string, ComponentType<Record<string, unknown>>>;
-  /** Route → page component, for the presenter/audience/notes/stats pages. */
+  /**
+   * Route → page component, for the presenter/audience/notes/stats/remote pages. A deck with a
+   * presenter and no remote still gets the phone remote (the engine's, loaded on /remote only).
+   */
   pages?: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>;
   /** Wraps the runtime (the live provider, a theme provider). */
   children?: ReactNode;
@@ -96,6 +101,25 @@ export interface DeckProps {
 function baseOf(): string {
   const b = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
   return b.endsWith("/") ? b : `${b}/`;
+}
+
+/**
+ * The phone remote, for a deck with a presenter view that passed no remote page. The presenter
+ * offers the remote's QR code, so the page behind it must exist; decks made before the remote
+ * existed pass only presenter, audience, notes and stats, and their phones met an error. It loads
+ * on /remote alone, in a chunk of its own, so the deck itself carries none of it.
+ */
+const FallbackRemote = lazy(() =>
+  import("../remote/index.tsx").then((m) => ({ default: m.RemotePage })),
+);
+
+/** The page for a route: the deck's own, else the remote the presenter needs, else none. */
+export function pageFor(
+  mode: ViewMode,
+  pages: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>,
+): ComponentType | null {
+  if (mode === "play" || mode === "print") return null;
+  return pages[mode] ?? (mode === "remote" && pages.presenter ? FallbackRemote : null);
 }
 
 function modeFromLocation(base: string): ViewMode {
@@ -480,13 +504,15 @@ export function Deck({
     w.__deck = runtime;
   }, [runtime]);
 
-  const Page = mode !== "play" && mode !== "print" ? pages[mode] : null;
+  const Page = pageFor(mode, pages);
 
   const view =
     mode === "print" ? (
       <PrintView />
     ) : Page ? (
-      <Page />
+      <Suspense fallback={null}>
+        <Page />
+      </Suspense>
     ) : mode !== "play" ? (
       <MissingPage mode={mode} />
     ) : (
