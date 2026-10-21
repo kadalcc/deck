@@ -1,0 +1,755 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Brand — a corporate theme a company makes its own without writing CSS. Everything that says
+   "us" comes from themeConfig: the primary and secondary colours, the logo (and a version for
+   dark slides), the company's name, the footer line. The rest is built to be trusted: Plus
+   Jakarta Sans, a white page, generous cards, quiet hairlines, numbers that line up.
+
+   Scoped under .theme-brand; dark is .theme-brand[data-color-scheme="dark"], where the primary
+   and secondary are lifted towards white unless `primaryDark` / `secondaryDark` say otherwise.
+   themeConfig → CSS: `primary` (--theme-primary), `secondary` (--theme-secondary), `primaryInk`
+   (--theme-primary-ink, text on the primary), `primaryDark`, `secondaryDark`. The logo, the
+   company, the footer and the logo's position are read by index.tsx.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-brand {
+  --brand-primary: var(--theme-primary, #2453d4);
+  --brand-secondary: var(--theme-secondary, #0f9d8a);
+  --brand-on-primary: var(--theme-primary-ink, #ffffff);
+  --deck-bg: #ffffff;
+  --deck-fg: #101828;
+  --deck-muted: #475467;
+  --deck-accent: var(--brand-primary);
+  --deck-accent-2: var(--brand-secondary);
+  --deck-surface: #f4f6f9;
+  --deck-border: #e3e7ed;
+  --deck-live: var(--brand-primary);
+  --deck-controls-color: var(--brand-primary);
+  --brand-tint: color-mix(in oklab, var(--brand-primary) 8%, var(--deck-bg));
+  --brand-good: #067647;
+  --brand-warn: #b54708;
+  --brand-bad: #c01048;
+  --brand-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 8px 24px -12px rgba(16, 24, 40, 0.12);
+  --deck-heading-font: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --deck-body-font: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --deck-mono-font: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 33px;
+  --deck-code-bg: #f6f8fa;
+  --deck-code-fg: #1f2328;
+  --deck-code-active: color-mix(in oklab, var(--brand-primary) 10%, transparent);
+  --deck-radius: 14px;
+  --deck-pad: 88px;
+  --deck-transition: 450ms;
+}
+.theme-brand[data-color-scheme="dark"] {
+  --deck-bg: #0c111d;
+  --deck-fg: #f5f5f6;
+  --deck-muted: #9da4b0;
+  --deck-accent: var(--theme-primary-dark, color-mix(in oklab, var(--brand-primary) 58%, white));
+  --deck-accent-2: var(--theme-secondary-dark, color-mix(in oklab, var(--brand-secondary) 65%, white));
+  --deck-surface: #161b26;
+  --deck-border: #252b37;
+  --deck-live: var(--deck-accent);
+  --deck-controls-color: var(--deck-accent);
+  --brand-tint: color-mix(in oklab, var(--brand-primary) 18%, var(--deck-bg));
+  --brand-good: #47cd89;
+  --brand-warn: #fdb022;
+  --brand-bad: #fd6f8e;
+  --brand-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  --deck-code-bg: #0d1117;
+  --deck-code-fg: #e6edf3;
+  --deck-code-active: color-mix(in oklab, var(--deck-accent) 14%, transparent);
+  color-scheme: dark;
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-brand .deck-slide {
+  line-height: 1.5;
+  font-variant-numeric: lining-nums;
+}
+.theme-brand .deck-slide :is(h1, h2, h3) {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.theme-brand .deck-slide h1 {
+  font-size: 2.8em;
+}
+.theme-brand .deck-slide h2 {
+  font-size: 1.85em;
+  margin-bottom: 0.6em;
+}
+.theme-brand .deck-slide h3 {
+  font-size: 1.15em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.theme-brand .deck-slide h4 {
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--deck-accent);
+}
+.theme-brand .deck-layout-default > :is(p, ul, ol) {
+  max-width: 38em;
+}
+.theme-brand .deck-slide ul {
+  list-style: none;
+  padding-inline-start: 1.25em;
+}
+.theme-brand .deck-slide ul > li {
+  position: relative;
+}
+.theme-brand .deck-slide ul > li::before {
+  content: "";
+  position: absolute;
+  left: -1.05em;
+  top: 0.55em;
+  width: 0.42em;
+  height: 0.42em;
+  border-radius: 3px;
+  background: var(--deck-accent);
+}
+.theme-brand .deck-slide ul ul > li::before {
+  background: transparent;
+  border: 2px solid var(--deck-accent-2);
+  box-sizing: border-box;
+}
+.theme-brand .deck-slide ol > li::marker {
+  font-weight: 800;
+  color: var(--deck-accent);
+}
+.theme-brand .deck-slide strong {
+  font-weight: 700;
+}
+.theme-brand .deck-slide em {
+  font-style: italic;
+}
+.theme-brand .deck-slide a {
+  color: var(--deck-accent);
+  font-weight: 600;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+.theme-brand .deck-slide blockquote {
+  margin: 0.6em 0;
+  padding: 0.6em 1em;
+  border: 0;
+  border-inline-start: 4px solid var(--deck-accent);
+  border-radius: 0 var(--deck-radius) var(--deck-radius) 0;
+  background: var(--brand-tint);
+  color: var(--deck-fg);
+  font-weight: 500;
+}
+.theme-brand .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+.theme-brand .deck-slide hr {
+  border-top: 1px solid var(--deck-border);
+}
+.theme-brand .deck-slide table {
+  font-size: 0.72em;
+  border: 1px solid var(--deck-border);
+  border-radius: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+.theme-brand .deck-slide th {
+  color: var(--deck-muted);
+  background: var(--deck-surface);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.theme-brand .deck-slide :is(th, td) {
+  padding: 0.6em 1em;
+}
+.theme-brand .deck-slide tbody tr:last-child td {
+  border-bottom: 0;
+}
+.theme-brand .deck-slide :not(pre) > code {
+  font-size: 0.8em;
+  padding: 0.12em 0.4em;
+  border-radius: 6px;
+  color: var(--deck-fg);
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-border);
+}
+.theme-brand .deck-kbd {
+  border-radius: 6px;
+}
+
+/* ── code ──────────────────────────────────────────────────────────────── */
+.theme-brand .deck-code-block {
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  box-shadow: var(--brand-shadow);
+}
+.theme-brand .deck-code-title {
+  font: 600 0.48em var(--deck-body-font);
+  color: var(--deck-muted);
+  padding: 0.65em 1.2em;
+  background: var(--deck-surface);
+}
+.theme-brand .deck-code-title-dot {
+  border-radius: 3px;
+  background: var(--deck-accent);
+}
+.theme-brand pre.deck-code,
+.theme-brand .shiki-magic-move-wrap {
+  font-size: 0.58em;
+  line-height: 1.7;
+}
+.theme-brand pre.deck-code .line.is-active {
+  box-shadow: inset 3px 0 0 var(--deck-accent);
+}
+.theme-brand pre.deck-code .line.is-dim {
+  opacity: 0.35;
+}
+
+/* ── components ────────────────────────────────────────────────────────── */
+.theme-brand .deck-callout {
+  padding: 0.7em 1em;
+  border: 1px solid color-mix(in oklab, var(--brand-kind) 28%, var(--deck-border));
+  border-radius: var(--deck-radius);
+  background: color-mix(in oklab, var(--brand-kind) 7%, var(--deck-bg));
+  font-size: 0.8em;
+  --brand-kind: var(--deck-accent);
+}
+.theme-brand .deck-callout.kind-tip {
+  --brand-kind: var(--brand-good);
+}
+.theme-brand .deck-callout.kind-warn {
+  --brand-kind: var(--brand-warn);
+}
+.theme-brand .deck-callout.kind-danger {
+  --brand-kind: var(--brand-bad);
+}
+.theme-brand .deck-callout.kind-note {
+  --brand-kind: var(--deck-muted);
+}
+.theme-brand .deck-callout-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  font-weight: 700;
+  color: var(--brand-kind);
+  margin-bottom: 0.25em;
+}
+.theme-brand .deck-callout-title::before {
+  content: "";
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0.2em color-mix(in oklab, currentColor 20%, transparent);
+}
+.theme-brand .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-brand .deck-badge {
+  border-radius: 999px;
+  border-color: var(--deck-border);
+  background: var(--deck-surface);
+  letter-spacing: 0.06em;
+}
+.theme-brand .deck-badge.tone-accent {
+  color: var(--deck-accent);
+  border-color: color-mix(in oklab, var(--deck-accent) 30%, transparent);
+  background: var(--brand-tint);
+}
+.theme-brand .deck-badge.tone-good {
+  color: var(--brand-good);
+}
+.theme-brand .deck-badge.tone-warn {
+  color: var(--brand-warn);
+}
+.theme-brand .deck-badge.tone-bad {
+  color: var(--brand-bad);
+}
+.theme-brand .deck-toc {
+  counter-reset: brand-toc;
+}
+.theme-brand .deck-toc li {
+  margin: 0.35em 0;
+}
+.theme-brand .deck-toc li.level-1 {
+  counter-increment: brand-toc;
+  font-weight: 700;
+}
+.theme-brand .deck-toc li.level-1 > a::before {
+  content: counter(brand-toc);
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  margin-right: 0.6em;
+  border-radius: 50%;
+  font-size: 0.7em;
+  vertical-align: 0.12em;
+  color: var(--brand-on-primary);
+  background: var(--brand-primary);
+}
+.theme-brand .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 1.7em;
+  font-weight: 500;
+  color: var(--deck-muted);
+}
+.theme-brand .deck-toc li.is-current > a {
+  color: var(--deck-accent);
+}
+.theme-brand .deck-mark {
+  --mark-color: var(--deck-accent-2);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-brand .deck-progress {
+  height: 4px;
+  background: var(--deck-surface);
+}
+.theme-brand .deck-progress span {
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2));
+}
+.theme-brand .deck-slide-number {
+  font: 600 13px var(--deck-body-font);
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+}
+
+/* ── the logo and the footer (index.tsx's layers) ─────────────────────── */
+.theme-brand .brand-mark {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  height: 0.95em;
+}
+.theme-brand .brand-mark.at-top-right {
+  top: calc(var(--deck-pad) * 0.4);
+  right: var(--deck-pad);
+}
+.theme-brand .brand-mark.at-top-left {
+  top: calc(var(--deck-pad) * 0.4);
+  left: var(--deck-pad);
+}
+.theme-brand .brand-mark.at-bottom-right {
+  bottom: calc(var(--deck-pad) * 0.32);
+  right: var(--deck-pad);
+}
+.theme-brand .brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  height: 100%;
+}
+.theme-brand .brand-logo img {
+  height: 100%;
+  width: auto;
+  max-width: 8em;
+  object-fit: contain;
+  border-radius: 0;
+}
+.theme-brand .brand-logo-dark {
+  display: none;
+}
+.theme-brand[data-color-scheme="dark"] .brand-logo.has-dark .brand-logo-light {
+  display: none;
+}
+.theme-brand[data-color-scheme="dark"] .brand-logo.has-dark .brand-logo-dark {
+  display: block;
+}
+.theme-brand .brand-wordmark {
+  font-weight: 800;
+  font-size: 0.62em;
+  letter-spacing: -0.02em;
+  color: var(--deck-fg);
+}
+.theme-brand .brand-wordmark::before {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.35em;
+  vertical-align: -0.08em;
+  border-radius: 0.22em;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+}
+.theme-brand .brand-footer {
+  position: absolute;
+  left: var(--deck-pad);
+  right: var(--deck-pad);
+  bottom: calc(var(--deck-pad) * 0.32);
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  font-size: 0.42em;
+  font-weight: 500;
+  color: var(--deck-muted);
+}
+.theme-brand .brand-footer::before {
+  content: "";
+  width: 2.4em;
+  height: 0.3em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-primary), var(--brand-secondary));
+}
+.theme-brand .brand-footer-page {
+  margin-left: auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--deck-fg);
+}
+.theme-brand .brand-mark.at-bottom-right ~ .brand-footer .brand-footer-page {
+  margin-right: 5.5em;
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+/* the cover is the brand: the primary colour, edge to edge, with the secondary as a shape */
+.theme-brand .deck-layout-cover {
+  align-items: flex-start;
+  justify-content: center;
+  color: var(--brand-on-primary);
+}
+/* painted on the slide, under the layout, so the layout keeps its own box for the auto-fit */
+.theme-brand .deck-slide.layout-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 92% 108%, var(--brand-secondary) 0 22%, transparent 22.2%),
+    radial-gradient(circle at 100% 0%, color-mix(in oklab, var(--brand-on-primary) 12%, transparent) 0 30%, transparent 30.2%),
+    var(--brand-primary);
+}
+.theme-brand .deck-layout-cover :is(h1, h2, h3, h4, p, a) {
+  color: var(--brand-on-primary);
+}
+.theme-brand .deck-layout-cover h1 {
+  font-size: 3.6em;
+  max-width: 14ch;
+  margin-bottom: 0.35em;
+}
+.theme-brand .deck-layout-cover > p {
+  max-width: 32em;
+  font-size: 1.05em;
+  opacity: 0.9;
+}
+.theme-brand .deck-layout-cover h4 {
+  opacity: 0.85;
+}
+.theme-brand .deck-layout-cover :not(pre) > code {
+  color: inherit;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.theme-brand .deck-layout-intro {
+  align-items: flex-start;
+}
+.theme-brand .deck-layout-intro h1 {
+  font-size: 2.8em;
+}
+.theme-brand .deck-layout-intro > p {
+  max-width: 34em;
+  color: var(--deck-muted);
+}
+.theme-brand .deck-layout-section {
+  align-items: flex-start;
+  padding-inline-start: 1.1em;
+}
+.theme-brand .deck-layout-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 0.32em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--deck-accent), var(--deck-accent-2));
+}
+.theme-brand .deck-layout-section :is(h1, h2) {
+  font-size: 3.2em;
+  max-width: 16ch;
+}
+.theme-brand .deck-layout-section > p {
+  color: var(--deck-muted);
+  max-width: 34em;
+}
+.theme-brand .deck-layout-end :is(h1, h2) {
+  font-size: 3.2em;
+}
+.theme-brand .deck-layout-end > p {
+  color: var(--deck-muted);
+}
+.theme-brand .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  font-size: 4.8em;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--deck-accent);
+  margin-bottom: 0.15em;
+  font-variant-numeric: tabular-nums;
+}
+.theme-brand .deck-layout-fact > :not(:first-child) {
+  font-size: 1em;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--deck-muted);
+  max-width: 30em;
+}
+.theme-brand .deck-layout-quote {
+  padding-inline: 10%;
+  font-style: normal;
+  font-size: 1.25em;
+}
+.theme-brand .deck-layout-quote blockquote {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 1.15em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+}
+.theme-brand .deck-layout-quote blockquote::before {
+  content: "\201C";
+  display: block;
+  height: 0.55em;
+  font-size: 2.6em;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--deck-accent);
+}
+.theme-brand .deck-layout-quote > p {
+  margin-top: 0.7em;
+  font-size: 0.6em;
+  font-weight: 700;
+  color: var(--deck-muted);
+}
+.theme-brand .deck-layout-statement :is(h1, h2) {
+  font-size: 2.9em;
+  max-width: 20ch;
+  margin-inline: auto;
+}
+.theme-brand .deck-layout-full {
+  padding: 0;
+}
+.theme-brand .deck-layout-two-cols {
+  column-gap: 2.2em;
+}
+.theme-brand .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) > :first-child {
+  margin-top: 0;
+}
+.theme-brand .deck-layout-two-cols-header {
+  column-gap: 1.2em;
+  row-gap: 0.7em;
+}
+.theme-brand .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding: 0.8em 1em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-bg);
+  box-shadow: var(--brand-shadow);
+}
+.theme-brand .deck-layout-two-cols-header > .deck-slot-left {
+  border-top: 4px solid var(--deck-accent);
+}
+.theme-brand .deck-layout-two-cols-header > .deck-slot-right {
+  border-top: 4px solid var(--deck-accent-2);
+}
+.theme-brand .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) > :last-child {
+  margin-bottom: 0;
+}
+.theme-brand .deck-layout-image .deck-layout-image-content {
+  background: linear-gradient(180deg, transparent, rgba(12, 17, 29, 0.82));
+}
+.theme-brand :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: var(--deck-pad) calc(var(--deck-pad) * 0.9);
+}
+.theme-brand .deck-layout-image-pane {
+  background-color: var(--brand-tint);
+}
+.theme-brand :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  box-shadow: var(--brand-shadow);
+}
+.theme-brand :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── the theme's own layouts and components (index.tsx) ───────────────── */
+/* title-logo: the logo large, the title, who and when; a panel in the brand's colours */
+.theme-brand .deck-layout-title-logo {
+  justify-content: center;
+}
+.theme-brand .brand-title-body {
+  position: relative;
+  z-index: 1;
+  max-width: 57%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.theme-brand .brand-title-body .brand-logo {
+  height: 1.7em;
+  margin-bottom: 1.4em;
+}
+.theme-brand .brand-title-body .brand-logo img {
+  max-width: 10em;
+}
+.theme-brand .brand-title-body .brand-wordmark {
+  font-size: 1.1em;
+}
+.theme-brand .brand-title-body h1 {
+  font-size: 3.1em;
+  max-width: 14ch;
+}
+.theme-brand .brand-title-body > p {
+  color: var(--deck-muted);
+  max-width: 28em;
+}
+.theme-brand .brand-title-meta {
+  display: flex;
+  gap: 1.6em;
+  margin-top: 1.2em;
+  padding-top: 0.7em;
+  border-top: 1px solid var(--deck-border);
+  font-size: 0.62em;
+  color: var(--deck-muted);
+}
+.theme-brand .brand-title-meta b {
+  display: block;
+  font-size: 1.15em;
+  color: var(--deck-fg);
+}
+.theme-brand .brand-title-panel {
+  position: absolute;
+  top: calc(var(--deck-pad) * -1);
+  bottom: calc(var(--deck-pad) * -1);
+  right: calc(var(--deck-pad) * -1);
+  width: calc(36% + var(--deck-pad));
+  background:
+    radial-gradient(circle at 20% 115%, var(--brand-secondary) 0 34%, transparent 34.3%),
+    radial-gradient(circle at 105% 10%, color-mix(in oklab, var(--brand-on-primary) 14%, transparent) 0 26%, transparent 26.3%),
+    var(--brand-primary);
+}
+/* agenda: the slide's list as numbered cards, two columns */
+.theme-brand .deck-layout-agenda :is(ol, ul) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6em 1.2em;
+  list-style: none;
+  padding: 0;
+  margin: 0.2em 0 0;
+  counter-reset: brand-agenda;
+}
+.theme-brand .deck-layout-agenda :is(ol, ul) > li {
+  counter-increment: brand-agenda;
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  margin: 0;
+  padding: 0.55em 0.8em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-bg);
+  box-shadow: var(--brand-shadow);
+  font-weight: 600;
+}
+.theme-brand .deck-layout-agenda :is(ol, ul) > li::before {
+  content: counter(brand-agenda, decimal-leading-zero);
+  position: static;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2em;
+  height: 2em;
+  border-radius: 10px;
+  font-size: 0.75em;
+  font-weight: 800;
+  color: var(--brand-on-primary);
+  background: var(--brand-primary);
+}
+.theme-brand .deck-layout-agenda :is(ol, ul) > li:nth-child(even)::before {
+  background: var(--brand-secondary);
+}
+/* metrics: a heading, then a row of figures (every <Metric> a cell, everything else across) */
+.theme-brand .deck-layout-metrics {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0 1em;
+  align-content: center;
+}
+.theme-brand .deck-layout-metrics > :not(.brand-metric) {
+  flex: 0 0 100%;
+}
+.theme-brand .deck-layout-metrics > .brand-metric {
+  flex: 1 1 0;
+  min-width: 5.5em;
+  margin-bottom: 0.8em;
+}
+.theme-brand .brand-metric {
+  padding: 0.8em 1em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-bg);
+  box-shadow: var(--brand-shadow);
+}
+.theme-brand .brand-metric-value {
+  display: block;
+  font-size: 2.2em;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--deck-accent);
+  font-variant-numeric: tabular-nums;
+}
+.theme-brand .brand-metric-label {
+  display: block;
+  margin-top: 0.3em;
+  font-size: 0.62em;
+  font-weight: 600;
+  color: var(--deck-muted);
+}
+.theme-brand .brand-metric-delta {
+  display: inline-block;
+  margin-top: 0.5em;
+  padding: 0.15em 0.55em;
+  border-radius: 999px;
+  font-size: 0.5em;
+  font-weight: 700;
+  color: var(--brand-good);
+  background: color-mix(in oklab, var(--brand-good) 12%, transparent);
+}
+.theme-brand .brand-metric-delta.is-down {
+  color: var(--brand-bad);
+  background: color-mix(in oklab, var(--brand-bad) 12%, transparent);
+}
+
+/* ── still copies ──────────────────────────────────────────────────────── */
+.theme-brand .deck-print-page :is(.deck-code-block, .brand-metric, .deck-frame, .deck-layout-agenda li, .deck-layout-two-cols-header > .deck-slot),
+.theme-brand .deck-slide.is-print :is(.deck-code-block, .brand-metric, .deck-frame) {
+  box-shadow: none;
+}
+@media print {
+  .theme-brand :is(.deck-code-block, .brand-metric, .deck-frame, .deck-layout-agenda li, .deck-layout-two-cols-header > .deck-slot) {
+    box-shadow: none;
+  }
+}
+@media (max-width: 640px) {
+  .theme-brand .deck-slide.is-scroll .deck-layout-agenda :is(ol, ul) {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-brand .deck-progress span {
+    transition: none;
+  }
+}
+
+/* centred: the built-in placement, in this theme's rhythm */
+.theme-brand .deck-layout-center > :is(h1, h2) {
+  margin-bottom: 0.3em;
+}
