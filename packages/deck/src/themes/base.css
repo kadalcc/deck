@@ -1831,7 +1831,10 @@ pre.deck-code.has-lines .line::before {
   bottom: 0;
   pointer-events: none;
 }
-.deck-chrome-area > * {
+/* `:where` keeps this at zero specificity, so a child that is click-through by its own rule —
+   the confetti layer and the pause curtain cover the whole viewport — stays click-through, and
+   the pen, the laser and the scroll view are not blocked by them. */
+:where(.deck-chrome-area > *) {
   pointer-events: auto;
 }
 
