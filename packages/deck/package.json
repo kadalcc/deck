@@ -75,6 +75,10 @@
       "types": "./dist/authoring/index.d.ts",
       "import": "./dist/authoring/index.js"
     },
+    "./import": {
+      "types": "./dist/import/index.d.ts",
+      "import": "./dist/import/index.js"
+    },
     "./runtime": {
       "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"

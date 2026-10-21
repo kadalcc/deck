@@ -4,6 +4,7 @@
  *   kadal-deck new <dir>                  a deck from the starter, no questions asked
  *   kadal-deck new --theme <name> [dir]   a theme package, ready to publish (--addon: an addon)
  *   kadal-deck theme eject [--dir theme]  copy the deck's theme into the deck, to change it
+ *   kadal-deck import slidev <slides.md>  a Kadal deck from a Slidev one, with a report of the rest
  *   kadal-deck dev [vite flags]           the deck with live reload (vite)
  *   kadal-deck build [vite flags]         dist/ for any static host (vite build); --without-notes
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
@@ -46,6 +47,10 @@ export const HELP = `kadal-deck <command> [options]
               --theme <name> [dir]  a theme package instead (kadal-theme-<name>)   --addon <name>  an addon
   theme       theme eject [--dir ./theme] [--force]  copy the deck's theme (or a built-in) into the
               deck and point the headmatter at it   (-C <deck> for a deck elsewhere)
+  import      import slidev <slides.md | folder>  convert a Slidev deck into a new Kadal deck folder,
+              with IMPORT-REPORT.md for what did not carry over, then check it
+              --out <dir> (default <folder>-kadal)  --force (write into a folder that is not empty)
+              --install [--pm npm|pnpm|yarn|bun]  install its packages afterwards
   dev         run the deck locally with live reload (Vite flags pass through)
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
   build       build the deck into dist/ (any static host can serve it)
@@ -126,6 +131,13 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     "without-notes": { kind: "boolean" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
+  // Mirrors IMPORT_FLAGS in import.ts, which is imported only when the command runs.
+  import: {
+    out: { kind: "string", short: "o" },
+    force: { kind: "boolean" },
+    install: { kind: "boolean" },
+    pm: { kind: "string" },
+  },
   // Mirrors NARRATE_FLAGS in narrate.ts, which is imported only when the command runs.
   narrate: {
     voice: { kind: "string" },
@@ -437,6 +449,10 @@ async function run(
     }
     case "publish":
       return publishCommand(dir, flags, io);
+    case "import": {
+      const { importCommand } = await import("./import.ts");
+      return importCommand(positionals, flags, cwd, io);
+    }
     case "mcp": {
       const { serveStdio } = await import("../mcp/index.ts");
       await serveStdio({ dir, allowOutside: flags["allow-outside"] === true });

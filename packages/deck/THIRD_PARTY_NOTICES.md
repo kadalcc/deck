@@ -146,3 +146,21 @@ The prebuilt shell (`@kadal/deck-shell`) bundles all five, so its build carries 
 too. The fonts the themes name (Nunito Sans, PT Serif, PT Mono, Fira Code, Signika Negative,
 Sigmar One, Titillium Web) are fetched from Google Fonts at run time under the SIL Open Font
 License, never bundled.
+
+## The Slidev importer (`kadal-deck import slidev`, `@kadal/deck/import`)
+
+The converter reads a Slidev project and writes Kadal's own syntax; it runs nothing from the
+project and ships no Slidev code. Three things in it come from elsewhere:
+
+- **Slidev's click-animation presets** (`v-click.fade`, `.up`, `.scale`…): the CSS the importer
+  writes into an imported deck's `src/slidev.css` follows Slidev's `packages/client/styles/vclick.css`
+  (MIT, Copyright (c) 2020 Anthony Fu), at Kadal's scale. Slidev's shortcut names (`abs-br`,
+  `border-main`, `slidev-icon-btn`…) are read from its `uno.config.ts` the same way.
+- **Tailwind CSS's colour palette** (MIT, Copyright (c) Tailwind Labs, Inc.,
+  https://github.com/tailwindlabs/tailwindcss): `src/import/uno-palette.ts` holds the OKLCH values
+  of tailwindcss 4.3's `theme.css`, which the utility classes of an imported deck resolve against
+  (Slidev's UnoCSS uses the same palette).
+- **Test fixtures**: `test/fixtures/slidev/` holds Slidev's starter template (create-slidev
+  53.0.0), the first part of the "Composable Vue" demo talk and `@slidev/theme-apple-basic`'s
+  example deck, as Slidev wrote them (MIT, Copyright (c) 2020 Anthony Fu and Copyright (c) 2021
+  Slidev.js Team). They are inputs to the tests, not part of the npm package.

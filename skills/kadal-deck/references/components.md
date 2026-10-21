@@ -1064,6 +1064,7 @@ A Mermaid diagram rendered in the browser in the deck's colours. Pass the source
 | `scale` | `number` | `1` | Scale factor. |
 | `theme` | `string` |  | A Mermaid theme for this diagram: default, neutral, dark, forest, base. |
 | `config` | `Record<string, unknown>` |  | Mermaid configuration for this diagram (themeVariables, look, flowchart…). |
+| `alt` | `string` |  | What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. |
 
 #### `<Sketch>`
 

@@ -16,6 +16,7 @@ import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
 import { checkDeckSyntax, checkSlideSyntax, deckTransitionNames, maskSlideBody } from "./lint-syntax.ts";
+import { checkSlidevLeftovers } from "./lint-slidev.ts";
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
 import { checkValue, closest } from "./validate.ts";
 import { parseDuration } from "../core/timer.ts";
@@ -765,6 +766,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
           }
         }
         checkIcons(n, at, add, options.icons, iconSetsReported);
+        checkSlidevLeftovers(n, at, add);
         if (n.type === "image" && n.url) checkAsset(n.url, file, line, s.index, column);
         if (n.type === "code") checkFence(n.lang ?? "", n.meta ?? "", n.value ?? "", at);
       }

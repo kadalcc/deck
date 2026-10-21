@@ -10,3 +10,6 @@ them by path (`theme: ../path/to/kadal-theme-fixture`) or copied into its node_m
   Shiki themes.
 - `kadal-addon-fixture`: an addon with a component (`Stamp`), a `slide-top` layer, a stylesheet
   and a `setup` that registers a command and a shortcut.
+
+`slidev/` holds Slidev decks the importer (`kadal-deck import slidev`, src/import/) is tested
+against; its README says where each came from.

@@ -20,6 +20,8 @@ and `slide_render` (pictures of slides).
 
 1. **Start.** New deck: `npx @kadal/deck new <dir> --title "Talk title" --yes` (MCP:
    `deck_create`). Existing deck: read the outline first (`deck_outline`, or skim `deck.mdx`).
+   A Slidev deck (slides.md): `npx kadal-deck import slidev <folder>` converts it into a new
+   folder; then work through its `IMPORT-REPORT.md` (errors first) and check as below.
 2. **Plan the arc** before writing: title → hook → 3–5 sections, one idea per slide → close with
    the one thing to remember. Roughly one slide per minute. Read
    [references/design-guide.md](references/design-guide.md) once per task.

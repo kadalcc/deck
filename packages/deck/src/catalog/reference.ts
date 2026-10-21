@@ -679,6 +679,14 @@ export const CLI: CliCommand[] = [
     json: true,
   },
   {
+    name: "import",
+    usage:
+      "kadal-deck import slidev <slides.md | folder> [--out dir] [--force] [--install] [--pm npm|pnpm|yarn|bun] [--json]",
+    summary:
+      "Convert a Slidev deck into a new Kadal deck folder (made as `new` makes one): deck.mdx, `src:` includes as pages/*.mdx, the project's .vue components, layouts and global layers as TSX, styles/, public/ and snippets/, the theme's package and icon sets in package.json, src/slidev.css with the UnoCSS utilities the slides use at Kadal's scale, and IMPORT-REPORT.md listing what did not carry over, slide by slide. Then it runs `check`. Nothing in the Slidev project is changed or run; --out defaults to <folder>-kadal and must be empty unless --force. The converter is `convertSlidev` in @kadal/deck/import.",
+    json: true,
+  },
+  {
     name: "dev",
     usage: "kadal-deck dev [--https] [vite flags]",
     summary:

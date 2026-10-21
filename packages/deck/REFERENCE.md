@@ -1090,6 +1090,7 @@ A Mermaid diagram rendered in the browser in the deck's colours. Pass the source
 | `scale` | `number` | `1` | Scale factor. |
 | `theme` | `string` |  | A Mermaid theme for this diagram: default, neutral, dark, forest, base. |
 | `config` | `Record<string, unknown>` |  | Mermaid configuration for this diagram (themeVariables, look, flowchart…). |
+| `alt` | `string` |  | What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. |
 
 #### `<Sketch>`
 
@@ -1792,6 +1793,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 
 - `kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun] · kadal-deck new --theme <name> [dir] · kadal-deck new --addon <name> [dir]` — Scaffold a deck (non-interactive); with --theme or --addon, a package ready to publish: package.json per the contract, a stylesheet with every token and layout class in light and dark, a layout, a layer, a README and a preview deck. `--json`
 - `kadal-deck theme eject [--dir ./theme] [--force] [--theme name] [-C deck] [--json]` — Copy the deck's theme (a package, or a built-in as a package-shaped folder) into the deck and point the headmatter at it, to change it there. `--json`
+- `kadal-deck import slidev <slides.md | folder> [--out dir] [--force] [--install] [--pm npm|pnpm|yarn|bun] [--json]` — Convert a Slidev deck into a new Kadal deck folder (made as `new` makes one): deck.mdx, `src:` includes as pages/*.mdx, the project's .vue components, layouts and global layers as TSX, styles/, public/ and snippets/, the theme's package and icon sets in package.json, src/slidev.css with the UnoCSS utilities the slides use at Kadal's scale, and IMPORT-REPORT.md listing what did not carry over, slide by slide. Then it runs `check`. Nothing in the Slidev project is changed or run; --out defaults to <folder>-kadal and must be empty unless --force. The converter is `convertSlidev` in @kadal/deck/import. `--json`
 - `kadal-deck dev [--https] [vite flags]` — The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.
 - `kadal-deck build [--without-notes] [--download] [--port n] [vite flags]` — dist/ for any static host. `--without-notes` leaves the speaker notes out of the build (no notes modules; the presenter and narrator have none). --download (or `download: true` in the deck) also prints dist/deck.pdf for the deck's Download button; --no-download skips it.
 - `kadal-deck check [--json] [--no-compile]` — Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--json`
