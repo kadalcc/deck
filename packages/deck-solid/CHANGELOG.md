@@ -1,5 +1,12 @@
 # @kadal/deck-solid
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [1cabea4]
+  - @kadal/deck@0.3.3
+
 ## 0.3.2
 
 ### Patch Changes
