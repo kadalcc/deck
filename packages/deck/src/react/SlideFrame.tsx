@@ -16,6 +16,7 @@ import { SlideContext, type SlideContextValue, useDeck } from "./context.ts";
 import { useUi } from "./hooks.ts";
 import { layoutFor } from "./layouts.tsx";
 import { MDXProvider } from "./mdx.tsx";
+import { Watermark } from "./Watermark.tsx";
 
 /**
  * One mounted slide: loads its module lazily, gives it a click registry, wraps it in its layout,
@@ -431,6 +432,7 @@ export function SlideFrame({
           <div className="deck-slide-loading" />
         )}
         {children}
+        {deck.config.badge ? <Watermark /> : null}
       </section>
     </SlideContext.Provider>
   );
