@@ -3,7 +3,7 @@
  *
  *   kadal-deck new <dir>                  a deck from the starter, no questions asked
  *   kadal-deck dev [vite flags]           the deck with live reload (vite)
- *   kadal-deck build [vite flags]         dist/ for any static host (vite build)
+ *   kadal-deck build [vite flags]         dist/ for any static host (vite build); --without-notes
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
  *   kadal-deck info [topic]               the catalog: components, layouts, backgrounds, keys…
  *   kadal-deck screenshot                 PNGs of slides (headless Chromium)
@@ -44,6 +44,7 @@ export const HELP = `kadal-deck <command> [options]
   dev         run the deck locally with live reload (Vite flags pass through)
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
   build       build the deck into dist/ (any static host can serve it)
+              --without-notes  leave the speaker notes out of the build
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
   info        the reference: info [components|layouts|backgrounds|themes|transitions|clicks|code|
@@ -58,6 +59,7 @@ export const HELP = `kadal-deck <command> [options]
   publish     build and publish the deck; prints its URL
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
               --no-thumbnail  skip the picture of slide 1 the host shows in its lists
+              --without-notes  publish without the speaker notes
   narrate     bake the narration: every notes segment spoken by Kokoro into public/narration/
               --voice <id> (default af_heart)  --dtype <fp32|fp16|q8|q4|q4f16>  --force (redo all)
               --setup  install kokoro-js into the deck first (an optional, ~400 MB dependency)
@@ -107,6 +109,7 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     title: { kind: "string" },
     host: { kind: "string" },
     thumbnail: { kind: "boolean" },
+    "without-notes": { kind: "boolean" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
   // Mirrors NARRATE_FLAGS in narrate.ts, which is imported only when the command runs.
@@ -207,7 +210,10 @@ async function run(
       // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
       const https = command === "dev" && vite.includes("--https");
       if (https) process.env.KADAL_DECK_HTTPS = "1";
-      const passed = vite.filter((a) => a !== "--https");
+      // `build --without-notes`: the deck's plugin reads this and builds no notes (vite/index.ts).
+      if (command === "build" && vite.includes("--without-notes"))
+        process.env.KADAL_DECK_WITHOUT_NOTES = "1";
+      const passed = vite.filter((a) => a !== "--https" && a !== "--without-notes");
       await runVite(
         dir,
         command === "build" ? ["build", ...positionals, ...passed] : [...positionals, ...passed],
@@ -560,6 +566,8 @@ export async function publishCommand(
     log: say,
     build: async (base, out) => {
       await rm(out, { recursive: true, force: true });
+      // `--without-notes`: the deck's plugin builds no notes (vite/index.ts reads this).
+      if (flags["without-notes"] === true) process.env.KADAL_DECK_WITHOUT_NOTES = "1";
       await runVite(dir, ["build", "--base", base, "--outDir", out, "--emptyOutDir"]);
     },
   });

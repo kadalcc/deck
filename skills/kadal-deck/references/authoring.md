@@ -32,7 +32,14 @@
   slide's frontmatter (so `layout:`/`background:` there style the title slide).
 - Precedence: engine defaults < headmatter < `deck.config.ts`. A key set in `deck.config.ts`
   cannot be changed from the headmatter (`kadal-deck check` warns).
-- `src: ./part.mdx` as the only content of a slide includes that file's slides there.
+- From the second slide on, a bare ```` ```yaml ```` fence as the very first thing in the body is
+  that slide's frontmatter too (Slidev's block frontmatter). ```` ```yaml [file.yml] ```` (a title,
+  or highlights) is code to show instead.
+- `defaults:` in the headmatter is frontmatter for every slide that does not set the key:
+  `defaults: { layout: center, transition: fade }`.
+- `src: ./part.mdx` as the only content of a slide includes that file's slides there;
+  `src: ./part.mdx#2-5` (or `#1,3,5-7`, `#4-`) only those slides, 1-based. The slide's other keys
+  merge into the first included slide.
 - Every key, its type and default: `npx kadal-deck info slide`, `info deck`, or the JSON Schema
   at `@kadal/deck/schema/frontmatter.json`.
 
@@ -44,7 +51,10 @@
 - JSX attributes: `className` (not `class`), `style={{ fontSize: 48 }}`, numbers and arrays in
   braces: `at={2}`, `options={["A", "B"]}`. Strings in quotes.
 - Close every tag; self-close empty ones (`<QrJoin />`).
-- HTML comments do not work; use `{/* comment */}`.
+- HTML comments at the **end** of a slide are its speaker notes (Slidev's way); any other
+  `<!-- … -->` is dropped. For a comment that is only a comment, `{/* comment */}`.
+- `<style>` in a slide styles that slide only (`html.dark h1 {…}` still means the dark scheme;
+  `:scope {…}` is the slide itself); `<style global>` styles the whole deck.
 - Components are Capitalised. Unknown names fail the slide — check `kadal-deck info components`.
 
 ## Clicks (steps)
@@ -53,7 +63,7 @@
   around a list reveals item by item. `at="+2"`, `at={3}`, `at={[2, 4]}`, `hide`,
   `effect="fade-up"` (see the click effects in references/components.md).
 - Code steps: ```` ```ts {1|2-3|all} ```` highlights those lines, one set per click.
-- `<Notes>` text with `[click]` markers: the presenter view shows the part for the current click,
+- `<Notes>` text (or a trailing `<!-- … -->`) with `[click]` markers: the presenter view shows the part for the current click,
   and the narrator (R, or the presenter's narration bar) reads that part aloud at that step. Write
   notes as sentences meant to be heard. `say: "…"` in a slide's frontmatter replaces what is read;
   `narration: false` keeps the slide quiet. `kadal-deck narrate` bakes the speech into
@@ -70,9 +80,13 @@
 - Fenced code is highlighted at build time (Shiki). Meta: `{lines:true}`, `[file.ts]` title,
   `{2|4-6}` steps, `{maxHeight:'400px'}`. A ````md magic-move fence morphs between the code fences
   it contains, one per click.
-- Maths: `$inline$` and `$$display$$` (KaTeX at build time).
-- Diagrams: `<Mermaid>{`flowchart LR; A --> B`}</Mermaid>`; hand-drawn `<Sketch>{`flowchart LR; A --> B`}</Sketch>`
-  or `<Sketch src="/diagram.excalidraw" />`.
+- Maths: `$inline$` and `$$display$$` (KaTeX at build time). `$$ {1|3|all}` on the opening line
+  lights those lines of an `aligned`/`array` one step per click (`{at: 2}`, `{finally: 'all'}`
+  in a second group). `katex: { macros: { "\\RR": "\\mathbb{R}" } }` in the headmatter.
+- Diagrams: a ```` ```mermaid {scale: 0.8, theme: 'neutral'} ```` fence or
+  `<Mermaid>{`flowchart LR; A --> B`}</Mermaid>` (`mermaid:` in the headmatter configures every
+  diagram); ```` ```plantuml ```` renders on `plantUmlServer` (public server by default); hand-drawn
+  `<Sketch>{`flowchart LR; A --> B`}</Sketch>` or `<Sketch src="/diagram.excalidraw" />`.
 
 ## Images, video, embeds
 

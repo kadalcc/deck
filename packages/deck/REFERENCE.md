@@ -459,7 +459,7 @@ Another name for `<Tex>`.
 
 #### `<Notes>`
 
-Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks.
+Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.
 
 ```mdx
 <Notes>
@@ -850,6 +850,61 @@ const n = 1
 ````
 `````
 
+### Diagrams
+
+#### `<KatexLines>`
+
+Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.
+
+```mdx
+$$ {1|2|all}
+\begin{aligned}
+a &= b + c \\
+d &= e
+\end{aligned}
+$$
+```
+
+#### `<Mermaid>`
+
+A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.
+
+```mdx
+<Mermaid>{`flowchart LR
+  A[Write] --> B[Check] --> C[Present]`}</Mermaid>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  | Mermaid source as a JSX template string. |
+| `code` | `string` |  | The diagram's source, when it is not the children. |
+| `scale` | `number` | `1` | Scale factor. |
+| `theme` | `string` |  | A Mermaid theme for this diagram: default, neutral, dark, forest, base. |
+| `config` | `Record<string, unknown>` |  | Mermaid configuration for this diagram (themeVariables, look, flowchart…). |
+
+#### `<Sketch>`
+
+An Excalidraw drawing in the deck's colours: from the sketch DSL (`scene`), an .excalidraw file (`src`), or Mermaid (children); `steps` tours its regions one click at a time.
+
+```mdx
+<Sketch>{`flowchart LR; idea --> slide --> talk`}</Sketch>
+
+<Sketch src="/diagrams/flow.excalidraw" height="600px" />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `scene` | `SketchScene` |  | A scene built with `sketch()` from @kadal/deck/sketch (import it in src/components.tsx or the slide). |
+| `src` | `string \| ExcalidrawFile` |  | Path to an .excalidraw file in public/. |
+| `mermaid` | `string` |  | Mermaid source to convert. |
+| `children` | `ReactNode` |  |  |
+| `steps` | `SketchStep[]` | `[]` | Regions to light up, one per click, after the whole diagram has shown. |
+| `caption` | `ReactNode` |  | Shown under the diagram when no step's caption is. |
+| `width` | `string` |  | CSS size limits for the drawing. |
+| `height` | `string` |  | CSS max height. |
+| `fontSize` | `number` |  | Font size for Mermaid conversions. |
+| `zoomable` | `boolean` | `true` | Show the button that opens it in Excalidraw's viewer. |
+
 ### Live
 
 #### `<Leaderboard>` · live room
@@ -961,45 +1016,6 @@ The audience answers in a word or two; the words grow as they repeat.
 | --- | --- | --- | --- |
 | `id` * | `string` |  | Stable id, unique in the deck. |
 | `question` * | `string` |  | The prompt. |
-
-### Diagrams
-
-#### `<Mermaid>`
-
-A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.
-
-```mdx
-<Mermaid>{`flowchart LR
-  A[Write] --> B[Check] --> C[Present]`}</Mermaid>
-```
-
-| prop | type | default | |
-| --- | --- | --- | --- |
-| `children` | `ReactNode` |  | Mermaid source as a JSX template string. |
-| `scale` | `number` | `1` | Scale factor. |
-
-#### `<Sketch>`
-
-An Excalidraw drawing in the deck's colours: from the sketch DSL (`scene`), an .excalidraw file (`src`), or Mermaid (children); `steps` tours its regions one click at a time.
-
-```mdx
-<Sketch>{`flowchart LR; idea --> slide --> talk`}</Sketch>
-
-<Sketch src="/diagrams/flow.excalidraw" height="600px" />
-```
-
-| prop | type | default | |
-| --- | --- | --- | --- |
-| `scene` | `SketchScene` |  | A scene built with `sketch()` from @kadal/deck/sketch (import it in src/components.tsx or the slide). |
-| `src` | `string \| ExcalidrawFile` |  | Path to an .excalidraw file in public/. |
-| `mermaid` | `string` |  | Mermaid source to convert. |
-| `children` | `ReactNode` |  |  |
-| `steps` | `SketchStep[]` | `[]` | Regions to light up, one per click, after the whole diagram has shown. |
-| `caption` | `ReactNode` |  | Shown under the diagram when no step's caption is. |
-| `width` | `string` |  | CSS size limits for the drawing. |
-| `height` | `string` |  | CSS max height. |
-| `fontSize` | `number` |  | Font size for Mermaid conversions. |
-| `zoomable` | `boolean` | `true` | Show the button that opens it in Excalidraw's viewer. |
 
 ### Motion
 
@@ -1299,7 +1315,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `totalTime` | `number \| null` | `null` | Total seconds for the pacing timer, or null. |
 | `mouseWheel` | `boolean` | `false` | Scroll-wheel navigation. |
 | `previewLinks` | `boolean` | `false` | Open links in an overlay. |
-| `transition` | `Transition` | `"slide"` | Slide transition (see transitions). Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
+| `transition` | `Transition` | `"slide"` | Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`). Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
 | `transitionSpeed` | `TransitionSpeed` | `"default"` | default · fast · slow. Values: `default` `fast` `slow` |
 | `backgroundTransition` | `Transition` | `"fade"` | Transition for backgrounds. Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
 | `viewDistance` | `number` | `3` | Slides kept mounted on either side. |
@@ -1336,6 +1352,12 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `ads` | `boolean` | `false` | Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them. |
 | `fonts` | `string[]` | `[]` | Google Fonts families to load, e.g. ["Inter:wght@400;600"]. |
 | `seoMeta` | `Record<string, string>` | `{}` | Extra <meta> tags. |
+| `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
+| `plantUmlServer` | `string` | `"https://www.plantuml.com/plantuml"` | The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. |
+| `notesAutoRuby` | `Record<string, string>` | `{}` | Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. |
+| `katex` | `{ [option: string]: unknown; macros?: Record<string, string>; }` | `{}` | KaTeX options for every formula, e.g. `{ macros: { "\\RR": "\\mathbb{R}" } }`. |
+| `mermaid` | `Record<string, unknown>` | `{}` | Mermaid configuration for every diagram (theme, themeVariables, look, flowchart…). |
+| `transitions` | `Record<string, TransitionDefinition>` | `{}` | Named custom transitions: `{ flip: { in: "flip-in", out: "flip-out", back: {…} } }`, the keyframes defined in the theme's CSS or a `<style global>` (core/transitions.ts). |
 | `aspectRatio` | `number` |  | Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…). |
 | `canvasWidth` | `number` |  | Slidev spelling: the stage width used with aspectRatio. |
 
@@ -1355,7 +1377,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `disabled` | `boolean` |  | Same as hide. |
 | `visibility` | `"hidden" \| "uncounted"` |  | "hidden" leaves it out; "uncounted" shows it without a number. Values: `hidden` `uncounted` |
 | `hideInToc` | `boolean` |  | Keep the slide out of <Toc>. |
-| `transition` | `string` |  | This slide's transition (see transitions). Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
+| `transition` | `string` |  | This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half. Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
 | `transitionSpeed` | `"default" \| "fast" \| "slow"` |  | This slide's transition speed. Values: `default` `fast` `slow` |
 | `backgroundTransition` | `string` |  | This slide's background transition. Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
 | `autoAnimate` | `boolean \| { id: string }` |  | Animate matching elements (same text or data-id) from the previous auto-animate slide. |
@@ -1389,7 +1411,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `posterUrl` | `string` |  | Capture the poster from this address instead of `url`. |
 | `posterWait` | `number` |  | Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000). |
 | `terms` | `boolean \| { skip: string[] }` |  | false: link no glossary terms automatically on this slide; { skip: [GIS] } leaves some out. |
-| `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). |
+| `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them. |
 | `say` | `string` |  | What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent. |
 | `narration` | `false` |  | false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck. |
 
@@ -1458,7 +1480,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 
 - `kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun]` — Scaffold a deck (non-interactive). `--json`
 - `kadal-deck dev [--https] [vite flags]` — The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.
-- `kadal-deck build [vite flags]` — dist/ for any static host.
+- `kadal-deck build [--without-notes] [vite flags]` — dist/ for any static host. `--without-notes` leaves the speaker notes out of the build (no notes modules; the presenter and narrator have none).
 - `kadal-deck check [--json] [--no-compile]` — Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--json`
 - `kadal-deck info [topic] [--search q] [--json]` — Print the catalog: components, layouts, backgrounds, frontmatter… `--json`
 - `kadal-deck screenshot [--slide N|all] [--out dir] [--theme t] [--scheme light|dark] [--width px] [--url u] [--dev] [--json]` — PNG of slides, every click revealed (build + preview, headless Chromium). `--json`
@@ -1466,7 +1488,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `kadal-deck login [--host url] [--json]` — Sign this machine in (opens the browser). `--json`
 - `kadal-deck logout [--json]` — Forget the saved token. `--json`
 - `kadal-deck whoami [--json]` — Who is signed in (exit 3 when nobody). `--json`
-- `kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--json]` — Build and publish to a host; prints the URL. `--json`
+- `kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--without-notes] [--json]` — Build and publish to a host; prints the URL. `--without-notes` publishes the deck without its speaker notes. `--json`
 - `kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]` — Bake the narration: every notes segment spoken by Kokoro into public/narration/ (MP3 or Opus with ffmpeg, else WAV) and public/narration.json; skips clips that exist. --setup installs kokoro-js. `--json`
 - `kadal-deck mcp [--dir path] [--allow-outside]` — A Model Context Protocol server on stdio, for AI agents.
 

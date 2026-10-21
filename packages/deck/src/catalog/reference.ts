@@ -494,8 +494,9 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "build",
-    usage: "kadal-deck build [vite flags]",
-    summary: "dist/ for any static host.",
+    usage: "kadal-deck build [--without-notes] [vite flags]",
+    summary:
+      "dist/ for any static host. `--without-notes` leaves the speaker notes out of the build (no notes modules; the presenter and narrator have none).",
     json: false,
   },
   {
@@ -546,8 +547,10 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "publish",
-    usage: "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--json]",
-    summary: "Build and publish to a host; prints the URL.",
+    usage:
+      "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--without-notes] [--json]",
+    summary:
+      "Build and publish to a host; prints the URL. `--without-notes` publishes the deck without its speaker notes.",
     json: true,
   },
   {
@@ -634,7 +637,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   autoSlideStoppable: "Any input stops auto-slide.",
   mouseWheel: "Scroll-wheel navigation.",
   previewLinks: "Open links in an overlay.",
-  transition: "Slide transition (see transitions).",
+  transition:
+    'Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`).',
   transitionSpeed: "default · fast · slow.",
   backgroundTransition: "Transition for backgrounds.",
   viewDistance: "Slides kept mounted on either side.",
@@ -731,7 +735,12 @@ export const SLIDE_KEYS = [
     description: '"hidden" leaves it out; "uncounted" shows it without a number.',
   },
   { name: "hideInToc", type: B(), description: "Keep the slide out of <Toc>." },
-  { name: "transition", type: S(), description: "This slide's transition (see transitions)." },
+  {
+    name: "transition",
+    type: S(),
+    description:
+      "This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half.",
+  },
   {
     name: "transitionSpeed",
     type: E("default", "fast", "slow"),
@@ -853,8 +862,9 @@ export const SLIDE_KEYS = [
   {
     name: "src",
     type: S(),
-    description: "Include the slides of another .mdx file here (a frontmatter-only slide).",
-    example: "src: ./part-two.mdx",
+    description:
+      "Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them.",
+    example: "src: ./part-two.mdx#2-5",
   },
   {
     name: "say",

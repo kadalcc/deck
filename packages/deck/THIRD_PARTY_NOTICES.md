@@ -58,3 +58,26 @@ What that means for you:
   installed contains none of it.
 - **Baked audio** (`kadal-deck narrate` output: MP3/Opus/WAV files) is the output of the model,
   not a copy of eSpeak NG; the Kokoro weights' Apache-2.0 licence places no restriction on it.
+
+## Slidev (ported code) and the PlantUML server
+
+- **Slidev** (MIT, Copyright (c) 2020 Anthony Fu, https://github.com/slidevjs/slidev). The KaTeX
+  line selectors in `src/components/KatexLines.tsx` (`.mtable > [class*=col-align]` and the
+  `vlist` path to each row's `.mord`) follow Slidev's `packages/client/builtin/katex-lines.ts`.
+  The rest of the Slidev syntax the compiler reads (comment notes, block frontmatter, `src`
+  ranges, scoped `<style>`, diagram fences) is Kadal's own implementation of Slidev's documented
+  behaviour.
+
+  > Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+  > and associated documentation files (the "Software"), to deal in the Software without
+  > restriction, including without limitation the rights to use, copy, modify, merge, publish,
+  > distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+  > Software is furnished to do so, subject to the following conditions: The above copyright
+  > notice and this permission notice shall be included in all copies or substantial portions of
+  > the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+- **PlantUML**: a ```` ```plantuml ```` fence becomes an image the deck's `plantUmlServer`
+  (default https://www.plantuml.com/plantuml) draws from the diagram's source, which is encoded
+  into the image's address. The diagram source therefore leaves the browser for that server;
+  point `plantUmlServer` at your own (the `plantuml/plantuml-server` image) for private decks.
+  No PlantUML code is in the package.

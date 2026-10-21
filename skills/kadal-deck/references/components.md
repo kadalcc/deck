@@ -434,7 +434,7 @@ Another name for `<Tex>`.
 
 #### `<Notes>`
 
-Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks.
+Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.
 
 ```mdx
 <Notes>
@@ -825,6 +825,61 @@ const n = 1
 ````
 `````
 
+### Diagrams
+
+#### `<KatexLines>`
+
+Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.
+
+```mdx
+$$ {1|2|all}
+\begin{aligned}
+a &= b + c \\
+d &= e
+\end{aligned}
+$$
+```
+
+#### `<Mermaid>`
+
+A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.
+
+```mdx
+<Mermaid>{`flowchart LR
+  A[Write] --> B[Check] --> C[Present]`}</Mermaid>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  | Mermaid source as a JSX template string. |
+| `code` | `string` |  | The diagram's source, when it is not the children. |
+| `scale` | `number` | `1` | Scale factor. |
+| `theme` | `string` |  | A Mermaid theme for this diagram: default, neutral, dark, forest, base. |
+| `config` | `Record<string, unknown>` |  | Mermaid configuration for this diagram (themeVariables, look, flowchart…). |
+
+#### `<Sketch>`
+
+An Excalidraw drawing in the deck's colours: from the sketch DSL (`scene`), an .excalidraw file (`src`), or Mermaid (children); `steps` tours its regions one click at a time.
+
+```mdx
+<Sketch>{`flowchart LR; idea --> slide --> talk`}</Sketch>
+
+<Sketch src="/diagrams/flow.excalidraw" height="600px" />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `scene` | `SketchScene` |  | A scene built with `sketch()` from @kadal/deck/sketch (import it in src/components.tsx or the slide). |
+| `src` | `string \| ExcalidrawFile` |  | Path to an .excalidraw file in public/. |
+| `mermaid` | `string` |  | Mermaid source to convert. |
+| `children` | `ReactNode` |  |  |
+| `steps` | `SketchStep[]` | `[]` | Regions to light up, one per click, after the whole diagram has shown. |
+| `caption` | `ReactNode` |  | Shown under the diagram when no step's caption is. |
+| `width` | `string` |  | CSS size limits for the drawing. |
+| `height` | `string` |  | CSS max height. |
+| `fontSize` | `number` |  | Font size for Mermaid conversions. |
+| `zoomable` | `boolean` | `true` | Show the button that opens it in Excalidraw's viewer. |
+
 ### Live
 
 #### `<Leaderboard>` · live room
@@ -936,45 +991,6 @@ The audience answers in a word or two; the words grow as they repeat.
 | --- | --- | --- | --- |
 | `id` * | `string` |  | Stable id, unique in the deck. |
 | `question` * | `string` |  | The prompt. |
-
-### Diagrams
-
-#### `<Mermaid>`
-
-A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.
-
-```mdx
-<Mermaid>{`flowchart LR
-  A[Write] --> B[Check] --> C[Present]`}</Mermaid>
-```
-
-| prop | type | default | |
-| --- | --- | --- | --- |
-| `children` | `ReactNode` |  | Mermaid source as a JSX template string. |
-| `scale` | `number` | `1` | Scale factor. |
-
-#### `<Sketch>`
-
-An Excalidraw drawing in the deck's colours: from the sketch DSL (`scene`), an .excalidraw file (`src`), or Mermaid (children); `steps` tours its regions one click at a time.
-
-```mdx
-<Sketch>{`flowchart LR; idea --> slide --> talk`}</Sketch>
-
-<Sketch src="/diagrams/flow.excalidraw" height="600px" />
-```
-
-| prop | type | default | |
-| --- | --- | --- | --- |
-| `scene` | `SketchScene` |  | A scene built with `sketch()` from @kadal/deck/sketch (import it in src/components.tsx or the slide). |
-| `src` | `string \| ExcalidrawFile` |  | Path to an .excalidraw file in public/. |
-| `mermaid` | `string` |  | Mermaid source to convert. |
-| `children` | `ReactNode` |  |  |
-| `steps` | `SketchStep[]` | `[]` | Regions to light up, one per click, after the whole diagram has shown. |
-| `caption` | `ReactNode` |  | Shown under the diagram when no step's caption is. |
-| `width` | `string` |  | CSS size limits for the drawing. |
-| `height` | `string` |  | CSS max height. |
-| `fontSize` | `number` |  | Font size for Mermaid conversions. |
-| `zoomable` | `boolean` | `true` | Show the button that opens it in Excalidraw's viewer. |
 
 ### Motion
 

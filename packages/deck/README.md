@@ -30,13 +30,13 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | --- | --- |
 | `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun]` | a deck from the starter, no questions asked |
 | `kadal-deck dev` | Vite dev server for the deck in this folder |
-| `kadal-deck build` | `dist/` for any static host |
+| `kadal-deck build [--without-notes]` | `dist/` for any static host; `--without-notes` leaves the speaker notes out |
 | `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
 | `kadal-deck info [topic] [name] [--search words] [--markdown]` | the reference (components, layouts, backgrounds, themes, transitions, clicks, code, deck, slide, keys, routes, live, cli, exit) |
 | `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium) |
 | `kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u]` | PDF (and PNG/PPTX) into `export/` — install `playwright` (and `pptxgenjs` for PPTX). Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable; `--vector-pdf` prints with the browser alone |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
-| `kadal-deck publish [--slug] [--workspace] [--title] [--host]` | build for the host and publish; only changed files are uploaded |
+| `kadal-deck publish [--slug] [--workspace] [--title] [--host] [--without-notes]` | build for the host and publish; only changed files are uploaded |
 | `kadal-deck narrate [--voice id] [--dtype q8\|fp32…] [--force] [--setup]` | bake the narration: each notes segment spoken by Kokoro into `public/narration/` (MP3/Opus with ffmpeg, else WAV) + `public/narration.json`; skips clips that exist. `--setup` installs `kokoro-js` |
 | `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |
 
@@ -74,12 +74,13 @@ Markdown, with these on top:
 | Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` |
 | Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ```` |
 | Magic move | ````` ````md magic-move ````` holding one fence per step |
-| Math | `$inline$`, `$$ display $$`, `<Tex tex="…" />` |
-| Diagrams | `<Mermaid>{`flowchart LR …`}</Mermaid>`; hand-drawn: `<Sketch scene={…} steps={[…]} />`, `<Sketch src="x.excalidraw" />`, `<Sketch>{`flowchart …`}</Sketch>` |
-| Notes | `<Notes>… [click] …</Notes>` — the presenter view splits them at `[click]` |
+| Math | `$inline$`, `$$ display $$`, `<Tex tex="…" />`; `$$ {1\|3\|all}` lights lines one click at a time; `katex: { macros }` in the headmatter |
+| Diagrams | ```` ```mermaid {scale: 0.8} ```` or `<Mermaid>{`flowchart LR …`}</Mermaid>` (`mermaid:` headmatter for all); ```` ```plantuml ```` (on `plantUmlServer`); hand-drawn: `<Sketch scene={…} steps={[…]} />`, `<Sketch src="x.excalidraw" />`, `<Sketch>{`flowchart …`}</Sketch>` |
+| Notes | `<Notes>… [click] …</Notes>`, or Slidev's `<!-- … -->` at the end of the slide — the presenter view splits them at `[click]`; `notesAutoRuby: { 日本語: ni hon go }` annotates words |
+| Slidev syntax | ```` ```yaml ```` first in a slide = its frontmatter; `defaults:` headmatter for every slide; `src: ./more.mdx#2-5`; `<style>` scoped to its slide (`<style global>` for the deck); other HTML comments are dropped |
 | Layouts | `layout: cover \| center \| section \| two-cols \| image-right \| iframe-left \| fact \| quote …`; `::right::` names a slot |
 | Backgrounds | `background: aurora` (also mesh, waves, lines, beams, sparkles, starfield, grid, dots, noise, spotlight), a colour, a gradient, an image, a video, an iframe, or `{ component: starfield, count: 400 }` |
-| Transitions | `transition: slide \| fade \| convex \| concave \| zoom \| none \| view-transition`, `-in`/`-out`, `transitionSpeed`, `backgroundTransition` |
+| Transitions | `transition: slide \| fade \| convex \| concave \| zoom \| none \| view-transition`, `-in`/`-out`, `transitionSpeed`, `backgroundTransition`; your own: `transitions: { flip: { in: flip-in, out: flip-out } }` in the headmatter (or `registerTransition`), or CSS on `.deck-stage[data-transition="flip"]` setting `--deck-anim-in`/`--deck-anim-out` |
 | Auto-animate | `autoAnimate: true` on consecutive slides; matching `data-id`s move |
 | Motion | `<Motion initial enter clicks={{ "click-1": {…} }}>` |
 | Bits | `Cols/Col`, `Grid`, `Callout`, `Badge`, `Kbd`, `Counter`, `Typewriter`, `Encrypted`, `Mark`, `Confetti`, `Timer`, `Qr`, `Toc`, `Image preview`, `Youtube`, `Tweet`, `Iframe`, `FitText`, `Arrow`, `Transform`, `Absolute`, `FlipBoard` |
@@ -87,6 +88,14 @@ Markdown, with these on top:
 | Per-slide | `class`, `colorScheme: dark`, `transition`, `clicks`, `hide`, `hideInToc`, `timing`, `zoom`, `state` |
 
 Cards that share a row share a height: a `<Glass>` or `<Callout>` that is the only thing in its `<Col>` (or in the `<Click>` that reveals it) fills the cell, unless the row says `align="start"`; give your own card component the `deck-card` class to join in. Your own components go in `src/components.tsx` and are available in `deck.mdx` without imports; `layout:name` entries register custom layouts.
+
+### The Vite plugin's options
+
+`deck({ entry, shiki, remarkPlugins, rehypePlugins, preprocess, katex, mermaid, withoutNotes })`:
+your remark plugins run after GFM and maths, your rehype plugins after highlighting, KaTeX and the
+glossary; `preprocess(text, file)` rewrites each file before it is cut into slides; `katex` and
+`mermaid` are the defaults the headmatter's `katex:` and `mermaid:` merge over. The browser
+compiler (`compileDeck` in `@kadal/deck/runtime`) takes the same options.
 
 ## Keys
 

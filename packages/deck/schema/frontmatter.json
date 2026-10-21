@@ -90,7 +90,7 @@
             "zoom",
             "view-transition"
           ],
-          "description": "This slide's transition (see transitions)."
+          "description": "This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half."
         },
         "transitionSpeed": {
           "type": "string",
@@ -273,7 +273,7 @@
         },
         "src": {
           "type": "string",
-          "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+          "description": "Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them."
         },
         "say": {
           "type": "string",
@@ -381,7 +381,7 @@
             "zoom",
             "view-transition"
           ],
-          "description": "Slide transition (see transitions).",
+          "description": "Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition=\"name\"]` setting `--deck-anim-in` / `--deck-anim-out`).",
           "default": "slide"
         },
         "transitionSpeed": {
@@ -574,7 +574,7 @@
         },
         "src": {
           "type": "string",
-          "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+          "description": "Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them."
         },
         "say": {
           "type": "string",
@@ -1221,6 +1221,31 @@
         "seoMeta": {
           "type": "object",
           "description": "Extra <meta> tags."
+        },
+        "defaults": {
+          "type": "object",
+          "description": "Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it."
+        },
+        "plantUmlServer": {
+          "type": "string",
+          "description": "The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`.",
+          "default": "https://www.plantuml.com/plantuml"
+        },
+        "notesAutoRuby": {
+          "type": "object",
+          "description": "Words in the speaker notes and their reading, shown as ruby: `{ 日本語: \"ni hon go\" }`."
+        },
+        "katex": {
+          "type": "object",
+          "description": "KaTeX options for every formula, e.g. `{ macros: { \"\\\\RR\": \"\\\\mathbb{R}\" } }`."
+        },
+        "mermaid": {
+          "type": "object",
+          "description": "Mermaid configuration for every diagram (theme, themeVariables, look, flowchart…)."
+        },
+        "transitions": {
+          "type": "object",
+          "description": "Named custom transitions: `{ flip: { in: \"flip-in\", out: \"flip-out\", back: {…} } }`, the keyframes defined in the theme's CSS or a `<style global>` (core/transitions.ts)."
         },
         "aspectRatio": {
           "type": "number",

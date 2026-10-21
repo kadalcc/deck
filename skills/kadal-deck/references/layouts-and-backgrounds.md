@@ -126,7 +126,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `disabled` | `boolean` |  | Same as hide. |
 | `visibility` | `"hidden" \| "uncounted"` |  | "hidden" leaves it out; "uncounted" shows it without a number. Values: `hidden` `uncounted` |
 | `hideInToc` | `boolean` |  | Keep the slide out of <Toc>. |
-| `transition` | `string` |  | This slide's transition (see transitions). Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
+| `transition` | `string` |  | This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half. Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
 | `transitionSpeed` | `"default" \| "fast" \| "slow"` |  | This slide's transition speed. Values: `default` `fast` `slow` |
 | `backgroundTransition` | `string` |  | This slide's background transition. Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
 | `autoAnimate` | `boolean \| { id: string }` |  | Animate matching elements (same text or data-id) from the previous auto-animate slide. |
@@ -160,7 +160,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `posterUrl` | `string` |  | Capture the poster from this address instead of `url`. |
 | `posterWait` | `number` |  | Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000). |
 | `terms` | `boolean \| { skip: string[] }` |  | false: link no glossary terms automatically on this slide; { skip: [GIS] } leaves some out. |
-| `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). |
+| `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them. |
 | `say` | `string` |  | What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent. |
 | `narration` | `false` |  | false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck. |
 
@@ -213,7 +213,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `totalTime` | `number \| null` | `null` | Total seconds for the pacing timer, or null. |
 | `mouseWheel` | `boolean` | `false` | Scroll-wheel navigation. |
 | `previewLinks` | `boolean` | `false` | Open links in an overlay. |
-| `transition` | `Transition` | `"slide"` | Slide transition (see transitions). Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
+| `transition` | `Transition` | `"slide"` | Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`). Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
 | `transitionSpeed` | `TransitionSpeed` | `"default"` | default · fast · slow. Values: `default` `fast` `slow` |
 | `backgroundTransition` | `Transition` | `"fade"` | Transition for backgrounds. Values: `zoom` `none` `fade` `slide` `convex` `concave` `view-transition` |
 | `viewDistance` | `number` | `3` | Slides kept mounted on either side. |
@@ -250,5 +250,11 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `ads` | `boolean` | `false` | Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them. |
 | `fonts` | `string[]` | `[]` | Google Fonts families to load, e.g. ["Inter:wght@400;600"]. |
 | `seoMeta` | `Record<string, string>` | `{}` | Extra <meta> tags. |
+| `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
+| `plantUmlServer` | `string` | `"https://www.plantuml.com/plantuml"` | The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. |
+| `notesAutoRuby` | `Record<string, string>` | `{}` | Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. |
+| `katex` | `{ [option: string]: unknown; macros?: Record<string, string>; }` | `{}` | KaTeX options for every formula, e.g. `{ macros: { "\\RR": "\\mathbb{R}" } }`. |
+| `mermaid` | `Record<string, unknown>` | `{}` | Mermaid configuration for every diagram (theme, themeVariables, look, flowchart…). |
+| `transitions` | `Record<string, TransitionDefinition>` | `{}` | Named custom transitions: `{ flip: { in: "flip-in", out: "flip-out", back: {…} } }`, the keyframes defined in the theme's CSS or a `<style global>` (core/transitions.ts). |
 | `aspectRatio` | `number` |  | Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…). |
 | `canvasWidth` | `number` |  | Slidev spelling: the stage width used with aspectRatio. |

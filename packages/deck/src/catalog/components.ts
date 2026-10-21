@@ -297,7 +297,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Notes: {
     category: "content",
     summary:
-      "Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks.",
+      "Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.",
     example: `<Notes>\nOpen with the question. [click] Then reveal the number.\n</Notes>`,
   },
   Tex: {
@@ -319,7 +319,27 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     summary:
       "A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.",
     example: "<Mermaid>{`flowchart LR\n  A[Write] --> B[Check] --> C[Present]`}</Mermaid>",
-    props: { scale: "Scale factor.", children: "Mermaid source as a JSX template string." },
+    props: {
+      scale: "Scale factor.",
+      children: "Mermaid source as a JSX template string.",
+      code: "The source as a prop (what a ```mermaid fence compiles to).",
+      theme: "A Mermaid theme for this diagram: default, neutral, dark, forest, base.",
+      config: "Mermaid configuration for this diagram, over the deck's `mermaid:`.",
+    },
+  },
+  KatexLines: {
+    category: "diagrams",
+    summary:
+      "Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.",
+    example: "$$ {1|2|all}\n\\begin{aligned}\na &= b + c \\\\\nd &= e\n\\end{aligned}\n$$",
+    mapping: true,
+    props: {
+      steps: "The steps, as in the fence: `1|3|all`.",
+      at: "The click the steps start at (a number, or `+n`).",
+      finally: "Lines shown once the slide's clicks pass the last step (default: the last step).",
+      startLine: "The number of the first line (default 1).",
+      children: "The rendered formula.",
+    },
   },
   Sketch: {
     category: "diagrams",
