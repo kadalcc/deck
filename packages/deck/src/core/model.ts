@@ -820,7 +820,7 @@ export interface HostOverride {
   verify?: string;
   /**
    * The Download button: `false` hides it whatever the deck says (a free plan), `true` allows
-   * the deck's own, a URL (https, or a same-site path) points it at the host's copy of the PDF.
+   * the deck's own, a URL (https, or a same-site path) points a deck's button at the host's copy.
    */
   download?: boolean | string;
 }
@@ -864,14 +864,13 @@ export function withHostOverride(config: DeckConfig, override: HostOverride | nu
     },
     ...(override.badge !== undefined ? { badge: override.badge } : {}),
     ...(override.ads !== undefined ? { ads: override.ads } : {}),
-    // `true` lets the deck's own choice stand, and turns a plain `true` on when the deck said nothing.
+    // `false` hides the button; a URL points it at the host's copy; `true` (allowed) lets the
+    // deck's own choice stand, so a deck that never asked for a button doesn't get one.
     ...(override.download === false
       ? { download: false }
-      : typeof override.download === "string"
+      : typeof override.download === "string" && config.download !== false
         ? { download: override.download }
-        : override.download === true
-          ? { download: config.download || true }
-          : {}),
+        : {}),
   };
 }
 

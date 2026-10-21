@@ -28,18 +28,21 @@ describe("the Download button", () => {
     });
   });
 
-  test("the host forces it off, on, or to its own copy", () => {
+  test("the host can hide it, allow the deck's own, or point it at its copy", () => {
     const on = resolveConfig({ download: true });
     const off = resolveConfig();
     const host = (download: unknown) => readHostOverride({ __KADAL_DECK__: { download } });
     expect(withHostOverride(on, host(false)).download).toBe(false);
-    expect(withHostOverride(off, host(true)).download).toBe(true);
+    // Allowed is not asked for: a deck that never wanted a button doesn't get one.
+    expect(withHostOverride(off, host(true)).download).toBe(false);
+    expect(withHostOverride(on, host(true)).download).toBe(true);
     expect(withHostOverride(resolveConfig({ download: "a.pdf" }), host(true)).download).toBe(
       "a.pdf",
     );
-    expect(withHostOverride(off, host("/api/decks/d1/exports/pdf")).download).toBe(
+    expect(withHostOverride(on, host("/api/decks/d1/exports/pdf")).download).toBe(
       "/api/decks/d1/exports/pdf",
     );
+    expect(withHostOverride(off, host("/api/decks/d1/exports/pdf")).download).toBe(false);
     // Not a URL the host could mean: ignored.
     expect(host("javascript:alert(1)")).toEqual({});
     expect(host("//evil.example/x.pdf")).toEqual({});
