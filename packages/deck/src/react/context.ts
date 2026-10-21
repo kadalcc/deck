@@ -2,6 +2,7 @@ import { type ComponentType, createContext, useContext } from "react";
 
 import type { ClickRegistry } from "../core/clicks.ts";
 import type { CommandRegistry } from "../core/commands.ts";
+import type { PanelRegistry } from "../core/panels.ts";
 import type { Layout } from "../core/layout.ts";
 import type {
   Column,
@@ -159,6 +160,8 @@ export interface DeckRuntime {
   terms: Store<TermReveal | null>;
   /** Definitions by id: the deck's glossary, plus every mounted one-off `<Term def>`. */
   glossary: Map<string, GlossaryEntry>;
+  /** Tabs a host adds to the presenter's sidebar (a hosted assistant). See core/panels.ts. */
+  panels: PanelRegistry;
   /**
    * Room the play view keeps clear of the slide, in px from the viewport's right and bottom edges:
    * the ad frame's (core/ads.ts). The layout fits the slide into what is left.

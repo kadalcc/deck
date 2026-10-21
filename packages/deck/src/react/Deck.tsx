@@ -17,6 +17,7 @@ import { flushSync } from "react-dom";
 import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
 import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
+import { createPanelRegistry } from "../core/panels.ts";
 import { actionFor, isEditable, type KeyAction } from "../core/keyboard.ts";
 import { computeLayout, type Layout, toStage } from "../core/layout.ts";
 import {
@@ -445,6 +446,9 @@ export function Deck({
     [manifest.glossary],
   );
 
+  // One registry for the page's life: a host registers its panels once, whatever re-renders.
+  const [panels] = useState(createPanelRegistry);
+
   const runtime = useMemo<DeckRuntime>(
     () => ({
       manifest,
@@ -466,6 +470,7 @@ export function Deck({
       projector,
       terms,
       glossary,
+      panels,
       stageInset,
     }),
     [
@@ -486,6 +491,7 @@ export function Deck({
       projector,
       terms,
       glossary,
+      panels,
       stageInset,
     ],
   );
