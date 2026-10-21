@@ -994,6 +994,16 @@ export const SLIDE_KEYS = [
     description:
       "false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck.",
   },
+  {
+    name: "dragPos",
+    type: {
+      text: "Record<string, string>",
+      variants: [{ type: "object" as const }],
+    },
+    description:
+      'Named positions for `<Drag pos="name">` / `<DragArrow pos="name">` (Slidev\'s v-drag): "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged.',
+    example: 'dragPos:\n  logo: "1500,80,300,_"',
+  },
 ];
 
 /** Allowed values the frontmatter types do not spell out. */

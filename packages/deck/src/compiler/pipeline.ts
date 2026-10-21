@@ -21,6 +21,8 @@ import { type MagicMoveBlock, findMagicMoves } from "./magic-move.ts";
 import { rehypeDeckCode } from "./rehype-code.ts";
 import { rehypeGlossary } from "./rehype-glossary.ts";
 import { remarkDeckFences } from "./remark-fences.ts";
+import { type RemarkIconsOptions, remarkIcons } from "./remark-icons.ts";
+import { remarkDrag } from "./remark-drag.ts";
 import { rehypeAutoRuby } from "./rehype-ruby.ts";
 import {
   type KatexOptions,
@@ -166,6 +168,8 @@ export interface MdxPipelineOptions {
   twoslash?: ShikiTransformer | null;
   /** A `twoslash` block rendered without types because `twoslash` is null here. */
   onTwoslashMissing?: () => void;
+  /** Iconify icons the slide names (`<mdi-x />`, `<Icon name="set:x">`): `onIcon` hears each. */
+  icons?: RemarkIconsOptions;
 }
 
 /** The remark and rehype passes every slide (and every note) compiles with. */
@@ -203,6 +207,8 @@ export function mdxPlugins(
       remarkGfm,
       remarkMath,
       ...(o.remarkPlugins ?? []),
+      [remarkIcons, o.icons ?? {}] as [typeof remarkIcons, RemarkIconsOptions],
+      remarkDrag,
       [
         remarkDeckFences,
         {

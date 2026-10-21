@@ -5,6 +5,10 @@ import type { Browser, Page } from "playwright";
 
 import { splitDeck } from "../compiler/index.ts";
 import {
+  BLUESKY_POSTER_SIZE,
+  blueskyEmbedUrl,
+  blueskyPost,
+  resolveBlueskyEmbed,
   TWEET_POSTER_SIZE,
   tweetEmbedUrl,
   tweetId,
@@ -159,6 +163,18 @@ export function posterJobs(
         }
       }
     }
+    // A Bluesky post, one poster per scheme, named after the post as the deck writes it
+    // (components/BlueSky.tsx); a handle in it is resolved to a DID only to take the picture.
+    for (const m of s.content.matchAll(/<BlueSky\b([^>]*)>/g)) {
+      const attrs = m[1] ?? "";
+      if (/\bposter=/.test(attrs)) continue;
+      const post = blueskyPost(attr(attrs, "uri") ?? "");
+      if (!post) continue;
+      for (const scheme of ["light", "dark"] as const) {
+        const embed = blueskyEmbedUrl(post, scheme);
+        add(embed, ...BLUESKY_POSTER_SIZE, embed, DEFAULT_POSTER_WAIT, { scale: 2, fill: true });
+      }
+    }
   }
   return [...jobs.values()];
 }
@@ -270,10 +286,11 @@ export async function capturePosters(
         );
         // Opened with no referrer, an embed can refuse to draw: YouTube's player shows "Error 153"
         // instead of the video. In a deck it always has one, so it gets one here too.
-        await page.goto(j.capture, {
+        const capture = await resolveBlueskyEmbed(j.capture);
+        await page.goto(capture, {
           waitUntil: "domcontentloaded",
           timeout: 60_000,
-          referer: `${new URL(j.capture).origin}/`,
+          referer: `${new URL(capture).origin}/`,
         });
         if (!(await requests.quiet()))
           log("       still loading after 30 s; capturing what there is");

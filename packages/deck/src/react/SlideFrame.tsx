@@ -312,6 +312,8 @@ export function SlideFrame({
     const media = el.querySelectorAll<HTMLMediaElement>("video, audio");
     if (active) {
       for (const m of media) {
+        // A click-driven <Video> plays and pauses itself (components/Video.tsx).
+        if (m.dataset.clicks !== undefined) continue;
         const wants =
           deck.config.autoPlayMedia === true ||
           (deck.config.autoPlayMedia !== false && m.dataset.autoplay !== undefined);
@@ -319,7 +321,7 @@ export function SlideFrame({
       }
     } else {
       for (const m of media) {
-        if (m.dataset.ignore !== undefined) continue;
+        if (m.dataset.ignore !== undefined || m.dataset.clicks !== undefined) continue;
         m.pause();
         if (m.dataset.autoplay !== undefined) m.currentTime = 0;
       }

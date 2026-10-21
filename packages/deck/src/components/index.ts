@@ -22,7 +22,6 @@ export {
   Image,
   Kbd,
   Link,
-  Mark,
   Tex,
   Tex as Math,
   Mermaid,
@@ -36,9 +35,20 @@ export {
   Transform,
   Tweet,
   Typewriter,
-  Video,
   Youtube,
 } from "./content.tsx";
+export { Mark } from "./Mark.tsx";
+export { Video } from "./Video.tsx";
+export { BlueSky } from "./BlueSky.tsx";
+export { Case, Switch } from "./Switch.tsx";
+export { Drag, DragArrow } from "./Drag.tsx";
+export {
+  LightOrDark,
+  RenderWhen,
+  SlideCurrentNo,
+  SlidesTotal,
+  TitleRenderer,
+} from "./Contextual.tsx";
 export { Motion } from "./Motion.tsx";
 export { Term, TermReadout, Terms, type TermProps } from "./Term.tsx";
 export { Sketch, type SketchProps, type SketchStep } from "./Sketch.tsx";

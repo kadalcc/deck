@@ -300,37 +300,6 @@ export function Image({
   );
 }
 
-export function Video({
-  src,
-  autoplay,
-  loop,
-  muted = true,
-  controls = false,
-  className,
-  ...rest
-}: {
-  src: string;
-  autoplay?: boolean;
-  loop?: boolean;
-  muted?: boolean;
-  controls?: boolean;
-  className?: string;
-  [key: string]: unknown;
-}) {
-  return (
-    <video
-      data-src={src}
-      data-autoplay={autoplay ? "" : undefined}
-      loop={loop}
-      muted={muted}
-      controls={controls}
-      playsInline
-      className={["deck-video", className].filter(Boolean).join(" ")}
-      {...rest}
-    />
-  );
-}
-
 export function Audio({
   src,
   autoplay,
@@ -920,33 +889,6 @@ export function Timer({ seconds, className }: { seconds?: number; className?: st
         .join(" ")}
     >
       {m}:{String(s).padStart(2, "0")}
-    </span>
-  );
-}
-
-/** A hand-drawn mark around inline content, drawn on its click: underline, circle, box, highlight. */
-export function Mark({
-  type = "underline",
-  color = "var(--deck-accent)",
-  at,
-  children,
-  className,
-}: {
-  type?: "underline" | "circle" | "box" | "highlight" | "strike";
-  color?: string;
-  at?: number | string;
-  children?: ReactNode;
-  className?: string;
-}) {
-  const { shown } = useClick({ at });
-  return (
-    <span
-      className={["deck-mark", `type-${type}`, shown ? "is-on" : "", className]
-        .filter(Boolean)
-        .join(" ")}
-      style={{ "--mark-color": color } as React.CSSProperties}
-    >
-      {children}
     </span>
   );
 }

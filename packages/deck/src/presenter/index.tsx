@@ -21,6 +21,7 @@ import { HintLayer } from "../react/Hints.tsx";
 import { ThemeMenu } from "../react/ThemeMenu.tsx";
 import { loadSlide, SlideFrame } from "../react/SlideFrame.tsx";
 import { Stage } from "../react/Stage.tsx";
+import { RenderContextProvider } from "../react/render-context.ts";
 import { useFit } from "../react/fit.ts";
 import { NotesView } from "../react/NotesView.tsx";
 import { RemoteHost } from "../remote/host.tsx";
@@ -362,19 +363,21 @@ function NextPreview() {
         }}
       >
         <BackgroundLayer bg={options.background} active={false} />
-        <SlideFrame
-          key={`${next.h},${next.v}`}
-          meta={meta}
-          options={options}
-          h={next.h}
-          v={next.v}
-          active={false}
-          click={next.click}
-          preview
-          /* The next slide is shown whole; the next step of THIS slide is shown as that step,
-             which is the only thing that makes the "Step n" label underneath it true. */
-          className={next.sameSlide ? "is-mirror" : "is-tile"}
-        />
+        <RenderContextProvider value="previewNext">
+          <SlideFrame
+            key={`${next.h},${next.v}`}
+            meta={meta}
+            options={options}
+            h={next.h}
+            v={next.v}
+            active={false}
+            click={next.click}
+            preview
+            /* The next slide is shown whole; the next step of THIS slide is shown as that step,
+               which is the only thing that makes the "Step n" label underneath it true. */
+            className={next.sameSlide ? "is-mirror" : "is-tile"}
+          />
+        </RenderContextProvider>
       </div>
       <span className="deck-presenter-next-label">
         {next.sameSlide
