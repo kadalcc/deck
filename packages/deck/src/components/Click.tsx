@@ -88,7 +88,10 @@ export function Click({
       data-click-at={range.start}
       aria-hidden={shown ? undefined : true}
     >
-      <ClickShownContext.Provider value={shown}>{children}</ClickShownContext.Provider>
+      {/* nothing at all for a childless one: `<Click as="img">` is a void element */}
+      {children == null ? undefined : (
+        <ClickShownContext.Provider value={shown}>{children}</ClickShownContext.Provider>
+      )}
     </Tag>
   );
 }
