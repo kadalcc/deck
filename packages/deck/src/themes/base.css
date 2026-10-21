@@ -66,6 +66,13 @@ body {
   /* Outside the stage: the bars that centre a 16:9 slide in a window of another shape. */
   --deck-bars: color-mix(in oklab, var(--deck-bg) 30%, #000);
 }
+/* The theme's text colour and body face start here. html and body read their colour and font
+   with :root's tokens, but the theme's class (and the `fonts` variables) sit on the deck root, so
+   without this every slide inherited the base's #111 and system-ui whatever the theme said. */
+.deck-root {
+  color: var(--deck-fg);
+  font-family: var(--deck-body-font);
+}
 .deck-root.mode-play {
   background: var(--deck-bars);
 }

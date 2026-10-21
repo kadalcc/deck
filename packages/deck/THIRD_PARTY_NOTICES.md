@@ -123,3 +123,26 @@ the `monaco-editor` package) with it.
 
 The CSS for TwoSlash's popups and the notation marks is written for this engine (it uses the class
 names TwoSlash and Shiki's transformers emit); no stylesheet of theirs is copied.
+
+## Themes ported from Slidev (`@kadal/theme-classic`, `-seriph`, `-crisp`, `-bricks`, `-shibainu`)
+
+Five first-party theme packages are ports of Slidev's official themes. They are separate npm
+packages, not part of `@kadal/deck`, and each is MIT-licensed with this notice in its LICENSE:
+the look, the layouts (their names, slots and frontmatter), the bricks block drawings and the
+shibainu background drawings come from the originals; the stylesheets and the React layouts were
+rewritten for Kadal Deck, and the SVG drawings are copied with only their wrappers changed
+(shibainu's lifted out of their Vue templates; bricks' without the clip-path group, which an
+inlined data: URL cannot resolve).
+
+| Kadal package | ported from | version read | licence | source |
+|---|---|---|---|---|
+| `@kadal/theme-classic` | `@slidev/theme-default` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-seriph` | `@slidev/theme-seriph` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-crisp` | `@slidev/theme-apple-basic` | 0.25.1 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-bricks` | `@slidev/theme-bricks` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-shibainu` | `@slidev/theme-shibainu` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+
+The prebuilt shell (`@kadal/deck-shell`) bundles all five, so its build carries these notices
+too. The fonts the themes name (Nunito Sans, PT Serif, PT Mono, Fira Code, Signika Negative,
+Sigmar One, Titillium Web) are fetched from Google Fonts at run time under the SIL Open Font
+License, never bundled.

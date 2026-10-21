@@ -272,6 +272,96 @@
         "@kadal/deck": "^0.3.6",
       },
     },
+    "packages/theme-bricks": {
+      "name": "@kadal/theme-bricks",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-classic": {
+      "name": "@kadal/theme-classic",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-crisp": {
+      "name": "@kadal/theme-crisp",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-seriph": {
+      "name": "@kadal/theme-seriph",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
+    "packages/theme-shibainu": {
+      "name": "@kadal/theme-shibainu",
+      "version": "0.3.6",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.3.6",
+        "react": "^19.2.0",
+      },
+    },
   },
   "packages": {
     "@angular/common": ["@angular/common@22.2.2", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@angular/core": "22.2.2", "rxjs": "^6.5.3 || ^7.4.0" } }, "sha512-d+mbF1UQLpsoJiC7h4pl58G7XeLHKU8DdLbq9u7TuOK0AnC1t2rrphi8M8WqUrZ+bfmFKCU4i1i4+vOF1N5GtA=="],
@@ -431,6 +521,16 @@
     "@kadal/deck-vue": ["@kadal/deck-vue@workspace:packages/deck-vue"],
 
     "@kadal/deck-wasm": ["@kadal/deck-wasm@workspace:packages/deck-wasm"],
+
+    "@kadal/theme-bricks": ["@kadal/theme-bricks@workspace:packages/theme-bricks"],
+
+    "@kadal/theme-classic": ["@kadal/theme-classic@workspace:packages/theme-classic"],
+
+    "@kadal/theme-crisp": ["@kadal/theme-crisp@workspace:packages/theme-crisp"],
+
+    "@kadal/theme-seriph": ["@kadal/theme-seriph@workspace:packages/theme-seriph"],
+
+    "@kadal/theme-shibainu": ["@kadal/theme-shibainu@workspace:packages/theme-shibainu"],
 
     "@manypkg/find-root": ["@manypkg/find-root@3.1.0", "", { "dependencies": { "@manypkg/tools": "^2.1.0" } }, "sha512-BcSqCyKhBVZ5YkSzOiheMCV41kqAFptW6xGqYSTjkVTl9XQpr+pqHhwgGCOHQtjDCv7Is6EFyA14Sm5GVbVABA=="],
 

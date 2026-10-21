@@ -1,0 +1,429 @@
+/* Bricks — a port of Slidev's bricks theme (@slidev/theme-bricks, MIT, © 2021 Slidev.js Team;
+   the theme by Inès Fendi) to Kadal Deck: building blocks in coral, butter, rose and sky on a
+   cream page, a heavy display face (Sigmar One) for the headings and Signika Negative for the
+   words. Light only, as in Slidev.
+
+   Every layout has its own arrangement of blocks behind it (assets/page-*.svg, the theme's own
+   drawings, without their clip-path group: Vite inlines files this small as data: URLs, where a
+   `url(#clip0)` breaks), painted on the slide itself so it reaches the edges whatever the padding.
+
+   Units. Slidev draws on a 980px-wide canvas with a 16px rem and a 1.1rem body; Kadal draws on a
+   1920px one. Everything here is in `--bricks-rem`, one Slidev rem at Kadal's scale, worked out
+   from the slide's base size the way Slidev's body is (1.1rem), so the proportions are Slidev's
+   exactly and a deck that changes --deck-base-size scales the whole theme with it.
+
+   The page colour (#fbf6e5) is the one Slidev's own screenshots of the theme show; the published
+   stylesheet leaves the page to the host. */
+
+.theme-bricks {
+  --bricks-rem: calc(var(--deck-base-size) / 1.1);
+  color-scheme: light;
+  /* colour */
+  --deck-bg: #fbf6e5;
+  --deck-fg: #181818;
+  --deck-muted: #6f6a5c;
+  --deck-accent: var(--theme-primary, #f07a6b);
+  --deck-accent-2: var(--theme-secondary, #72a6e2);
+  --deck-surface: rgba(24, 24, 24, 0.05);
+  --deck-border: rgba(24, 24, 24, 0.14);
+  --deck-live: var(--theme-primary, #f07a6b);
+  /* type: config.fonts loads Signika Negative, Sigmar One and Fira Code */
+  --deck-heading-font: "Sigmar One", ui-serif, Georgia, serif;
+  --deck-body-font: "Signika Negative", ui-sans-serif, system-ui, sans-serif;
+  --deck-mono-font: "Fira Code", ui-monospace, "SF Mono", Menlo, monospace;
+  --deck-serif-font: "Sigmar One", ui-serif, Georgia, serif;
+  --deck-base-size: 34.5px;
+  /* code */
+  --deck-code-bg: #f3ecd7;
+  --deck-code-fg: #1b1b1b;
+  --deck-code-active: rgba(249, 213, 110, 0.35);
+  /* shape */
+  --deck-radius: calc(var(--bricks-rem) * 0.25);
+  --deck-pad: calc(var(--bricks-rem) * 3.5);
+  --deck-transition: 500ms;
+  --deck-controls-color: var(--deck-fg);
+}
+
+/* ── the page ─────────────────────────────────────────────────────────── */
+.theme-bricks .deck-slide {
+  padding: calc(var(--bricks-rem) * 2.5) calc(var(--bricks-rem) * 3.5);
+  line-height: 1.5;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+.theme-bricks .deck-slide-background {
+  inset: calc(var(--bricks-rem) * -2.5) calc(var(--bricks-rem) * -3.5);
+}
+
+/* ── type (Slidev's layouts-base.css and the theme's layouts.css) ─────── */
+.theme-bricks .deck-slide :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--deck-heading-font);
+  font-weight: 400;
+  letter-spacing: normal;
+  margin: 0;
+  text-wrap: wrap;
+}
+.theme-bricks .deck-slide h1 {
+  font-size: calc(var(--bricks-rem) * 2.25);
+  line-height: calc(var(--bricks-rem) * 2.5);
+  margin-bottom: var(--bricks-rem);
+  margin-inline-start: -0.05em;
+}
+.theme-bricks .deck-slide h2 {
+  font-size: calc(var(--bricks-rem) * 1.875);
+  line-height: calc(var(--bricks-rem) * 2.25);
+}
+.theme-bricks .deck-slide h3 {
+  font-size: calc(var(--bricks-rem) * 1.5);
+  line-height: calc(var(--bricks-rem) * 2);
+}
+.theme-bricks .deck-slide h4 {
+  font-size: calc(var(--bricks-rem) * 1.25);
+  line-height: calc(var(--bricks-rem) * 1.75);
+}
+.theme-bricks .deck-slide h5 {
+  font-size: var(--bricks-rem);
+  line-height: calc(var(--bricks-rem) * 1.5);
+}
+.theme-bricks .deck-slide h6 {
+  font-size: calc(var(--bricks-rem) * 0.875);
+  line-height: calc(var(--bricks-rem) * 1.25);
+  padding-top: calc(var(--bricks-rem) * 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  margin-inline-start: -0.05em;
+}
+.theme-bricks .deck-slide h6:not(.opacity-100) {
+  opacity: 0.4;
+}
+.theme-bricks .deck-slide p {
+  margin: var(--bricks-rem) 0;
+  line-height: calc(var(--bricks-rem) * 1.5);
+}
+.theme-bricks .deck-slide h1 + p {
+  margin-top: calc(var(--bricks-rem) * -0.5);
+  margin-bottom: var(--bricks-rem);
+  opacity: 0.5;
+}
+.theme-bricks .deck-slide :is(p, ul, table) + h2 {
+  margin-top: calc(var(--bricks-rem) * 2.5);
+}
+.theme-bricks .deck-slide :is(ul, ol) {
+  margin: 0;
+  padding: 0;
+}
+.theme-bricks .deck-slide ul {
+  list-style: disc;
+}
+.theme-bricks .deck-slide ol {
+  list-style: decimal;
+}
+.theme-bricks .deck-slide li {
+  margin: 0 0 0 1.1em;
+  padding-inline-start: 0.2em;
+  line-height: 1.8em;
+}
+.theme-bricks .deck-slide blockquote {
+  margin: 0;
+  padding: calc(var(--bricks-rem) * 0.25) calc(var(--bricks-rem) * 0.5);
+  font-size: calc(var(--bricks-rem) * 0.875);
+  line-height: calc(var(--bricks-rem) * 1.25);
+  font-style: normal;
+  color: var(--deck-code-fg);
+  background: var(--deck-code-bg);
+  border: 0;
+  border-inline-start: 1px solid var(--deck-accent);
+  border-radius: calc(var(--bricks-rem) * 0.25);
+}
+.theme-bricks .deck-slide blockquote > * {
+  margin-block: 0;
+}
+.theme-bricks .deck-slide table {
+  width: 100%;
+  font-size: 1em;
+  line-height: calc(var(--bricks-rem) * 1.5);
+}
+.theme-bricks .deck-slide :is(th, td) {
+  padding: calc(var(--bricks-rem) * 0.75) calc(var(--bricks-rem) * 0.5);
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-bricks .deck-slide th {
+  text-align: left;
+  font-size: 1em;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+}
+.theme-bricks .deck-slide a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+}
+.theme-bricks .deck-slide a:hover {
+  color: var(--deck-accent);
+  border-bottom-style: solid;
+}
+.theme-bricks .deck-slide :is(b, strong) {
+  font-weight: 600;
+}
+.theme-bricks .deck-slide :not(pre) > code {
+  font-family: var(--deck-mono-font);
+  font-size: 0.9em;
+  font-weight: 300;
+  padding: calc(var(--bricks-rem) * 0.125) calc(var(--bricks-rem) * 0.375);
+  background: var(--deck-code-bg);
+  border-radius: calc(var(--bricks-rem) * 0.25);
+}
+.theme-bricks .deck-slide :is(kbd, .deck-kbd) {
+  font-family: var(--deck-mono-font);
+  font-size: calc(var(--bricks-rem) * 0.75);
+  padding: calc(var(--bricks-rem) * 0.125) calc(var(--bricks-rem) * 0.25);
+  border: 1px solid var(--deck-border);
+  border-bottom-width: 2px;
+  border-radius: calc(var(--bricks-rem) * 0.25);
+  background: rgba(156, 163, 175, 0.05);
+  box-shadow: none;
+}
+
+/* ── code: Slidev's 12px / 18px blocks with a 4px corner and no border ── */
+.theme-bricks .deck-code-block {
+  margin: calc(var(--bricks-rem) * 0.25) 0;
+  border: 0;
+  border-radius: calc(var(--bricks-rem) * 0.25);
+}
+.theme-bricks pre.deck-code,
+.theme-bricks .shiki-magic-move-wrap {
+  font-size: calc(var(--bricks-rem) * 0.75);
+  line-height: calc(var(--bricks-rem) * 1.125);
+  padding: calc(var(--bricks-rem) * 0.5) 0;
+}
+.theme-bricks .shiki-magic-move-wrap {
+  padding-inline: calc(var(--bricks-rem) * 0.5);
+}
+.theme-bricks pre.deck-code .line {
+  padding: 0 calc(var(--bricks-rem) * 0.5);
+}
+.theme-bricks pre.deck-code .line.is-dim {
+  opacity: 0.3;
+}
+.theme-bricks .deck-code-title {
+  font-size: calc(var(--bricks-rem) * 0.75);
+  padding: calc(var(--bricks-rem) * 0.5);
+  border-bottom-color: var(--deck-border);
+}
+
+/* bricks: h1–h3 and the subtitle in the display face; round bullets */
+.theme-bricks .deck-slide :is(h1, h2, h3) {
+  font-family: var(--deck-serif-font);
+}
+.theme-bricks .deck-slide h1 + p {
+  margin-top: calc(var(--bricks-rem) * -1);
+  font-family: var(--deck-serif-font);
+}
+.theme-bricks .deck-slide h3 {
+  font-size: calc(var(--bricks-rem) * 0.875);
+  line-height: calc(var(--bricks-rem) * 1.25);
+  padding-top: calc(var(--bricks-rem) * 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  margin-inline-start: -0.05em;
+}
+.theme-bricks .deck-slide h3:not(.opacity-100) {
+  opacity: 0.4;
+}
+
+/* ── the layouts ──────────────────────────────────────────────────────── */
+/* the blocks behind each layout */
+.theme-bricks .deck-slide.layout-cover {
+  background-image: url("./assets/page-1.svg");
+}
+.theme-bricks .deck-slide.layout-section {
+  background-image: url("./assets/page-3.svg");
+}
+.theme-bricks .deck-slide.layout-fact {
+  background-image: url("./assets/page-4.svg");
+}
+.theme-bricks .deck-slide:is(.layout-default, .layout-quote) {
+  background-image: url("./assets/page-5.svg");
+}
+.theme-bricks .deck-slide.layout-items {
+  background-image: url("./assets/page-6.svg");
+}
+.theme-bricks .deck-slide.layout-intro {
+  background-image: url("./assets/page-8.svg");
+}
+.theme-bricks .deck-slide.layout-statement {
+  background-image: url("./assets/page-9.svg");
+}
+
+/* default: 4em × 5em of page, the words from the top */
+.theme-bricks .deck-slide.layout-default {
+  padding: calc(var(--bricks-rem) * 4.4) calc(var(--bricks-rem) * 5.5);
+}
+.theme-bricks .deck-layout-default {
+  justify-content: flex-start;
+}
+.theme-bricks .deck-layout-center {
+  justify-content: center;
+}
+
+/* cover: everything in the display face, centred top to bottom */
+.theme-bricks .deck-layout-cover {
+  align-items: stretch;
+  text-align: start;
+  font-family: var(--deck-serif-font);
+}
+.theme-bricks .deck-layout-cover h1 {
+  font-size: calc(var(--bricks-rem) * 3.75);
+  line-height: calc(var(--bricks-rem) * 5);
+}
+.theme-bricks .deck-layout-cover h1 + p {
+  font-size: calc(var(--bricks-rem) * 1.5);
+  line-height: calc(var(--bricks-rem) * 2);
+  margin-top: calc(var(--bricks-rem) * -1.5);
+}
+
+/* quote, fact, statement, items, intro: centred, with 3.75rem above and below */
+.theme-bricks .deck-slide:is(.layout-quote, .layout-fact, .layout-statement, .layout-items, .layout-intro) {
+  padding-block: calc(var(--bricks-rem) * 3.75);
+}
+.theme-bricks :is(.deck-layout-quote, .deck-layout-fact, .deck-layout-statement) {
+  justify-content: center;
+  align-items: stretch;
+  text-align: center;
+  padding-inline: 0;
+  font-size: 1em;
+  font-style: normal;
+}
+.theme-bricks .deck-layout-fact > :is(h1, h2, p, .deck-counter) {
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.theme-bricks :is(.deck-layout-quote, .deck-layout-fact, .deck-layout-statement) h1 {
+  font-size: calc(var(--bricks-rem) * 3.75);
+  line-height: calc(var(--bricks-rem) * 3.75);
+}
+
+/* intro: an optional ::left:: slot, then the title centred in the wider right column */
+.theme-bricks .deck-layout-intro {
+  display: grid;
+  grid-template-columns: 3fr 4fr;
+  align-content: center;
+  text-align: center;
+}
+.theme-bricks .deck-layout-intro > :not(.deck-slot-left) {
+  grid-column: 2;
+}
+.theme-bricks .deck-layout-intro > .deck-slot-left {
+  grid-column: 1;
+  grid-row: 1 / span 20;
+  align-self: stretch;
+}
+.theme-bricks .deck-layout-intro > .deck-slot-default {
+  align-self: center;
+}
+.theme-bricks .deck-layout-intro h1 {
+  font-size: calc(var(--bricks-rem) * 4.5);
+  line-height: calc(var(--bricks-rem) * 5);
+}
+
+/* items: a title, then the ::items:: slot in `cols:` columns */
+.theme-bricks .deck-layout-items {
+  justify-content: flex-start;
+  text-align: center;
+}
+.theme-bricks .deck-layout-items h1 {
+  font-size: calc(var(--bricks-rem) * 3);
+  line-height: calc(var(--bricks-rem) * 3.75);
+}
+.theme-bricks .deck-layout-items > .deck-slot-items {
+  display: grid;
+  grid-template-columns: repeat(var(--bricks-cols, 4), minmax(0, 1fr));
+  padding: 5% calc(var(--bricks-rem) * 2.5) 0;
+}
+.theme-bricks .deck-layout-items > .deck-slot-items > p:has(> svg) {
+  margin: 0;
+  display: contents;
+}
+
+/* section: two columns; the title low in the left one, the ::right:: slot centred in the right */
+.theme-bricks .deck-layout-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  justify-content: stretch;
+  align-items: start;
+}
+.theme-bricks .deck-layout-section > .deck-slot-default {
+  grid-column: 1;
+  padding: 45% calc(var(--bricks-rem) * 0.5) 0;
+}
+.theme-bricks .deck-layout-section > .deck-slot-right {
+  grid-column: 2;
+  align-self: center;
+  padding-top: 10%;
+}
+/* no slots: everything is the left column's */
+.theme-bricks .deck-layout-section:not(:has(> .deck-slot)) {
+  display: block;
+  padding: 22.5% calc(50% + var(--bricks-rem) * 0.5) 0 calc(var(--bricks-rem) * 0.5);
+}
+.theme-bricks .deck-layout-section h1 {
+  font-size: calc(var(--bricks-rem) * 3);
+  line-height: calc(var(--bricks-rem) * 3.75);
+}
+.theme-bricks .deck-layout-section h2 {
+  font-size: calc(var(--bricks-rem) * 1.5);
+  line-height: calc(var(--bricks-rem) * 2);
+}
+.theme-bricks .deck-layout-section h2 + p {
+  margin-top: 0;
+}
+
+/* the engine's other layouts, on the plain page */
+.theme-bricks .deck-slide.layout-end {
+  background: #000;
+}
+.theme-bricks .deck-layout-end {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: calc(var(--bricks-rem) * 1.25);
+  letter-spacing: 0.1em;
+  user-select: none;
+}
+.theme-bricks .deck-layout-end:empty::before {
+  content: "END";
+}
+.theme-bricks .deck-layout-full {
+  padding: 0;
+}
+.theme-bricks :is(.deck-layout-two-cols, .deck-layout-two-cols-header) {
+  column-gap: var(--bricks-rem);
+}
+.theme-bricks .deck-layout-two-cols-header > .deck-slot-bottom {
+  align-self: end;
+}
+.theme-bricks :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content,
+.theme-bricks :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  justify-content: flex-start;
+  padding: calc(var(--bricks-rem) * 2.5) calc(var(--bricks-rem) * 3.5);
+}
+.theme-bricks .deck-layout-image .deck-layout-image-content:empty {
+  display: none;
+}
+.theme-bricks :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) {
+  padding: 0;
+  gap: 0;
+}
+.theme-bricks .deck-frame.deck-layout-iframe-pane {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+.theme-bricks .deck-progress span {
+  background: linear-gradient(90deg, #f07a6b, #f9d56e, #e29b94, #72a6e2);
+}
