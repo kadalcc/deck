@@ -217,3 +217,19 @@ export {
 export { plannedLength, presenterTimer } from "./react/pacing.ts";
 export { DEFAULT_FILTERS, filterCss, type DisplayFilters } from "./core/filters.ts";
 export { filtersStore, setFilters } from "./react/DisplaySettings.tsx";
+export {
+  registerIcons,
+  requestIcon,
+  setIconifyApi,
+  type IconState,
+} from "./icons/registry.ts";
+export { iconFromTag, parseIconName, type IconData, type IconifySet } from "./icons/data.ts";
+export {
+  RenderContextProvider,
+  useRenderContext,
+  type RenderContextName,
+  type RenderInfo,
+} from "./react/render-context.ts";
+export { useEffectiveScheme, type RenderWhenContext } from "./components/Contextual.tsx";
+export { switchRanges } from "./components/Switch.tsx";
+export { type MarkType } from "./components/mark-geometry.ts";

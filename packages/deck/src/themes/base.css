@@ -17,6 +17,7 @@
 @import "./presenting.css";
 @import "./draw.css";
 @import "./media.css";
+@import "./components.css";
 
 :root {
   --deck-bg: #ffffff;
@@ -1068,53 +1069,6 @@ pre.deck-code.has-lines .line::before {
 }
 .deck-timer.is-done {
   color: #dc2626;
-}
-.deck-mark {
-  position: relative;
-  display: inline;
-}
-.deck-mark::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-.deck-mark.is-on::after {
-  opacity: 1;
-}
-.deck-mark.type-underline::after {
-  left: 0;
-  right: 0;
-  bottom: -0.05em;
-  height: 0.15em;
-  background: var(--mark-color);
-  border-radius: 2px;
-  transform: rotate(-0.6deg);
-}
-.deck-mark.type-highlight::after {
-  inset: -0.05em -0.15em;
-  background: color-mix(in oklab, var(--mark-color) 35%, transparent);
-  border-radius: 4px;
-  z-index: -1;
-}
-.deck-mark.type-box::after,
-.deck-mark.type-circle::after {
-  inset: -0.2em -0.4em;
-  border: 3px solid var(--mark-color);
-  border-radius: 6px;
-}
-.deck-mark.type-circle::after {
-  border-radius: 50% / 45%;
-  transform: rotate(-2deg);
-}
-.deck-mark.type-strike::after {
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 0.12em;
-  background: var(--mark-color);
-  transform: rotate(-1.5deg);
 }
 .deck-confetti {
   position: absolute;

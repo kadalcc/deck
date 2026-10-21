@@ -3,6 +3,7 @@ import YAML from "yaml";
 import { catalog } from "../catalog/index.ts";
 import { type RawSlide, type SplitResult, fencedRanges, notesBlocks } from "../compiler/split.ts";
 import { type DeckFiles, type SlideRef, findSlide, readDeck } from "./source.ts";
+import { rewriteDragPos } from "./drag.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -778,5 +779,52 @@ export function writeNotes(
   }
   doc.splice(s.range.file, s.range.body, s.range.end - s.range.body, next.split("\n"));
   const n = doc.before.slides.length;
+  return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
+}
+
+/**
+ * Save a draggable element's position (`<Drag>`, `<DragArrow>`, Slidev's `v-drag`), what
+ * `/__kadal/drag` writes in `kadal-deck dev` (vite/drag-dev.ts). `pos` is "x,y,w,h[,r]" (`_` for
+ * an automatic height), stage pixels.
+ *
+ *   { name }             the slide's frontmatter `dragPos.<name>` (added when missing); its
+ *                        comments and every other key stay as written
+ *   { index, expected }  the slide's drag site `index` (authoring/drag.ts): the value of its `pos`,
+ *                        or a `pos` added to the tag; `expected` is the position the editor
+ *                        started from, and a source that no longer says so is refused
+ */
+export function setDragPosition(
+  files: DeckFiles,
+  ref: SlideRef,
+  target: { name: string } | { index: number; expected?: string },
+  pos: string,
+): EditResult {
+  if (!/^-?[\d.]+(,(-?[\d.]+|_)){2,4}$/.test(pos.replace(/\s+/g, "")))
+    throw new EditError(`"${pos}" is not a position: write x,y,w,h with an optional rotation.`);
+  const doc = new Doc(files);
+  const s = require(doc.before.slides, ref);
+  const n = doc.before.slides.length;
+  if ("name" in target) {
+    if (!/^[\w-]+$/.test(target.name))
+      throw new EditError(`"${target.name}" is not a dragPos name (letters, digits, - and _).`);
+    writeFrontmatter(doc, s, (current) => {
+      const d = current ?? new YAML.Document({});
+      if (!YAML.isMap(d.contents)) d.contents = d.createNode({}) as never;
+      const existing = d.get("dragPos");
+      if (existing !== undefined && !YAML.isMap(existing))
+        throw new EditError("This slide's dragPos is not a map of names to positions.");
+      d.setIn(["dragPos", target.name], pos);
+      return d;
+    });
+  } else {
+    const body = rawBody(doc, s);
+    let next: string;
+    try {
+      next = rewriteDragPos(body, target.index, pos, target.expected);
+    } catch (e) {
+      throw new EditError((e as Error).message);
+    }
+    doc.splice(s.range.file, s.range.body, s.range.end - s.range.body, next.split("\n"));
+  }
   return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
 }

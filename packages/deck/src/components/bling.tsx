@@ -1,6 +1,8 @@
 import * as lucide from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
+import { IconifyIcon, styleObject } from "./Iconify.tsx";
+
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * BLING  —  the small things that make a slide feel designed
@@ -10,7 +12,7 @@ import type { ComponentType, ReactNode } from "react";
  *   <Glass>             a frosted card with a gradient hairline border
  *   <Glow>              a soft radial light behind whatever sits in the same box
  *   <Chip>              a pill with a coloured dot — tags, statuses, levels
- *   <Icon name="…">     any lucide icon by its name, sized in em
+ *   <Icon name="…">     a lucide icon by its name, or any Iconify icon as set:name, sized in em
  *   <Divider>           a hairline with an optional label
  *   <Ribbon>            a corner ribbon ("live", "draft")
  *   <Halo>              a number or word inside a soft ring
@@ -140,19 +142,47 @@ export function Icon({
   color,
   strokeWidth = 1.75,
   className,
+  class: cls,
+  style,
+  title,
 }: {
+  /** A Lucide name (`rocket`), or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). */
   name: string;
   size?: string | number;
   color?: string;
+  /** Lucide icons only. */
   strokeWidth?: number;
   className?: string;
+  /** Slidev's spelling of `className`. */
+  class?: string;
+  /** An object, or a CSS string (`style="color: tomato"`). */
+  style?: React.CSSProperties | string;
+  /** An accessible name; without one the icon is decorative. */
+  title?: string;
 }) {
-  const pascal = name.replace(/(^|[-_ ])(\w)/g, (_m, _s, c: string) => c.toUpperCase());
+  // `set:name` is Iconify's — except Lucide's own set, which is bundled and needs no fetching.
+  const iconify = name.includes(":") && !name.startsWith("lucide:");
+  if (iconify)
+    return (
+      <IconifyIcon
+        name={name}
+        size={size}
+        color={color}
+        className={className}
+        class={cls}
+        style={style}
+        title={title}
+      />
+    );
+  const pascal = name
+    .replace(/^lucide:/, "")
+    .replace(/(^|[-_ ])(\w)/g, (_m, _s, c: string) => c.toUpperCase());
   type IconCmp = ComponentType<{
     size?: string | number;
     color?: string;
     strokeWidth?: number;
     className?: string;
+    style?: React.CSSProperties;
   }>;
   // `icons` holds the current names only. A name lucide has since renamed (`waves` is now
   // `waves-horizontal`) is still a named export of the package — an alias — so it is looked up
@@ -171,7 +201,9 @@ export function Icon({
       size={size}
       color={color}
       strokeWidth={strokeWidth}
-      className={cx("deck-icon", className)}
+      className={cx("deck-icon", cls, className)}
+      style={styleObject(style)}
+      {...(title ? { role: "img", "aria-label": title } : { "aria-hidden": true })}
     />
   );
 }

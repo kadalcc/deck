@@ -45,6 +45,8 @@ import { monacoWriteDev } from "./monaco-dev.ts";
 import { loadTwoslash } from "./twoslash.ts";
 import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } from "./notes-dev.ts";
 import { drawingsDev, drawingsDir, drawingsExport, drawingsModule } from "./drawings-dev.ts";
+import { DRAG_PATH, dragEndpoint } from "./drag-dev.ts";
+import { iconRegistration, resolveIcons } from "../icons/node.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -202,7 +204,19 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   let twoslash: Promise<ShikiTransformer | null> | null = null;
   /** Files `/__kadal/monaco-write` just saved: their change must not reload the page. */
   const quietWrites = new Map<string, string>();
+  /**
+   * The text of each file's last quiet write, kept (quietWrites is consumed by the watcher): what
+   * `hotUpdate` checks, so Tailwind, which reloads the page when a file it scans changes, is not
+   * told about a save the page already shows (a drag, a Monaco edit).
+   */
+  const quietText = new Map<string, string>();
+  const quiet = (file: string, text: string) => {
+    quietWrites.set(file, text);
+    quietText.set(file, text);
+  };
   const transformers = [...notationTransformers(), ...(options.shiki?.transformers ?? [])];
+  /** Icons already reported as not bundled, so a rebuild does not repeat itself. */
+  const warnedIcons = new Set<string>();
 
   let highlighterKey = "";
   const getHighlighter = async () => {
@@ -328,6 +342,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     if (options.twoslash !== false && /\btwoslash\b/.test(source))
       twoslash ??= loadTwoslash(dirname(entryPath), (msg) => console.warn(`[deck] ${msg}`));
     const ts = twoslash ? await twoslash : null;
+    // Iconify icons the slide names: bundled into its module from the deck's installed sets.
+    const iconNames = new Set<string>();
     const run = async (format: "mdx" | "md") =>
       compile(source, {
         jsx: false,
@@ -347,6 +363,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           rehypePlugins: options.rehypePlugins,
           transformers,
           twoslash: ts,
+          icons: { onIcon: (name) => iconNames.add(name) },
         }),
         providerImportSource: "@kadal/deck/mdx-provider",
         format,
@@ -361,7 +378,13 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       );
       out = await run("md");
     }
-    return `// ${file}\n${String(out)}`;
+    const icons = resolveIcons(iconNames, dirname(entryPath));
+    for (const m of icons.missing)
+      if (!warnedIcons.has(m.name)) {
+        warnedIcons.add(m.name);
+        console.warn(`[deck] ${file}: icon ${m.name}: ${m.reason}.`);
+      }
+    return `// ${file}\n${iconRegistration(icons.icons)}${String(out)}`;
   }
 
   return {
@@ -418,7 +441,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     configureServer(s) {
       server = s;
       remoteRelay(s);
-      monacoWriteDev(s, { root: () => root, entry: () => entryPath, quiet: (f, t) => quietWrites.set(f, t) });
+      monacoWriteDev(s, { root: () => root, entry: () => entryPath, quiet });
       drawingsDev(s, { dir: () => drawingsDir(entryPath), base: () => base });
       const dist = excalidrawDist();
       s.middlewares.use((req, res, next) => {
@@ -463,6 +486,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         invalidate();
       };
       notesEndpoint(s, { entry: () => entryPath, base: () => base });
+      dragEndpoint(s, { entry: () => entryPath, base: () => base, quiet });
       s.watcher.on("change", changed);
       s.watcher.on("add", changed);
       s.watcher.on("unlink", changed);
@@ -473,6 +497,9 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     hotUpdate({ file, type }) {
       if (this.environment && this.environment.name !== "client") return;
       if (type !== "update" || !(file === entryPath || included.has(file))) return;
+      const quietly = quietText.get(file);
+      if (quietly !== undefined && existsSync(file) && readFileSync(file, "utf8") === quietly)
+        return [];
       if (manifest && hotNotes()) return [];
     },
     writeBundle() {
@@ -558,9 +585,10 @@ export const monaco = ${hasMonaco ? `() => import("${VIRTUAL}/monaco").then((m) 
 export const codeRunners = ${runnersFile && existsSync(runnersFile) ? `() => import(${JSON.stringify(runnersFile)})` : "null"};
 export const dev = ${building ? "false" : "true"};
 export const notesApi = ${building ? "null" : JSON.stringify(`${base}${NOTES_PATH}`)};
+export const dragApi = ${building ? "null" : JSON.stringify(`${base}${DRAG_PATH}`)};
 ${building ? "" : DEV_NOTES}
 ${drawingsExport({ building, base, dir: drawingsDir(entryPath) })}
-export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, drawings };
+export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, drawings, dragApi };
 `;
       }
 

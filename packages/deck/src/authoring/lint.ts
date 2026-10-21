@@ -19,6 +19,7 @@ import { checkDeckSyntax, checkSlideSyntax, deckTransitionNames, maskSlideBody }
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
 import { checkValue, closest } from "./validate.ts";
 import { parseDuration } from "../core/timer.ts";
+import { type IconSetLoader, checkIcons } from "./lint-icons.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -85,6 +86,12 @@ export interface LintOptions {
   /** Compile every slide's MDX (slower, finds syntax errors). Default true. */
   compile?: boolean;
   catalog?: Catalog;
+  /**
+   * Reads an Iconify set from the deck's node_modules (null: not installed), so icons can be
+   * checked against it (`kadal-deck check` passes `loadIconSet`). Without it, only the set names
+   * are checked.
+   */
+  icons?: IconSetLoader;
 }
 
 const LANG_ALIASES = new Set([
@@ -209,6 +216,8 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const ext = options.extensions ?? { components: [], layouts: [], backgrounds: [], open: false };
   const diagnostics: Diagnostic[] = [];
   const add = (d: Diagnostic) => diagnostics.push(d);
+  /** Iconify sets already reported as not installed (once per run each). */
+  const iconSetsReported = new Set<string>();
 
   /** A code fence's language and meta: what the highlighter, Monaco and TwoSlash will ignore. */
   const checkFence = (
@@ -755,6 +764,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
             }
           }
         }
+        checkIcons(n, at, add, options.icons, iconSetsReported);
         if (n.type === "image" && n.url) checkAsset(n.url, file, line, s.index, column);
         if (n.type === "code") checkFence(n.lang ?? "", n.meta ?? "", n.value ?? "", at);
       }

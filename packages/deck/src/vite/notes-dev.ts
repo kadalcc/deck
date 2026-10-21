@@ -34,13 +34,13 @@ export const NOTES_PATH = "__kadal/notes";
 
 const MAX_BODY = 512 * 1024;
 
-function inside(root: string, file: string): boolean {
+export function inside(root: string, file: string): boolean {
   const rel = relative(root, file);
   return !!rel && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
 /** Same-origin only: the Origin header (or, without one, Sec-Fetch-Site) must say so. */
-function sameOrigin(req: IncomingMessage): boolean {
+export function sameOrigin(req: IncomingMessage): boolean {
   const origin = req.headers.origin;
   const host = req.headers.host;
   if (origin) {
@@ -54,14 +54,14 @@ function sameOrigin(req: IncomingMessage): boolean {
   return site === undefined || site === "same-origin" || site === "none";
 }
 
-function send(res: ServerResponse, status: number, body: unknown) {
+export function send(res: ServerResponse, status: number, body: unknown) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
   res.end(JSON.stringify(body));
 }
 
-function readBody(req: IncomingMessage): Promise<string> {
+export function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((done, fail) => {
     let size = 0;
     const chunks: Buffer[] = [];

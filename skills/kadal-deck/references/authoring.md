@@ -192,3 +192,18 @@ Then `<Stat value="93%" label="coverage" />` in any slide. Hooks from `@kadal/de
 slide becomes / stops being the current one — not on mount, never in previews, the overview or
 print; an enter may return a cleanup. `useNavDirection()` says "forward" or "backward".
 Components from other frameworks (Vue, Svelte, Solid…) go in as islands via `@kadal/deck-*`.
+
+## Icons, marks, placed elements (Slidev's components)
+
+- Icons: `<Icon name="rocket" />` is Lucide (bundled). Any Iconify icon is `<Icon name="mdi:account" />`
+  or Slidev's tag `<mdi-account />` / `<logos-vue class="text-3xl" />` (only empty tags whose prefix is
+  an Iconify set become icons). Install the set to bundle it: `bun add -d @iconify-json/mdi`; without it
+  the icon is fetched from the Iconify API at run time. `kadal-deck check` warns `icon-unknown`,
+  `icon-set-missing`, `icon-set-unknown`.
+- `<Mark type="underline|box|circle|highlight|strike-through|crossed-off|bracket" at={n}>`: drawn on its click.
+- `<Drag pos="x,y,w,h[,r]">` (stage px, `_` = auto height) or `pos="name"` + frontmatter
+  `dragPos: { name: "…" }`; `<DragArrow pos="x,y,dx,dy" />`. Positions are written by `kadal-deck dev`
+  when the author drags; write them by hand only to place something exactly.
+- `<Switch>` + `<Case at>` swap one block per click; `<Video at pauseAt steps autoreset>` follows clicks.
+- `<RenderWhen context="presenter">` (also previewNext, overview, print, main, visible), `<LightOrDark>`,
+  `<SlideCurrentNo />`, `<SlidesTotal />`, `<TitleRenderer no={n} />`, `<BlueSky uri="…" />`.

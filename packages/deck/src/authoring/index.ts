@@ -39,7 +39,10 @@ export {
   updateHeadmatter,
   updateSlide,
   writeNotes,
+  setDragPosition,
 } from "./edit.ts";
+export { type DragSite, DragSourceError, dragSites, rewriteDragPos } from "./drag.ts";
+export { type IconSetLoader, checkIcons, iconsOf } from "./lint-icons.ts";
 export {
   type DeckExtensions,
   type Diagnostic,

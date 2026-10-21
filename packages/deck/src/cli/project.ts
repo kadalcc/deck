@@ -226,6 +226,7 @@ export async function checkProject(
   { compile = true } = {},
 ): Promise<LintResult> {
   const { lintDeck, readExtensions } = await import("../authoring/index.ts");
+  const { loadIconSet } = await import("../icons/node.ts");
   const componentsFile = join(project.dir, "src", "components.tsx");
   const others = sourcesUnder(join(project.dir, "src"))
     .filter((f) => f !== componentsFile)
@@ -246,6 +247,7 @@ export async function checkProject(
     themes,
     configKeys: configKeys(project.files.read(join(project.dir, "deck.config.ts"))),
     compile,
+    icons: (prefix) => loadIconSet(prefix, project.dir),
   });
   if (!pk.diagnostics.length) return result;
   // A package that does not resolve says so once, with how to install it, rather than as an

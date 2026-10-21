@@ -117,6 +117,12 @@ export interface DeckManifest {
    * where those views are read-only (unless `<Deck notesEditor>` supplies a save path).
    */
   notesApi?: string | null;
+  /**
+   * The dev server's drag endpoint (`kadal-deck dev` only): where `<Drag>` and `<DragArrow>` save
+   * a position after a double-click edit (vite/drag-dev.ts). Null or absent elsewhere, where
+   * they are static.
+   */
+  dragApi?: string | null;
   /** Served by `kadal-deck dev` (true) rather than built (false or absent). */
   dev?: boolean;
 

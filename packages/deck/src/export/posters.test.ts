@@ -41,3 +41,16 @@ describe("posterJobs", () => {
     expect(deck(`<Tweet id="…" />\n\n<Youtube id="x" />`)).toEqual([]);
   });
 });
+
+describe("posterJobs: Bluesky", () => {
+  test("a <BlueSky> gets one poster per colour scheme, named after the post as written", async () => {
+    const { BLUESKY_POSTER_SIZE, blueskyEmbedUrl } = await import("../core/embeds.ts");
+    const jobs = deck(`<BlueSky uri="https://bsky.app/profile/sli.dev/post/3la7gcgfwpe2n" />`);
+    const post = { authority: "sli.dev", rkey: "3la7gcgfwpe2n" };
+    expect(jobs.map((j) => j.url).sort()).toEqual(
+      [blueskyEmbedUrl(post, "dark"), blueskyEmbedUrl(post, "light")].sort(),
+    );
+    expect(jobs[0]?.file).toBe(posterName(jobs[0]!.url, ...BLUESKY_POSTER_SIZE));
+    expect(deck(`<BlueSky uri="not a post" />`)).toEqual([]);
+  });
+});
