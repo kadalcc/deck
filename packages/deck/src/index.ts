@@ -94,6 +94,12 @@ export {
   KEY_COMMANDS,
   paramsSchema,
 } from "./core/commands.ts";
+export {
+  createPanelRegistry,
+  type HostPanel,
+  type PanelRegistry,
+  type PanelsState,
+} from "./core/panels.ts";
 export { cmd, deckState, useCommand, useCommandList } from "./react/commands.ts";
 export { formatHash, parseHash, parseFlags } from "./core/hash.ts";
 export { createStore, useStore, type Store } from "./core/store.ts";

@@ -23,6 +23,16 @@ function useRoomSlice<S>(selector: (s: import("./protocol.ts").RoomState) => S, 
 import { createStore } from "../core/store.ts";
 const fallbackStore = createStore<unknown>(null);
 
+/** The audience page's address: the room's own when live, else this deck's /join. */
+export function useJoinUrl(): string {
+  const live = useLiveOptional();
+  const deck = useDeck();
+  return (
+    live?.joinUrl ??
+    `${typeof window === "undefined" ? "" : window.location.origin}${deck.base}join`
+  );
+}
+
 /** The QR code and short URL for the audience page. */
 export function QrJoin({
   size = 260,
@@ -33,11 +43,7 @@ export function QrJoin({
   caption?: string;
   className?: string;
 }) {
-  const live = useLiveOptional();
-  const deck = useDeck();
-  const url =
-    live?.joinUrl ??
-    `${typeof window === "undefined" ? "" : window.location.origin}${deck.base}join`;
+  const url = useJoinUrl();
   return (
     <div className={["deck-qr-join", className].filter(Boolean).join(" ")}>
       <Qr value={url} size={size} />
@@ -164,7 +170,8 @@ export function Poll({
         <strong>{question}</strong>
         <span className="deck-poll-meta">
           {/* Offline there is no one to open it: say so, rather than "closed" over live buttons. */}
-          {live ? (open ? "open" : "closed") : "offline"} · {total} {total === 1 ? "answer" : "answers"}
+          {live ? (open ? "open" : "closed") : "offline"} · {total}{" "}
+          {total === 1 ? "answer" : "answers"}
         </span>
         {role === "presenter" ? (
           <span className="deck-poll-controls">

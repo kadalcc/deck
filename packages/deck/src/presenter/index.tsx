@@ -4,18 +4,11 @@ import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
 import { useStore } from "../core/store.ts";
 import { copyText, shareLink } from "../live/analytics.tsx";
-import { Pace, Presence, QrJoin } from "../live/components.tsx";
 import { isEditable } from "../core/keyboard.ts";
 import { DrawingLayer } from "../draw/DrawingLayer.tsx";
-import { useLiveOptional, useRoomStatus } from "../live/context.ts";
+import { useLiveOptional } from "../live/context.ts";
 import { PointerLayer } from "../live/LiveProvider.tsx";
-import {
-  isTicket,
-  presenterTicket,
-  setTicket,
-  ticketHeaders,
-  withTicket,
-} from "../live/ticket.ts";
+import { isTicket, presenterTicket, setTicket, ticketHeaders, withTicket } from "../live/ticket.ts";
 import { readItem, writeItem } from "../core/storage.ts";
 import { roomIdOf } from "../core/model.ts";
 import { useDeck } from "../react/context.ts";
@@ -38,6 +31,7 @@ import {
 } from "../react/pacing.ts";
 import { RemoteHost } from "../remote/host.tsx";
 import { useNarrationOn } from "../react/NarrationGate.tsx";
+import { PresenterSidebar } from "./Sidebar.tsx";
 
 /** The narration bar is its own chunk, fetched when the presenter view opens on a deck with notes. */
 const Narration = lazy(() => import("../narrate/Narration.tsx"));
@@ -111,7 +105,7 @@ export function PresenterPage() {
           <NotesPanel />
         </section>
         <aside className="deck-presenter-room">
-          <RoomPanel open={roomOpen} setOpen={setRoomOpen} />
+          <PresenterSidebar open={roomOpen} setOpen={setRoomOpen} />
         </aside>
       </main>
       {narrate ? (
@@ -243,8 +237,8 @@ function PresenterLogin({ gate }: { gate: Gate }) {
         <div className="deck-gate-card">
           <h1>Presenter</h1>
           <p>
-            This deck has no presenter passcode yet. Sign in as its author (with Google or GitHub) to
-            present it — you can set a passcode there for next time.
+            This deck has no presenter passcode yet. Sign in as its author (with Google or GitHub)
+            to present it — you can set a passcode there for next time.
           </p>
           {author ?? <p className="deck-gate-error">Ask the deck's owner how to present it.</p>}
         </div>
@@ -841,174 +835,6 @@ function ScreenMirror() {
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
         />
       )}
-    </div>
-  );
-}
-
-/** The room: join code, who is watching, pace, questions, the polls and quizzes on the deck. */
-function RoomPanel({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
-  const live = useLiveOptional();
-  const status = useRoomStatus();
-  const state = useStore(live?.client.state ?? noStore, (s) => s);
-  const [tab, setTab] = useState<"room" | "questions" | "polls">("room");
-  if (!live) {
-    return (
-      <div className="deck-room-panel">
-        <p className="deck-muted">
-          This deck is not connected to a host, so there is no live room. Presenting still works on
-          this screen.
-        </p>
-      </div>
-    );
-  }
-  const questions = [...(state?.questions ?? [])].sort(
-    (a, b) => Number(a.answered) - Number(b.answered) || b.votes - a.votes,
-  );
-  // What the badges count: hands up, questions still open, polls and quizzes still taking votes.
-  const counts = {
-    room: state?.presence.hands ?? 0,
-    questions: questions.filter((q) => !q.answered).length,
-    polls:
-      Object.values(state?.polls ?? {}).filter((p) => p.open).length +
-      Object.values(state?.quizzes ?? {}).filter((q) => q.open).length,
-  };
-  const icons = { room: "users", questions: "message-square", polls: "chart-bar" } as const;
-  if (!open) {
-    return (
-      <div className="deck-room-panel is-rail">
-        <button
-          type="button"
-          className="deck-room-toggle"
-          onClick={() => setOpen(true)}
-          title="Open the room panel"
-          aria-label="Open the room panel"
-        >
-          <Icon name="panel-right-open" />
-        </button>
-        {(["room", "questions", "polls"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={["deck-room-rail-item", tab === t ? "is-on" : ""].join(" ")}
-            onClick={() => {
-              setTab(t);
-              setOpen(true);
-            }}
-            title={`${t[0]!.toUpperCase()}${t.slice(1)}${counts[t] ? ` · ${counts[t]}` : ""}`}
-            aria-label={t}
-          >
-            <Icon name={icons[t]} />
-            {counts[t] ? <em>{counts[t]}</em> : null}
-          </button>
-        ))}
-        <span className={["deck-room-dot", `is-${status}`].join(" ")} title={status} />
-      </div>
-    );
-  }
-  return (
-    <div className="deck-room-panel">
-      <div className="deck-room-tabs">
-        {(["room", "questions", "polls"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={tab === t ? "is-on" : ""}
-            onClick={() => setTab(t)}
-          >
-            {t}
-            {counts[t] ? <em>{counts[t]}</em> : null}
-          </button>
-        ))}
-        <span className={["deck-room-status", `is-${status}`].join(" ")}>{status}</span>
-        <button
-          type="button"
-          className="deck-room-toggle"
-          onClick={() => setOpen(false)}
-          title="Collapse the room panel"
-          aria-label="Collapse the room panel"
-        >
-          <Icon name="panel-right-close" />
-        </button>
-      </div>
-      {tab === "room" ? (
-        <div className="deck-room-body">
-          <QrJoin size={160} caption="" />
-          <Presence />
-          <Pace />
-          <ReactionTotals totals={state?.reactions ?? {}} />
-        </div>
-      ) : null}
-      {tab === "questions" ? (
-        <ul className="deck-room-questions">
-          {questions.length ? (
-            questions.map((q) => (
-              <li key={q.id} className={q.answered ? "is-answered" : ""}>
-                <span className="deck-question-votes">▲ {q.votes}</span>
-                <span className="deck-question-text">{q.text}</span>
-                <span className="deck-question-actions">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      live.client.send({ type: "qa:answered", id: q.id, answered: !q.answered })
-                    }
-                  >
-                    {q.answered ? "reopen" : "answered"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => live.client.send({ type: "qa:delete", id: q.id })}
-                  >
-                    delete
-                  </button>
-                </span>
-              </li>
-            ))
-          ) : (
-            <li className="deck-muted">No questions yet.</li>
-          )}
-        </ul>
-      ) : null}
-      {tab === "polls" ? (
-        <ul className="deck-room-polls">
-          {[
-            ...Object.values(state?.polls ?? {}).map((p) => ({
-              kind: "poll" as const,
-              id: p.def.id,
-              q: p.def.question,
-              open: p.open,
-              n: p.total,
-            })),
-            ...Object.values(state?.quizzes ?? {}).map((q) => ({
-              kind: "quiz" as const,
-              id: q.def.id,
-              q: q.def.question,
-              open: q.open,
-              n: q.counts.reduce((a, b) => a + b, 0),
-            })),
-          ].map((p) => (
-            <li key={`${p.kind}:${p.id}`}>
-              <span className="deck-poll-kind">{p.kind}</span>
-              <span className="deck-question-text">{p.q}</span>
-              <span className="deck-muted">{p.n}</span>
-              <button
-                type="button"
-                onClick={() =>
-                  live.client.send(
-                    p.kind === "poll"
-                      ? { type: "poll:open", id: p.id, open: !p.open }
-                      : { type: "quiz:open", id: p.id, open: !p.open },
-                  )
-                }
-              >
-                {p.open ? "close" : "open"}
-              </button>
-            </li>
-          ))}
-          {!Object.keys(state?.polls ?? {}).length && !Object.keys(state?.quizzes ?? {}).length ? (
-            <li className="deck-muted">Polls and quizzes register when their slide is shown.</li>
-          ) : null}
-        </ul>
-      ) : null}
     </div>
   );
 }
