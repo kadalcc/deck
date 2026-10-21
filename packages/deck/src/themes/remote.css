@@ -35,13 +35,17 @@
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
-.deck-remote button,
-.deck-remote select,
-.deck-remote input[type="text"] {
+/* The remote's own controls. Every element rule below stops at the slide (`:not(.deck-remote-canvas
+   *)`): the slide on show is the deck's, and a poll's option buttons or a code block's <code> took
+   these dark, rounded, system-font looks — dark bars and a dark code block on a light slide.
+   `:where` keeps each rule as weak as it was, so the remote's own button classes still win. */
+.deck-remote button:where(:not(.deck-remote-canvas *)),
+.deck-remote select:where(:not(.deck-remote-canvas *)),
+.deck-remote input[type="text"]:where(:not(.deck-remote-canvas *)) {
   font: inherit;
   color: inherit;
 }
-.deck-remote button {
+.deck-remote button:where(:not(.deck-remote-canvas *)) {
   min-height: 48px;
   border: 1px solid var(--r-line);
   border-radius: 14px;
@@ -53,19 +57,19 @@
   padding: 0 12px;
   cursor: pointer;
 }
-.deck-remote button:active {
+.deck-remote button:where(:not(.deck-remote-canvas *)):active {
   background: var(--r-raised);
   transform: scale(0.98);
 }
-.deck-remote button.is-on {
+.deck-remote button.is-on:where(:not(.deck-remote-canvas *)) {
   background: var(--r-on);
   border-color: var(--r-on);
   color: #fff;
 }
-.deck-remote button:disabled {
+.deck-remote button:where(:not(.deck-remote-canvas *)):disabled {
   opacity: 0.55;
 }
-.deck-remote code {
+.deck-remote code:where(:not(.deck-remote-canvas *)) {
   font:
     0.9em ui-monospace,
     "SF Mono",
@@ -189,6 +193,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* Nothing in the view may spill into the controls below it: the notes give way and scroll. */
+  overflow: hidden;
 }
 .deck-remote-stage {
   --remote-stage-h: 42vh;
@@ -217,6 +223,11 @@
   pointer-events: none;
   background: var(--deck-bg);
   color: var(--deck-fg);
+  /* What the page gives a slide everywhere else (html, body in base.css), not the remote's own
+     system font, size and line height. */
+  font: 16px/normal var(--deck-body-font);
+  -webkit-font-smoothing: antialiased;
+  text-align: start;
 }
 .deck-remote-pad {
   position: absolute;
@@ -275,8 +286,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .deck-remote-notes {
-  flex: 1;
-  min-height: 64px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   background: var(--r-panel);
   border: 1px solid var(--r-line);
@@ -313,6 +324,9 @@
   flex-direction: column;
   gap: 10px;
   flex: none;
+}
+.deck-remote .deck-remote-pen-tools button {
+  min-height: 60px;
 }
 .deck-remote .deck-remote-air {
   min-height: 60px;

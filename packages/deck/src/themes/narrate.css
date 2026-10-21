@@ -107,6 +107,42 @@
   inset: -6px;
   border-radius: 50%;
 }
+/* A small point for every slide; filled once passed. Chapter points sit above them. */
+.deck-narration-dot {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--deck-bg);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--deck-fg) 32%, transparent);
+  transition: transform 0.15s ease;
+}
+.deck-narration-dot.is-past,
+.deck-narration-dot.is-current {
+  background: var(--deck-accent);
+  box-shadow: 0 0 0 1.5px var(--deck-bg);
+}
+.deck-narration-dot.is-current {
+  transform: scale(1.35);
+}
+.deck-narration-dot.is-hover {
+  transform: scale(1.6);
+}
+.deck-narration-dot::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+}
+.deck-narration-point {
+  z-index: 1;
+}
+/* A seek back shows the fill there at once; only forward progress eases. */
+.deck-narration-fill.is-jump {
+  transition: none;
+}
 .deck-narration-tip {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -341,4 +377,24 @@
   .deck-narration-point {
     transition: none;
   }
+}
+
+/* The tooltip's picture of the slide: the deck's own rendering, scaled down, nothing running. */
+.deck-narration-thumb {
+  position: relative;
+  overflow: hidden;
+  margin: 0 -4px 4px;
+  border-radius: 5px;
+  background: var(--deck-surface);
+  outline: 1px solid var(--deck-border);
+}
+.deck-narration-thumb-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
 }

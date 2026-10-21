@@ -8,12 +8,15 @@ import { readItem, writeItem } from "../core/storage.ts";
 import { useStore } from "../core/store.ts";
 import { cmd, useCommand } from "../react/commands.ts";
 import { type DeckRuntime, useDeck } from "../react/context.ts";
+import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { Listbox, type ListboxGroup } from "../react/Listbox.tsx";
+import { SlideFrame } from "../react/SlideFrame.tsx";
 import { type Chapter, chapterOfSlide, chaptersOf, clock, slideAtTime, slideRange } from "./chapters.ts";
 import { chooseEngine, ENGINE_CHOICES, type EngineChoice, silentEngine } from "./engine.ts";
 import { BakedClips, browserEngine, browserVoices, hasSpeechSynthesis, KokoroClient } from "./engines.ts";
 import { isKokoroVoice, KOKORO_VOICES } from "./kokoro-protocol.ts";
 import { type NarrationState, Narrator, type NarratorHost, RATES } from "./player.ts";
+import { narrationPosition, steadyPosition } from "./progress.ts";
 import { speechMs, type Timeline, timelineOf } from "./text.ts";
 
 /**
@@ -379,13 +382,15 @@ export default function Narration({
     };
   }, []);
 
-  const entry = timeline.slides[s.slide];
-  const before = entry ? entry.start + entry.ms.slice(0, s.segment).reduce((n, m) => n + m + c.gap, 0) : 0;
-  const within =
-    s.playing && (s.phase === "speaking" || s.phase === "dwell" || s.phase === "gap")
-      ? Math.min(Math.max(0, now - s.startedAt), s.expectedMs || 0)
-      : 0;
-  const elapsed = Math.min(timeline.total, before + within);
+  // `now` is re-read on every render (the ticker above only asks for one), so a step that has just
+  // begun is measured from its own start rather than from the last tick.
+  void now;
+  const raw = narrationPosition(timeline, c.gap, s, Date.now());
+  const last = useRef<{ at: number; slide: number; segment: number } | null>(null);
+  const elapsed = steadyPosition(last.current, { at: raw, slide: s.slide, segment: s.segment }, s.playing);
+  // Only a move back skips the fill's easing: forward it glides, back it jumps.
+  const back = last.current !== null && elapsed < last.current.at - 1;
+  last.current = { at: elapsed, slide: s.slide, segment: s.segment };
   const pct = timeline.total ? (elapsed / timeline.total) * 100 : 0;
   const chapterNow = chapterOfSlide(chapters, s.slide);
   const current = chapters[chapterNow];
@@ -456,6 +461,7 @@ export default function Narration({
         slide={s.slide}
         count={slides.length}
         pct={pct}
+        jump={back}
         titleOf={(i) => timeline.slides[i]?.title ?? null}
         go={(from) => run("narrate.play", { from })}
       />
@@ -589,10 +595,14 @@ export default function Narration({
   );
 }
 
+/** Below this many pixels apart, slide dots are thinned so a long deck's track stays legible. */
+const DOT_GAP = 7;
+
 /**
- * The timeline: a thin progress line with a point at each chapter. Hovering says where a click
- * would land (the slide, its title, its time) and, over a point, the chapter; a click plays from
- * there. As a slider: arrows step a slide, Page keys (or Shift+arrows) a chapter, Home/End the ends.
+ * The timeline: a thin progress line with a small point for every slide and a larger one where
+ * each chapter starts. Hovering anywhere says where a click would land — a picture of that slide,
+ * its number, title and time, or over a chapter point the chapter — and a click plays from there.
+ * As a slider: arrows step a slide, Page keys (or Shift+arrows) a chapter, Home/End the ends.
  */
 function Track({
   timeline,
@@ -600,6 +610,7 @@ function Track({
   slide,
   count,
   pct,
+  jump,
   titleOf,
   go,
 }: {
@@ -608,6 +619,8 @@ function Track({
   slide: number;
   count: number;
   pct: number;
+  /** The fill moved back (a seek): show it there at once instead of easing. */
+  jump: boolean;
   titleOf: (i: number) => string | null;
   go: (from: number) => void;
 }) {
@@ -615,18 +628,54 @@ function Track({
   const tip = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ x: number; slide: number; chapter: number | null } | null>(null);
   const [shift, setShift] = useState(0);
+  const [width, setWidth] = useState(0);
   const total = timeline.total;
   const at = (ms: number) => (total ? (ms / total) * 100 : 0);
   const chapterNow = chapterOfSlide(chapters, slide);
+  const chapterStarts = useMemo(() => new Set(chapters.map((c) => c.first)), [chapters]);
+
+  useLayoutEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    const measure = () => setWidth(el.getBoundingClientRect().width);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // A dot for every slide that has room for one; a chapter's first slide has its larger point.
+  const dots = useMemo(() => {
+    if (!total || !width) return [] as number[];
+    const out: number[] = [];
+    let lastX = -Infinity;
+    for (const e of timeline.slides) {
+      if (chapters.length > 1 && chapterStarts.has(e.index)) {
+        lastX = (e.start / total) * width;
+        continue;
+      }
+      const x = (e.start / total) * width;
+      if (x - lastX < DOT_GAP) continue;
+      out.push(e.index);
+      lastX = x;
+    }
+    return out;
+  }, [timeline, total, width, chapters.length, chapterStarts]);
 
   const locate = (clientX: number, target: EventTarget | null) => {
     const box = track.current?.getBoundingClientRect();
     if (!box || !total) return null;
     const x = Math.min(box.width, Math.max(0, clientX - box.left));
-    const point = (target as HTMLElement | null)?.closest?.("[data-chapter]");
+    const el = target as HTMLElement | null;
+    const point = el?.closest?.("[data-chapter]");
     const chapter = point ? Number(point.getAttribute("data-chapter")) : null;
-    const hit = chapter != null ? chapters[chapter]!.first : slideAtTime(timeline, (x / box.width) * total);
-    return { x: chapter != null ? (at(chapters[chapter]!.start) / 100) * box.width : x, slide: hit, chapter };
+    if (chapter != null)
+      return { x: (at(chapters[chapter]!.start) / 100) * box.width, slide: chapters[chapter]!.first, chapter };
+    const dot = el?.closest?.("[data-slide]");
+    const hit = dot ? Number(dot.getAttribute("data-slide")) : slideAtTime(timeline, (x / box.width) * total);
+    const start = timeline.slides[hit]?.start ?? 0;
+    // Over a dot, the marker sits on the dot; elsewhere it follows the pointer.
+    return { x: dot ? (at(start) / 100) * box.width : x, slide: hit, chapter: null };
   };
 
   // Keep the tooltip inside the window: measured after it renders, nudged back from either edge.
@@ -686,9 +735,27 @@ function Track({
       onKeyDown={onKey}
     >
       <div className="deck-narration-rail" aria-hidden="true">
-        <div className="deck-narration-fill" style={{ width: `${pct}%` }} />
+        <div
+          className={["deck-narration-fill", jump ? "is-jump" : ""].filter(Boolean).join(" ")}
+          style={{ width: `${pct}%` }}
+        />
         {hover ? <div className="deck-narration-hover" style={{ left: hover.x }} /> : null}
       </div>
+      {dots.map((i) => (
+        <span
+          key={i}
+          data-slide={i}
+          aria-hidden="true"
+          className={[
+            "deck-narration-dot",
+            i < slide ? "is-past" : i === slide ? "is-current" : "",
+            hover?.chapter == null && hover?.slide === i ? "is-hover" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          style={{ left: `${at(timeline.slides[i]!.start)}%` }}
+        />
+      ))}
       {total && chapters.length > 1
         ? chapters.map((c) => (
             <span
@@ -713,6 +780,7 @@ function Track({
           role="presentation"
           style={{ left: hover.x, transform: `translateX(calc(-50% + ${shift}px))` }}
         >
+          <SlideThumb index={hover.slide} />
           {hc ? (
             <>
               <strong>
@@ -735,6 +803,51 @@ function Track({
               </span>
             </>
           )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Width of the tooltip's picture of a slide, in CSS pixels; its height follows the deck's shape. */
+const THUMB_W = 192;
+
+/**
+ * The slide under the pointer, small: the deck's own rendering (as the presenter's "next" preview
+ * is), every step shown, nothing running. Waits for the pointer to settle on a slide so sweeping
+ * along the track does not build every slide on the way.
+ */
+function SlideThumb({ index }: { index: number }) {
+  const deck = useDeck();
+  const [shown, setShown] = useState<number | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => setShown(index), shown === null ? 60 : 110);
+    return () => clearTimeout(t);
+  }, [index, shown]);
+  const { width: W, height: H } = deck.config;
+  const h = Math.round((THUMB_W * H) / W);
+  const flat = useMemo(() => deck.columns.flatMap((c) => c.slides), [deck.columns]);
+  const meta = shown === null ? null : flat[shown];
+  const options = meta ? deck.options.get(navKey(meta.h, meta.v)) : null;
+  return (
+    <div className="deck-narration-thumb" style={{ width: THUMB_W, height: h }} aria-hidden="true">
+      {meta && options ? (
+        <div
+          className="deck-narration-thumb-canvas"
+          style={{ width: W, height: H, transform: `scale(${THUMB_W / W})` }}
+        >
+          <BackgroundLayer bg={options.background} active={false} />
+          <SlideFrame
+            key={`${meta.h},${meta.v}`}
+            meta={meta}
+            options={options}
+            h={meta.h}
+            v={meta.v}
+            active={false}
+            click={999}
+            preview
+            className="is-tile"
+          />
         </div>
       ) : null}
     </div>

@@ -430,3 +430,55 @@ export function levelOf(slide: Pick<RawSlide, "content" | "frontmatter">): numbe
   const m = /^\s*(#{1,6})\s+/m.exec(slide.content);
   return m ? m[1]!.length : 1;
 }
+
+/**
+ * Slide settings a writer (or a model) most often puts after a `---` and forgets to close. Kept
+ * here rather than read from the catalog so the browser compiler stays small; compiler.test.ts
+ * checks each is a real setting.
+ */
+export const LIKELY_SETTINGS = [
+  "layout",
+  "background",
+  "backgroundTransition",
+  "class",
+  "transition",
+  "transitionSpeed",
+  "theme",
+  "clicks",
+  "title",
+  "level",
+  "hide",
+  "id",
+  "autoAnimate",
+  "image",
+];
+
+/**
+ * When a slide opens with lines like `background: spotlight` but no `---` closes them, Markdown
+ * reads them as text and they show on the slide. Returns the setting names found (in order), or
+ * null when the slide does not start that way.
+ */
+export function unclosedSettings(
+  content: string,
+  keys: Iterable<string> = LIKELY_SETTINGS,
+): string[] | null {
+  const known = new Set(keys);
+  const found: string[] = [];
+  for (const line of content.replace(/^\s*\n/, "").split("\n")) {
+    const m = /^([A-Za-z][\w-]*):(?:\s+\S.*|\s*)$/.exec(line.trim());
+    if (!m) break;
+    if (!known.has(m[1]!)) {
+      // One unknown key among known ones is still YAML; a line of prose ("Note: …") is not.
+      if (!found.length) return null;
+      continue;
+    }
+    found.push(m[1]!);
+  }
+  return found.length ? found : null;
+}
+
+/** The warning for a slide whose settings have no closing `---`. */
+export function unclosedSettingsMessage(found: string[]): string {
+  const lines = found.map((k) => `\`${k}:\``).join(", ");
+  return `This slide starts with ${lines} but no \`---\` closes it, so the line${found.length > 1 ? "s" : ""} will show on the slide as text. Put \`---\` on the line after the settings to make them settings.`;
+}

@@ -6,6 +6,7 @@ import { createCommandRegistry } from "../core/commands.ts";
 import { clipKey, lookup, parseIndex, sha256 } from "./baked.ts";
 import { chooseEngine, type Engine, silentEngine } from "./engine.ts";
 import { Narrator, type NarratorHost, type Position } from "./player.ts";
+import { narrationPosition } from "./progress.ts";
 import {
   dwellMs,
   segmentAt,
@@ -257,6 +258,25 @@ describe("narrator", () => {
     expect(n.state.get().playing).toBe(false);
     // Every move went through nav.* commands.
     expect(deck.log.filter((id) => id === "nav.next").length).toBe(4);
+  });
+
+  test("each state it passes through puts the timeline further on, never back", async () => {
+    // The real clock: every state is read at the moment it is published, as the bar reads it.
+    const slides = [{ notesText: "one two [click] three" }, { notesText: "four" }, { notesText: "five six" }];
+    const { n, voice } = narrator(slides, [1, 0, 0], { gap: 20, estimate: () => 30 });
+    const timeline = timelineOf(slides, { rate: 1, gap: 20, silent: "skip", measured: () => 30 });
+    const seen: number[] = [];
+    n.state.subscribe((s) => seen.push(narrationPosition(timeline, 20, s, Date.now())));
+    await n.play();
+    for (let i = 0; i < 4; i++) {
+      await until(() => voice.said.length === i + 1);
+      await new Promise((r) => setTimeout(r, 30));
+      voice.finish();
+    }
+    await until(() => n.state.get().phase === "ended", 3000);
+    const back = seen.filter((at, i) => i > 0 && at < seen[i - 1]! - 1);
+    expect(back).toEqual([]);
+    expect(seen.at(-1)).toBe(timeline.total);
   });
 
   test("pause stops at once; play says the step again", async () => {

@@ -8,8 +8,9 @@
  * The bar renders in the presenter view; playing (with the silent engine, which paces exactly as
  * speech would but needs no voices — headless Chromium has none) advances clicks and then slides;
  * pause stops it; the speed, volume and mute controls reach the narrator's state; the timeline
- * seeks; on the deck itself the bar is a lazy chunk that only `?narrate` or R loads; no console
- * errors. Needs the engine built (`bun run build`) and Playwright's Chromium.
+ * seeks; every slide has a point and its tooltip shows a picture of it; the fill only moves forward
+ * through a play and ends at 100%; on the deck itself the bar is a lazy chunk that only `?narrate`
+ * or R loads; no console errors. Needs the engine built (`bun run build`) and Playwright's Chromium.
  */
 import { spawn } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
@@ -104,7 +105,17 @@ async function open(url, { prefs = true } = {}) {
 const state = (page) => page.evaluate(() => window.__deck.commands.run("narrate.state").then((r) => r.value));
 const nav = (page) => page.evaluate(() => { const n = window.__deck.nav.get(); return { h: n.h, v: n.v, click: n.click, flat: window.__deck.commands.run("deck.state") }; }).then(async (n) => n);
 const where = (page) => page.evaluate(async () => (await window.__deck.commands.run("deck.state")).value.slide);
-const until = async (page, fn, arg, ms = 15_000) => page.waitForFunction(fn, arg, { timeout: ms, polling: 100 });
+// Polled from here: waitForFunction takes the Promise an async check returns as a truthy value,
+// so a check that has to ask a command (they all do) would pass at once.
+async function until(page, fn, arg, ms = 15_000) {
+  const end = Date.now() + ms;
+  for (;;) {
+    const v = await page.evaluate(fn, arg);
+    if (v) return v;
+    if (Date.now() > end) throw new Error(`timed out after ${ms} ms: ${String(fn).slice(0, 120)}`);
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
 
 // The slide with five click steps and a note for each (02-clicks.mdx).
 const target = await (async () => {
@@ -122,7 +133,7 @@ await step("presenter: the bar renders, with its commands", async (expect) => {
   const ids = await page.evaluate(() => window.__deck.commands.list().map((c) => c.id).filter((id) => id.startsWith("narrate.")));
   for (const id of ["narrate.play", "narrate.pause", "narrate.toggle", "narrate.stop", "narrate.next", "narrate.prev", "narrate.rate", "narrate.volume", "narrate.voice", "narrate.state"])
     expect(ids.includes(id), `missing command ${id}`);
-  // A point per chapter (the showcase's nine sections and its opening), not a mark per slide.
+  // A chapter point per section (the showcase's nine) and the opening.
   const points = await page.locator(".deck-narration-point").count();
   const sections = await page.evaluate(
     () => window.__deck.columns.flatMap((c) => c.slides).filter((s) => s.frontmatter.layout === "section").length,
@@ -139,6 +150,69 @@ await step("presenter: the bar renders, with its commands", async (expect) => {
   const vw = page.viewportSize().width;
   expect(tipBox.x >= 0 && tipBox.x + tipBox.width <= vw, `tooltip off screen: ${JSON.stringify(tipBox)}`);
   expect(/^\d+\. /.test(await page.locator(".deck-narration-tip").innerText()), "no slide tooltip on the track");
+  expect(!problems.length, problems.join("; "));
+  await context.close();
+});
+
+await step("presenter: a point for every slide, the chapters kept, a picture in the tooltip", async (expect) => {
+  const { page, context, problems } = await open(`${base}presenter#/0`);
+  await page.waitForSelector(".deck-narration-dot", { timeout: 15_000 });
+  const slides = await page.evaluate(() => window.__deck.columns.flatMap((c) => c.slides).length);
+  const points = await page.locator(".deck-narration-point").count();
+  const dots = await page.locator(".deck-narration-dot").count();
+  // Each slide that does not start a chapter has its own small point, thinned only where they
+  // would touch (87 slides on a ~600 px track).
+  expect(dots >= (slides - points) * 0.7 && dots <= slides - points, `${dots} slide points + ${points} chapter points for ${slides} slides`);
+  // Dense decks stay legible: no two points closer than the gap the track keeps.
+  const xs = await page.locator(".deck-narration-dot").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().x));
+  const tight = xs.slice(1).filter((x, i) => x - xs[i] < 6.5).length;
+  expect(!tight, `${tight} slide points overlap`);
+  // Hover a slide's point: its number and title, and a small picture of it.
+  const dot = page.locator(".deck-narration-dot").nth(5);
+  const n = Number(await dot.getAttribute("data-slide"));
+  await dot.hover();
+  const tip = await page.locator(".deck-narration-tip").innerText();
+  expect(tip.startsWith(`${n + 1}. `), `slide point tooltip: ${tip}`);
+  const thumb = page.locator(".deck-narration-tip .deck-narration-thumb");
+  await thumb.locator(".deck-slide *").first().waitFor({ timeout: 5000 }).catch(() => {});
+  const box = await thumb.boundingBox();
+  expect(box && Math.abs(box.width - 192) <= 1 && Math.abs(box.height - 108) <= 1, `thumbnail box: ${JSON.stringify(box)}`);
+  expect(await thumb.locator(".deck-slide *").count(), "the thumbnail drew nothing");
+  await page.locator(".deck-narration-tip").screenshot({ path: join(deckDir, "check-output", "narration-tooltip.png") }).catch(() => {});
+  // A click on a slide's point narrates from that slide.
+  await dot.click();
+  await until(page, (i) => window.__deck.commands.run("narrate.state").then((r) => r.value.slide === i), n);
+  await page.evaluate(() => window.__deck.commands.run("narrate.stop"));
+  expect(!problems.length, problems.join("; "));
+  await context.close();
+});
+
+await step("presenter: the fill only moves forward across slide changes, and ends full", async (expect) => {
+  const { page, context, problems } = await open(`${base}presenter#/0`);
+  await page.waitForSelector(".deck-narration");
+  const from = await page.evaluate(() => window.__deck.columns.flatMap((c) => c.slides).length - 3);
+  await page.evaluate((i) => window.__deck.commands.run("narrate.play", { from: i }), from);
+  await until(page, (i) => window.__deck.commands.run("narrate.state").then((r) => r.value.playing && r.value.slide === i), from);
+  // Watch the fill on every frame from here to the end of the talk.
+  await page.evaluate(() => {
+    const seen = (window.__fill = []);
+    const tick = () => {
+      const fill = document.querySelector(".deck-narration-fill");
+      const s = window.__deck.nav.get();
+      if (fill) seen.push({ w: parseFloat(fill.style.width), h: s.h, v: s.v, click: s.click });
+      window.__fillRaf = requestAnimationFrame(tick);
+    };
+    tick();
+  });
+  await until(page, () => window.__deck.commands.run("narrate.state").then((r) => r.value.phase === "ended"), null, 90_000);
+  await page.waitForTimeout(300);
+  const play = await page.evaluate(() => (cancelAnimationFrame(window.__fillRaf), window.__fill));
+  const back = play.filter((f, i) => i > 0 && f.w < play[i - 1].w - 0.01);
+  const slidesSeen = new Set(play.map((f) => `${f.h}.${f.v}`)).size;
+  expect(slidesSeen >= 3, `the play crossed ${slidesSeen} slides`);
+  expect(!back.length, `the fill stepped back ${back.length}× (first at ${JSON.stringify(back[0])})`);
+  const end = play.at(-1)?.w;
+  expect(end === 100, `the fill ended at ${end}%`);
   expect(!problems.length, problems.join("; "));
   await context.close();
 });

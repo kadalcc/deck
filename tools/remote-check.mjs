@@ -242,6 +242,17 @@ await step("the Phone remote dialog shows a QR and a pairing URL", async () => {
 });
 
 await step("the phone pairs, and the presenter hears it", async () => {
+  // The toast is up for 1.8 s and the phone's page may take longer than that to settle on a
+  // loaded machine: keep every toast the presenter shows from here on, rather than reading it late.
+  await presenter.evaluate(() => {
+    const seen = (window.__toasts = []);
+    const el = document.querySelector(".deck-toast");
+    new MutationObserver(() => el.textContent && seen.push(el.textContent)).observe(el, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+  });
   await phone.goto(pairUrl, { waitUntil: "networkidle" });
   await phone.waitForSelector(".deck-remote-status.is-open", { timeout: 10_000 }).catch(async (e) => {
     current.detail.push(`phone shows: ${(await phone.locator("body").innerText()).slice(0, 300)}`);
@@ -252,8 +263,10 @@ await step("the phone pairs, and the presenter hears it", async () => {
     presenter.locator(".deck-remote-dialog [data-remotes='1']").count(),
   );
   expect(count, "the dialog does not count the phone");
-  const toast = await presenter.locator(".deck-toast").innerText();
-  expect(/Phone remote connected/.test(toast), `toast: ${toast}`);
+  const toast = await until(() =>
+    presenter.evaluate(() => window.__toasts.find((t) => /Phone remote connected/.test(t))),
+  );
+  expect(toast, `toasts: ${JSON.stringify(await presenter.evaluate(() => window.__toasts))}`);
   // The code on screen worked once: the QR shows the next one, and says when it changes.
   const next = await until(async () => {
     const u = await presenter.locator("[data-remote-url]").getAttribute("data-remote-url");

@@ -248,6 +248,11 @@ describe("lint", () => {
     expect(r).toMatchObject({ ok: true, errors: 0, slides: 4 });
   });
 
+  test("slide settings with no closing --- are a warning at their line", async () => {
+    const d = await codes("# A\n\n---\nbackground: spotlight\n\n## B\n");
+    expect(d).toEqual(["warning:frontmatter-unclosed:4"]);
+  });
+
   test("frontmatter: unknown keys, wrong types, unknown layouts, backgrounds, transitions", async () => {
     const d = await codes(
       "---\ntitle: X\nthemee: rla\n---\n\n# A\n\n---\nlayout: two-col\nbackground: aurorra\nclicks: many\ntransition: wobble\n---\n\n# B\n",

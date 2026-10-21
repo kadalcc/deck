@@ -71,6 +71,20 @@ describe("compileDeck", () => {
   });
 });
 
+describe("settings without their closing ---", () => {
+  test("are reported as a warning on the slide, and the deck still compiles", async () => {
+    const out = await compileDeck(`# One\n\n---\nbackground: spotlight\n\n## Two\n`);
+    expect(out.ok).toBe(true);
+    const w = out.diagnostics.filter((d) => d.severity === "warning");
+    expect(w).toHaveLength(1);
+    expect(w[0]!.slide).toBe(1);
+    expect(w[0]!.message).toContain("`background:`");
+    expect(w[0]!.message).toContain("Put `---` on the line after");
+    const fenced = await compileDeck(`# One\n\n---\nbackground: spotlight\n---\n\n## Two\n`);
+    expect(fenced.diagnostics).toEqual([]);
+  });
+});
+
 describe("shellBase", () => {
   test("works out the deck root from the address", () => {
     expect(shellBase("/@me/talk/")).toBe("/@me/talk/");
