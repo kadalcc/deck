@@ -260,8 +260,10 @@ pre.deck-code.twoslash .twoslash-popup-code {
 pre.deck-code.twoslash .twoslash-popup-container code {
   font-size: inherit;
   background: none;
-  padding: 0;
   border-radius: 0;
+}
+pre.deck-code.twoslash .twoslash-popup-container code:not(.twoslash-popup-code) {
+  padding: 0;
 }
 pre.deck-code.twoslash .twoslash-popup-pre {
   display: block;
