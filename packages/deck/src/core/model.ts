@@ -7,6 +7,7 @@ import {
   type GlossaryOptions,
   glossaryOptions,
 } from "../glossary/model.ts";
+import type { TransitionDefinition } from "./transitions.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -65,6 +66,12 @@ export interface DeckManifest {
   slides: SlideMeta[];
   /** The deck's `glossary.yaml`, parsed at build time; absent in a deck without one. */
   glossary?: GlossaryEntry[];
+  /**
+   * Every slide's `<style>` blocks as one stylesheet, each scoped to its slide
+   * (`.deck-slide[data-index="N"]`) unless written `<style global>`; `<Deck>` renders it once.
+   * Absent or "" when no slide has one (compiler/slide-style.ts).
+   */
+  styles?: string;
   /**
    * The in-browser Kokoro voice, when the deck has `kokoro-js` installed: a lazy import of the
    * module that starts its Web Worker. Null (or absent) without it — the narrator then uses the
@@ -256,6 +263,24 @@ export interface DeckConfig {
   /** Google Fonts families to load, e.g. ["Inter:wght@400;600"]. */
   fonts: string[];
   seoMeta: Record<string, string>;
+  /**
+   * Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g.
+   * `{ layout: center, transition: fade }`. A theme's defaults sit beneath it.
+   */
+  defaults: Frontmatter;
+  /** The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. */
+  plantUmlServer: string;
+  /** Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. */
+  notesAutoRuby: Record<string, string>;
+  /** KaTeX options for every formula, e.g. `{ macros: { "\\RR": "\\mathbb{R}" } }`. */
+  katex: { macros?: Record<string, string>; [option: string]: unknown };
+  /** Mermaid configuration for every diagram (theme, themeVariables, look, flowchart…). */
+  mermaid: Record<string, unknown>;
+  /**
+   * Named custom transitions: `{ flip: { in: "flip-in", out: "flip-out", back: {…} } }`, the
+   * keyframes defined in the theme's CSS or a `<style global>` (core/transitions.ts).
+   */
+  transitions: Record<string, TransitionDefinition>;
 }
 
 export const DEFAULT_CONFIG: DeckConfig = {
@@ -339,6 +364,12 @@ export const DEFAULT_CONFIG: DeckConfig = {
   ads: false,
   fonts: [],
   seoMeta: {},
+  defaults: {},
+  plantUmlServer: "https://www.plantuml.com/plantuml",
+  notesAutoRuby: {},
+  katex: {},
+  mermaid: {},
+  transitions: {},
 };
 
 /** Headmatter and deck.config.ts both layer over the defaults; nested objects merge one level. */
@@ -371,7 +402,12 @@ export function resolveConfig(
       else if (key === "narration" && typeof value === "boolean")
         out.narration = { ...out.narration, enabled: value };
       else if (
-        (key === "live" || key === "drawings" || key === "seoMeta" || key === "narration") &&
+        (key === "live" ||
+          key === "drawings" ||
+          key === "seoMeta" ||
+          key === "narration" ||
+          key === "transitions" ||
+          key === "mermaid") &&
         value &&
         typeof value === "object"
       ) {

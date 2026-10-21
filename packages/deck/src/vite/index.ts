@@ -17,6 +17,13 @@ import {
   slideTerms,
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
+import {
+  type DeckSetup,
+  katexOptions,
+  manifestHeadmatter,
+  notesRuby,
+  plantUmlServer,
+} from "../compiler/setup.ts";
 import { DEFAULT_GLOSSARY } from "../glossary/model.ts";
 import { createRelay, type RelayPeer } from "../remote/relay.ts";
 
@@ -35,6 +42,7 @@ import { createRelay, type RelayPeer } from "../remote/relay.ts";
  *   virtual:deck/slide/N     slide N's compiled MDX (default export: the component)
  *   virtual:deck/notes/N     slide N's notes, compiled MDX (default export)
  *   virtual:deck/magic/N     slide N's precomputed magic-move steps
+ *                            (the manifest also carries `styles`: every slide's <style>, scoped)
  *   virtual:deck/kokoro      the narrator's Kokoro worker — only when the deck has `kokoro-js`
  *                            installed; otherwise the manifest says `kokoro: null` and nothing of
  *                            it is built (it is an optional peer: ~400 MB of ONNX runtime)
@@ -69,7 +77,12 @@ function kokoroWorkerFile(): string {
   return existsSync(js) ? js : fileURLToPath(new URL("../narrate/kokoro.worker.ts", import.meta.url));
 }
 
-export interface DeckPluginOptions {
+/**
+ * The plugin's options. Beyond `entry` and `shiki`, the setup hooks (compiler/setup.ts):
+ * `remarkPlugins`, `rehypePlugins`, `preprocess(text, file)`, `katex`, `mermaid`, and
+ * `withoutNotes` (also `KADAL_DECK_WITHOUT_NOTES=1`, which `kadal-deck build --without-notes` sets).
+ */
+export interface DeckPluginOptions extends DeckSetup {
   /** The deck file, relative to the Vite root. Default `deck.mdx`. */
   entry?: string;
   /** Shiki themes. Defaults suit the neutral theme; the deck's theme CSS can override the colours. */
@@ -77,7 +90,10 @@ export interface DeckPluginOptions {
 }
 
 /** Build-time KaTeX for the maths in a definition; the browser gets finished HTML. */
-const renderMath = (tex: string) => renderKatex(tex, { throwOnError: false });
+const katexRenderer =
+  (options: object = {}) =>
+  (tex: string) =>
+    renderKatex(tex, { throwOnError: false, ...options });
 
 /**
  * The phone remote's line to the dev server (src/remote/relay.ts), in the one module of the deck
@@ -126,6 +142,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   let glossaryFile: string | null = null;
   /** Whether `kokoro-js` resolves from this package (decided once, at the first manifest). */
   let kokoro: Promise<boolean> | null = null;
+  const withoutNotes = options.withoutNotes ?? process.env.KADAL_DECK_WITHOUT_NOTES === "1";
 
   const getHighlighter = async () => {
     highlighter ??= await createHighlighter({
@@ -138,7 +155,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   function build() {
     included.clear();
     const text = readFileSync(entryPath, "utf8");
-    const { headmatter, slides } = prepareDeck(text, {
+    const { headmatter, slides, styles } = prepareDeck(text, {
       file: entryPath,
       resolveInclude: (path, from) => {
         const file = resolve(dirname(from), path);
@@ -146,11 +163,21 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         included.add(file);
         return { file, text: readFileSync(file, "utf8") };
       },
+      preprocess: options.preprocess,
+      withoutNotes,
     });
-    return { headmatter, slides, glossary: readGlossary(headmatter) };
+    const katex = katexOptions(headmatter, options);
+    return {
+      headmatter,
+      slides,
+      styles,
+      katex,
+      math: katexRenderer(katex),
+      glossary: readGlossary(headmatter, katexRenderer(katex)),
+    };
   }
 
-  function readGlossary(headmatter: Record<string, unknown>) {
+  function readGlossary(headmatter: Record<string, unknown>, renderMath: (tex: string) => string) {
     const g = deckGlossary(
       headmatter,
       (src) => {
@@ -183,23 +210,44 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     server.ws.send({ type: "full-reload" });
   };
 
-  /** `terms` is the slide's own frontmatter switch; null compiles without the glossary (notes). */
-  async function compileMdx(source: string, file: string, terms: unknown = null) {
-    const out = await compile(source, {
-      jsx: false,
-      jsxImportSource: "react",
-      development: false,
-      ...mdxPlugins({
-        highlighter: await getHighlighter(),
-        themes,
-        glossary: ensure().glossary,
-        terms,
-        math: renderMath,
-        warn: (message) => console.warn(`[deck] ${file}: ${message}`),
-      }),
-      providerImportSource: "@kadal/deck/mdx-provider",
-      format: "mdx",
-    });
+  /**
+   * `terms` is the slide's own frontmatter switch; null compiles without the glossary (notes).
+   * Notes that are not valid MDX — Slidev notes, written for a Markdown parser, often are not —
+   * compile again as plain Markdown, with a warning, rather than fail the build.
+   */
+  async function compileMdx(source: string, file: string, terms: unknown = null, notes = false) {
+    const m = ensure();
+    const run = async (format: "mdx" | "md") =>
+      compile(source, {
+        jsx: false,
+        jsxImportSource: "react",
+        development: false,
+        ...mdxPlugins({
+          highlighter: await getHighlighter(),
+          themes,
+          glossary: m.glossary,
+          terms,
+          math: m.math,
+          warn: (message) => console.warn(`[deck] ${file}: ${message}`),
+          katex: m.katex,
+          plantUmlServer: plantUmlServer(m.headmatter),
+          ruby: notes ? notesRuby(m.headmatter) : null,
+          remarkPlugins: options.remarkPlugins,
+          rehypePlugins: options.rehypePlugins,
+        }),
+        providerImportSource: "@kadal/deck/mdx-provider",
+        format,
+      });
+    let out;
+    try {
+      out = await run("mdx");
+    } catch (err) {
+      if (!notes) throw err;
+      console.warn(
+        `[deck] ${file}: the notes are not valid MDX (${err instanceof Error ? err.message.split("\n")[0] : String(err)}); compiled as plain Markdown instead.`,
+      );
+      out = await run("md");
+    }
     return `// ${file}\n${String(out)}`;
   }
 
@@ -312,14 +360,15 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
     loadMagic: ${s.magic.length ? `() => import("${VIRTUAL}/magic/${i}")` : "null"},
   }`;
         });
-        return `export const headmatter = ${JSON.stringify(m.headmatter)};
+        return `export const headmatter = ${JSON.stringify(manifestHeadmatter(m.headmatter, options))};
 export const slides = [
 ${entries.join(",\n")}
 ];
 export const glossary = ${JSON.stringify(m.glossary.entries)};
+export const styles = ${JSON.stringify(m.styles)};
 ${building ? "export const relay = null;" : DEV_RELAY}
 export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
-export default { headmatter, slides, glossary, relay, kokoro };
+export default { headmatter, slides, glossary, styles, relay, kokoro };
 `;
       }
 
@@ -337,7 +386,7 @@ export default { headmatter, slides, glossary, relay, kokoro };
           slideTerms(s),
         );
       if (kind === "notes")
-        return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`);
+        return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`, null, true);
 
       // magic: precompute keyed tokens for each step, plus that step's own line highlights.
       const blocks = magicMoveData(s.magic, await getHighlighter(), themes);

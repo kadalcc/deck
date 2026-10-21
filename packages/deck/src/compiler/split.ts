@@ -1,5 +1,8 @@
 import YAML from "yaml";
 
+import { blank, blankHtmlComments, codeSpans, fenceRanges, htmlComments } from "./comments.ts";
+import { type SlideStyle, extractStyles } from "./slide-style.ts";
+
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * THE DECK FILE
@@ -15,7 +18,14 @@ import YAML from "yaml";
  *   key: value     and closes with another line of three dashes; a fenced block at the very top
  *   ---            of the file is the HEADMATTER, which configures the whole deck
  *   <Notes>…</Notes>   anywhere in a slide: speaker notes, compiled as MDX of their own
- *   src: ./file.mdx    a frontmatter-only slide that pulls the slides of another file in
+ *   <!-- … -->         at the END of a slide: speaker notes too, as in Slidev (comments.ts); a
+ *                      comment anywhere else is blanked, since MDX cannot take one
+ *   ```yaml            as the very first thing in a slide's body (not the first slide's): that
+ *   layout: center     slide's frontmatter — Slidev's "block frontmatter", which editors
+ *   ```                highlight and formatters format
+ *   <style>…</style>   CSS for this slide only (slide-style.ts); `<style global>` for the deck
+ *   src: ./file.mdx    a frontmatter-only slide that pulls the slides of another file in;
+ *   src: ./f.mdx#2-5   `#2-5`, `#1,3,5-7`, `#4-` pull in only those slides (1-based)
  *
  * Everything in between is MDX: Markdown, JSX, the engine's components. This module only cuts
  * the text; the Vite plugin turns the pieces into modules.
@@ -35,6 +45,8 @@ export interface RawSlide {
   content: string;
   /** The notes' MDX, or null when the slide has none. */
   notes: string | null;
+  /** The slide's `<style>` blocks, lifted out of `content` (see slide-style.ts). */
+  styles: SlideStyle[];
   /** Where the slide starts, for error messages and the editor. */
   source: { file: string; line: number };
   /** The slide's exact lines in its file, for tools that edit the deck as text. */
@@ -55,9 +67,11 @@ export interface SlideRange {
   separator: "horizontal" | "vertical" | null;
   /**
    * The fence lines around the slide's YAML, when it has some. On the top piece this is the
-   * headmatter, which configures the deck as well as the first slide.
+   * headmatter, which configures the deck as well as the first slide. `block` marks a ```yaml
+   * fence (block frontmatter): `open` and `close` are then the two ``` lines, and the separator
+   * is the line at `start`.
    */
-  frontmatter: { open: number; close: number } | null;
+  frontmatter: { open: number; close: number; block?: boolean } | null;
   /** First line of the body (after the frontmatter or the separator). */
   body: number;
   /** True for the piece at the top of the file (no separator line of its own). */
@@ -81,6 +95,14 @@ export interface SplitOptions {
    * counts as empty and the include as no slides.
    */
   onError?: (error: { message: string; file: string; line: number }) => void;
+  /**
+   * Rewrites each file's text before it is cut (the deck file and every included one) — the
+   * `preprocess` setup hook. Line ranges then describe the rewritten text, so tools that edit
+   * the deck as text split without it.
+   */
+  preprocess?: (text: string, file: string) => string;
+  /** The files that include this one, outermost first (internal: catches circular includes). */
+  chain?: string[];
 }
 
 const HORIZONTAL = /^---\s*$/;
@@ -134,7 +156,7 @@ interface Piece {
   /** 0-based first line (the separator) and exclusive end; the fence lines when there is YAML. */
   start: number;
   end: number;
-  fence: { open: number; close: number } | null;
+  fence: { open: number; close: number; block?: boolean } | null;
 }
 
 /**
@@ -148,6 +170,25 @@ function cut(text: string): Piece[] {
   const pieces: Piece[] = [];
   let inFence = false;
   let fence = "";
+
+  /**
+   * Block frontmatter: a bare ```yaml (or ```yml) fence as the first non-blank line after a
+   * separator. A fence with anything after the language (```yaml [ci.yml], ```yaml {2}) is code
+   * to show, not settings — that is the way to put a YAML example at the top of a slide.
+   */
+  const blockAt = (from: number): { yaml: string; open: number; close: number } | null => {
+    let k = from;
+    while (k < lines.length && !lines[k]!.trim()) k++;
+    const open = /^\s*(`{3,}|~{3,})ya?ml\s*$/.exec(lines[k] ?? "");
+    if (!open) return null;
+    const mark = open[1]!;
+    for (let c = k + 1; c < lines.length; c++) {
+      const close = /^\s*(`{3,}|~{3,})\s*$/.exec(lines[c]!);
+      if (close && close[1]![0] === mark[0] && close[1]!.length >= mark.length)
+        return { yaml: lines.slice(k + 1, c).join("\n"), open: k, close: c };
+    }
+    return null;
+  };
 
   /** Try to read a fenced YAML block starting at `from` (the line after an opening fence). */
   const frontmatterAt = (from: number): { yaml: string; next: number } | null => {
@@ -210,6 +251,7 @@ function cut(text: string): Piece[] {
       const fm = frontmatterAt(i + 1);
       pieces[pieces.length - 1]!.end = i;
       const base = { vertical, lines: [], start: i, end: lines.length };
+      const block = fm ? null : blockAt(i + 1);
       if (fm) {
         pieces.push({
           ...base,
@@ -218,6 +260,14 @@ function cut(text: string): Piece[] {
           fence: { open: i, close: fm.next - 1 },
         });
         i = fm.next - 1;
+      } else if (block) {
+        pieces.push({
+          ...base,
+          frontmatter: block.yaml,
+          line: block.close + 2,
+          fence: { open: block.open, close: block.close, block: true },
+        });
+        i = block.close;
       } else {
         pieces.push({ ...base, frontmatter: null, line: i + 2, fence: null });
       }
@@ -233,77 +283,146 @@ function cut(text: string): Piece[] {
  * least the same length, or the end of the text). Things that look like syntax inside them — a
  * `<Notes>` in an example, a `---` in YAML — are code, not structure.
  */
-export function fencedRanges(text: string): Array<[number, number]> {
-  const out: Array<[number, number]> = [];
-  let open: { start: number; mark: string } | null = null;
-  let offset = 0;
-  for (const line of text.split("\n")) {
-    const m = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (m) {
-      const mark = m[1]!;
-      if (!open) open = { start: offset, mark };
-      else if (mark[0] === open.mark[0] && mark.length >= open.mark.length) {
-        out.push([open.start, offset + line.length]);
-        open = null;
-      }
-    }
-    offset += line.length + 1;
-  }
-  if (open) out.push([open.start, text.length]);
-  return out;
-}
+export const fencedRanges = fenceRanges;
 
-/** Fenced code plus inline code spans (`…`) outside the fences. */
-function codeRanges(text: string): Array<[number, number]> {
-  const fences = fencedRanges(text);
-  const out = [...fences];
-  for (const m of text.matchAll(/(`+)(?:(?!\1)[^\n])+?\1/g)) {
-    const start = m.index!;
-    if (fences.some(([a, b]) => start >= a && start < b)) continue;
-    out.push([start, start + m[0].length]);
-  }
-  return out;
+export interface NotesBlock {
+  start: number;
+  end: number;
+  /** The notes inside the block, as written. */
+  inner: string;
+  /** `<Notes>…</Notes>`, or a trailing `<!-- … -->` (Slidev's spelling). */
+  kind: "notes" | "comment";
 }
 
 /**
- * The `<Notes>…</Notes>` blocks of a slide that are not code. Code is blanked out before
- * matching, not just skipped after: an inline `<Notes>` in a sentence followed by the real block
- * would otherwise match from the inline one to the real closing tag, and swallow both.
+ * The speaker-notes blocks of a slide, in order: every `<Notes>…</Notes>` that is not code, and
+ * the HTML comments at the very end of the slide (with only whitespace, or other notes blocks,
+ * after them) — Slidev's notes. A comment anywhere else is not notes.
+ *
+ * Code is blanked out before matching, not just skipped after: an inline `<Notes>` in a sentence
+ * followed by the real block would otherwise match from the inline one to the real closing tag,
+ * and swallow both.
  */
-export function notesBlocks(content: string): Array<{ start: number; end: number; inner: string }> {
+export function notesBlocks(content: string): NotesBlock[] {
+  const code = codeSpans(content);
   let masked = content;
-  for (const [a, b] of codeRanges(content)) {
+  for (const [a, b] of code) {
     masked = masked.slice(0, a) + masked.slice(a, b).replace(/[^\n]/g, "\uE000") + masked.slice(b);
   }
-  const out: Array<{ start: number; end: number; inner: string }> = [];
+  const tags: NotesBlock[] = [];
   for (const m of masked.matchAll(NOTES)) {
     const start = m.index!;
     const end = start + m[0].length;
     const open = m[0].indexOf(">") + 1;
-    out.push({ start, end, inner: content.slice(start + open, end - "</Notes>".length) });
+    tags.push({
+      start,
+      end,
+      inner: content.slice(start + open, end - "</Notes>".length),
+      kind: "notes",
+    });
   }
-  return out;
+  if (!content.includes("<!--")) return tags;
+  // Comments inside a <Notes> block belong to those notes.
+  const comments: NotesBlock[] = htmlComments(content, code)
+    .filter((c) => !tags.some((t) => c.start >= t.start && c.start < t.end))
+    .map((c) => ({ start: c.start, end: c.end, inner: c.inner, kind: "comment" }));
+  const all = [...tags, ...comments].sort((a, b) => a.start - b.start);
+  const trailing: NotesBlock[] = [];
+  let end = content.length;
+  for (let k = all.length - 1; k >= 0; k--) {
+    const b = all[k]!;
+    if (content.slice(b.end, end).trim()) break;
+    if (b.kind === "comment") trailing.push(b);
+    end = b.start;
+  }
+  return [...tags, ...trailing].sort((a, b) => a.start - b.start);
 }
 
-function extractNotes(content: string): { content: string; notes: string | null } {
+/**
+ * Lift a slide's notes out of its MDX (their lines are blanked, so the rest keep their numbers),
+ * blank every other HTML comment, and lift its `<style>` blocks.
+ */
+function extractNotes(content: string): {
+  content: string;
+  notes: string | null;
+  styles: SlideStyle[];
+} {
   const blocks = notesBlocks(content);
-  if (!blocks.length) return { content, notes: null };
-  let stripped = "";
-  let at = 0;
-  for (const b of blocks) {
-    stripped += content.slice(at, b.start);
-    at = b.end;
+  let body = content;
+  // Last first: blanking shortens the text, and earlier offsets must stay true.
+  for (const b of [...blocks].reverse()) body = blank(body, b.start, b.end);
+  const { content: unstyled, styles } = extractStyles(blankHtmlComments(body));
+  const notes = blocks
+    .map((b) => blankHtmlComments(b.inner).trim())
+    .filter(Boolean)
+    .join("\n\n");
+  return { content: unstyled, notes: blocks.length ? notes || null : null, styles };
+}
+
+/**
+ * Which slides of an included file `#…` selects, 1-based, ascending, as Slidev reads it: `2-5`,
+ * `1,3,5-7`, `4-` (4 to the end), `all` or `*`, `none`. Problems — a part that is not a number or
+ * range, slide 0, a range that runs backwards, a slide past the end — come back as messages; the
+ * valid parts still count.
+ */
+export function parseSlideRange(
+  spec: string,
+  total: number,
+): { slides: number[]; problems: string[] } {
+  const s = spec.trim();
+  const all = Array.from({ length: total }, (_, i) => i + 1);
+  if (!s || s === "all" || s === "*") return { slides: all, problems: [] };
+  if (s === "none") return { slides: [], problems: [] };
+  const out = new Set<number>();
+  const problems: string[] = [];
+  for (const raw of s.split(/[,;]/)) {
+    const part = raw.trim();
+    if (!part) continue;
+    const one = /^\d+$/.exec(part);
+    const span = /^(\d+)\s*-\s*(\d*)$/.exec(part);
+    if (!one && !span) {
+      problems.push(`"${part}" is not a slide number or a range like 2-5`);
+      continue;
+    }
+    const from = Number(one ? part : span![1]);
+    const to = one ? from : span![2] ? Number(span![2]) : total;
+    if (from < 1) {
+      problems.push("slides are numbered from 1");
+      continue;
+    }
+    if (to < from) {
+      problems.push(`the range ${part} runs backwards`);
+      continue;
+    }
+    for (let n = from; n <= to; n++) {
+      if (n > total) {
+        problems.push(
+          `slide ${n} does not exist; the file has ${total} slide${total === 1 ? "" : "s"}`,
+        );
+        break;
+      }
+      out.add(n);
+    }
   }
-  stripped += content.slice(at);
-  return { content: stripped, notes: blocks.map((b) => b.inner.trim()).join("\n\n") };
+  return { slides: [...out].sort((a, b) => a - b), problems };
+}
+
+/** `./more.mdx#2-5` → the path and the range (null without a `#`). */
+export function splitSrc(src: string): { path: string; range: string | null } {
+  const at = src.indexOf("#");
+  return at < 0
+    ? { path: src.trim(), range: null }
+    : { path: src.slice(0, at).trim(), range: src.slice(at + 1) };
 }
 
 /**
  * Split a deck file into slides. Includes (`src:`) are expanded in place; a piece that is only
- * frontmatter with a `src` contributes the included file's slides, with the included file's own
- * headmatter and the piece's remaining frontmatter merged into the first of them.
+ * frontmatter with a `src` contributes the included file's slides (all of them, or those its
+ * `#range` names), with the piece's remaining frontmatter merged into the first of them — and the
+ * included file's own headmatter too, when that first slide is the file's first.
  */
-export function splitDeck(text: string, options: SplitOptions): SplitResult {
+export function splitDeck(source: string, options: SplitOptions): SplitResult {
+  const text = options.preprocess ? options.preprocess(source, options.file) : source;
   const pieces = cut(text);
   const head = pieces[0]!;
   const headmatter = head.frontmatter
@@ -318,28 +437,15 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
   let v = 0;
 
   const push = (
-    content: string,
-    frontmatter: Frontmatter,
+    slide: Pick<RawSlide, "content" | "notes" | "styles" | "frontmatter" | "source" | "range">,
     vertical: boolean,
-    source: RawSlide["source"],
-    range: SlideRange,
   ) => {
     if (vertical && h >= 0) v++;
     else {
       h++;
       v = 0;
     }
-    const { content: body, notes } = extractNotes(content);
-    slides.push({
-      index: slides.length,
-      h,
-      v,
-      frontmatter,
-      content: body.trim(),
-      notes,
-      source,
-      range,
-    });
+    slides.push({ ...slide, index: slides.length, h, v });
   };
   const rangeOf = (piece: Piece, i: number): SlideRange => ({
     file: options.file,
@@ -351,6 +457,10 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
     head: i === 0,
     includedBy: null,
   });
+  const problem = (message: string, line: number) => {
+    if (!options.onError) throw new Error(`${options.file}:${line}: ${message}`);
+    options.onError({ message, file: options.file, line });
+  };
 
   pieces.forEach((piece, i) => {
     const where = `${options.file}:${piece.line}`;
@@ -363,35 +473,61 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
           ? {}
           : parseYaml(piece.frontmatter, where, options.onError, {
               file: options.file,
-              line: piece.start + 2,
+              line: piece.fence?.block ? piece.fence.open + 2 : piece.start + 2,
             });
     const content = piece.lines.join("\n");
     const blank = !content.trim();
 
     if (typeof frontmatter.src === "string") {
       const { src, ...merge } = frontmatter;
-      const included = options.resolveInclude?.(src, options.file);
+      const at = piece.start + 2;
+      const { path, range } = splitSrc(src);
+      const included = options.resolveInclude?.(path, options.file);
       if (!included) {
         const message = `cannot include "${src}"`;
         if (!options.onError) throw new Error(`${where}: ${message}`);
-        options.onError({ message, file: options.file, line: piece.start + 2 });
+        options.onError({ message, file: options.file, line: at });
         return;
       }
-      const inner = splitDeck(included.text, { ...options, file: included.file });
-      inner.slides.forEach((s, j) => {
+      const chain = [...(options.chain ?? []), options.file];
+      if (chain.includes(included.file)) {
+        problem(
+          `circular include: ${[...chain, included.file].join(" → ")} ("${src}" is already being included)`,
+          at,
+        );
+        return;
+      }
+      const inner = splitDeck(included.text, { ...options, file: included.file, chain });
+      const picked =
+        range === null
+          ? inner.slides.map((_, k) => k + 1)
+          : (() => {
+              const r = parseSlideRange(range, inner.slides.length);
+              for (const p of r.problems) problem(`src "${src}": ${p}`, at);
+              return r.slides;
+            })();
+      picked.forEach((n, j) => {
+        const s = inner.slides[n - 1]!;
         push(
-          s.content + (s.notes ? `\n\n<Notes>${s.notes}</Notes>` : ""),
-          j === 0 ? { ...inner.headmatter, ...s.frontmatter, ...merge } : s.frontmatter,
-          j === 0 ? piece.vertical : s.v > 0,
-          s.source,
           {
-            ...s.range,
-            includedBy: s.range.includedBy ?? {
-              file: options.file,
-              start: piece.start,
-              end: piece.end,
+            content: s.content,
+            notes: s.notes,
+            styles: s.styles,
+            frontmatter:
+              j === 0
+                ? { ...(n === 1 ? inner.headmatter : {}), ...s.frontmatter, ...merge }
+                : s.frontmatter,
+            source: s.source,
+            range: {
+              ...s.range,
+              includedBy: s.range.includedBy ?? {
+                file: options.file,
+                start: piece.start,
+                end: piece.end,
+              },
             },
           },
+          j === 0 ? piece.vertical : s.v > 0,
         );
       });
       return;
@@ -399,12 +535,17 @@ export function splitDeck(text: string, options: SplitOptions): SplitResult {
     // An empty head piece is not a slide; an empty later piece is a blank slide only when it
     // carries frontmatter (a deliberate pause), otherwise it is skipped.
     if (blank && (i === 0 || !Object.keys(frontmatter).length)) return;
+    const { content: body, notes, styles } = extractNotes(content);
     push(
-      content,
-      frontmatter,
+      {
+        content: body.trim(),
+        notes,
+        styles,
+        frontmatter,
+        source: { file: options.file, line: piece.line },
+        range: rangeOf(piece, i),
+      },
       piece.vertical,
-      { file: options.file, line: piece.line },
-      rangeOf(piece, i),
     );
   });
 

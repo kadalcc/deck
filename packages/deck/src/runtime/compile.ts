@@ -21,6 +21,13 @@ import {
   slideTerms,
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
+import {
+  type DeckSetup,
+  katexOptions,
+  manifestHeadmatter,
+  notesRuby,
+  plantUmlServer,
+} from "../compiler/setup.ts";
 import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
 
@@ -53,12 +60,18 @@ export interface Diagnostic {
   slide: number | null;
 }
 
-export interface CompileDeckOptions {
+/**
+ * Besides the files, the same setup hooks the Vite plugin takes (compiler/setup.ts):
+ * `remarkPlugins`, `rehypePlugins`, `preprocess`, `katex`, `mermaid`, `withoutNotes`.
+ */
+export interface CompileDeckOptions extends DeckSetup {
   /** The deck file's name, for diagnostics. Default "deck.mdx". */
   file?: string;
   /** Other files the deck reads by path: `src:` includes and the glossary. */
   files?: Record<string, string>;
   shiki?: { light?: string; dark?: string; langs?: string[] };
+  /** Slide defaults beneath the headmatter's `defaults:` (a theme's), see `prepareDeck`. */
+  defaults?: Record<string, unknown> | Array<Record<string, unknown> | null | undefined> | null;
 }
 
 export interface CompiledDeck {
@@ -96,7 +109,10 @@ async function getHighlighter(themes: { light: string; dark: string }, langs: st
   return highlighter;
 }
 
-const renderMath = (tex: string) => renderKatex(tex, { throwOnError: false });
+const katexRenderer =
+  (options: object = {}) =>
+  (tex: string) =>
+    renderKatex(tex, { throwOnError: false, ...options });
 
 /** A slide that did not compile shows why, where it would have been. */
 function errorSlide(message: string, where: string): ComponentType {
@@ -123,6 +139,7 @@ function lineOf(err: unknown, slideLine: number): number | null {
 async function compileToComponent(
   source: string,
   plugins: ReturnType<typeof mdxPlugins>,
+  format: "mdx" | "md" = "mdx",
 ): Promise<ComponentType> {
   // Imports cannot resolve without a bundler; say so instead of failing somewhere deeper.
   if (/^\s*import\s/m.test(source.replace(/```[\s\S]*?```/g, "")))
@@ -135,7 +152,7 @@ async function compileToComponent(
     // Any value makes the compiled slide ask `useMDXComponents` (passed to `run`) for its tags.
     providerImportSource: "@kadal/deck/mdx-provider",
     development: false,
-    format: "mdx",
+    format,
   });
   const mod = await run(String(code), {
     ...(jsxRuntime as unknown as Parameters<typeof run>[1]),
@@ -165,9 +182,12 @@ export async function compileDeck(
     dark: options.shiki?.dark ?? "github-dark",
   };
 
-  let prepared: { headmatter: Record<string, unknown>; slides: PreparedSlide[] };
+  let prepared: { headmatter: Record<string, unknown>; slides: PreparedSlide[]; styles: string };
   try {
     prepared = prepareDeck(text, {
+      preprocess: options.preprocess,
+      withoutNotes: options.withoutNotes,
+      defaults: options.defaults,
       file,
       resolveInclude: (path) => {
         const clean = path.replace(/^\.\//, "");
@@ -187,6 +207,10 @@ export async function compileDeck(
     };
   }
 
+  const katex = katexOptions(prepared.headmatter, options);
+  const renderMath = katexRenderer(katex);
+  const server = plantUmlServer(prepared.headmatter);
+  const ruby = notesRuby(prepared.headmatter);
   const glossary: DeckGlossary = deckGlossary(
     prepared.headmatter,
     (src) => {
@@ -211,14 +235,37 @@ export async function compileDeck(
         push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: i });
       const loose = unclosedSettings(s.content);
       if (loose) warn(unclosedSettingsMessage(loose));
-      const build = async (source: string, terms: unknown): Promise<SlideModule> => {
+      const build = async (source: string, terms: unknown, notes = false): Promise<SlideModule> => {
+        const plugins = mdxPlugins({
+          highlighter: hl,
+          themes,
+          glossary,
+          terms,
+          math: renderMath,
+          warn,
+          katex,
+          plantUmlServer: server,
+          ruby: notes ? ruby : null,
+          remarkPlugins: options.remarkPlugins,
+          rehypePlugins: options.rehypePlugins,
+        });
         try {
-          const Component = await compileToComponent(
-            source,
-            mdxPlugins({ highlighter: hl, themes, glossary, terms, math: renderMath, warn }),
-          );
+          const Component = await compileToComponent(source, plugins);
           return { default: Component } as SlideModule;
         } catch (err) {
+          // Notes written for a Markdown parser (Slidev's) are often not valid MDX: read them as
+          // plain Markdown rather than lose them, and say so.
+          if (notes) {
+            try {
+              const Component = await compileToComponent(source, plugins, "md");
+              warn(
+                `The notes are not valid MDX (${err instanceof Error ? err.message.split("\n")[0] : String(err)}); they were read as plain Markdown.`,
+              );
+              return { default: Component } as SlideModule;
+            } catch {
+              /* fall through to the error below */
+            }
+          }
           const message = err instanceof Error ? err.message : String(err);
           push({ message, file: s.source.file, line: lineOf(err, s.source.line), slide: i });
           return { default: errorSlide(message, where) } as SlideModule;
@@ -226,7 +273,7 @@ export async function compileDeck(
       };
       const [slide, notes] = await Promise.all([
         build(s.content, slideTerms(s)),
-        s.notes ? build(s.notes, null) : Promise.resolve(null),
+        s.notes ? build(s.notes, null, true) : Promise.resolve(null),
       ]);
       let magic: ReturnType<typeof magicMoveData> | null = null;
       if (s.magic.length) {
@@ -261,7 +308,12 @@ export async function compileDeck(
   );
 
   return {
-    manifest: { headmatter: prepared.headmatter, slides, glossary: glossary.entries },
+    manifest: {
+      headmatter: manifestHeadmatter(prepared.headmatter, options),
+      slides,
+      glossary: glossary.entries,
+      styles: prepared.styles,
+    },
     diagnostics,
     missing: [...missing],
     ok: !diagnostics.some((d) => d.severity === "error"),

@@ -50,6 +50,13 @@ export {
 } from "./react/hooks.ts";
 export { SlideFrame, loadSlide } from "./react/SlideFrame.tsx";
 export { BackgroundLayer, registerBackground, backgroundComponent } from "./react/Backgrounds.tsx";
+export {
+  type TransitionDefinition,
+  type TransitionHalves,
+  BUILTIN_TRANSITIONS,
+  registerTransition,
+  transitionNames,
+} from "./core/transitions.ts";
 export { LAYOUTS, type LayoutProps } from "./react/layouts.tsx";
 export * from "./components/index.ts";
 export {

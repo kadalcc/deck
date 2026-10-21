@@ -1,5 +1,6 @@
 export { After, Click, Clicks, Fragment, Li, Ol, Ul } from "./Click.tsx";
 export { Code, MagicMove } from "./Code.tsx";
+export { KatexLines } from "./KatexLines.tsx";
 export {
   Absolute,
   Anchor,

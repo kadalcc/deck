@@ -19,8 +19,18 @@ import { parseCodeMeta, serialiseSteps } from "./code-meta.ts";
 import { type MagicMoveBlock, findMagicMoves } from "./magic-move.ts";
 import { rehypeDeckCode } from "./rehype-code.ts";
 import { rehypeGlossary } from "./rehype-glossary.ts";
+import { remarkDeckFences } from "./remark-fences.ts";
+import { rehypeAutoRuby } from "./rehype-ruby.ts";
+import {
+  type KatexOptions,
+  type PluggableList,
+  freshKatex,
+  slideDefaults,
+  withDefaults,
+} from "./setup.ts";
+import { deckStylesheet } from "./slide-style.ts";
 import { applySlots } from "./slots.ts";
-import { type RawSlide, type SplitOptions, splitDeck } from "./split.ts";
+import { type Frontmatter, type RawSlide, type SplitOptions, splitDeck } from "./split.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -38,16 +48,39 @@ export type PreparedSlide = RawSlide & { magic: MagicMoveBlock[] };
 export interface PreparedDeck {
   headmatter: Record<string, unknown>;
   slides: PreparedSlide[];
+  /** Every slide's `<style>` blocks as one stylesheet, scoped per slide ("" without any). */
+  styles: string;
 }
 
-/** Split, then apply `::slot::` markers and lift magic-move blocks out of every slide. */
-export function prepareDeck(text: string, options: SplitOptions): PreparedDeck {
+export interface PrepareOptions extends SplitOptions {
+  /**
+   * Slide defaults beneath the headmatter's `defaults:` — a theme's (`kadal.theme.defaults`).
+   * Several layers apply in order; the deck's own `defaults:` and each slide's keys win.
+   */
+  defaults?: Frontmatter | Array<Frontmatter | null | undefined> | null;
+  /** Drop every slide's notes (`--without-notes`). */
+  withoutNotes?: boolean;
+}
+
+/**
+ * Split, then give every slide the deck's `defaults`, apply `::slot::` markers and lift
+ * magic-move blocks out of every slide.
+ */
+export function prepareDeck(text: string, options: PrepareOptions): PreparedDeck {
   const split = splitDeck(text, options);
+  const layers = Array.isArray(options.defaults) ? options.defaults : [options.defaults];
+  const defaults = slideDefaults(split.headmatter, ...layers);
   const slides = split.slides.map((s) => {
     const { text: content, blocks } = findMagicMoves(applySlots(s.content));
-    return { ...s, content, magic: blocks };
+    return {
+      ...s,
+      frontmatter: withDefaults(s.frontmatter, defaults),
+      notes: options.withoutNotes ? null : s.notes,
+      content,
+      magic: blocks,
+    };
   });
-  return { headmatter: split.headmatter, slides };
+  return { headmatter: split.headmatter, slides, styles: deckStylesheet(slides) };
 }
 
 export interface DeckGlossary {
@@ -90,6 +123,16 @@ export interface MdxPipelineOptions {
   terms: unknown;
   math: (tex: string) => string;
   warn: (message: string) => void;
+  /** KaTeX options (the deck's `katex:` over the setup's); copied for every compile. */
+  katex?: KatexOptions;
+  /** The headmatter's `plantUmlServer`, for ```plantuml fences. */
+  plantUmlServer?: string;
+  /** `notesAutoRuby` (notes only: pass it when compiling notes). */
+  ruby?: Record<string, string> | null;
+  /** The deck's own remark plugins, after GFM and maths, before the deck's fences. */
+  remarkPlugins?: PluggableList;
+  /** The deck's own rehype plugins, after everything of the engine's. */
+  rehypePlugins?: PluggableList;
 }
 
 /** The remark and rehype passes every slide (and every note) compiles with. */
@@ -123,11 +166,31 @@ export function mdxPlugins(
           ] as [typeof rehypeGlossary, Parameters<typeof rehypeGlossary>[0]],
         ];
   return {
-    remarkPlugins: [remarkGfm, remarkMath],
+    remarkPlugins: [
+      remarkGfm,
+      remarkMath,
+      ...(o.remarkPlugins ?? []),
+      [
+        remarkDeckFences,
+        {
+          plantUmlServer: o.plantUmlServer,
+          warn: (m: string, line?: number) => o.warn(line ? `line ${line}: ${m}` : m),
+        },
+      ],
+    ],
     rehypePlugins: [
-      rehypeKatex,
+      [rehypeKatex, freshKatex(o.katex ?? {})],
       [rehypeDeckCode, { highlighter: o.highlighter, themes: o.themes }],
       ...glossaryPass,
+      ...(o.ruby
+        ? [
+            [rehypeAutoRuby, { ruby: o.ruby }] as [
+              typeof rehypeAutoRuby,
+              { ruby: Record<string, string> },
+            ],
+          ]
+        : []),
+      ...(o.rehypePlugins ?? []),
     ],
   };
 }

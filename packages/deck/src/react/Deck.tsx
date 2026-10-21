@@ -542,6 +542,8 @@ export function Deck({
   return (
     <DeckContext.Provider value={runtime}>
       <DeckRoot>
+        {/* Every slide's own <style>, scoped to it (compiler/slide-style.ts): one sheet, every view. */}
+        {manifest.styles ? <style data-deck-slide-styles="">{manifest.styles}</style> : null}
         {wrapped}
         {/* A picture of a slide for a host's lists (export.thumbnail); nothing until one is asked for. */}
         {mode !== "print" && mode !== "remote" ? <ThumbnailHost /> : null}
