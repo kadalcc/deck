@@ -1,0 +1,856 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Crayon — a playful pastel theme for workshops and classrooms. Fredoka for headings, Nunito for
+   text, Fira Code for code; cream paper and plum ink, six pastels, chunky ink outlines and
+   offset shadows that look like paper cut-outs stuck to the page. Callouts are stickers, a
+   blockquote is a speech bubble, list bullets are coloured dots.
+
+   The shadows are solid offsets, never blurred, so a printed page and a PDF look the same as the
+   screen. Stickers keep their pastel and their ink in the dark scheme: a sticker is a sticker.
+   Scoped under .theme-crayon; dark is .theme-crayon[data-color-scheme="dark"].
+   themeConfig: `tilt: false` (--theme-tilt: 0) straightens the stickers; colours: `accent`,
+   `accentDark` (--theme-accent, --theme-accent-dark).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-crayon {
+  --crayon-ink: #2b2340;
+  --crayon-pink: #ffd3e2;
+  --crayon-mint: #c6f1da;
+  --crayon-sky: #cfe5ff;
+  --crayon-butter: #fff0a8;
+  --crayon-lilac: #e6dcff;
+  --crayon-peach: #ffd9c2;
+  --crayon-tilt: calc(var(--theme-tilt, 1) * 1deg);
+  --crayon-outline: 3px solid var(--crayon-ink);
+  --crayon-lift: 5px 5px 0 var(--crayon-ink);
+  --crayon-card: #ffffff;
+  --deck-bg: #fff8ef;
+  --deck-fg: #2b2340;
+  --deck-muted: #605676;
+  --deck-accent: var(--theme-accent, #c62f6b);
+  --deck-accent-2: #2f63c9;
+  --deck-surface: #ffffff;
+  --deck-border: rgba(43, 35, 64, 0.2);
+  --deck-live: var(--deck-accent);
+  --deck-controls-color: var(--deck-accent);
+  --crayon-ground:
+    radial-gradient(circle at 100% 0%, rgba(255, 211, 226, 0.6) 0 7%, transparent 7.1%),
+    radial-gradient(circle at 0% 100%, rgba(198, 241, 218, 0.6) 0 9%, transparent 9.1%),
+    radial-gradient(rgba(43, 35, 64, 0.07) 1.2px, transparent 1.4px) 0 0 / 28px 28px,
+    var(--deck-bg);
+  --deck-heading-font: "Fredoka", "Baloo 2", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  --deck-body-font: "Nunito", ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+  --deck-mono-font: "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 35px;
+  --deck-code-bg: #ffffff;
+  --deck-code-fg: #4c4f69;
+  --deck-code-active: rgba(255, 240, 168, 0.75);
+  --deck-radius: 22px;
+  --deck-pad: 88px;
+  --deck-transition: 520ms;
+}
+.theme-crayon[data-color-scheme="dark"] {
+  --crayon-accent-lifted: color-mix(in oklab, var(--theme-accent) 55%, white);
+  /* outlines and shadows go a shade darker than the page, so cut-outs still stand off it */
+  --crayon-shadow-ink: #0d0a16;
+  --crayon-outline: 3px solid #0d0a16;
+  --crayon-lift: 5px 5px 0 #0d0a16;
+  --crayon-card: #2a2440;
+  --deck-bg: #1f1a2e;
+  --deck-fg: #f7f1ff;
+  --deck-muted: #c2b8dc;
+  --deck-accent: var(--theme-accent-dark, var(--crayon-accent-lifted, #ff9cc2));
+  --deck-accent-2: #8fc1ff;
+  --deck-surface: #2a2440;
+  --deck-border: rgba(247, 241, 255, 0.18);
+  --deck-live: var(--deck-accent);
+  --crayon-ground:
+    radial-gradient(circle at 100% 0%, rgba(255, 156, 194, 0.14) 0 7%, transparent 7.1%),
+    radial-gradient(circle at 0% 100%, rgba(143, 193, 255, 0.14) 0 9%, transparent 9.1%),
+    radial-gradient(rgba(247, 241, 255, 0.07) 1.2px, transparent 1.4px) 0 0 / 28px 28px,
+    var(--deck-bg);
+  --deck-code-bg: #24273a;
+  --deck-code-fg: #cad3f5;
+  --deck-code-active: rgba(255, 240, 168, 0.14);
+  color-scheme: dark;
+}
+
+/* ── the page ──────────────────────────────────────────────────────────── */
+.theme-crayon :is(
+    .deck-backgrounds,
+    .deck-print-page,
+    .deck-overview-tile,
+    .deck-scroll-sticky,
+    .deck-thumbnail-capture
+  ),
+.theme-crayon .deck-background[data-color-scheme],
+.theme-crayon.deck-background[data-color-scheme] {
+  background: var(--crayon-ground);
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-crayon .deck-slide {
+  line-height: 1.5;
+}
+.theme-crayon .deck-slide :is(h1, h2, h3, h4) {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+}
+.theme-crayon .deck-slide h1 {
+  font-size: 3em;
+}
+.theme-crayon .deck-slide h2 {
+  font-size: 1.9em;
+  margin-bottom: 0.6em;
+  text-decoration: underline wavy var(--deck-accent) 0.07em;
+  text-underline-offset: 0.26em;
+  text-decoration-skip-ink: none;
+}
+.theme-crayon .deck-slide h3 {
+  font-size: 1.2em;
+  color: var(--deck-accent);
+}
+.theme-crayon .deck-slide h4 {
+  display: inline-block;
+  width: fit-content;
+  padding: 0.25em 0.8em;
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  border: 2px solid var(--crayon-ink);
+  border-radius: 999px;
+  transform: rotate(calc(var(--crayon-tilt) * -2));
+}
+.theme-crayon .deck-layout-default > :is(p, ul, ol) {
+  max-width: 36em;
+}
+.theme-crayon .deck-slide ul {
+  list-style: none;
+  padding-inline-start: 1.25em;
+}
+.theme-crayon .deck-slide ul > li {
+  position: relative;
+}
+.theme-crayon .deck-slide ul > li::before {
+  content: "";
+  position: absolute;
+  left: -1.15em;
+  top: 0.38em;
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 50%;
+  background: var(--crayon-pink);
+  border: 2px solid var(--crayon-ink);
+  box-sizing: border-box;
+}
+.theme-crayon .deck-slide ul > li:nth-child(4n + 2)::before {
+  background: var(--crayon-mint);
+}
+.theme-crayon .deck-slide ul > li:nth-child(4n + 3)::before {
+  background: var(--crayon-sky);
+}
+.theme-crayon .deck-slide ul > li:nth-child(4n + 4)::before {
+  background: var(--crayon-butter);
+}
+.theme-crayon .deck-slide ul ul > li::before {
+  width: 0.45em;
+  height: 0.45em;
+  top: 0.5em;
+  left: -1em;
+  background: var(--crayon-lilac);
+}
+.theme-crayon .deck-slide ol > li::marker {
+  font-family: var(--deck-heading-font);
+  font-weight: 600;
+  color: var(--deck-accent);
+}
+.theme-crayon .deck-slide strong {
+  font-weight: 800;
+}
+.theme-crayon .deck-slide em {
+  font-style: normal;
+  background: linear-gradient(transparent 55%, var(--crayon-butter) 55% 92%, transparent 92%);
+  color: var(--crayon-ink);
+  padding: 0 0.1em;
+}
+.theme-crayon[data-color-scheme="dark"] .deck-slide em {
+  background: linear-gradient(transparent 55%, rgba(255, 240, 168, 0.35) 55% 92%, transparent 92%);
+  color: inherit;
+}
+.theme-crayon .deck-slide a {
+  color: var(--deck-accent-2);
+  font-weight: 700;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.18em;
+}
+/* a blockquote is a speech bubble */
+.theme-crayon .deck-slide blockquote {
+  position: relative;
+  margin: 0.6em 0 1em;
+  padding: 0.6em 0.9em;
+  border: var(--crayon-outline);
+  border-radius: var(--deck-radius);
+  background: var(--crayon-card);
+  color: var(--deck-fg);
+  font-weight: 600;
+  box-shadow: var(--crayon-lift);
+}
+.theme-crayon .deck-slide blockquote::after {
+  content: "";
+  position: absolute;
+  left: 1.4em;
+  bottom: -0.62em;
+  width: 0.9em;
+  height: 0.9em;
+  background: var(--crayon-card);
+  border-right: var(--crayon-outline);
+  border-bottom: var(--crayon-outline);
+  transform: rotate(45deg) skew(10deg, 10deg);
+}
+.theme-crayon .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+.theme-crayon .deck-slide hr {
+  border: 0;
+  height: 0.5em;
+  margin: 0.8em 0;
+  background: radial-gradient(circle, var(--deck-accent) 0.12em, transparent 0.14em) 0 50% / 1em 100%
+    repeat-x;
+  opacity: 0.6;
+}
+.theme-crayon .deck-slide table {
+  font-size: 0.74em;
+  border: var(--crayon-outline);
+  border-radius: 18px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: var(--crayon-card);
+  box-shadow: var(--crayon-lift);
+}
+.theme-crayon .deck-slide th {
+  font-family: var(--deck-heading-font);
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  border-bottom: var(--crayon-outline);
+}
+.theme-crayon .deck-slide :is(th, td) {
+  padding: 0.5em 0.9em;
+}
+.theme-crayon .deck-slide tbody tr:last-child td {
+  border-bottom: 0;
+}
+.theme-crayon .deck-slide :not(pre) > code {
+  font-size: 0.8em;
+  padding: 0.1em 0.4em;
+  border-radius: 8px;
+  color: var(--crayon-ink);
+  background: var(--crayon-lilac);
+  border: 2px solid var(--crayon-ink);
+}
+.theme-crayon .deck-kbd {
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  border: 2px solid var(--crayon-ink);
+  border-bottom-width: 4px;
+  border-radius: 8px;
+}
+.theme-crayon .deck-slide :is(img, video) {
+  border-radius: var(--deck-radius);
+}
+
+/* ── code ──────────────────────────────────────────────────────────────── */
+.theme-crayon .deck-code-block {
+  border: var(--crayon-outline);
+  border-radius: var(--deck-radius);
+  box-shadow: var(--crayon-lift);
+}
+.theme-crayon .deck-code-title {
+  font: 600 0.5em var(--deck-heading-font);
+  letter-spacing: 0.02em;
+  color: var(--crayon-ink);
+  background: var(--crayon-sky);
+  border-bottom: var(--crayon-outline);
+  padding: 0.6em 1.2em;
+}
+.theme-crayon .deck-code-title-dot {
+  width: 0.85em;
+  height: 0.85em;
+  background: var(--crayon-pink);
+  border: 2px solid var(--crayon-ink);
+  box-sizing: border-box;
+}
+.theme-crayon pre.deck-code,
+.theme-crayon .shiki-magic-move-wrap {
+  font-size: 0.58em;
+  line-height: 1.7;
+}
+.theme-crayon pre.deck-code .line.is-active {
+  box-shadow: inset 0.3em 0 0 var(--deck-accent);
+}
+.theme-crayon pre.deck-code .line.is-dim {
+  opacity: 0.35;
+}
+
+/* ── components: stickers ──────────────────────────────────────────────── */
+.theme-crayon .deck-callout {
+  position: relative;
+  padding: 0.7em 1em;
+  border: var(--crayon-outline);
+  border-radius: var(--deck-radius);
+  background: var(--crayon-sticker, var(--crayon-sky));
+  color: var(--crayon-ink);
+  box-shadow: var(--crayon-lift);
+  font-size: 0.82em;
+  font-weight: 600;
+  transform: rotate(calc(var(--crayon-tilt) * -0.8));
+}
+.theme-crayon .deck-callout.kind-tip {
+  --crayon-sticker: var(--crayon-mint);
+  transform: rotate(calc(var(--crayon-tilt) * 0.9));
+}
+.theme-crayon .deck-callout.kind-warn {
+  --crayon-sticker: var(--crayon-butter);
+  transform: rotate(calc(var(--crayon-tilt) * -0.5));
+}
+.theme-crayon .deck-callout.kind-danger {
+  --crayon-sticker: var(--crayon-pink);
+  transform: rotate(calc(var(--crayon-tilt) * 1.1));
+}
+.theme-crayon .deck-callout.kind-note {
+  --crayon-sticker: var(--crayon-lilac);
+}
+.theme-crayon .deck-callout-title {
+  font-family: var(--deck-heading-font);
+  font-size: 1.05em;
+  font-weight: 600;
+  margin-bottom: 0.2em;
+}
+.theme-crayon .deck-callout :is(a, code) {
+  color: var(--crayon-ink);
+}
+.theme-crayon .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-crayon .deck-badge {
+  font-family: var(--deck-heading-font);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--crayon-ink);
+  background: var(--crayon-sky);
+  border: 2px solid var(--crayon-ink);
+}
+.theme-crayon .deck-badge.tone-accent {
+  color: var(--crayon-ink);
+  background: var(--crayon-pink);
+  border-color: var(--crayon-ink);
+}
+.theme-crayon .deck-badge.tone-good {
+  color: var(--crayon-ink);
+  background: var(--crayon-mint);
+  border-color: var(--crayon-ink);
+}
+.theme-crayon .deck-badge.tone-warn {
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  border-color: var(--crayon-ink);
+}
+.theme-crayon .deck-badge.tone-bad {
+  color: var(--crayon-ink);
+  background: var(--crayon-peach);
+  border-color: var(--crayon-ink);
+}
+.theme-crayon .deck-toc li {
+  margin: 0.25em 0;
+}
+.theme-crayon .deck-toc li.level-1 > a {
+  display: inline-block;
+  padding: 0.1em 0.7em;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.theme-crayon .deck-toc li.is-current > a {
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  border-color: var(--crayon-ink);
+}
+.theme-crayon .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 1.6em;
+}
+.theme-crayon .deck-mark {
+  --mark-color: var(--deck-accent);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-crayon .deck-progress {
+  height: 7px;
+  background: transparent;
+}
+.theme-crayon .deck-progress span {
+  background: repeating-linear-gradient(
+    90deg,
+    #ff8fb5 0 24px,
+    #7fd6a6 24px 48px,
+    #7fb6ff 48px 72px,
+    #ffd84d 72px 96px
+  );
+  border-radius: 0 999px 999px 0;
+}
+.theme-crayon .deck-slide-number {
+  font: 700 14px var(--deck-heading-font);
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  border: 2px solid var(--crayon-ink);
+  border-radius: 999px;
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+.theme-crayon .deck-layout-cover {
+  justify-content: center;
+  align-items: flex-start;
+}
+.theme-crayon .deck-layout-cover h1 {
+  font-size: 4.2em;
+  max-width: 12ch;
+  margin-bottom: 0.3em;
+}
+.theme-crayon .deck-layout-cover > p {
+  max-width: 28em;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--deck-muted);
+}
+/* the cover's cut-outs, a sun and a blob: on the slide rather than the layout, so the auto-fit
+   never counts them as the layout's overflow */
+.theme-crayon .deck-slide.layout-cover::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--deck-pad) * 0.6);
+  right: calc(var(--deck-pad) * 1.4);
+  width: 4.6em;
+  height: 4.6em;
+  border-radius: 50%;
+  background: var(--crayon-butter);
+  border: var(--crayon-outline);
+  box-shadow: var(--crayon-lift);
+}
+.theme-crayon .deck-slide.layout-cover::after {
+  content: "";
+  position: absolute;
+  right: calc(var(--deck-pad) + 3.6em);
+  bottom: calc(var(--deck-pad) * 1.1);
+  width: 6.4em;
+  height: 3.4em;
+  border-radius: 58% 42% 55% 45% / 60% 50% 50% 40%;
+  background: var(--crayon-mint);
+  border: var(--crayon-outline);
+  box-shadow: var(--crayon-lift);
+  transform: rotate(calc(var(--crayon-tilt) * -8));
+}
+.theme-crayon .deck-layout-intro {
+  align-items: flex-start;
+}
+.theme-crayon .deck-layout-intro h1 {
+  font-size: 3em;
+}
+.theme-crayon .deck-layout-intro > p {
+  max-width: 32em;
+  color: var(--deck-muted);
+}
+/* a section title is a big sticker */
+.theme-crayon .deck-layout-section {
+  align-items: flex-start;
+}
+.theme-crayon .deck-layout-section :is(h1, h2) {
+  font-size: 3.2em;
+  max-width: 15ch;
+  padding: 0.25em 0.55em 0.3em;
+  color: var(--crayon-ink);
+  background: var(--crayon-pink);
+  border: 4px solid var(--crayon-ink);
+  border-radius: 28px;
+  box-shadow: 8px 8px 0 var(--crayon-shadow-ink, var(--crayon-ink));
+  transform: rotate(calc(var(--crayon-tilt) * -1.5));
+  text-decoration: none;
+}
+.theme-crayon .deck-layout-section > p {
+  margin-top: 0.6em;
+  max-width: 30em;
+  font-weight: 600;
+  color: var(--deck-muted);
+}
+.theme-crayon .deck-layout-end :is(h1, h2) {
+  font-size: 3.6em;
+}
+.theme-crayon .deck-layout-end > p {
+  font-weight: 600;
+  color: var(--deck-muted);
+}
+.theme-crayon .deck-layout-end::before {
+  content: "";
+  width: 2.6em;
+  height: 2.6em;
+  margin-bottom: 0.4em;
+  border-radius: 50%;
+  border: var(--crayon-outline);
+  box-shadow: var(--crayon-lift);
+  background:
+    radial-gradient(circle at 35% 40%, var(--crayon-ink) 0 0.16em, transparent 0.17em),
+    radial-gradient(circle at 65% 40%, var(--crayon-ink) 0 0.16em, transparent 0.17em),
+    radial-gradient(ellipse 0.7em 0.45em at 50% 62%, var(--crayon-ink) 0 98%, transparent 100%),
+    var(--crayon-butter);
+}
+/* a fact is a number in a round sticker */
+.theme-crayon .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  display: grid;
+  place-items: center;
+  width: 3.4em;
+  height: 3.4em;
+  margin-bottom: 0.25em;
+  border-radius: 50%;
+  font-family: var(--deck-heading-font);
+  font-size: 2.2em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--crayon-ink);
+  background: var(--crayon-mint);
+  border: 4px solid var(--crayon-ink);
+  box-shadow: 8px 8px 0 var(--crayon-shadow-ink, var(--crayon-ink));
+  transform: rotate(calc(var(--crayon-tilt) * 4));
+}
+.theme-crayon .deck-layout-fact > :not(:first-child) {
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--deck-muted);
+  max-width: 26em;
+}
+.theme-crayon .deck-layout-quote {
+  padding-inline: 10%;
+  font-style: normal;
+  font-size: 1.2em;
+}
+.theme-crayon .deck-layout-quote blockquote {
+  font-size: 1.05em;
+  padding: 0.8em 1.1em;
+}
+.theme-crayon .deck-layout-quote > p {
+  margin-top: 0.3em;
+  padding-inline-start: 1.2em;
+  font-size: 0.7em;
+  font-weight: 700;
+  color: var(--deck-muted);
+}
+.theme-crayon .deck-layout-statement :is(h1, h2) {
+  font-size: 3em;
+  max-width: 18ch;
+  margin-inline: auto;
+  text-decoration: none;
+}
+.theme-crayon .deck-layout-full {
+  padding: 0;
+}
+.theme-crayon .deck-layout-two-cols {
+  column-gap: 2.2em;
+}
+.theme-crayon .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) > :first-child {
+  margin-top: 0;
+}
+.theme-crayon .deck-layout-two-cols-header {
+  column-gap: 1.4em;
+  row-gap: 0.8em;
+}
+.theme-crayon .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding: 0.7em 1em;
+  border: var(--crayon-outline);
+  border-radius: var(--deck-radius);
+  color: var(--crayon-ink);
+  background: var(--crayon-peach);
+  box-shadow: var(--crayon-lift);
+  transform: rotate(calc(var(--crayon-tilt) * -0.7));
+}
+.theme-crayon .deck-layout-two-cols-header > .deck-slot-right {
+  background: var(--crayon-sky);
+  transform: rotate(calc(var(--crayon-tilt) * 0.7));
+}
+.theme-crayon .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) :is(h3, code) {
+  color: var(--crayon-ink);
+}
+.theme-crayon .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) > :last-child {
+  margin-bottom: 0;
+}
+.theme-crayon .deck-layout-image .deck-layout-image-content {
+  background: linear-gradient(180deg, transparent, rgba(31, 26, 46, 0.78));
+}
+.theme-crayon .deck-layout-image .deck-layout-image-content h2 {
+  text-decoration-color: var(--crayon-butter);
+}
+.theme-crayon :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: calc(var(--deck-pad) * 0.9);
+}
+.theme-crayon .deck-layout-image-left .deck-layout-image-pane,
+.theme-crayon .deck-layout-image-right .deck-layout-image-pane {
+  margin: calc(var(--deck-pad) * 0.5);
+  border: 4px solid var(--crayon-ink);
+  border-radius: 28px;
+  box-shadow: 8px 8px 0 var(--crayon-shadow-ink, var(--crayon-ink));
+  min-height: 0;
+}
+.theme-crayon .deck-layout-image-pane {
+  background-color: var(--crayon-sky);
+}
+.theme-crayon :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border: 4px solid var(--crayon-ink);
+  border-radius: 24px;
+  box-shadow: 8px 8px 0 var(--crayon-shadow-ink, var(--crayon-ink));
+}
+.theme-crayon :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── the theme's own layouts and components (index.tsx) ───────────────── */
+/* activity: a label, a time, and the steps as numbered stickers */
+.theme-crayon .deck-layout-activity {
+  justify-content: flex-start;
+}
+.theme-crayon .crayon-activity-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 0.5em;
+}
+.theme-crayon .crayon-activity-tag,
+.theme-crayon .crayon-activity-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.2em 0.75em;
+  font: 600 0.62em var(--deck-heading-font);
+  color: var(--crayon-ink);
+  border: 2px solid var(--crayon-ink);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--crayon-shadow-ink, var(--crayon-ink));
+}
+.theme-crayon .crayon-activity-tag {
+  background: var(--crayon-pink);
+  transform: rotate(calc(var(--crayon-tilt) * -2));
+}
+.theme-crayon .crayon-activity-time {
+  background: var(--crayon-butter);
+}
+.theme-crayon .deck-layout-activity ol {
+  display: grid;
+  grid-template-columns: repeat(var(--crayon-steps, 3), minmax(0, 1fr));
+  gap: 1em;
+  list-style: none;
+  padding: 0;
+  margin: 0.3em 0 0;
+  counter-reset: crayon-step;
+}
+.theme-crayon .deck-layout-activity ol > li {
+  counter-increment: crayon-step;
+  position: relative;
+  margin: 0;
+  padding: 1.5em 0.9em 0.8em;
+  border: var(--crayon-outline);
+  border-radius: var(--deck-radius);
+  color: var(--crayon-ink);
+  background: var(--crayon-mint);
+  box-shadow: var(--crayon-lift);
+  font-size: 0.82em;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.theme-crayon .deck-layout-activity ol > li:nth-child(3n + 2) {
+  background: var(--crayon-sky);
+  transform: rotate(calc(var(--crayon-tilt) * 1));
+}
+.theme-crayon .deck-layout-activity ol > li:nth-child(3n + 3) {
+  background: var(--crayon-lilac);
+  transform: rotate(calc(var(--crayon-tilt) * -1));
+}
+.theme-crayon .deck-layout-activity ol > li::before {
+  content: counter(crayon-step);
+  position: absolute;
+  top: -0.75em;
+  left: 0.7em;
+  display: grid;
+  place-items: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 50%;
+  font: 600 1em var(--deck-heading-font);
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  border: var(--crayon-outline);
+}
+.theme-crayon .deck-layout-activity ol > li strong {
+  display: block;
+  font-family: var(--deck-heading-font);
+  font-size: 1.15em;
+  font-weight: 600;
+}
+.theme-crayon .deck-layout-activity ol > li :is(code, a) {
+  color: var(--crayon-ink);
+}
+/* cards: the slide's list as a grid of pastel cards */
+.theme-crayon .deck-layout-cards ul {
+  display: grid;
+  grid-template-columns: repeat(var(--crayon-cols, 3), minmax(0, 1fr));
+  gap: 1em 1.1em;
+  list-style: none;
+  padding: 0;
+  margin: 0.3em 0 0;
+}
+.theme-crayon .deck-layout-cards ul > li {
+  margin: 0;
+  padding: 0.7em 0.9em;
+  border: var(--crayon-outline);
+  border-radius: var(--deck-radius);
+  color: var(--crayon-ink);
+  background: var(--crayon-peach);
+  box-shadow: var(--crayon-lift);
+  font-size: 0.82em;
+  font-weight: 600;
+}
+.theme-crayon .deck-layout-cards ul > li::before {
+  display: none;
+}
+.theme-crayon .deck-layout-cards ul > li:nth-child(6n + 2) {
+  background: var(--crayon-mint);
+}
+.theme-crayon .deck-layout-cards ul > li:nth-child(6n + 3) {
+  background: var(--crayon-sky);
+}
+.theme-crayon .deck-layout-cards ul > li:nth-child(6n + 4) {
+  background: var(--crayon-butter);
+}
+.theme-crayon .deck-layout-cards ul > li:nth-child(6n + 5) {
+  background: var(--crayon-lilac);
+}
+.theme-crayon .deck-layout-cards ul > li:nth-child(6n + 6) {
+  background: var(--crayon-pink);
+}
+.theme-crayon .deck-layout-cards ul > li:nth-child(odd) {
+  transform: rotate(calc(var(--crayon-tilt) * -0.8));
+}
+.theme-crayon .deck-layout-cards ul > li:nth-child(even) {
+  transform: rotate(calc(var(--crayon-tilt) * 0.8));
+}
+.theme-crayon .deck-layout-cards ul > li strong {
+  display: block;
+  font-family: var(--deck-heading-font);
+  font-size: 1.15em;
+  font-weight: 600;
+}
+.theme-crayon .deck-layout-cards ul > li :is(code, a) {
+  color: var(--crayon-ink);
+}
+/* Sticker: any words on a pastel cut-out */
+.theme-crayon .crayon-sticker {
+  display: inline-block;
+  /* a sticker on a line of its own (MDX makes it a block) keeps its own width */
+  align-self: flex-start;
+  width: fit-content;
+  margin: 0 0.4em 0.5em 0;
+  padding: 0.35em 0.8em;
+  border: var(--crayon-outline);
+  border-radius: 16px;
+  color: var(--crayon-ink);
+  background: var(--crayon-butter);
+  box-shadow: 4px 4px 0 var(--crayon-shadow-ink, var(--crayon-ink));
+  font-weight: 700;
+  transform: rotate(calc(var(--crayon-tilt) * var(--crayon-turn, -2)));
+}
+.theme-crayon .crayon-sticker.tone-pink {
+  background: var(--crayon-pink);
+}
+.theme-crayon .crayon-sticker.tone-mint {
+  background: var(--crayon-mint);
+}
+.theme-crayon .crayon-sticker.tone-sky {
+  background: var(--crayon-sky);
+}
+.theme-crayon .crayon-sticker.tone-lilac {
+  background: var(--crayon-lilac);
+}
+.theme-crayon .crayon-sticker.tone-peach {
+  background: var(--crayon-peach);
+}
+.theme-crayon .crayon-sticker > :last-child {
+  margin-bottom: 0;
+}
+/* Bubble: a speech bubble with a name */
+.theme-crayon .crayon-bubble {
+  position: relative;
+  margin: 0.4em 0 1.4em;
+  padding: 0.6em 0.95em;
+  max-width: 24em;
+  border: var(--crayon-outline);
+  border-radius: var(--deck-radius);
+  background: var(--crayon-card);
+  box-shadow: var(--crayon-lift);
+  font-weight: 600;
+}
+.theme-crayon .crayon-bubble.is-right {
+  margin-inline-start: auto;
+  background: var(--crayon-sky);
+  color: var(--crayon-ink);
+}
+.theme-crayon .crayon-bubble::after {
+  content: "";
+  position: absolute;
+  left: 1.3em;
+  bottom: -0.62em;
+  width: 0.9em;
+  height: 0.9em;
+  background: inherit;
+  border-right: var(--crayon-outline);
+  border-bottom: var(--crayon-outline);
+  transform: rotate(45deg) skew(10deg, 10deg);
+}
+.theme-crayon .crayon-bubble.is-right::after {
+  left: auto;
+  right: 1.3em;
+}
+.theme-crayon .crayon-bubble-from {
+  position: absolute;
+  bottom: -1.75em;
+  left: 4.4em;
+  font: 600 0.6em var(--deck-heading-font);
+  color: var(--deck-muted);
+}
+.theme-crayon .crayon-bubble.is-right .crayon-bubble-from {
+  left: auto;
+  right: 4.4em;
+}
+.theme-crayon .crayon-bubble > :not(.crayon-bubble-from):last-child,
+.theme-crayon .crayon-bubble > p:last-of-type {
+  margin-bottom: 0;
+}
+
+/* ── narrow screens and stillness ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  .theme-crayon .deck-slide.is-scroll :is(.deck-layout-activity ol, .deck-layout-cards ul) {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-crayon .deck-progress span {
+    transition: none;
+  }
+}
+
+/* centred: the built-in placement, in this theme's rhythm */
+.theme-crayon .deck-layout-center > :is(h1, h2) {
+  margin-bottom: 0.3em;
+}
