@@ -29,6 +29,7 @@ export {
   deckOnlyKeys,
   moveSlide,
   removeSlide,
+  replaceCode,
   setNotes,
   updateHeadmatter,
   updateSlide,
