@@ -40,6 +40,7 @@ export {
   updateSlide,
   writeNotes,
 } from "./edit.ts";
+export { type SlideSource, SourceConflict, readSlideSource, writeSlideSource } from "./edit.ts";
 export {
   type DeckExtensions,
   type Diagnostic,

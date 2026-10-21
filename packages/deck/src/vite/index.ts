@@ -44,6 +44,7 @@ import { monacoInstalled, monacoLangs, monacoModule, setupFile } from "./monaco.
 import { monacoWriteDev } from "./monaco-dev.ts";
 import { loadTwoslash } from "./twoslash.ts";
 import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } from "./notes-dev.ts";
+import { SIDE_EDITOR_DEPS, SOURCE_PATH, sideEditorCode, sourceEndpoint } from "./source-dev.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -406,6 +407,10 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
             "@kadal/deck > shiki/engine/javascript",
           ],
         };
+      // The side editor's CodeMirror (vite/source-dev.ts), pre-bundled so its first opening does
+      // not reload the page.
+      if (env.command === "serve")
+        out.optimizeDeps = { include: [...(out.optimizeDeps?.include ?? []), ...SIDE_EDITOR_DEPS] };
       if (env.command === "serve" && process.env.KADAL_DECK_HTTPS === "1" && !user.server?.https) {
         const { devCertificate } = await import("./https.ts");
         const https = devCertificate(resolve(user.root ?? process.cwd()));
@@ -460,6 +465,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         invalidate();
       };
       notesEndpoint(s, { entry: () => entryPath, base: () => base });
+      sourceEndpoint(s, { entry: () => entryPath, base: () => base });
       s.watcher.on("change", changed);
       s.watcher.on("add", changed);
       s.watcher.on("unlink", changed);
@@ -556,7 +562,9 @@ export const codeRunners = ${runnersFile && existsSync(runnersFile) ? `() => imp
 export const dev = ${building ? "false" : "true"};
 export const notesApi = ${building ? "null" : JSON.stringify(`${base}${NOTES_PATH}`)};
 ${building ? "" : DEV_NOTES}
-export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi };
+export const sourceApi = ${building ? "null" : JSON.stringify(`${base}${SOURCE_PATH}`)};
+export const sideEditor = ${sideEditorCode(building)};
+export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, sourceApi, sideEditor };
 `;
       }
 
