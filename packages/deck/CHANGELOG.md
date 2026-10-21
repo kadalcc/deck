@@ -1,5 +1,27 @@
 # @kadal/deck
 
+## 0.3.6
+
+### Patch Changes
+
+- ebebf60: The ad frame. When the host's override says `ads`, the play view frames the deck's first and last slides:
+  - **On a landscape screen:** the slide keeps its shape at 80% of its usual size, flush top-left. A tall ad takes the right-hand column, a wide ad the bottom row, and a QR code the corner, with no letterboxing.
+  - **On a phone or portrait window:** the slide spans the top and the ads stack below it.
+  - **Controls:** the arrows, slide number and progress bar move inside the slide's area, so none sits over an ad.
+
+  The host answers `GET {api}/decks/{room}/ads` with what to show. Every link is the host's own tracked redirect, and only https links or paths on the host are followed. The engine reports each showing with `POST {api}/decks/{room}/ads/seen`. The frame never appears in the presenter view, the phone remote, the audience page, the overview, or print and its exports. Self-hosted decks have no frame.
+
+- 7b95627: Free-plan watermark. When the host marks a deck as free-plan (the existing `badge` override), every slide carries a small "Made with Kadal Deck" mark in its top-right corner. It is part of the slide, so it scales with it and appears everywhere the slide is drawn: the live deck, the presenter's previews, the overview, thumbnails, and every export made from the print view (PDF, PNG, PPTX). In a PDF the mark stays a link. It replaces the old corner link, which showed only in the play window and was left out of exports. Self-hosted decks, and decks on paid plans, have no mark.
+- 19a5946: The presenter's room panel is now a sidebar with tabs, and redesigned:
+
+  - **Room:** the join QR sits on white with the link under it. The link wraps at its slashes instead of running off the edge, and has a Copy button. Below it: a Live / Connecting / Offline pill, tiles for watching, hands up and reactions, a pace gauge that says which way the audience leans, and reaction chips.
+  - **Questions:** cards with a vote count and icon buttons to mark answered or delete.
+  - **Polls:** cards with Open and Close buttons.
+  - **Empty states:** each tab says what will appear there.
+  - **Narrow columns:** the tabs not shown fold to icons.
+
+  New `deck.panels` registry: a host can add its own tab to the sidebar (`register({ id, title, icon, mount(el) })`, `open(id)`). A panel is mounted the first time its tab is shown and kept through tab switches and folding. deck.kadal.cc uses it for the Copilot, which no longer floats over the presenter view.
+
 ## 0.3.5
 
 ### Patch Changes
