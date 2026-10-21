@@ -16,14 +16,7 @@ import type { Store } from "../core/store.ts";
 import type { GlossaryEntry } from "../glossary/model.ts";
 
 /** Which page of the deck app is showing. */
-export type ViewMode =
-  | "play"
-  | "presenter"
-  | "audience"
-  | "print"
-  | "stats"
-  | "notes"
-  | "remote";
+export type ViewMode = "play" | "presenter" | "audience" | "print" | "stats" | "notes" | "remote";
 
 /** What the lightbox can show; "sketch" is an Excalidraw canvas keyed by its sketch. */
 export type LightboxKind = "image" | "video" | "iframe" | "sketch";
@@ -166,6 +159,21 @@ export interface DeckRuntime {
   terms: Store<TermReveal | null>;
   /** Definitions by id: the deck's glossary, plus every mounted one-off `<Term def>`. */
   glossary: Map<string, GlossaryEntry>;
+  /**
+   * Room the play view keeps clear of the slide, in px from the viewport's right and bottom edges:
+   * the ad frame's (core/ads.ts). The layout fits the slide into what is left.
+   */
+  stageInset: Store<StageInset>;
+}
+
+export interface StageInset {
+  right: number;
+  bottom: number;
+  /**
+   * Whether the controls keep to the slide's area too. They do beside a side frame; under a
+   * stacked one (a phone) they stay along the bottom of the screen, below the ads.
+   */
+  chrome?: boolean;
 }
 
 export const DeckContext = createContext<DeckRuntime | null>(null);

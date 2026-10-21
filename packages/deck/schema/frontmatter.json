@@ -1209,6 +1209,11 @@
           "description": "Show the \"Made with Kadal Deck\" link in the corner (set by the host, see `withHostOverride`).",
           "default": false
         },
+        "ads": {
+          "type": "boolean",
+          "description": "Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them.",
+          "default": false
+        },
         "fonts": {
           "type": "array",
           "description": "Google Fonts families to load, e.g. [\"Inter:wght@400;600\"]."

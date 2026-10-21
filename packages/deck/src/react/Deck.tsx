@@ -35,7 +35,7 @@ import {
 } from "../core/model.ts";
 import * as N from "../core/navigation.ts";
 import { readItem, writeItem } from "../core/storage.ts";
-import { createStore } from "../core/store.ts";
+import { createStore, useStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
 import { createWindowBus, type WindowBus } from "../core/windows.ts";
 import { captureTicket, presenterTicket, withTicket } from "../live/ticket.ts";
@@ -45,10 +45,12 @@ import {
   type DeckActions,
   DeckContext,
   type DeckRuntime,
+  type StageInset,
   type TermReveal,
   type UiState,
   type ViewMode,
 } from "./context.ts";
+import { AdFrame } from "./AdFrame.tsx";
 import { Lightbox } from "./Lightbox.tsx";
 import { NarrationGate } from "./NarrationGate.tsx";
 import { Overview } from "./Overview.tsx";
@@ -258,6 +260,8 @@ export function Deck({
   );
 
   const layout = useMemo(() => createStore<Layout>(computeLayout(config, viewport())), [config]);
+  // What the ad frame takes from the viewport; nothing, unless it is showing (react/AdFrame.tsx).
+  const [stageInset] = useState(() => createStore<StageInset>({ right: 0, bottom: 0 }));
 
   const actions = useMemo<DeckActions>(() => {
     const withTransition = (fn: (s: N.NavState) => N.NavState) => {
@@ -462,6 +466,7 @@ export function Deck({
       projector,
       terms,
       glossary,
+      stageInset,
     }),
     [
       manifest,
@@ -481,6 +486,7 @@ export function Deck({
       projector,
       terms,
       glossary,
+      stageInset,
     ],
   );
 
@@ -552,6 +558,9 @@ function PlayView() {
   const deck = useContextStrict();
   const [scroll, setScroll] = useState(() => deck.ui.get().scroll);
   useEffect(() => deck.ui.subscribe((s) => setScroll(s.scroll)), [deck.ui]);
+  // The controls, the slide number and the progress bar live in the area the slide does: with the
+  // ad frame up it shrinks with the slide, so none of them sits over an ad.
+  const inset = useStore(deck.stageInset);
   return (
     <>
       {scroll ? (
@@ -565,7 +574,13 @@ function PlayView() {
           <Overview />
         </>
       )}
-      <Chrome />
+      <div
+        className="deck-chrome-area"
+        style={inset.chrome === false ? undefined : { right: inset.right, bottom: inset.bottom }}
+      >
+        <Chrome />
+      </div>
+      <AdFrame />
       <NarrationGate />
       <Lightbox />
     </>
@@ -693,7 +708,7 @@ function useDeckEffects(
   wantedAtLoad: ReturnType<typeof parseHash>,
   related: Related,
 ) {
-  const { nav, ui, layout, config, columns, actions, base, mode } = deck;
+  const { nav, ui, layout, config, columns, actions, base, mode, stageInset } = deck;
 
   // Title and fonts.
   useEffect(() => {
@@ -706,10 +721,20 @@ function useDeckEffects(
     return () => link.remove();
   }, [config.title, config.fonts]);
 
-  // Layout: scale to the viewport (or the embedding element).
+  // Layout: scale to the viewport (or the embedding element), less whatever the ad frame keeps.
   useEffect(() => {
-    const measure = () => layout.set(computeLayout(config, viewport()));
+    const measure = () => {
+      const vp = viewport();
+      const inset = stageInset.get();
+      layout.set(
+        computeLayout(config, {
+          width: Math.max(1, vp.width - inset.right),
+          height: Math.max(1, vp.height - inset.bottom),
+        }),
+      );
+    };
     measure();
+    const offInset = stageInset.subscribe(measure);
     window.addEventListener("resize", measure);
     const narrow = () => {
       if (mode !== "play" || !config.scrollActivationWidth || flags.view === "slide") return;
@@ -719,10 +744,11 @@ function useDeckEffects(
     narrow();
     window.addEventListener("resize", narrow);
     return () => {
+      offInset();
       window.removeEventListener("resize", measure);
       window.removeEventListener("resize", narrow);
     };
-  }, [layout, config, ui, mode, flags.view]);
+  }, [layout, config, ui, mode, flags.view, stageInset]);
 
   // Hash ↔ navigation.
   useEffect(() => {

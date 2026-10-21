@@ -157,8 +157,9 @@
 .deck-follow {
   position: absolute;
   z-index: 40;
-  bottom: 26px;
-  left: 50%;
+  /* Above the ad frame's bottom row when it shows (react/AdFrame.tsx sets the variables). */
+  bottom: calc(26px + var(--deck-frame-bottom, 0px));
+  left: calc((100% - var(--deck-frame-right, 0px)) / 2);
   transform: translateX(-50%);
   display: flex;
   gap: 10px;

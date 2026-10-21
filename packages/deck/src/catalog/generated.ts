@@ -253,6 +253,7 @@ export const GENERATED: GeneratedData = {
     {"name":"audienceNotes","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Show every slide's notes to anyone on the audience page (after the talk, for instance)."},
     {"name":"slug","type":{"text":"string","variants":[{"type":"string"}]},"description":"The deck's slug on the host, from the Vite base — decks/<slug>."},
     {"name":"badge","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Show the \"Made with Kadal Deck\" link in the corner (set by the host, see `withHostOverride`)."},
+    {"name":"ads","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them."},
     {"name":"fonts","type":{"text":"string[]","variants":[{"type":"array"}]},"description":"Google Fonts families to load, e.g. [\"Inter:wght@400;600\"]."},
     {"name":"seoMeta","type":{"text":"Record<string, string>","variants":[{"type":"object"}]}},
   ],
