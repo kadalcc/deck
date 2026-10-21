@@ -1787,3 +1787,15 @@ pre.deck-code.has-lines .line::before {
   color: #475569;
   text-align: center;
 }
+
+/* export.thumbnail renders the slide it is asked for here: off-screen, at the deck's own size. */
+.deck-thumbnail-capture {
+  position: fixed;
+  left: -100000px;
+  top: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  font-family: var(--deck-body-font);
+}

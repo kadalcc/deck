@@ -4,7 +4,12 @@ import { type ComponentType, createElement } from "react";
 import * as jsxRuntime from "react/jsx-runtime";
 import type { Highlighter } from "shiki";
 
-import { levelOf, titleOf } from "../compiler/split.ts";
+import {
+  levelOf,
+  titleOf,
+  unclosedSettings,
+  unclosedSettingsMessage,
+} from "../compiler/split.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
 import {
   type DeckGlossary,
@@ -204,6 +209,8 @@ export async function compileDeck(
       const where = `${s.source.file}:${s.source.line}`;
       const warn = (message: string) =>
         push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: i });
+      const loose = unclosedSettings(s.content);
+      if (loose) warn(unclosedSettingsMessage(loose));
       const build = async (source: string, terms: unknown): Promise<SlideModule> => {
         try {
           const Component = await compileToComponent(

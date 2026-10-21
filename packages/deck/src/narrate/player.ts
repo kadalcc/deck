@@ -5,6 +5,7 @@ import type { Engine } from "./engine.ts";
 import {
   type NarratableSlide,
   type SilentPolicy,
+  segmentPartIndexes,
   segmentPartsAt,
   silentMs,
   slideSegments,
@@ -37,6 +38,12 @@ export interface NarrationState {
   /** The flat slide index and click step being narrated. */
   slide: number;
   segment: number;
+  /**
+   * The segment (index among the slide's segments) being said, or last said, on this step; -1
+   * before the step has said anything. On a slide's last step several segments are said in turn,
+   * so the click alone does not say where in the notes the voice is.
+   */
+  part: number;
   rate: number;
   volume: number;
   muted: boolean;
@@ -121,6 +128,7 @@ export class Narrator {
       phase: "idle",
       slide: at.index,
       segment: at.click,
+      part: -1,
       rate: options.rate,
       volume: options.volume ?? 1,
       muted: options.muted ?? false,
@@ -155,7 +163,18 @@ export class Narrator {
     return this.host.now?.() ?? Date.now();
   }
   private set(patch: Partial<NarrationState>) {
-    this.state.update((s) => ({ ...s, ...patch }));
+    // A new step has said nothing yet — and while it gets ready (its click count, its voice) it is
+    // loading, not still in the last step's gap: a stale, finished gap read against the new step
+    // put the timeline at that step's end, and the bar then held there until the step caught up.
+    const moved = ("slide" in patch || "segment" in patch) && !("part" in patch);
+    this.state.update((s) => {
+      const busy = s.phase === "gap" || s.phase === "speaking" || s.phase === "dwell";
+      const ready =
+        moved && busy && !("phase" in patch)
+          ? { phase: "loading" as const, startedAt: this.now, expectedMs: 0 }
+          : {};
+      return { ...s, ...patch, ...(moved ? { part: -1 } : {}), ...ready };
+    });
   }
 
   /** The segments of a slide, as spoken. */
@@ -388,6 +407,7 @@ export class Narrator {
     const { slide, segment } = this.state.get();
     const segs = this.segmentsOf(slide);
     const parts = this.partsAt(slide, segment);
+    const which = segmentPartIndexes(segs, segment, this.clicksOf(slide));
     if (!parts.length) {
       // A silent slide dwells (once, on its first step); a silent step just pauses for the gap.
       const ms =
@@ -400,7 +420,12 @@ export class Narrator {
     }
     for (let i = 0; i < parts.length; i++) {
       const text = parts[i]!;
-      this.set({ phase: "loading", startedAt: this.now, expectedMs: this.host.estimate(text, s0.rate) });
+      this.set({
+        phase: "loading",
+        part: which[i] ?? segment,
+        startedAt: this.now,
+        expectedMs: this.host.estimate(text, s0.rate),
+      });
       let engine: Engine;
       try {
         engine = await this.host.engineFor(text, this.state.get());

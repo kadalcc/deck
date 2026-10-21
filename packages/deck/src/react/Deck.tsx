@@ -56,6 +56,7 @@ import { Stage } from "./Stage.tsx";
 import { useBuiltinCommands } from "./commands.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
+import { ThumbnailHost } from "../export/thumbnail.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -502,7 +503,11 @@ export function Deck({
 
   return (
     <DeckContext.Provider value={runtime}>
-      <DeckRoot>{wrapped}</DeckRoot>
+      <DeckRoot>
+        {wrapped}
+        {/* A picture of a slide for a host's lists (export.thumbnail); nothing until one is asked for. */}
+        {mode !== "print" && mode !== "remote" ? <ThumbnailHost /> : null}
+      </DeckRoot>
     </DeckContext.Provider>
   );
 }

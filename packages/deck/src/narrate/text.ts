@@ -133,6 +133,14 @@ export function segmentPartsAt(segments: string[], click: number, clicks: number
   return one ? [one] : [];
 }
 
+/** Which segments `segmentPartsAt` says, by their index among the slide's segments. */
+export function segmentPartIndexes(segments: string[], click: number, clicks: number): number[] {
+  if (!segments.length) return [];
+  if (click >= clicks)
+    return segments.flatMap((s, i) => (i >= click && s ? [i] : []));
+  return segments[click] ? [click] : [];
+}
+
 /** The same, as one string. */
 export function segmentAt(segments: string[], click: number, clicks: number): string {
   return segmentPartsAt(segments, click, clicks).join(" ");

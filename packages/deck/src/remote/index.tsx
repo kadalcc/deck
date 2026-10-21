@@ -324,8 +324,13 @@ function Console({ link }: { link: RemoteLink }) {
             <ModeButton mode="pen" current={mode} set={setMode} icon="pencil" label="Pen" />
             <ModeButton mode="zoom" current={mode} set={setMode} icon="zoom-in" label="Zoom" />
           </div>
+          <Notes state={state} size={settings.notes} setSize={(notes) => set({ notes })} />
+        </section>
+        <section className="deck-remote-controls">
+          {/* Drawing has no use for holding to point, so the pen's Undo and Clear take that place:
+              the layout does not change between modes and the notes keep their room. */}
           {mode === "pen" ? (
-            <div className="deck-remote-row">
+            <div className="deck-remote-row deck-remote-pen-tools">
               <button type="button" onClick={() => run("draw.undo")}>
                 <Icon name="undo-2" /> Undo
               </button>
@@ -333,11 +338,9 @@ function Console({ link }: { link: RemoteLink }) {
                 <Icon name="eraser" /> Clear
               </button>
             </div>
-          ) : null}
-          <Notes state={state} size={settings.notes} setSize={(notes) => set({ notes })} />
-        </section>
-        <section className="deck-remote-controls">
-          <AirButton link={link} settings={settings} flash={flash} />
+          ) : (
+            <AirButton link={link} settings={settings} flash={flash} />
+          )}
           <div className="deck-remote-nav">
             <button
               type="button"

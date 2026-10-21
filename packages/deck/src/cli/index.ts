@@ -57,6 +57,7 @@ export const HELP = `kadal-deck <command> [options]
   whoami      show the signed-in account and workspace
   publish     build and publish the deck; prints its URL
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
+              --no-thumbnail  skip the picture of slide 1 the host shows in its lists
   narrate     bake the narration: every notes segment spoken by Kokoro into public/narration/
               --voice <id> (default af_heart)  --dtype <fp32|fp16|q8|q4|q4f16>  --force (redo all)
               --setup  install kokoro-js into the deck first (an optional, ~400 MB dependency)
@@ -105,6 +106,7 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     workspace: { kind: "string" },
     title: { kind: "string" },
     host: { kind: "string" },
+    thumbnail: { kind: "boolean" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
   // Mirrors NARRATE_FLAGS in narrate.ts, which is imported only when the command runs.
@@ -561,6 +563,22 @@ export async function publishCommand(
       await runVite(dir, ["build", "--base", base, "--outDir", out, "--emptyOutDir"]);
     },
   });
+  // The picture the host lists the deck by. Never a reason for the publish to fail.
+  let thumbnail = false;
+  if (flags.thumbnail !== false) {
+    const { publishThumbnail } = await import("./thumbnail.ts");
+    const shot = await publishThumbnail({
+      dir,
+      outDir,
+      base: result.deck.base,
+      host,
+      token: creds.token,
+      deckId: result.deck.id,
+      version: result.version,
+    });
+    thumbnail = shot.ok;
+    if (!shot.ok && !json) say(`thumbnail skipped: ${shot.reason}`);
+  }
   if (json)
     emit({
       ok: true,
@@ -571,6 +589,7 @@ export async function publishCommand(
       uploaded: result.uploaded,
       bytes: result.bytes,
       uploadedBytes: result.uploadedBytes,
+      thumbnail,
     });
   else {
     say(

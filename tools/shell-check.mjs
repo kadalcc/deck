@@ -5,11 +5,12 @@
  *   1. published: deck.mdx is fetched and compiled in the page; slides render, keys move, a
  *      command runs, the presenter route loads;
  *   2. preview: inside an editor's iframe, the source posted by the parent compiles and the
- *      shell answers with the outline and no diagnostics.
+ *      shell answers with the outline and no diagnostics; export.thumbnail, asked over the same
+ *      bridge, answers with a real PNG of the slide.
  *
  *   node tools/shell-check.mjs [deck.mdx]     (default examples/starter/deck.mdx; build first)
  */
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -78,6 +79,7 @@ const server = createServer(async (req, res) => {
 });
 await new Promise((r) => server.listen(5411, r));
 
+await mkdir(join(root, "examples/starter/check-output"), { recursive: true });
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -123,6 +125,57 @@ try {
     () => check("preview: a recompile shows the edited slide, not a cached one", true),
     () => check("preview: a recompile shows the edited slide, not a cached one", false),
   );
+  // export.thumbnail through the bridge, as an editor asks for it when it publishes: a PNG of the
+  // asked slide at the asked width, with the slide in it (not one flat colour).
+  const ask = (id, params, seq) =>
+    page.evaluate(
+      ([id, params, seq]) =>
+        new Promise((done) => {
+          const on = (e) => {
+            if (e.data?.type !== "command:result" || e.data.seq !== seq) return;
+            removeEventListener("message", on);
+            done(e.data.result);
+          };
+          addEventListener("message", on);
+          document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "command", id, params, seq }, "*");
+        }),
+      [id, params, seq],
+    );
+  const inspect = (dataUrl) =>
+    page.evaluate(async (src) => {
+      const img = new Image();
+      img.src = src;
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const g = c.getContext("2d");
+      g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data;
+      const colours = new Set();
+      let ink = 0;
+      for (let i = 0; i < d.length; i += 16) {
+        colours.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`);
+        if (Math.abs(d[i] - d[0]) + Math.abs(d[i + 1] - d[1]) + Math.abs(d[i + 2] - d[2]) > 60) ink++;
+      }
+      return { w: c.width, h: c.height, colours: colours.size, ink: ink / (d.length / 16) };
+    }, dataUrl);
+  for (const [i, params] of [[0, {}], [1, { slide: 2, width: 320 }], [2, { slide: 1, width: 5000 }]]) {
+    const t = Date.now();
+    const r = await ask("export.thumbnail", params, 900 + i);
+    const v = r.ok ? r.value : null;
+    const px = v ? await inspect(v.dataUrl) : null;
+    const want = params.width === 320 ? 320 : params.width === 5000 ? 1920 : 640;
+    check(
+      `preview: export.thumbnail ${JSON.stringify(params)} is a PNG of the slide`,
+      !!v && v.type === "image/png" && v.dataUrl.startsWith("data:image/png;base64,") && v.width === want &&
+        px.w === v.width && px.h === v.height && px.colours > 3 && px.ink > 0.002,
+      v ? `${v.width}×${v.height}, ${px.colours} colours, ${(px.ink * 100).toFixed(1)}% ink, ${Date.now() - t} ms` : JSON.stringify(r),
+    );
+    if (i === 0 && v) await writeFile(join(root, "examples/starter/check-output/thumbnail-0.png"), Buffer.from(v.dataUrl.split(",")[1], "base64"));
+  }
+  const bad = await ask("export.thumbnail", { width: "big" }, 999);
+  check("preview: export.thumbnail refuses bad params", !bad.ok, bad.error ?? "");
   check("no console errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 } finally {
   await browser.close();

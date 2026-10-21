@@ -6,7 +6,11 @@ import {
 } from "../catalog/index.ts";
 import { parseCodeMeta } from "../compiler/code-meta.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
-import type { RawSlide } from "../compiler/split.ts";
+import {
+  type RawSlide,
+  unclosedSettings,
+  unclosedSettingsMessage,
+} from "../compiler/split.ts";
 import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
@@ -317,6 +321,17 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
     }
     if (bg?.image) checkAsset(bg.image, at.file, at.line, s.index);
     if (bg?.video) checkAsset(bg.video, at.file, at.line, s.index);
+    const loose = unclosedSettings(s.content);
+    if (loose)
+      add({
+        severity: "warning",
+        code: "frontmatter-unclosed",
+        message: unclosedSettingsMessage(loose),
+        file: s.range.file,
+        line: s.range.body + 1,
+        slide: s.index,
+        hint: "Slide settings sit between two `---` lines: `---`, then `background: spotlight`, then `---`, then the slide.",
+      });
   }
 
   function checkAsset(url: string, file: string, line: number, slide: number, column?: number) {

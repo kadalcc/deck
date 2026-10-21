@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 
 import { deserialiseSteps, parseCodeMeta, parseLineSet, serialiseSteps } from "./code-meta.ts";
 import { findMagicMoves } from "./magic-move.ts";
-import { levelOf, splitDeck, titleOf } from "./split.ts";
+import { catalog } from "../catalog/index.ts";
+import { LIKELY_SETTINGS, levelOf, splitDeck, titleOf, unclosedSettings } from "./split.ts";
 
 describe("splitDeck", () => {
   test("cuts slides at --- and reads headmatter and frontmatter", () => {
@@ -205,5 +206,28 @@ describe("applySlots", () => {
   });
   test("passes a plain body through unchanged", () => {
     expect(applySlots("# hi\n\ntext")).toBe("# hi\n\ntext");
+  });
+});
+
+describe("unclosedSettings", () => {
+  test("finds settings a slide opens with when nothing closes them", () => {
+    expect(unclosedSettings("background: spotlight\n\n## Title")).toEqual(["background"]);
+    expect(unclosedSettings("\nlayout: center\nclass: tight\n# Hi")).toEqual(["layout", "class"]);
+    expect(unclosedSettings("layout: two-cols\nfoo: 1\nclicks: 3\n\ntext")).toEqual([
+      "layout",
+      "clicks",
+    ]);
+  });
+
+  test("leaves prose and ordinary slides alone", () => {
+    expect(unclosedSettings("## Title\n\nlayout: center")).toBeNull();
+    expect(unclosedSettings("Note: this is prose")).toBeNull();
+    expect(unclosedSettings("Layout: the way a page is set")).toBeNull();
+    expect(unclosedSettings("")).toBeNull();
+  });
+
+  test("every name it looks for is a real setting", () => {
+    const real = new Set([...catalog.slideFrontmatter, ...catalog.deckFrontmatter].map((k) => k.name));
+    expect(LIKELY_SETTINGS.filter((k) => !real.has(k))).toEqual([]);
   });
 });
