@@ -175,6 +175,11 @@ presenter view; a phone-width scroll view (`?view=scroll`); contrast of `--deck-
 beside deck.mdx. `addons: [qr]` → `@kadal/addon-qr` → `kadal-addon-qr` → `qr`. A bare name the deck's
 own CSS defines (`.theme-mine`) still works as before.
 
+`theme`, `themes` and `addons` are read from the headmatter: that is where packages are resolved
+(deck.config.ts may still pick among the themes already there). A theme's package.json is watched,
+so editing its metadata in a folder or a linked package reloads the deck (node_modules is not
+watched).
+
 - **Vite (`kadal-deck dev/build`)**: resolved from the deck's folder; the plugin imports the CSS
   of every listed theme and addon, the active theme's and the addons' modules eagerly, the other
   themes' modules lazily; `global-top.tsx` (and the other three) beside deck.mdx or in `src/` are
