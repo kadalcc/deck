@@ -28,7 +28,7 @@ import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts"
 declare const __KADAL_DECK_VERSION__: string | undefined;
 const VERSION = typeof __KADAL_DECK_VERSION__ === "string" ? __KADAL_DECK_VERSION__ : "dev";
 
-const MODE_SEGMENTS = new Set(["presenter", "join", "audience", "notes", "stats", "remote"]);
+const MODE_SEGMENTS = new Set(["presenter", "join", "audience", "notes", "stats", "remote", "export"]);
 
 /** The deck's root path, from the host's word or the address: the last mode segment comes off. */
 export function shellBase(pathname: string, injected?: unknown): string {
