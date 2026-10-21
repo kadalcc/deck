@@ -51,6 +51,7 @@ import type {
 export type * from "./types.ts";
 export { catalogMarkdown, sectionMarkdown } from "./markdown.ts";
 export { frontmatterSchema, shapeSchema } from "./schema.ts";
+export { THEME_PACKAGES } from "./reference.ts";
 
 function components(): ComponentInfo[] {
   const byName = new Map(GENERATED.components.map((c) => [c.name, c]));

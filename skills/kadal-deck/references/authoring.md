@@ -91,6 +91,9 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
   The Vite plugin brings in its CSS, layouts and components; `kadal-deck info themes` lists what is
   installed with each theme's layouts. `themeConfig: { primary: "#0f766e" }` sets the theme's knobs
   (its README says which). `addons: [name]` adds addon packages the same way.
+- First-party theme packages, Slidev's official themes ported with their layouts and frontmatter:
+  `classic` (Slidev's `default`), `seriph`, `crisp`, `bricks` (`<Polygon1>`…`<Polygon11>`),
+  `shibainu`. Moving a Slidev deck: change only the theme's name (THEMES.md has the mapping).
   `colorScheme: dark` on one slide forces dark tokens there.
 - Something on every slide (a footer with the page number, a logo): a `global-bottom.tsx` (or
   `global-top`, `slide-top`, `slide-bottom`) beside deck.mdx exporting a component; it gets

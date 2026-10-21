@@ -139,6 +139,23 @@ export interface ThemeInfo {
   scheme: "light" | "dark";
 }
 
+/** A first-party theme package (packages/theme-<name>): installed with npm, bundled by the shell. */
+export interface ThemePackageInfo {
+  /** The name `theme:` takes, and the CSS class (.theme-<name>). */
+  name: string;
+  /** The npm package. */
+  package: string;
+  summary: string;
+  /** The colour schemes it draws: one, or both (light and dark). */
+  scheme: "light" | "dark" | "both";
+  /** Layouts it adds (or replaces), by name. */
+  layouts: string[];
+  /** Components it adds, by name. */
+  components: string[];
+  /** The Slidev theme it ports, when it is one (`default` for Slidev's default theme). */
+  slidev?: string;
+}
+
 export interface NamedInfo {
   name: string;
   summary: string;

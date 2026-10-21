@@ -1,3 +1,4 @@
+import { THEME_PACKAGES } from "./reference.ts";
 import type { Catalog, CatalogSection, FrontmatterKey, PropInfo } from "./types.ts";
 
 /**
@@ -136,7 +137,19 @@ export function sectionMarkdown(catalog: Catalog, section: CatalogSection, level
         "",
         "Theme and addon packages: `theme: seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then the package `seriph`; `theme: ./theme` is a folder beside deck.mdx; `addons: [qr]` the same with addon-. The Vite plugin imports their CSS and modules; their layouts, components and layers merge in under the deck's own; `themeConfig` keys become `--theme-<kebab>` CSS variables. `kadal-deck info themes` lists the ones installed, `kadal-deck new --theme <name>` makes one, `kadal-deck theme eject` copies one into the deck. The contract: THEMES.md in @kadal/deck.",
         "",
+        "First-party theme packages (install one, then `theme: <name>`; the prebuilt shell has them all):",
+        "",
       );
+      for (const t of THEME_PACKAGES) {
+        const adds = [
+          t.layouts.length ? `layouts ${t.layouts.map(code).join(", ")}` : "",
+          t.components.length ? `components ${t.components.map(code).join(", ")}` : "",
+        ].filter(Boolean);
+        out.push(
+          `- **${t.name}** (${t.scheme === "both" ? "light and dark" : t.scheme}) — ${t.summary} ${code(t.package)}${t.slidev ? `, from Slidev's \`${t.slidev}\`` : ""}.${adds.length ? ` Adds ${adds.join("; ")}.` : ""}`,
+        );
+      }
+      out.push("");
       break;
     case "deckFrontmatter":
       out.push(

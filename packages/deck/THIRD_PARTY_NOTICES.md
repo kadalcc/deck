@@ -58,3 +58,25 @@ What that means for you:
   installed contains none of it.
 - **Baked audio** (`kadal-deck narrate` output: MP3/Opus/WAV files) is the output of the model,
   not a copy of eSpeak NG; the Kokoro weights' Apache-2.0 licence places no restriction on it.
+
+## Themes ported from Slidev (`@kadal/theme-classic`, `-seriph`, `-crisp`, `-bricks`, `-shibainu`)
+
+Five first-party theme packages are ports of Slidev's official themes. They are separate npm
+packages, not part of `@kadal/deck`, and each is MIT-licensed with this notice in its LICENSE:
+the look, the layouts (their names, slots and frontmatter), the bricks block drawings and the
+shibainu background drawings come from the originals; the stylesheets and the React layouts were
+rewritten for Kadal Deck, and the SVG drawings are copied unchanged (shibainu's lifted out of
+their Vue wrappers).
+
+| Kadal package | ported from | version read | licence | source |
+|---|---|---|---|---|
+| `@kadal/theme-classic` | `@slidev/theme-default` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-seriph` | `@slidev/theme-seriph` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-crisp` | `@slidev/theme-apple-basic` | 0.25.1 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-bricks` | `@slidev/theme-bricks` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+| `@kadal/theme-shibainu` | `@slidev/theme-shibainu` | 0.25.0 | MIT, Copyright (c) 2021 Slidev.js Team | https://github.com/slidevjs/themes |
+
+The prebuilt shell (`@kadal/deck-shell`) bundles all five, so its build carries these notices
+too. The fonts the themes name (Nunito Sans, PT Serif, PT Mono, Fira Code, Signika Negative,
+Sigmar One, Titillium Web) are fetched from Google Fonts at run time under the SIL Open Font
+License, never bundled.

@@ -195,3 +195,28 @@ watched).
 (see `src/theming/theming.test.ts`). To try a theme in the shell:
 `KADAL_SHELL_PACKAGES=/path/to/theme KADAL_SHELL_OUT_DIR=/tmp/shell bunx vite build` in
 `packages/deck-shell`.
+
+## 6. First-party themes, and Slidev's
+
+Install one (`npm i @kadal/theme-<name>`) and name it (`theme: <name>`); the prebuilt shell has
+them all. Five are ports of Slidev's official themes, with the same layouts, layout names,
+frontmatter, slots, components, `themeConfig` keys, colour schemes and Shiki themes, so a Slidev
+deck (or `kadal-deck import slidev`) only changes the theme's name:
+
+| Slidev `theme:` | Slidev package | Kadal `theme:` | Kadal package | schemes | its own layouts and components |
+|---|---|---|---|---|---|
+| `default` | `@slidev/theme-default` | `classic` | `@kadal/theme-classic` | light, dark | `cover` (dims a picture `background`) |
+| `seriph` | `@slidev/theme-seriph` | `seriph` | `@kadal/theme-seriph` | light, dark | `cover`; `themeConfig.primary` colours the headings |
+| `apple-basic` | `@slidev/theme-apple-basic` | `crisp` | `@kadal/theme-crisp` | light, dark | `intro-image`, `intro-image-right`, `image-right`, `3-images`, `bullets` |
+| `bricks` | `@slidev/theme-bricks` | `bricks` | `@kadal/theme-bricks` | light | `items` (`cols`, `::items::`), `blank`; `<Polygon1>`–`<Polygon11>` |
+| `shibainu` | `@slidev/theme-shibainu` | `shibainu` | `@kadal/theme-shibainu` | dark | `default-2`…`default-7`, `right`, `section-2`, `section-3` |
+
+`theme: default` is not a Kadal theme (Kadal's default is `minimal`): a converter maps Slidev's
+`default` to `classic`.
+Slidev's `none` is Kadal's `none`. Every other layout these themes use (`intro`, `section`,
+`statement`, `fact`, `quote`, `image-left`, `two-cols`…) is the engine's, restyled by the
+theme. Sizes are Slidev's exactly: each port measures in a "Slidev rem" worked out from
+`--deck-base-size` (Slidev's 980px canvas scaled to Kadal's 1920px), so the proportions match and
+a deck that changes the base size scales the whole theme. The catalog lists them as
+`THEME_PACKAGES` (`kadal-deck info themes`); the ported code is MIT, with the notice in each
+package's LICENSE and in THIRD_PARTY_NOTICES.md.

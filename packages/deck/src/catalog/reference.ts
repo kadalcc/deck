@@ -8,6 +8,7 @@ import type {
   QueryParamInfo,
   RouteInfo,
   ThemeInfo,
+  ThemePackageInfo,
   ValueShape,
 } from "./types.ts";
 
@@ -283,6 +284,87 @@ export const THEMES: ThemeInfo[] = [
   },
 ];
 
+/**
+ * The first-party theme packages (packages/theme-*). Not built in: a Vite deck installs one
+ * (`npm i @kadal/theme-seriph`) and names it (`theme: seriph`); the prebuilt shell bundles them
+ * all. The ports keep their Slidev theme's layouts, frontmatter and look (THEMES.md has the
+ * name mapping, for decks moving over).
+ */
+export const THEME_PACKAGES: ThemePackageInfo[] = [
+  {
+    name: "classic",
+    package: "@kadal/theme-classic",
+    summary:
+      "Slidev's default theme: Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover.",
+    scheme: "both",
+    layouts: ["cover"],
+    components: [],
+    slidev: "default",
+  },
+  {
+    name: "seriph",
+    package: "@kadal/theme-seriph",
+    summary:
+      "Slidev's seriph: PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover.",
+    scheme: "both",
+    layouts: ["cover"],
+    components: [],
+    slidev: "seriph",
+  },
+  {
+    name: "crisp",
+    package: "@kadal/theme-crisp",
+    summary:
+      "Plain black on white: Helvetica Neue, bold titles under a bold subtitle, pictures set in a margin.",
+    scheme: "both",
+    layouts: ["intro-image", "intro-image-right", "image-right", "3-images", "bullets"],
+    components: [],
+    slidev: "apple-basic",
+  },
+  {
+    name: "bricks",
+    package: "@kadal/theme-bricks",
+    summary:
+      "Slidev's bricks: building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only.",
+    scheme: "light",
+    layouts: ["items", "blank"],
+    components: [
+      "Polygon1",
+      "Polygon2",
+      "Polygon3",
+      "Polygon4",
+      "Polygon5",
+      "Polygon6",
+      "Polygon7",
+      "Polygon8",
+      "Polygon9",
+      "Polygon10",
+      "Polygon11",
+    ],
+    slidev: "bricks",
+  },
+  {
+    name: "shibainu",
+    package: "@kadal/theme-shibainu",
+    summary:
+      "Slidev's shibainu: soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only.",
+    scheme: "dark",
+    layouts: [
+      "default-2",
+      "default-3",
+      "default-4",
+      "default-5",
+      "default-6",
+      "default-7",
+      "right",
+      "section-2",
+      "section-3",
+    ],
+    components: [],
+    slidev: "shibainu",
+  },
+];
+
 export const TRANSITION_META: Record<string, string> = {
   none: "Cut straight to the next slide.",
   fade: "Cross-fade.",
@@ -421,7 +503,8 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
   },
   {
     param: "?narrate",
-    summary: "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
+    summary:
+      "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
   },
   {
     param: "?at",
@@ -570,7 +653,8 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "narrate",
-    usage: "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
+    usage:
+      "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
     summary:
       "Bake the narration: every notes segment spoken by Kokoro into public/narration/ (MP3 or Opus with ffmpeg, else WAV) and public/narration.json; skips clips that exist. --setup installs kokoro-js.",
     json: true,
@@ -864,7 +948,8 @@ export const SLIDE_KEYS = [
   {
     name: "posterWait",
     type: N(),
-    description: "Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000).",
+    description:
+      "Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000).",
   },
   {
     name: "terms",
