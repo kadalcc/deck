@@ -127,6 +127,29 @@ Positions are absolute — `at={1}` — or relative to the element before: `+0` 
 [click] And step five exists only because `clicks: 5` in frontmatter says so — a pause before the slide moves on.
 </Notes>
 
+----
+id: click-direction
+---
+
+<p className="sc-eyebrow">Clicks · direction</p>
+
+## Forward and back <DirectionBadge />
+
+<div className="sc-timeline">
+  <div><code>forward:delay-300</code><Click className="sc-pill forward:delay-300">waits a beat, going forward only</Click></div>
+  <div><code>backward:duration-0</code><Click effect="fade-up" className="sc-pill backward:duration-0">rises in, and snaps back out</Click></div>
+  <div><code>deck-instant-back</code><Click effect="grow" className="sc-pill deck-instant-back">no Tailwind: the plain class</Click></div>
+</div>
+
+<p className="sc-small">The deck root carries <code>data-nav-direction</code>; the starter's Tailwind has <code>@custom-variant forward</code> and <code>backward</code> (Slidev's variants), and <code>--deck-nav-sign</code> is 1 or −1 for your own CSS. <StepMeter /></p>
+
+<Notes>
+Every move has a direction, and styles can read it.
+[click] Going forward this pill waits three hundred milliseconds — `forward:delay-300` — and going back it leaves at once.
+[click] This one rises in with its fade, and `backward:duration-0` takes it away instantly when you step back.
+[click:3] Without Tailwind, `deck-instant-back` does the same for any element. Step back through the slide to see the difference; the badge in the title says which way the deck last moved.
+</Notes>
+
 ---
 id: marks
 ---

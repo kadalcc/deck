@@ -65,6 +65,134 @@ Press S to open the presenter window; it stays in step with this one through the
 [click] L cycles three layouts: notes on the right, notes on the left, and the next slide large.
 </Notes>
 
+----
+id: presenter-tools
+timing: 60
+---
+
+<p className="sc-eyebrow">Presenting · timer, notes, overview</p>
+
+## Run the talk from one window
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Clicks>
+
+- A **stopwatch or a countdown** — `timer: countdown`, `duration: 30min` — that pauses, resets, fills a progress bar and goes red in overtime, with the pacing badge beside it
+- **Notes you can edit** in the presenter, on `/overview` and on `/notes-edit` under `kadal-deck dev`: saved into deck.mdx, no reload
+- **Markers you can click**: each `[click]` in the notes jumps to its step
+- **`/overview`**: every slide with a step slider and its notes
+
+</Clicks>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+---
+timer: countdown
+duration: 30min
+---
+
+<Notes>
+Open on the problem. [click] The chart.
+[click:4] Skip to the ask.
+</Notes>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+The presenter's top bar holds the timer: click the time to pause it, the arrow to reset, the chevron to switch between stopwatch and countdown or change the length for this talk.
+[click] Under `kadal-deck dev` every notes panel has an Edit button. Cmd or Ctrl+S, or clicking away, writes just this slide's notes back into the file, and the views update in place.
+[click] These numbered circles are buttons: press one and the deck jumps to that step.
+[click] And /overview lists every slide with a slider through its steps, the notes beside each one.
+</Notes>
+
+----
+id: own-keys
+---
+
+<p className="sc-eyebrow">Presenting · your own keys and menu</p>
+
+## Shortcuts, a right-click menu, and display settings
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+- **Right-click** a slide (or <Kbd>⇧</Kbd> <Kbd>F10</Kbd>): move, overview, presenter, notes, full screen, dark, pen, laser, export — and this deck's own *Back to the start*
+- <Kbd>,</Kbd> opens the **display settings**: brightness, contrast, saturation, sepia, hue, invert, for a projector that needs it
+- <Kbd>E</Kbd> is this deck's own shortcut — <Kbd>?</Kbd> lists it with the rest
+
+</Col>
+<Col>
+
+<How>
+
+```tsx
+<Deck
+  shortcuts={[{ keys: ["KeyE"],
+    command: "view.toast",
+    params: { message: "Hello" },
+    description: "Say hello" }]}
+  contextMenu={(items) => [...items,
+    { id: "start", label: "Back to the start",
+      command: "nav.first" }]}
+/>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Three things Slidev has that now live here too. The context menu runs the same commands as the keyboard, so it offers only what works in this window. Display settings are kept per deck in this browser and reach every window of it — tune the projector from the presenter view. And shortcuts: an array adds to the defaults, a function gets them and returns the whole list.
+</Notes>
+
+----
+id: slide-hooks
+---
+
+<p className="sc-eyebrow">Presenting · slide hooks</p>
+
+## When a slide arrives, and leaves
+
+<Cols cols="1.2fr 1fr" gap="3rem" align="center">
+<Col>
+
+<EnterCounter />
+
+<p className="sc-small">Go down and back up: one enter per arrival, one leave per departure. The presenter's next-slide box, the overview and print never count.</p>
+
+</Col>
+<Col>
+
+<How>
+
+```tsx
+useSlideEnter((e) => {
+  start(e.direction);
+  return () => stop();
+});
+useSlideLeave(() => save());
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Slides stay mounted while they are near, so mount and unmount are not "shown". `useSlideEnter` and `useSlideLeave` are: an enter can return a cleanup that runs on leave. Slidev's names, `onSlideEnter` and `onSlideLeave`, work too.
+</Notes>
+
 ---
 id: keys
 ---
