@@ -1,0 +1,192 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Kadal Deck",
+  "scopeName": "source.kadal-deck",
+  "comment": "deck.mdx: Markdown/MDX slides between --- (and ----) separators, YAML frontmatter after a separator and at the top, <Notes> and HTML-comment speaker notes, ::slot:: markers, ::code-group blocks and <<< snippet imports. Everything else is Markdown.",
+  "patterns": [
+    {
+      "include": "#slide-start"
+    },
+    {
+      "include": "#notes"
+    },
+    {
+      "include": "#comment-notes"
+    },
+    {
+      "include": "#slot"
+    },
+    {
+      "include": "#code-group"
+    },
+    {
+      "include": "#snippet"
+    },
+    {
+      "include": "#markdown"
+    }
+  ],
+  "repository": {
+    "slide-start": {
+      "comment": "A separator, and the YAML after it when there is some: up to the closing --- or the first line that cannot be YAML.",
+      "begin": "^(-{3,})\\s*$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.separator.kadal-deck markup.heading.separator.kadal-deck"
+        }
+      },
+      "end": "^(---)\\s*$|(?=^(?!\\s*$)(?![ \\t]*[A-Za-z_][\\w.-]*[ \\t]*:(?:\\s|$))(?![ \\t]+\\S)(?![ \\t]*-[ \\t])(?![ \\t]*#))",
+      "endCaptures": {
+        "1": {
+          "name": "keyword.control.separator.kadal-deck punctuation.definition.frontmatter.kadal-deck"
+        }
+      },
+      "contentName": "meta.embedded.block.frontmatter.kadal-deck",
+      "patterns": [
+        {
+          "include": "source.yaml"
+        }
+      ]
+    },
+    "notes": {
+      "begin": "^\\s*(<)(Notes)\\b([^>]*)(>)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.kadal-deck"
+        },
+        "2": {
+          "name": "entity.name.tag.notes.kadal-deck"
+        },
+        "3": {
+          "name": "meta.attributes.kadal-deck"
+        },
+        "4": {
+          "name": "punctuation.definition.tag.end.kadal-deck"
+        }
+      },
+      "end": "(</)(Notes)(>)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.kadal-deck"
+        },
+        "2": {
+          "name": "entity.name.tag.notes.kadal-deck"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.end.kadal-deck"
+        }
+      },
+      "contentName": "comment.block.notes.kadal-deck",
+      "patterns": [
+        {
+          "include": "#click-marker"
+        }
+      ]
+    },
+    "comment-notes": {
+      "begin": "<!--",
+      "end": "-->",
+      "name": "comment.block.html.kadal-deck",
+      "patterns": [
+        {
+          "include": "#click-marker"
+        }
+      ]
+    },
+    "click-marker": {
+      "match": "\\[(click)(?::(\\d+))?\\]",
+      "name": "keyword.other.click.kadal-deck",
+      "captures": {
+        "2": {
+          "name": "constant.numeric.kadal-deck"
+        }
+      }
+    },
+    "slot": {
+      "match": "^(::)([a-z][\\w-]*)(::)\\s*$",
+      "captures": {
+        "1": {
+          "name": "punctuation.definition.slot.kadal-deck"
+        },
+        "2": {
+          "name": "entity.name.section.slot.kadal-deck"
+        },
+        "3": {
+          "name": "punctuation.definition.slot.kadal-deck"
+        }
+      }
+    },
+    "code-group": {
+      "patterns": [
+        {
+          "match": "^\\s*(:{2,}code-group)\\b(.*)$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.code-group.kadal-deck"
+            },
+            "2": {
+              "name": "meta.options.kadal-deck"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(:{2,})\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.code-group.kadal-deck"
+            }
+          }
+        }
+      ]
+    },
+    "snippet": {
+      "match": "^\\s*(<<<)\\s+(\\S+)(.*)$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.import.kadal-deck"
+        },
+        "2": {
+          "name": "string.unquoted.path.kadal-deck"
+        },
+        "3": {
+          "name": "meta.options.kadal-deck"
+        }
+      }
+    },
+    "markdown": {
+      "comment": "Markdown's block rules but its paragraph (and the setext heading that rides on it): a paragraph's `while` reads a following --- as a setext underline, but in a deck it is a separator. Lines of prose get the inline rules instead.",
+      "patterns": [
+        {
+          "include": "text.html.markdown#separator"
+        },
+        {
+          "include": "text.html.markdown#heading"
+        },
+        {
+          "include": "text.html.markdown#blockquote"
+        },
+        {
+          "include": "text.html.markdown#lists"
+        },
+        {
+          "include": "text.html.markdown#fenced_code_block"
+        },
+        {
+          "include": "text.html.markdown#link-def"
+        },
+        {
+          "include": "text.html.markdown#html"
+        },
+        {
+          "include": "text.html.markdown#table"
+        },
+        {
+          "include": "text.html.markdown#inline"
+        },
+        {
+          "include": "text.html.derivative"
+        }
+      ]
+    }
+  }
+}

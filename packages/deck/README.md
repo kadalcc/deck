@@ -29,9 +29,10 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | command | what |
 | --- | --- |
 | `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun]` | a deck from the starter, no questions asked |
-| `kadal-deck dev` | Vite dev server for the deck in this folder |
+| `kadal-deck dev [--https] [--tunnel] [--remote [password]]` | Vite dev server for the deck in this folder, with the [side editor](#editors) (E). `--tunnel`: on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`), with a QR in the terminal and the phone remote pairing through it; `--remote [password]`: on the network, the presenter and editing behind the password (a tunnel always has one) |
 | `kadal-deck build [--without-notes] [--download]` | `dist/` for any static host; `--without-notes` leaves the speaker notes out; `--download` (or `download: true`) also prints `dist/deck.pdf` for the deck's Download button |
 | `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
+| `kadal-deck format [files] [--check]` | format `deck.mdx` and its includes (or the files named) with [@kadal/prettier-plugin](../prettier-plugin): separators, frontmatter YAML (comments kept), each slide's Markdown; code, notes, magic-move, `<style>`, maths and `::slot::` sugar byte for byte; every slide checked to mean the same. `--check` exits 1 when a file would change |
 | `kadal-deck info [topic] [name] [--search words] [--markdown]` | the reference (components, layouts, backgrounds, themes, transitions, clicks, code, deck, slide, keys, routes, live, cli, exit) |
 | `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium) |
 | `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--range 1,3-5] [--dark] [--no-with-clicks] [--omit-background] [--per-slide] [--out dir] [--output name] [--scale n] [--url u]` | PDF (and PNG, PPTX, editable PPTX, Markdown) into `export/` — install `playwright`. Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable, with bookmarks from the slide titles; `--vector-pdf` prints with the browser alone. See [Export](#export) |
@@ -67,6 +68,22 @@ login, which is how CI publishes.
 - `@kadal/deck/monaco` — `createMonacoHost`, `bundledGrammar`, `bundledThemes`, `registerMonacoLoader`:
   for a page that bundles Monaco itself and compiles decks in the browser (the prebuilt shell does).
   A deck built with the Vite plugin needs none of it.
+
+## Editors
+
+- **The side editor** (`kadal-deck dev`): press <kbd>E</kbd> (or `view.editor`, or "Edit slide
+  source" on the right-click menu) and the current slide's source opens beside it in CodeMirror —
+  separator, frontmatter, body and notes, as written. <kbd>Cmd/Ctrl+S</kbd> saves it into the
+  deck file (or the file it is included from) through `/__kadal/source`: only that slide's lines
+  change, a slide edited elsewhere in the meantime is a conflict to resolve rather than an
+  overwrite, and the deck shows the change. The panel is resizable, the slide shrinks beside it,
+  and unsaved text survives a reload. CodeMirror is loaded only by the dev server; a build has
+  none of it.
+- **VS Code** (`packages/vscode`, "Kadal Deck"): a Slides outline you can drag to reorder, a
+  preview that follows the cursor, frontmatter and component IntelliSense from the catalog,
+  `check` as problems, formatting, and dev/presenter/export commands.
+- **Prettier**: `@kadal/prettier-plugin` formats `deck.mdx` / `slides.mdx` by name in any editor
+  that runs Prettier; `kadal-deck format` is the same without setup.
 
 ## Writing slides
 

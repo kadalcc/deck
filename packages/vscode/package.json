@@ -1,0 +1,345 @@
+{
+  "name": "kadal-deck",
+  "displayName": "Kadal Deck",
+  "description": "Kadal Deck in VS Code: a live preview that follows your cursor, a slide outline you can drag to reorder, frontmatter and component IntelliSense, the deck's checks as problems, formatting, and one-click dev, presenter and PDF export.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "publisher": "kadal",
+  "license": "AGPL-3.0-or-later",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "homepage": "https://deck.kadal.cc/docs/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kadalcc/deck.git",
+    "directory": "packages/vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "sponsor": {
+    "url": "https://github.com/sponsors/pmithunish"
+  },
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0b1d2e",
+    "theme": "dark"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "kadal",
+    "kadal-deck",
+    "slides",
+    "presentation",
+    "mdx",
+    "slidev",
+    "reveal.js"
+  ],
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "workspaceContains:**/deck.mdx",
+    "workspaceContains:**/slides.mdx"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "kadal-deck",
+        "aliases": [
+          "Kadal Deck",
+          "kadal-deck"
+        ],
+        "filenames": [
+          "deck.mdx",
+          "slides.mdx"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./media/deck-file.svg",
+          "dark": "./media/deck-file.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "kadal-deck",
+        "scopeName": "source.kadal-deck",
+        "path": "./syntaxes/kadal-deck.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.frontmatter.kadal-deck": "yaml",
+          "source.yaml": "yaml",
+          "meta.embedded.block.style.kadal-deck": "css"
+        }
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kadal-deck",
+          "title": "Kadal Deck",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "kadal-deck": [
+        {
+          "id": "kadal-deck.slides",
+          "name": "Slides",
+          "contextualTitle": "Kadal Deck"
+        },
+        {
+          "id": "kadal-deck.preview",
+          "name": "Preview",
+          "type": "webview",
+          "contextualTitle": "Kadal Deck"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "kadal-deck.slides",
+        "contents": "No deck here yet. A Kadal Deck is a folder with a deck.mdx.\n[New deck](command:kadal-deck.newDeck)\n[Learn more](https://deck.kadal.cc/docs/)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "kadal-deck.startDev",
+        "title": "Start the dev server",
+        "category": "Kadal Deck",
+        "icon": "$(play)"
+      },
+      {
+        "command": "kadal-deck.stopDev",
+        "title": "Stop the dev server",
+        "category": "Kadal Deck",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "kadal-deck.openInBrowser",
+        "title": "Open the deck in the browser",
+        "category": "Kadal Deck",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "kadal-deck.openPresenter",
+        "title": "Open the presenter view",
+        "category": "Kadal Deck",
+        "icon": "$(vm)"
+      },
+      {
+        "command": "kadal-deck.exportPdf",
+        "title": "Export to PDF",
+        "category": "Kadal Deck",
+        "icon": "$(file-pdf)"
+      },
+      {
+        "command": "kadal-deck.check",
+        "title": "Check the deck",
+        "category": "Kadal Deck",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "kadal-deck.format",
+        "title": "Format the deck",
+        "category": "Kadal Deck"
+      },
+      {
+        "command": "kadal-deck.newDeck",
+        "title": "New deck…",
+        "category": "Kadal Deck",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "kadal-deck.chooseDeck",
+        "title": "Choose the active deck…",
+        "category": "Kadal Deck",
+        "icon": "$(list-selection)"
+      },
+      {
+        "command": "kadal-deck.refresh",
+        "title": "Refresh",
+        "category": "Kadal Deck",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "kadal-deck.revealSlide",
+        "title": "Go to the slide in the editor",
+        "category": "Kadal Deck"
+      },
+      {
+        "command": "kadal-deck.showInPreview",
+        "title": "Show in the preview",
+        "category": "Kadal Deck",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "kadal-deck.followCursor",
+        "title": "Preview: follow the cursor",
+        "category": "Kadal Deck",
+        "icon": "$(unlock)"
+      },
+      {
+        "command": "kadal-deck.unfollowCursor",
+        "title": "Preview: stop following the cursor",
+        "category": "Kadal Deck",
+        "icon": "$(lock)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "kadal-deck.refresh",
+          "when": "view == kadal-deck.slides",
+          "group": "navigation@3"
+        },
+        {
+          "command": "kadal-deck.chooseDeck",
+          "when": "view == kadal-deck.slides",
+          "group": "navigation@2"
+        },
+        {
+          "command": "kadal-deck.startDev",
+          "when": "view == kadal-deck.preview && !kadal-deck.devRunning",
+          "group": "navigation@1"
+        },
+        {
+          "command": "kadal-deck.stopDev",
+          "when": "view == kadal-deck.preview && kadal-deck.devRunning",
+          "group": "navigation@1"
+        },
+        {
+          "command": "kadal-deck.unfollowCursor",
+          "when": "view == kadal-deck.preview && kadal-deck.followCursor",
+          "group": "navigation@2"
+        },
+        {
+          "command": "kadal-deck.followCursor",
+          "when": "view == kadal-deck.preview && !kadal-deck.followCursor",
+          "group": "navigation@2"
+        },
+        {
+          "command": "kadal-deck.openInBrowser",
+          "when": "view == kadal-deck.preview",
+          "group": "navigation@3"
+        },
+        {
+          "command": "kadal-deck.openPresenter",
+          "when": "view == kadal-deck.preview",
+          "group": "navigation@4"
+        },
+        {
+          "command": "kadal-deck.exportPdf",
+          "when": "view == kadal-deck.preview",
+          "group": "more@1"
+        },
+        {
+          "command": "kadal-deck.check",
+          "when": "view == kadal-deck.slides",
+          "group": "more@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "kadal-deck.showInPreview",
+          "when": "view == kadal-deck.slides && viewItem =~ /slide/",
+          "group": "inline"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "kadal-deck.startDev",
+          "when": "editorLangId == kadal-deck && !kadal-deck.devRunning",
+          "group": "navigation"
+        },
+        {
+          "command": "kadal-deck.openInBrowser",
+          "when": "editorLangId == kadal-deck && kadal-deck.devRunning",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "kadal-deck.revealSlide",
+          "when": "false"
+        },
+        {
+          "command": "kadal-deck.showInPreview",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Kadal Deck",
+      "properties": {
+        "kadalDeck.port": {
+          "type": "number",
+          "default": 3030,
+          "description": "The port `kadal-deck dev` serves the deck on for the preview."
+        },
+        "kadalDeck.devCommand": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The command that starts the dev server, run in the deck's folder: `${args}` becomes `dev --port <port> --strictPort` and `${port}` the port (`#kadalDeck.port#`). For example `pnpm kadal-deck ${args}`. Empty: the deck's own `kadal-deck` from its `node_modules`, else `npx -p @kadal/deck kadal-deck`."
+        },
+        "kadalDeck.preview.followCursor": {
+          "type": "boolean",
+          "default": true,
+          "description": "The preview shows the slide the cursor is in."
+        },
+        "kadalDeck.check.onSave": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Run `kadal-deck check` when a deck file is saved and show what it finds as problems (without compiling every slide; **Kadal Deck: Check the deck** compiles them too)."
+        },
+        "kadalDeck.annotations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show each slide's number and title at the end of its separator line."
+        },
+        "kadalDeck.include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/deck.mdx",
+            "**/slides.mdx"
+          ],
+          "description": "Glob patterns of deck files to look for in the workspace."
+        }
+      }
+    },
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "kadal-deck",
+        "label": "Kadal Deck"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "test": "bun test",
+    "package": "vsce package --no-dependencies --baseContentUrl https://github.com/kadalcc/deck/blob/HEAD/packages/vscode --baseImagesUrl https://github.com/kadalcc/deck/raw/HEAD/packages/vscode --out ${KADAL_VSIX_OUT:-kadal-deck.vsix}",
+    "vscode:prepublish": "tsdown"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/node": "^25.9.3",
+    "@types/vscode": "~1.90.0",
+    "@vscode/vsce": "4.0.0",
+    "shiki": "^3.13.0",
+    "typescript": "^6.0.3",
+    "yaml": "^2.8.0"
+  }
+}

@@ -680,9 +680,9 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "dev",
-    usage: "kadal-deck dev [--https] [vite flags]",
+    usage: "kadal-deck dev [--https] [--tunnel] [--remote [password]] [vite flags]",
     summary:
-      "The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.",
+      "The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work. `--tunnel` puts it on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`; prints the https address and a QR, and the phone remote pairs through it; always password-guarded, with a password made up and printed unless `--remote <password>` gives one). `--remote [password]` serves on the network like `--host`, and with a password the presenter, notes, notes-edit and overview pages and the dev endpoints ask anyone not on this computer for it. In the browser, E (or `view.editor`) opens the side editor: the current slide's source beside it, saved back into the deck file with Cmd/Ctrl+S.",
     json: false,
   },
   {
@@ -697,6 +697,13 @@ export const CLI: CliCommand[] = [
     usage: "kadal-deck check [--json] [--no-compile]",
     summary:
       "Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta.",
+    json: true,
+  },
+  {
+    name: "format",
+    usage: "kadal-deck format [files…] [--check] [--json]",
+    summary:
+      "Format deck files with @kadal/prettier-plugin (default: deck.mdx and the files it includes): `---`/`----` separators and frontmatter normalised, the YAML through Prettier with its comments and key order kept, each slide's Markdown through Prettier — code fences, notes, magic-move, `<style>`, maths, `::slot::` markers, code groups and `<<<` imports left byte for byte. Every formatted slide is checked to mean the same, or keeps its text (and the command says why). The deck's own Prettier config applies. `--check` writes nothing and exits 1 when a file would change.",
     json: true,
   },
   {

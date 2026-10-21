@@ -74,6 +74,7 @@ import { readScheme } from "../core/print-options.ts";
 import { createMenuRegistry, type MenuInput } from "./menu.ts";
 import { devNotesEditor, type NotesEditor } from "./notes.ts";
 import { PresentingLayer, usePresentingRoot } from "./Presenting.tsx";
+import { SideEditor } from "./SideEditor.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -685,6 +686,7 @@ function PlayView() {
         <Chrome />
       </div>
       <AdFrame />
+      <SideEditor />
       <NarrationGate />
       <Lightbox />
       {/* The camera bubble on the slide (V, or the presenter's Camera): src/media/. */}

@@ -43,6 +43,7 @@ export {
 } from "./edit.ts";
 export { type DragSite, DragSourceError, dragSites, rewriteDragPos } from "./drag.ts";
 export { type IconSetLoader, checkIcons, iconsOf } from "./lint-icons.ts";
+export { type SlideSource, SourceConflict, readSlideSource, writeSlideSource } from "./edit.ts";
 export {
   type DeckExtensions,
   type Diagnostic,

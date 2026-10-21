@@ -54,11 +54,23 @@ export function spawnVite(
 export function runVite(cwd: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawnVite(cwd, args);
+    // Stopping this process stops Vite too (and with it a `dev --tunnel`'s cloudflared): a
+    // terminal's Ctrl+C reaches both anyway, a `kill` from elsewhere reaches only this one.
+    let stopped = false;
+    const forward = (signal: NodeJS.Signals) => () => {
+      stopped = true;
+      if (child.exitCode === null) child.kill(signal);
+    };
+    const handlers = (["SIGTERM", "SIGHUP"] as const).map((sig) => {
+      const fn = forward(sig);
+      process.on(sig, fn);
+      return () => process.off(sig, fn);
+    });
     child.on("error", reject);
-    child.on("exit", (code, signal) =>
-      code === 0
-        ? resolve()
-        : reject(new Error(`vite ${args[0] ?? ""} failed (${signal ?? `exit ${code}`})`)),
-    );
+    child.on("exit", (code, signal) => {
+      for (const off of handlers) off();
+      if (code === 0 || (stopped && args[0] !== "build")) resolve();
+      else reject(new Error(`vite ${args[0] ?? ""} failed (${signal ?? `exit ${code}`})`));
+    });
   });
 }

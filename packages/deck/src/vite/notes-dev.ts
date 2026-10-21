@@ -61,13 +61,13 @@ export function send(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-export function readBody(req: IncomingMessage): Promise<string> {
+export function readBody(req: IncomingMessage, max = MAX_BODY): Promise<string> {
   return new Promise((done, fail) => {
     let size = 0;
     const chunks: Buffer[] = [];
     req.on("data", (c: Buffer) => {
       size += c.length;
-      if (size > MAX_BODY) {
+      if (size > max) {
         fail(new Error("too large"));
         req.destroy();
       } else chunks.push(c);

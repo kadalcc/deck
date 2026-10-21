@@ -30,6 +30,8 @@ export default defineConfig({
     "cli/kokoro-child": "src/cli/kokoro-child.ts",
     // Not imported by anything: the Vite plugin bundles it as a worker when kokoro-js is installed.
     "narrate/kokoro.worker": "src/narrate/kokoro.worker.ts",
+    // Not imported by anything: the dev server's manifest loads it for the side editor.
+    "editor/side-editor": "src/editor/side-editor.ts",
   },
   format: "esm",
   platform: "neutral",

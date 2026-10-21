@@ -131,6 +131,14 @@ export interface DeckManifest {
    * bundled into a build, or taken from the runtime compiler's files. Null or absent without any.
    */
   drawings?: DrawingSource | null;
+
+  /**
+   * The dev server's slide-source endpoint (`kadal-deck dev` only, vite/source-dev.ts): the side
+   * editor (react/SideEditor.tsx) loads and saves a slide's whole source through it.
+   */
+  sourceApi?: string | null;
+  /** The side editor's CodeMirror module, a lazy import under `kadal-deck dev`; null in a build. */
+  sideEditor?: (() => Promise<import("./side-editor.ts").SideEditorModule>) | null;
 }
 
 /** A line to the dev server: Vite's HMR socket, event "kadal:remote". */

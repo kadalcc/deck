@@ -828,3 +828,95 @@ export function setDragPosition(
   }
   return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
 }
+
+/* ── a slide's whole source, edited as text (the dev server's side editor) ──── */
+
+/**
+ * One slide exactly as written in its file — its separator line (none for the slide at the top),
+ * its frontmatter fences and YAML, its body and its notes — for an editor that shows the slide's
+ * source beside the slide (`kadal-deck dev`'s side editor, vite/source-dev.ts).
+ */
+export interface SlideSource {
+  /** The slide's index in the deck (what `SlideRef` numbers mean). */
+  index: number;
+  /** The slide's lines, blank lines at either end left out (they are spacing between slides). */
+  text: string;
+  /** The file the slide is written in: the deck, or a file it includes with `src:`. */
+  file: string;
+  /** 1-based line of `text`'s first line in `file`. */
+  line: number;
+  /** Whether this is the piece at the top of its file (its YAML, if any, is the headmatter). */
+  head: boolean;
+  /** A short fingerprint of `text`: hand it back to `writeSlideSource` to refuse a stale write. */
+  version: string;
+}
+
+/** The slide was changed by someone else since it was read; nothing was written. */
+export class SourceConflict extends EditError {
+  override name = "SourceConflict";
+  constructor(readonly current: SlideSource) {
+    super(`Slide ${current.index} changed since it was read.`);
+  }
+}
+
+/** The slide's lines in its file, without the blank lines at either end. */
+function sourceSpan(doc: Doc, s: RawSlide): { lines: string[]; start: number; end: number } {
+  const { lines } = doc.lines(s.range.file);
+  let start = s.range.start;
+  let end = s.range.end;
+  while (start < end && !lines[start]!.trim()) start++;
+  while (end > start && !lines[end - 1]!.trim()) end--;
+  return { lines, start, end };
+}
+
+/** A slide's whole source as written, for an editor to start from. */
+export function readSlideSource(files: DeckFiles, ref: SlideRef): SlideSource {
+  const doc = new Doc(files);
+  const s = require(doc.before.slides, ref);
+  const span = sourceSpan(doc, s);
+  const text = span.lines.slice(span.start, span.end).join("\n");
+  return {
+    index: s.index,
+    text,
+    file: s.range.file,
+    line: span.start + 1,
+    head: s.range.head,
+    version: notesVersion(text),
+  };
+}
+
+/**
+ * Replace a slide's whole source with `text` — frontmatter, body and notes as one piece of text,
+ * the way `readSlideSource` hands it out. Every other byte of the file stays as it was, and the
+ * usual checks hold: the deck keeps its number of slides (a `---` line in the middle would start
+ * another one; write `***` for a rule) and no other slide changes. A slide that is not the first
+ * of its file must keep its separator as its first line. `expected` is the `version` from
+ * `readSlideSource`: a slide that changed since is a `SourceConflict` carrying what is there now.
+ */
+export function writeSlideSource(
+  files: DeckFiles,
+  ref: SlideRef,
+  text: string,
+  options: { expected?: string } = {},
+): EditResult {
+  const before = readSlideSource(files, ref);
+  if (options.expected !== undefined && options.expected !== before.version)
+    throw new SourceConflict(before);
+  const lines = text.replace(/\r\n?/g, "\n").split("\n");
+  while (lines.length && !lines[0]!.trim()) lines.shift();
+  while (lines.length && !lines[lines.length - 1]!.trim()) lines.pop();
+  if (lines.join("\n") === before.text)
+    return { files: {}, index: before.index, notes: ["Unchanged."] };
+  if (!lines.length)
+    throw new EditError("An empty slide is not a slide; remove it from the deck instead.");
+  if (!before.head && !SEPARATOR.test(lines[0]!))
+    throw new EditError(
+      `The first line must stay the slide's separator (${before.text.split("\n")[0]!.trim()}); without it this slide would run into the one before.`,
+    );
+  const doc = new Doc(files);
+  const s = require(doc.before.slides, ref);
+  const span = sourceSpan(doc, s);
+  doc.splice(s.range.file, span.start, span.end - span.start, lines);
+  const n = doc.before.slides.length;
+  return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
+}
