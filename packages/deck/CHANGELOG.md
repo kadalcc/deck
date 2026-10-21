@@ -1,5 +1,12 @@
 # @kadal/deck
 
+## 0.3.5
+
+### Patch Changes
+
+- 8cc9f68: A deck with a presenter view now always serves the phone remote. Decks made before the remote existed passed only the presenter, audience, notes and stats pages to `<Deck pages>`. The presenter still showed the remote's QR code, and scanning it opened "This deck was built without the remote page". When `pages.remote` is missing, the engine now uses its own remote page. It is loaded in a separate chunk, only when a phone opens `/remote`, so the deck itself doesn't grow. A deck that passes its own remote page is unchanged.
+- 13647a8: `export.thumbnail` no longer hangs when the page is in a background tab or a hidden window. It used to wait for the browser to draw a frame, and a hidden page draws none, so publishing from a tab you had just left saved no picture. Every later picture in that visit also queued behind the stuck one. Now a picture goes ahead without waiting for a frame. If one still takes more than 30 seconds, it fails and the next one runs.
+
 ## 0.3.4
 
 ### Patch Changes
