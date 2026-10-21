@@ -8,6 +8,7 @@ import type {
   QueryParamInfo,
   RouteInfo,
   ThemeInfo,
+  ThemePackageInfo,
   ValueShape,
 } from "./types.ts";
 
@@ -283,6 +284,96 @@ export const THEMES: ThemeInfo[] = [
   },
 ];
 
+/**
+ * The first-party theme packages (packages/theme-*). Not built in: a Vite deck installs one
+ * (`npm i @kadal/theme-ocean`) and names it (`theme: ocean`); the prebuilt shell bundles them
+ * all. These eight are Kadal's own designs (no `slidev` field: none is a port).
+ */
+export const THEME_PACKAGES: ThemePackageInfo[] = [
+  {
+    name: "brand",
+    package: "@kadal/theme-brand",
+    summary:
+      "A corporate theme branded from themeConfig alone — primary and secondary colours, a logo (and a dark one), the company and a footer line — on a white page with Plus Jakarta Sans and calm cards.",
+    scheme: "both",
+    layouts: ["title-logo", "agenda", "metrics"],
+    components: ["Metric", "Logo"],
+  },
+  {
+    name: "crayon",
+    package: "@kadal/theme-crayon",
+    summary:
+      "A playful pastel theme for workshops and classrooms: Fredoka and Nunito, cream paper and plum ink, chunky outlines, callouts as tilted stickers, a blockquote as a speech bubble.",
+    scheme: "both",
+    layouts: ["activity", "cards"],
+    components: ["Sticker", "Bubble"],
+  },
+  {
+    name: "folio",
+    package: "@kadal/theme-folio",
+    summary:
+      "An editorial theme for essays and keynotes: warm paper and ink, Playfair Display over Newsreader, booktabs tables, an asterism for a rule, a drop cap, generous margins.",
+    scheme: "both",
+    layouts: ["pull-quote", "essay", "chapter"],
+    components: ["Byline", "Lede"],
+  },
+  {
+    name: "lecture",
+    package: "@kadal/theme-lecture",
+    summary:
+      "An academic theme: the Source family, numbered sections, a footer with the course, author, section and page, definition / theorem / proof blocks, citations and a references slide; prints on white.",
+    scheme: "both",
+    layouts: ["section", "definition", "theorem", "references"],
+    components: [
+      "Definition",
+      "Theorem",
+      "Lemma",
+      "Corollary",
+      "Proposition",
+      "Proof",
+      "Example",
+      "Remark",
+      "Cite",
+    ],
+  },
+  {
+    name: "neon",
+    package: "@kadal/theme-neon",
+    summary:
+      "A dark synthwave theme for meetups and launches: a striped sunset over a running grid, Orbitron and Space Grotesk, glows that keep the letters near white, a solid print fallback. Dark only.",
+    scheme: "dark",
+    layouts: ["launch", "horizon"],
+    components: ["Glow"],
+  },
+  {
+    name: "ocean",
+    package: "@kadal/theme-ocean",
+    summary:
+      "Kadal's own theme: the sea's palette, sunlit shallows in light and midnight water in dark, calm gradients, Catamaran, Night Owl code; a wave cover and depth-gauge section openers.",
+    scheme: "both",
+    layouts: ["waves", "depth"],
+    components: ["Wave"],
+  },
+  {
+    name: "swiss",
+    package: "@kadal/theme-swiss",
+    summary:
+      "The International Typographic Style: huge Inter Tight headings flush left on a twelve-column grid, heavy rules, one signal red, a running header with the section and page.",
+    scheme: "both",
+    layouts: ["poster", "index", "grid"],
+    components: ["Rule"],
+  },
+  {
+    name: "terminal",
+    package: "@kadal/theme-terminal",
+    summary:
+      "A developer theme for code-heavy talks: JetBrains Mono headings, code blocks as editor windows, line numbers and a lit active line, Ayu colours; dark first with a light variant.",
+    scheme: "both",
+    layouts: ["code", "shell"],
+    components: ["Terminal"],
+  },
+];
+
 export const TRANSITION_META: Record<string, string> = {
   none: "Cut straight to the next slide.",
   fade: "Cross-fade.",
@@ -421,7 +512,8 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
   },
   {
     param: "?narrate",
-    summary: "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
+    summary:
+      "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
   },
   {
     param: "?at",
@@ -570,7 +662,8 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "narrate",
-    usage: "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
+    usage:
+      "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
     summary:
       "Bake the narration: every notes segment spoken by Kokoro into public/narration/ (MP3 or Opus with ffmpeg, else WAV) and public/narration.json; skips clips that exist. --setup installs kokoro-js.",
     json: true,
@@ -864,7 +957,8 @@ export const SLIDE_KEYS = [
   {
     name: "posterWait",
     type: N(),
-    description: "Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000).",
+    description:
+      "Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000).",
   },
   {
     name: "terms",

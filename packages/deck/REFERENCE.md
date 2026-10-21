@@ -1138,6 +1138,17 @@ Links glossary mentions inside a plain string at render time — for words that 
 
 Theme and addon packages: `theme: seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then the package `seriph`; `theme: ./theme` is a folder beside deck.mdx; `addons: [qr]` the same with addon-. The Vite plugin imports their CSS and modules; their layouts, components and layers merge in under the deck's own; `themeConfig` keys become `--theme-<kebab>` CSS variables. `kadal-deck info themes` lists the ones installed, `kadal-deck new --theme <name>` makes one, `kadal-deck theme eject` copies one into the deck. The contract: THEMES.md in @kadal/deck.
 
+First-party theme packages (install one, then `theme: <name>`; the prebuilt shell has them all):
+
+- **brand** (light and dark) — A corporate theme branded from themeConfig alone — primary and secondary colours, a logo (and a dark one), the company and a footer line — on a white page with Plus Jakarta Sans and calm cards. `@kadal/theme-brand`. Adds layouts `title-logo`, `agenda`, `metrics`; components `Metric`, `Logo`.
+- **crayon** (light and dark) — A playful pastel theme for workshops and classrooms: Fredoka and Nunito, cream paper and plum ink, chunky outlines, callouts as tilted stickers, a blockquote as a speech bubble. `@kadal/theme-crayon`. Adds layouts `activity`, `cards`; components `Sticker`, `Bubble`.
+- **folio** (light and dark) — An editorial theme for essays and keynotes: warm paper and ink, Playfair Display over Newsreader, booktabs tables, an asterism for a rule, a drop cap, generous margins. `@kadal/theme-folio`. Adds layouts `pull-quote`, `essay`, `chapter`; components `Byline`, `Lede`.
+- **lecture** (light and dark) — An academic theme: the Source family, numbered sections, a footer with the course, author, section and page, definition / theorem / proof blocks, citations and a references slide; prints on white. `@kadal/theme-lecture`. Adds layouts `section`, `definition`, `theorem`, `references`; components `Definition`, `Theorem`, `Lemma`, `Corollary`, `Proposition`, `Proof`, `Example`, `Remark`, `Cite`.
+- **neon** (dark) — A dark synthwave theme for meetups and launches: a striped sunset over a running grid, Orbitron and Space Grotesk, glows that keep the letters near white, a solid print fallback. Dark only. `@kadal/theme-neon`. Adds layouts `launch`, `horizon`; components `Glow`.
+- **ocean** (light and dark) — Kadal's own theme: the sea's palette, sunlit shallows in light and midnight water in dark, calm gradients, Catamaran, Night Owl code; a wave cover and depth-gauge section openers. `@kadal/theme-ocean`. Adds layouts `waves`, `depth`; components `Wave`.
+- **swiss** (light and dark) — The International Typographic Style: huge Inter Tight headings flush left on a twelve-column grid, heavy rules, one signal red, a running header with the section and page. `@kadal/theme-swiss`. Adds layouts `poster`, `index`, `grid`; components `Rule`.
+- **terminal** (light and dark) — A developer theme for code-heavy talks: JetBrains Mono headings, code blocks as editor windows, line numbers and a lit active line, Ayu colours; dark first with a light variant. `@kadal/theme-terminal`. Adds layouts `code`, `shell`; components `Terminal`.
+
 ## Transitions
 
 - `none` — Cut straight to the next slide.
