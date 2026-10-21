@@ -1832,7 +1832,10 @@ pre.deck-code.has-lines .line::before {
   bottom: 0;
   pointer-events: none;
 }
-.deck-chrome-area > * {
+/* Zero specificity: a child that says `pointer-events: none` for itself (the confetti canvas, the
+   pause curtain, both covering the window) keeps it — at class weight this rule won, and they
+   swallowed every click meant for the slide (the pen, links, Alt+click zoom). */
+:where(.deck-chrome-area) > * {
   pointer-events: auto;
 }
 
