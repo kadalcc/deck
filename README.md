@@ -125,6 +125,8 @@ and `node tools/showcase-check.mjs` drives every slide and view of it in a headl
 
 - MDX with clicks (`<Click>`, `<Clicks>`, `at="+2"`), layouts and named slots
 - Code that steps line by line, Shiki highlighting, magic move
+- Live code: Monaco editors and diffs, runnable JS/TS/Python with the output on
+  the slide, TwoSlash type hovers, code groups, `<<<` snippet imports, `[!code ++]` marks
 - KaTeX maths and Mermaid diagrams
 - Excalidraw sketches drawn in code, with guided steps
 - Glossary term cards: the compiler links the first mention of each term
@@ -216,6 +218,12 @@ claude mcp add kadal-deck -- npx -y @kadal/deck mcp          # Claude Code
 It also serves the catalog, the reference and the guides as resources, and two prompts:
 `draft_deck` (outline → finished deck) and `review_deck`. Rendering and export need Playwright
 in the deck: `npm i -D playwright && npx playwright install chromium`.
+
+**Editors**: `kadal-deck format` (and [`@kadal/prettier-plugin`](packages/prettier-plugin) for
+any editor running Prettier), the side editor in `kadal-deck dev` (press E), and the
+[VS Code extension](packages/vscode) — outline with drag-to-reorder, a preview that follows the
+cursor, frontmatter IntelliSense, `check` as problems. `kadal-deck dev --tunnel` shares the dev
+server through a Cloudflare Quick Tunnel; `--remote <password>` guards the presenter.
 
 **The CLI, for scripts and agents**: `kadal-deck check` (lint, exit 1 on errors),
 `kadal-deck screenshot` (PNGs), `kadal-deck info [topic]` (the reference), `kadal-deck new <dir>`

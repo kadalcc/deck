@@ -1,0 +1,57 @@
+/* The fixture theme: tokens from themeConfig (--theme-primary), a dark variant, its own layout. */
+.theme-fixture {
+  --deck-bg: #fff7ed;
+  --deck-fg: #1c1917;
+  --deck-muted: #9a3412;
+  --deck-accent: var(--theme-primary, #c2410c);
+  --deck-accent-2: #0369a1;
+  --deck-surface: rgba(194, 65, 12, 0.08);
+  --deck-border: rgba(194, 65, 12, 0.25);
+  --deck-heading-font: Georgia, serif;
+  --deck-body-font: system-ui, sans-serif;
+  --deck-mono-font: ui-monospace, monospace;
+  --deck-code-bg: #ffedd5;
+  --deck-code-fg: #1c1917;
+  --deck-code-active: rgba(194, 65, 12, 0.15);
+  --deck-radius: 4px;
+  --deck-pad: 80px;
+  --deck-base-size: 34px;
+}
+.theme-fixture[data-color-scheme="dark"] {
+  --deck-bg: #1c0f08;
+  --deck-fg: #ffedd5;
+  --deck-muted: #fdba74;
+  --deck-surface: rgba(253, 186, 116, 0.08);
+  --deck-border: rgba(253, 186, 116, 0.25);
+  --deck-code-bg: #2a160b;
+  --deck-code-fg: #ffedd5;
+}
+.theme-fixture .deck-slide h1,
+.theme-fixture .deck-slide h2 {
+  color: var(--deck-accent);
+  font-family: var(--deck-heading-font);
+}
+.theme-fixture .deck-layout-banner {
+  justify-content: center;
+}
+.theme-fixture .deck-layout-banner-band {
+  height: var(--theme-band-height, 12px);
+  background: var(--deck-accent);
+  margin: 0 calc(var(--deck-pad) * -1) 1em;
+}
+.theme-fixture .fixture-footer {
+  position: absolute;
+  inset: auto 40px 24px 40px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.5em;
+  color: var(--deck-muted);
+}
+.theme-fixture .fixture-badge {
+  display: inline-block;
+  padding: 0.1em 0.5em;
+  border-radius: 999px;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+  font-size: 0.6em;
+}

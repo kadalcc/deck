@@ -1,0 +1,1315 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`golden: real Slidev decks starter: converts, compiles in the runtime compiler, and reports what it should 1`] = `
+"---
+theme: seriph
+title: Welcome to Slidev
+info: |
+  ## Slidev Starter Template
+  Presentation slides for developers.
+
+  Learn more at [Sli.dev](https://sli.dev)
+drawings:
+  persist: false
+duration: 35min
+background: https://cover.sli.dev
+class: text-center
+transition: slidev-slide-left
+transitions:
+  slidev-slide-left:
+    in: deck-slide-in-right
+    out: deck-slide-out-left
+    back:
+      in: deck-slide-in-left
+      out: deck-slide-out-right
+  slidev-slide-left-then-fade-out:
+    in: deck-slide-in-right
+    out: slidev-fade-out-out
+    back:
+      in: slidev-fade-out-in
+      out: deck-slide-out-right
+  slidev-fade-out-then-slide-up:
+    in: slidev-fade-out-in
+    out: deck-slide-out-top
+    back:
+      in: deck-slide-in-top
+      out: slidev-fade-out-out
+  slidev-slide-up-then-slide-left:
+    in: deck-slide-in-bottom
+    out: deck-slide-out-left
+    back:
+      in: deck-slide-in-left
+      out: deck-slide-out-bottom
+---
+
+# Welcome to Slidev
+
+Presentation slides for developers
+
+<SlidevOn as="div" click="next" className="mt-12 py-1 hover:bg-white hover:bg-op-10">
+  Press Space for next page <Icon name="carbon:arrow-right" size="1.2em" />
+</SlidevOn>
+
+<div className="abs-br m-6 text-xl">
+  <button title="Open in Editor" className="slidev-icon-btn">
+    <Icon name="carbon:edit" size="1.2em" />
+  </button>
+  <a href="https://github.com/slidevjs/slidev" target="_blank" className="slidev-icon-btn">
+    <Icon name="carbon:logo-github" size="1.2em" />
+  </a>
+</div>
+
+<!--
+The last comment block of each slide will be treated as slide notes. It will be visible and editable in Presenter Mode along with the slide. [Read more in the docs](https://sli.dev/guide/syntax.html#notes)
+-->
+
+---
+transition: slidev-slide-left-then-fade-out
+---
+
+# What is Slidev?
+
+Slidev is a slides maker and presenter designed for developers, consist of the following features
+
+- 📝 **Text-based** - focus on the content with Markdown, and then style them later
+- 🎨 **Themable** - themes can be shared and re-used as npm packages
+- 🧑‍💻 **Developer Friendly** - code highlighting, live coding with autocompletion
+- 🤹 **Interactive** - embed Vue components to enhance your expressions
+- 🎥 **Recording** - built-in recording and camera view
+- 📤 **Portable** - export to PDF, PPTX, PNGs, or even a hostable SPA
+- 🛠 **Hackable** - virtually anything that's possible on a webpage is possible in Slidev
+<br />
+<br />
+
+Read more about [Why Slidev?](https://sli.dev/guide/why)
+
+{/* You can have \`style\` tag in markdown to override the style for the current page.
+Learn more: https://sli.dev/features/slide-scope-style */}
+
+<style>
+h1 {
+  background-color: #2B90B6;
+  background-image: linear-gradient(45deg, #4EC5D4 10%, #146b8c 20%);
+  background-size: 100%;
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -moz-text-fill-color: transparent;
+}
+</style>
+
+<!--
+Here is another comment.
+-->
+
+---
+level: 2
+transition: slidev-fade-out-then-slide-up
+---
+
+# Navigation
+
+Hover on the bottom-left corner to see the navigation's controls panel, [learn more](https://sli.dev/guide/ui#navigation-bar)
+
+## Keyboard Shortcuts
+
+|                                                     |                             |
+| --------------------------------------------------- | --------------------------- |
+| <kbd>right</kbd> / <kbd>space</kbd>                 | next animation or slide     |
+| <kbd>left</kbd>  / <kbd>shift</kbd><kbd>space</kbd> | previous animation or slide |
+| <kbd>up</kbd>                                       | previous slide              |
+| <kbd>down</kbd>                                     | next slide                  |
+
+{/* https://sli.dev/guide/animations.html#click-animation */}
+<Click as="img" src="https://sli.dev/assets/arrow-bottom-left.svg" alt="" className="absolute -bottom-9 -left-7 w-80 opacity-50" />
+<After as="p" className="absolute bottom-23 left-45 opacity-30 transform -rotate-10">Here!</After>
+
+---
+layout: two-cols
+transition: slidev-slide-up-then-slide-left
+---
+
+# Table of contents
+
+You can use the \`Toc\` component to generate a table of contents for your slides:
+
+\`\`\`html
+<Toc minDepth="1" maxDepth="1" />
+\`\`\`
+
+The title will be inferred from your slide content, or you can override it with \`title\` and \`level\` in your frontmatter.
+
+::right::
+
+<Toc minDepth={1} maxDepth={2} className="text-sm" />
+
+
+<style>
+.deck-layout { gap: calc(4 * var(--slidev-rem)); }
+</style>
+
+---
+layout: image-right
+image: https://cover.sli.dev
+---
+
+# Code
+
+Use code snippets and get the highlighting directly, and even types hover!
+
+\`\`\`ts [filename-example.ts] {all|4|6|6-7|9|all} twoslash
+// TwoSlash enables TypeScript hover information
+// and errors in markdown code blocks
+// More at https://shiki.style/packages/twoslash
+import { computed, ref } from 'vue'
+
+const count = ref(0)
+const doubled = computed(() => count.value * 2)
+
+doubled.value = 2
+\`\`\`
+
+<Click at={[4, 5]}><Arrow x1={685.71} y1={607.35} x2={382.04} y2={670.04} color="#953" width={3.92} /></Click>
+
+{/* This allow you to embed external code blocks */}
+<<< @/snippets/external.ts#snippet
+
+{/* Footer */}
+
+[Learn more](https://sli.dev/features/line-highlighting)
+
+{/* Inline style */}
+<style>
+.footnotes-sep {
+  margin-top: calc(1.25 * var(--slidev-rem)); opacity: 0.1;
+}
+.footnotes {
+  font-size: calc(0.875 * var(--slidev-rem)); line-height: calc(1.25 * var(--slidev-rem)); opacity: 0.75;
+}
+.footnote-backref {
+  display: none;
+}
+</style>
+
+<!--
+Notes can also sync with clicks
+
+[click] This will be highlighted after the first click
+
+[click] Highlighted with \`count = ref(0)\`
+
+[click:3] Last click (skip two clicks)
+-->
+
+---
+level: 2
+---
+
+# Shiki Magic Move
+
+Powered by [shiki-magic-move](https://shiki-magic-move.netlify.app/), Slidev supports animations across multiple code snippets.
+
+Add multiple code blocks and wrap them with <code>\`\`\`\`md magic-move</code> (four backticks) to enable the magic move. For example:
+
+\`\`\`\`md magic-move {lines: true}
+\`\`\`ts {*|2|*}
+// step 1
+const author = reactive({
+  name: 'John Doe',
+  books: [
+    'Vue 2 - Advanced Guide',
+    'Vue 3 - Basic Guide',
+    'Vue 4 - The Mystery'
+  ]
+})
+\`\`\`
+
+\`\`\`ts {*|1-2|3-4|3-4,8}
+// step 2
+export default {
+  data() {
+    return {
+      author: {
+        name: 'John Doe',
+        books: [
+          'Vue 2 - Advanced Guide',
+          'Vue 3 - Basic Guide',
+          'Vue 4 - The Mystery'
+        ]
+      }
+    }
+  }
+}
+\`\`\`
+
+\`\`\`ts
+// step 3
+export default {
+  data: () => ({
+    author: {
+      name: 'John Doe',
+      books: [
+        'Vue 2 - Advanced Guide',
+        'Vue 3 - Basic Guide',
+        'Vue 4 - The Mystery'
+      ]
+    }
+  })
+}
+\`\`\`
+
+Non-code blocks are ignored.
+
+\`\`\`vue
+<!-- step 4 -->
+<script setup>
+const author = {
+  name: 'John Doe',
+  books: [
+    'Vue 2 - Advanced Guide',
+    'Vue 3 - Basic Guide',
+    'Vue 4 - The Mystery'
+  ]
+}
+</script>
+\`\`\`
+\`\`\`\`
+
+---
+
+# Components
+
+<div className="grid grid-cols-2 grid-gap-4">
+<div>
+
+You can use Vue components directly inside your slides.
+
+We have provided a few built-in components like \`<Tweet/>\`, \`<BlueSky/>\`, and \`<Youtube/>\` that you can use directly. And adding your custom components is also super easy.
+
+\`\`\`html
+<Counter :count="10" />
+\`\`\`
+
+{/* ./components/Counter.vue */}
+<Counter className="m-t-4" count={10} />
+
+Check out [the guides](https://sli.dev/builtin/components.html) for more.
+
+</div>
+<div>
+
+\`\`\`html
+<Tweet id="1390115482657726468" />
+\`\`\`
+
+<Tweet id="1390115482657726468" scale={0.65} />
+
+</div>
+</div>
+
+<!--
+Presenter note with **bold**, *italic*, and ~~striked~~ text.
+
+Also, HTML elements are valid:
+<div className="flex w-full">
+  <span style={{ flexGrow: "1" }}>Left content</span>
+  <span>Right content</span>
+</div>
+-->
+
+---
+class: px-20
+---
+
+# Themes
+
+Slidev comes with powerful theming support. Themes can provide styles, layouts, components, or even configurations for tools. Switching between themes by just **one edit** in your frontmatter:
+
+<div className="grid grid-cols-2 grid-gap-2 m-t-2">
+
+\`\`\`yaml
+---
+theme: default
+---
+\`\`\`
+
+\`\`\`yaml
+---
+theme: seriph
+---
+\`\`\`
+
+<img src="https://github.com/slidevjs/themes/blob/main/screenshots/theme-default/01.png?raw=true" alt="" className="border-rounded" />
+
+<img src="https://github.com/slidevjs/themes/blob/main/screenshots/theme-seriph/01.png?raw=true" alt="" className="border-rounded" />
+
+</div>
+
+Read more about [How to use a theme](https://sli.dev/guide/theme-addon#use-theme) and
+check out the [Awesome Themes Gallery](https://sli.dev/resources/theme-gallery).
+
+---
+
+# Clicks Animations
+
+You can add \`v-click\` to elements to add a click animation.
+
+<Click as="div">
+
+This shows up when you press <kbd>space</kbd> or <kbd>right</kbd>, or click outside the slide on the right.
+
+\`\`\`html
+<div v-click>This shows up when you trigger a click animation.</div>
+\`\`\`
+
+</Click>
+
+<Click as="p">
+You can also add modifiers to change the animation:
+</Click>
+
+<div className="grid gap-3 mt-4 text-sm" style={{ gridTemplateColumns: "repeat(3, 1fr) 1.5fr 1fr" }}>
+  <After as="div" effect="fade-up" className="p-3 rounded border border-primary/20 bg-primary/10">
+    <div className="font-mono text-xs opacity-60 mb-1">v-click.up</div>
+    <div>Slide from bottom</div>
+  </After>
+  <Click as="div" className="p-3 rounded border border-primary/30 bg-primary/15">
+    <div className="font-mono text-xs opacity-60 mb-1">v-click.fade-in</div>
+    <div>Fade in</div>
+  </Click>
+  <Click as="div" effect="slidev" className="p-3 rounded border border-primary/40 bg-primary/20 slidev-anim-fade">
+    <div className="font-mono text-xs opacity-60 mb-1">v-click.fade</div>
+    <div>Dim (0.5 opacity)</div>
+  </Click>
+  <Click as="div" effect="slidev" className="p-3 rounded border border-primary/50 bg-primary/25 slidev-anim-fade slidev-anim-right slidev-anim-scale">
+    <div className="font-mono text-xs opacity-60 mb-1">v-click.fade.right.scale</div>
+    <div>Composed</div>
+  </Click>
+  <Click as="div" effect="slidev" className="p-3 rounded border border-primary/60 bg-primary/30 slidev-anim-none">
+    <div className="font-mono text-xs opacity-60 mb-1">v-click.none</div>
+    <div>No transition</div>
+  </Click>
+</div>
+
+<Click>
+
+The <Mark color="oklch(70.4% 0.191 22.216)" at={7}><code>v-mark</code> directive</Mark>
+also allows you to add
+<Mark type="circle" color="oklch(75% 0.183 55.934)" at={8}>inline marks</Mark>
+, powered by [Rough Notation](https://roughnotation.com/):
+
+\`\`\`html
+<span v-mark.underline.orange>inline markers</span>
+\`\`\`
+
+</Click>
+
+<Click as="div" at={8} className="mt-12">
+
+[Learn more](https://sli.dev/guide/animations#click-animation)
+
+</Click>
+
+---
+
+# Motions
+
+Motion animations are powered by [@vueuse/motion](https://motion.vueuse.org/), triggered by \`v-motion\` directive.
+
+\`\`\`html
+<div
+  v-motion
+  :initial="{ x: -80 }"
+  :enter="{ x: 0 }"
+  :click-3="{ x: 80 }"
+  :leave="{ x: 1000 }"
+>
+  Slidev
+</div>
+\`\`\`
+
+<div className="w-60 relative">
+  <div className="relative w-40 h-40">
+    <Motion as="img" initial={{ x: 1567.35, y: -195.92, scale: 1.5, rotate: -50 }} enter={{ x: 0, y: 0, rotate: 0, scale: 1, transition: { type: "spring", damping: 10, stiffness: 20, mass: 2 } }} src="https://sli.dev/logo-square.png" alt="" className="absolute inset-0" />
+    <Motion as="img" initial={{ y: 979.59, x: -195.92, scale: 2 }} enter={{ x: 0, y: 0, rotate: 0, scale: 1, transition: { type: "spring", damping: 10, stiffness: 20, mass: 2 } }} src="https://sli.dev/logo-circle.png" alt="" className="absolute inset-0" />
+    <Motion as="img" initial={{ x: 1175.51, y: 783.67, scale: 2, rotate: 100 }} enter={{ x: 0, y: 0, rotate: 0, scale: 1, transition: { type: "spring", damping: 10, stiffness: 20, mass: 2 } }} src="https://sli.dev/logo-triangle.png" alt="" className="absolute inset-0" />
+  </div>
+
+  <Motion as="div" initial={{ x: -156.73, opacity: 0 }} enter={{ x: 0, opacity: 1, transition: { delay: 2, duration: 1 } }} className="text-5xl absolute top-14 left-40 text-[#2B90B6] -z-1">
+    Slidev
+  </Motion>
+</div>
+
+{/* vue script setup scripts can be directly used in markdown, and will only affects current page */}
+
+
+<Motion as="div" initial={{ x: 68.57, y: 58.78, opacity: 0 }} enter={{ y: 0, opacity: 1, transition: { delay: 3.5 } }}>
+
+[Learn more](https://sli.dev/guide/animations.html#motion)
+
+</Motion>
+
+---
+
+# $\\LaTeX$
+
+$\\LaTeX$ is supported out-of-box. Powered by [$\\KaTeX$](https://katex.org/).
+
+<div className="h-3" />
+
+Inline $\\sqrt{3x-1}+(1+x)^2$
+
+Block
+$$ {1|3|all}
+\\begin{aligned}
+\\nabla \\cdot \\vec{E} &= \\frac{\\rho}{\\varepsilon_0} \\\\
+\\nabla \\cdot \\vec{B} &= 0 \\\\
+\\nabla \\times \\vec{E} &= -\\frac{\\partial\\vec{B}}{\\partial t} \\\\
+\\nabla \\times \\vec{B} &= \\mu_0\\vec{J} + \\mu_0\\varepsilon_0\\frac{\\partial\\vec{E}}{\\partial t}
+\\end{aligned}
+$$
+
+[Learn more](https://sli.dev/features/latex)
+
+---
+
+# Diagrams
+
+You can create diagrams / graphs from textual descriptions, directly in your Markdown.
+
+<div className="grid grid-cols-4 gap-5 pt-4 -mb-6">
+
+\`\`\`mermaid {scale: 0.5, alt: 'A simple sequence diagram'}
+sequenceDiagram
+    Alice->John: Hello John, how are you?
+    Note over Alice,John: A typical interaction
+\`\`\`
+
+\`\`\`mermaid {theme: 'neutral', scale: 0.8}
+graph TD
+B[Text] --> C{Decision}
+C -->|One| D[Result 1]
+C -->|Two| E[Result 2]
+\`\`\`
+
+\`\`\`mermaid
+mindmap
+  root((mindmap))
+    Origins
+      Long history
+      ::icon(fa fa-book)
+      Popularisation
+        British popular psychology author Tony Buzan
+    Research
+      On effectiveness<br/>and features
+      On Automatic creation
+        Uses
+            Creative techniques
+            Strategic planning
+            Argument mapping
+    Tools
+      Pen and paper
+      Mermaid
+\`\`\`
+
+\`\`\`plantuml {scale: 0.7}
+@startuml
+
+package "Some Group" {
+  HTTP - [First Component]
+  [Another Component]
+}
+
+node "Other Groups" {
+  FTP - [Second Component]
+  [First Component] --> FTP
+}
+
+cloud {
+  [Example 1]
+}
+
+database "MySql" {
+  folder "This is my folder" {
+    [Folder 3]
+  }
+  frame "Foo" {
+    [Frame 4]
+  }
+}
+
+[Another Component] --> [Example 1]
+[Example 1] --> [Folder 3]
+[Folder 3] --> [Frame 4]
+
+@enduml
+\`\`\`
+
+</div>
+
+Learn more: [Mermaid Diagrams](https://sli.dev/features/mermaid) and [PlantUML Diagrams](https://sli.dev/features/plantuml)
+
+---
+foo: bar
+dragPos:
+  square: 1354,63,327,_,-16
+---
+
+# Draggable Elements
+
+Double-click on the draggable elements to edit their positions.
+
+<br />
+
+###### Directive Usage
+
+\`\`\`md
+<img v-drag="'square'" src="https://sli.dev/logo.png">
+\`\`\`
+
+<br />
+
+###### Component Usage
+
+\`\`\`md
+<v-drag text-3xl>
+  <div class="i-carbon:arrow-up" />
+  Use the \`v-drag\` component to have a draggable container!
+</v-drag>
+\`\`\`
+
+<Drag pos="1299,404,511,_,-15">
+  <div className="text-center text-3xl border border-main rounded">
+    Double-click me!
+  </div>
+</Drag>
+
+<Drag pos="square"><img src="https://sli.dev/logo.png" /></Drag>
+
+###### Draggable Arrow
+
+\`\`\`md
+<v-drag-arrow two-way />
+\`\`\`
+
+<DragArrow pos="131,886,496,90" twoWay className="op70" />
+
+---
+src: ./pages/imported-slides.mdx
+hide: false
+---
+
+---
+
+# Monaco Editor
+
+Slidev provides built-in Monaco Editor support.
+
+Add \`{monaco}\` to the code block to turn it into an editor:
+
+\`\`\`ts {monaco}
+import { ref } from 'vue'
+import { emptyArray } from './external'
+
+const arr = ref(emptyArray(10))
+\`\`\`
+
+Use \`{monaco-run}\` to create an editor that can execute the code directly in the slide:
+
+\`\`\`ts {monaco-run}
+import { version } from 'vue'
+import { emptyArray, sayHello } from './external'
+
+sayHello()
+console.log(\`vue \${version}\`)
+console.log(emptyArray<number>(10).reduce(fib => [...fib, fib.at(-1)! + fib.at(-2)!], [1, 1]))
+\`\`\`
+
+---
+layout: center
+class: text-center
+---
+
+# Learn More
+
+[Documentation](https://sli.dev) · [GitHub](https://github.com/slidevjs/slidev) · [Showcases](https://sli.dev/resources/showcases)
+"
+`;
+
+exports[`golden: real Slidev decks starter: converts, compiles in the runtime compiler, and reports what it should 2`] = `
+"# Import report
+
+Converted from \`starter/slides.md\` by \`kadal-deck import slidev\`.
+
+- Slides: 16 — 15 (94%) converted with no warning or error.
+- Report lines: 0 errors, 1 warnings, 4 notes.
+- Theme: Slidev \`seriph\` → Kadal \`seriph\` (@kadal/theme-seriph).
+- Stage: 1920×1080; lengths and positions scaled ×1.959 from Slidev's canvas.
+- Icon sets: \`@iconify-json/carbon\`.
+
+Severity: **error** — the slide does not show what the Slidev one did (the source is kept in an
+MDX comment \`{/* slidev: … */}\`); **warning** — it shows, but differently; **note** — carried over
+in Kadal's spelling, or dropped because Kadal does it another way.
+
+## The deck
+
+- **note** (slides.md) comark: Kadal is MDX; write components as JSX (<Badge>…</Badge>) rather than Comark's :name[…]{…}.
+- **note** (slides.md) vue is added to devDependencies: a twoslash block imports it, and TwoSlash reads its types from node_modules.
+
+## Slide 1 — Welcome to Slidev
+
+- **note** (slides.md:36) @click="$slidev.nav.openInEditor()" opens Slidev's editor, which Kadal does not have; dropped.
+
+## Slide 15 — Monaco Editor
+
+- **warning** (slides.md:644) This {monaco-run} block imports \`vue\`, \`./external\`; Kadal runs the code in a worker without module resolution, so the import fails when it runs. Inline what it imports, or register a runner for it (registerCodeRunner).
+
+## Slide 16 — Learn More
+
+- **note** (slides.md:662) <PoweredBySlidev> is Slidev's credit line; dropped (a Kadal host adds its own badge).
+"
+`;
+
+exports[`golden: real Slidev decks composable-vue: converts, compiles in the runtime compiler, and reports what it should 1`] = `
+"---
+theme: classic
+download: https://antfu.me/talks/2021-04-29
+info: |
+  ## Composable Vue
+
+  Patterns and tips for writing good composable logic in Vue
+
+  [Anthony Fu](https://antfu.me/) at [VueDay 2021](https://2021.vueday.it/)
+
+  - [Recording](https://www.youtube.com/watch?v=IMJjP6edHd0)
+  - [Transcript](https://antfu.me/posts/composable-vue-vueday-2021)
+  - [Source code](https://github.com/antfu/talks/tree/master/2021-04-29)
+layout: cover
+transition: none
+---
+
+# Composable Vue
+
+Patterns and tips for writing good composable logic in Vue
+
+<div className="uppercase text-sm tracking-widest">
+Anthony Fu
+</div>
+
+<div className="abs-bl mx-14 my-12 flex">
+  <img src="https://2020.vueday.it/img/themes/vueday/vueday-logo.png" alt="" className="h-8" />
+  <div className="ml-3 flex flex-col text-left">
+    <div><b>Vue</b>Day</div>
+    <div className="text-sm opacity-50">Apr. 29th, 2021</div>
+  </div>
+</div>
+
+---
+layout: intro
+---
+
+# Anthony Fu
+
+<div className="leading-8 opacity-80">
+Vue core team member and Vite team member.<br />
+Creator of VueUse, i18n Ally and Type Challenges.<br />
+A fanatical full-time open sourceror.<br />
+</div>
+
+<div className="my-10 grid grid-cols-[40px_1fr] w-min gap-y-4">
+  <Icon name="ri:github-line" size="1.2em" className="opacity-50" />
+  <div><a href="https://github.com/antfu" target="_blank">antfu</a></div>
+  <Icon name="ri:twitter-line" size="1.2em" className="opacity-50" />
+  <div><a href="https://twitter.com/antfu7" target="_blank">antfu7</a></div>
+  <Icon name="ri:user-3-line" size="1.2em" className="opacity-50" />
+  <div><a href="https://antfu.me" target="_blank">antfu.me</a></div>
+</div>
+
+<img src="https://antfu.me/avatar.png" alt="A comic art image of Anthony Fu" className="rounded-full w-40 abs-tr mt-16 mr-12" />
+
+---
+title: Sponsors
+layout: center
+---
+
+<img src="https://cdn.jsdelivr.net/gh/antfu/static/sponsors.png" alt="A list of the sponsor logos" className="h-100 -mt-10" /><br />
+<div className="text-center text-xs opacity-50 -mt-8 hover:opacity-100">
+  <a href="https://github.com/sponsors/antfu" target="_blank">
+    Sponsor me at GitHub
+  </a>
+</div>
+
+---
+layout: center
+---
+
+# Composable Vue
+
+---
+title: VueUse
+layout: center
+---
+
+<div className="grid grid-cols-[3fr_2fr] gap-4">
+  <div className="text-center pb-4">
+    <img src="https://vueuse.org/favicon.svg" alt="" className="h-50 inline-block" />
+    <div className="opacity-50 mb-2 text-sm">
+      Collection of essential Vue Composition Utilities
+    </div>
+    <div className="text-center">
+      <a href="https://www.npmjs.com/package/@vueuse/core" target="__blank" className="!border-none"><img src="https://img.shields.io/npm/v/@vueuse/core?color=a1b858&label=" alt="NPM version" className="h-4 inline mx-0.5" /></a>
+      <a href="https://www.npmjs.com/package/@vueuse/core" target="__blank" className="!border-none"><img alt="NPM Downloads" src="https://img.shields.io/npm/dm/@vueuse/core?color=50a36f&label=" className="h-4 inline mx-0.5" /></a>
+      <a href="https://vueuse.org" target="__blank" className="!border-none"><img src="https://img.shields.io/static/v1?label=&message=docs%20%26%20demos&color=1e8a7a" alt="Docs & Demos" className="h-4 inline mx-0.5" /></a>
+      <img alt="Function Count" src="https://img.shields.io/badge/-114%20functions-13708a" className="h-4 inline mx-0.5" />
+      <br />
+      <a href="https://github.com/vueuse/vueuse" target="__blank" className="!border-none"><img alt="GitHub stars" src="https://img.shields.io/github/stars/vueuse/vueuse?style=social" className="mt-2 h-4 inline mx-0.5" /></a>
+    </div>
+  </div>
+  <div className="border-l border-main !all:leading-12 !all:list-none my-auto">
+
+  - Works for both Vue 2 and 3
+  - Tree-shakeable ESM
+  - CDN compatible
+  - TypeScript
+  - Rich ecosystems
+
+  </div>
+</div>
+
+---
+layout: center
+class: text-center
+---
+
+# Composition API
+
+a brief go-through
+
+---
+
+<div className="grid grid-cols-2 gap-x-4"><div>
+
+# Ref
+
+\`\`\`ts {monaco}
+import { ref } from 'vue'
+
+let foo = 0
+let bar = ref(0)
+
+foo = 1
+bar = 1 // ts-error
+\`\`\`
+
+<Click as="div">
+
+### Pros
+
+- More explicit, with type checking
+- Less caveats
+
+### Cons
+
+- \`.value\`
+
+</Click>
+
+</div><div>
+
+# Reactive
+
+\`\`\`ts {monaco}
+import { reactive } from 'vue'
+
+const foo = { prop: 0 }
+const bar = reactive({ prop: 0 })
+
+foo.prop = 1
+bar.prop = 1
+\`\`\`
+
+<Click as="div">
+
+### Pros
+
+- Auto unwrapping (a.k.a \`.value\` free)
+
+### Cons
+
+- Same as plain objects on types
+- Destructure loses reactivity
+- Need to use callback for \`watch\`
+
+</Click>
+</div></div>
+
+---
+
+# Ref Auto Unwrapping <MarkerCore />
+
+Get rid of \`.value\` for most of the time.
+
+<div className="grid grid-cols-2 gap-x-4">
+
+<Clicks every={2}>
+
+- \`watch\` accepts ref as the watch target, and returns the unwrapped value in the callback
+
+\`\`\`ts
+const counter = ref(0)
+
+watch(counter, (count) => {
+  console.log(count) // same as \`counter.value\`
+})
+\`\`\`
+
+- Ref is auto unwrapped in the template
+
+\`\`\`html
+<template>
+  <button @click="counter += 1">
+    Counter is {{ counter }}
+  </button>
+</template>
+\`\`\`
+
+- Reactive will auto-unwrap nested refs.
+
+<div>
+
+\`\`\`ts {monaco}
+import { reactive, ref } from 'vue'
+
+const foo = ref('bar')
+const data = reactive({ foo, id: 10 })
+data.foo // 'bar'
+\`\`\`
+
+</div>
+
+</Clicks>
+
+</div>
+
+---
+
+# \`unref\` - Opposite of Ref <MarkerCore />
+
+- If it gets a Ref, returns the value of it.
+- Otherwise, returns as-is.
+
+<div className="grid grid-cols-2 gap-x-4 mt-4">
+
+<Click as="div">
+
+### Implementation
+
+\`\`\`ts
+function unref<T>(r: Ref<T> | T): T {
+  return isRef(r) ? r.value : r
+}
+\`\`\`
+
+</Click><Click as="div">
+
+### Usage
+
+\`\`\`ts {monaco}
+import { ref, unref } from 'vue'
+
+const foo = ref('foo')
+unref(foo) // 'foo'
+
+const bar = 'bar'
+unref(bar) // 'bar'
+\`\`\`
+
+</Click></div>
+
+---
+layout: center
+class: text-center
+---
+
+# Patterns & Tips
+
+of writing composable functions
+
+---
+
+# What's Composable Functions
+
+Sets of reusable logic, separation of concerns.
+
+<Click as="div" className="grid grid-cols-[1fr_130px]">
+
+\`\`\`ts
+export function useDark(options: UseDarkOptions = {}) {
+  const preferredDark = usePreferredDark() // <--
+  const store = useLocalStorage('vueuse-dark', 'auto') // <--
+
+  return computed<boolean>({
+    get() {
+      return store.value === 'auto'
+        ? preferredDark.value
+        : store.value === 'dark'
+    },
+    set(v) {
+      store.value = v === preferredDark.value
+        ? 'auto'
+        : v ? 'dark' : 'light'
+    },
+  })
+}
+\`\`\`
+
+<div className="grid">
+<DarkToggle className="m-auto" />
+</div>
+
+</Click>
+
+<Click as="div" className="abs-b mx-14 my-12">
+<VueUse name="useDark" />
+</Click>
+
+---
+
+# Think as "Connections"
+
+The \`setup()\` only runs **once** on component initialization, to construct the relations between your state and logic.
+
+- Input → Output<sup className="ml-1 opacity-50">Effects</sup>
+- Output reflects to input's changes automatically
+
+<div className="grid grid-cols-[auto_1fr] gap-4">
+  <Click><Connections className="mt-4" /></Click>
+  <Click as="div" className="p-4">
+    <h3 className="pb-2">SpreadSheet Formula</h3>
+    <img src="https://cdn.wallstreetmojo.com/wp-content/uploads/2019/01/Division-Formula-in-Excel-Example-1-1.png" alt="" className="h-40" />
+  </Click>
+</div>
+
+---
+
+# One Thing at a Time
+
+Just the same as authoring JavaScript functions.
+
+- Extract duplicated logics into composable functions
+- Have meaningful names
+- Consistent naming conversions - \`useXX\` \`createXX\` \`onXX\`
+- Keep function small and simple
+- "Do one thing, and do it well"
+
+---
+
+# Passing Refs as Arguments <MarkerPattern />
+
+<div className="grid grid-cols-[160px_1fr_180px] gap-x-4">
+
+<div />
+
+### Implementation
+
+### Usage
+
+<Clicks every={3}>
+
+<div className="my-auto leading-6 text-base opacity-75">
+Plain function
+</div>
+
+\`\`\`ts
+function add(a: number, b: number) {
+  return a + b
+}
+\`\`\`
+
+\`\`\`ts
+const a = 1
+const b = 2
+
+const c = add(a, b) // 3
+\`\`\`
+
+<div className="my-auto leading-6 text-base opacity-75">
+Accepts refs,<br />
+returns a reactive result.
+</div>
+
+\`\`\`ts
+function add(a: Ref<number>, b: Ref<number>) {
+  return computed(() => a.value + b.value)
+}
+\`\`\`
+
+\`\`\`ts
+const a = ref(1)
+const b = ref(2)
+
+const c = add(a, b)
+c.value // 3
+\`\`\`
+
+<div className="my-auto leading-6 text-base opacity-75">
+Accepts both refs and plain values.
+</div>
+
+\`\`\`ts
+function add(
+  a: Ref<number> | number,
+  b: Ref<number> | number,
+) {
+  return computed(() => unref(a) + unref(b))
+}
+\`\`\`
+
+\`\`\`ts
+const a = ref(1)
+
+const c = add(a, 5)
+c.value // 6
+\`\`\`
+
+</Clicks>
+
+</div>
+
+---
+
+# MaybeRef <MarkerTips />
+
+A custom type helper
+
+\`\`\`ts
+type MaybeRef<T> = Ref<T> | T
+\`\`\`
+
+<Click>
+
+In VueUse, we use this helper heavily to support optional reactive arguments
+
+\`\`\`ts
+export function useTimeAgo(
+  time: Date | number | string | Ref<Date | number | string>,
+) {
+  return computed(() => someFormating(unref(time)))
+}
+\`\`\`
+
+\`\`\`ts {monaco}
+import type { Ref } from 'vue'
+import { computed, unref } from 'vue'
+
+type MaybeRef<T> = Ref<T> | T
+
+export function useTimeAgo(
+  time: MaybeRef<Date | number | string>,
+) {
+  return computed(() => someFormating(unref(time)))
+}
+\`\`\`
+
+</Click>
+
+---
+
+# Make it Flexible <MarkerPattern />
+
+Make your functions like LEGO, can be used with different components in different ways.
+
+<div className="grid grid-cols-2 gap-x-4">
+
+<Click as="div">
+
+### Create a "Special" Ref
+
+\`\`\`ts {monaco}
+import { useTitle } from '@vueuse/core'
+
+const title = useTitle()
+
+title.value = 'Hello World'
+// now the page's title changed
+\`\`\`
+
+</Click><Click as="div">
+
+### Binding an Existing Ref
+
+\`\`\`ts {monaco}
+import { useTitle } from '@vueuse/core'
+import { computed, ref } from 'vue'
+
+const name = ref('Hello')
+const title = computed(() => {
+  return \`\${name.value} - World\`
+})
+
+useTitle(title) // Hello - World
+
+name.value = 'Hi' // Hi - World
+\`\`\`
+
+</Click></div>
+
+<Click as="div" className="abs-b mx-14 my-12">
+<VueUse name="useTitle" />
+</Click>
+"
+`;
+
+exports[`golden: real Slidev decks composable-vue: converts, compiles in the runtime compiler, and reports what it should 2`] = `
+"# Import report
+
+Converted from \`composable-vue/slides.md\` by \`kadal-deck import slidev\`.
+
+- Slides: 16 — 16 (100%) converted with no warning or error.
+- Report lines: 3 errors, 0 warnings, 0 notes.
+- Theme: Slidev \`default\` → Kadal \`classic\` (@kadal/theme-classic).
+- Stage: 1920×1080; lengths and positions scaled ×1.959 from Slidev's canvas.
+- Icon sets: \`@iconify-json/carbon\`, \`@iconify-json/ri\`.
+
+Severity: **error** — the slide does not show what the Slidev one did (the source is kept in an
+MDX comment \`{/* slidev: … */}\`); **warning** — it shows, but differently; **note** — carried over
+in Kadal's spelling, or dropped because Kadal does it another way.
+
+## The deck
+
+- **error** (components/Connections.vue) Connections.vue has script logic the importer does not convert (import { autoResetRef } from '@vueuse/core'; watch(a, () => a2c.value = true); watch(b, () => b2c.value = true)); it is a stub that renders its markup, without the 13 bindings and expressions that read its script. Finish it by hand in its .tsx (marked TODO).
+- **error** (components/DarkToggle.vue) DarkToggle.vue has script logic the importer does not convert (import { useDarkMode } from '@slidev/client'; const { isDark, toggleDark } = useDarkMode()); it is a stub that renders its markup, without the 3 bindings and expressions that read its script. Finish it by hand in its .tsx (marked TODO).
+- **error** (components/NumBox.vue) NumBox.vue has script logic the importer does not convert (import { useVModel } from '@vueuse/core'; const emit = defineEmits<{); it is a stub that renders its markup. Finish it by hand in its .tsx (marked TODO).
+"
+`;
+
+exports[`golden: real Slidev decks apple-basic: converts, compiles in the runtime compiler, and reports what it should 1`] = `
+"---
+theme: crisp
+layout: intro
+transition: none
+---
+
+# Presentation title
+
+Presentation subtitle
+
+<div className="absolute bottom-10">
+  <span className="font-700">
+    Author and Date
+  </span>
+</div>
+
+---
+layout: intro-image
+image: https://source.unsplash.com/collection/4966472/1920x1080
+---
+
+<div className="absolute top-10">
+  <span className="font-700">
+    Author and Date
+  </span>
+</div>
+
+<div className="absolute bottom-10">
+<h1>Presentation title</h1>
+<p>Presentation subtitle</p>
+</div>
+
+---
+layout: intro-image-right
+image: https://source.unsplash.com/collection/4966472/1920x1080
+---
+
+# Slide Title
+## Slide Subtitle
+
+---
+layout: image-right
+image: https://source.unsplash.com/collection/4966472/1920x1080
+---
+
+# Slide Title
+## Slide Subtitle
+
+* Slide bullet text
+
+---
+
+# Slide Title
+## Slide Subtitle
+
+* Slide bullet text
+
+---
+layout: bullets
+---
+
+* Slide bullet text
+
+---
+layout: section
+---
+
+# Section Title
+
+---
+layout: statement
+---
+
+# Statement
+
+---
+layout: fact
+---
+
+# 100%
+Fact information
+
+---
+layout: quote
+---
+
+# "Notable quote"
+Attribution
+
+---
+layout: 3-images
+imageLeft: https://source.unsplash.com/collection/4966472/1920x1080
+imageTopRight: https://source.unsplash.com/collection/4966472/1920x1080
+imageBottomRight: https://source.unsplash.com/collection/4966472/1920x1080
+---
+
+---
+layout: image
+image: https://source.unsplash.com/collection/4966472/1920x1080
+---
+
+---
+layout: center
+class: text-center
+---
+
+# Learn More
+
+[Documentations](https://sli.dev) / [GitHub Repo](https://github.com/slidevjs/slidev)
+"
+`;
+
+exports[`golden: real Slidev decks apple-basic: converts, compiles in the runtime compiler, and reports what it should 2`] = `
+"# Import report
+
+Converted from \`apple-basic/slides.md\` by \`kadal-deck import slidev\`.
+
+- Slides: 13 — 13 (100%) converted with no warning or error.
+- Report lines: 0 errors, 0 warnings, 0 notes.
+- Theme: Slidev \`apple-basic\` → Kadal \`crisp\` (@kadal/theme-crisp).
+- Stage: 1920×1080; lengths and positions scaled ×1.959 from Slidev's canvas.
+
+Severity: **error** — the slide does not show what the Slidev one did (the source is kept in an
+MDX comment \`{/* slidev: … */}\`); **warning** — it shows, but differently; **note** — carried over
+in Kadal's spelling, or dropped because Kadal does it another way.
+
+Nothing to report: every slide converted as written.
+"
+`;

@@ -1,0 +1,15 @@
+.fixture-stamp {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  border: 3px solid var(--deck-accent);
+  color: var(--deck-accent);
+  transform: rotate(-4deg);
+  font-weight: 700;
+}
+.fixture-corner {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  font-size: 0.45em;
+  color: var(--deck-muted);
+}

@@ -1,0 +1,15 @@
+{
+  "name": "kadal-addon-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A fixture addon for the theme mechanism's tests.",
+  "keywords": ["kadal-addon"],
+  "type": "module",
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css"
+  },
+  "kadal": {
+    "addon": { "name": "fixture", "title": "Fixture addon", "components": ["Stamp"] }
+  }
+}

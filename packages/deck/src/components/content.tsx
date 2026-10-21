@@ -5,7 +5,7 @@ import { TWEET_POSTER_SIZE, tweetEmbedUrl, tweetId, youtubeEmbedUrl } from "../c
 import { burstConfetti } from "../react/ConfettiLayer.tsx";
 import { FrameShell } from "../react/Frame.tsx";
 import { useDeck, useSlide, useSlideOptional } from "../react/context.ts";
-import { useActions, useClick, useNav, useUi } from "../react/hooks.ts";
+import { useActions, useClick, useConfig, useNav, useUi } from "../react/hooks.ts";
 
 /* ─────────────────────────── Math, diagrams, notes ─────────────────────────── */
 
@@ -32,31 +32,67 @@ export function Tex({
 }
 
 let mermaidPromise: Promise<typeof import("mermaid")> | null = null;
+/**
+ * Mermaid's configuration is global (`initialize`), and a render is async: two diagrams with
+ * different options rendering at once would each see the other's. Renders take turns.
+ */
+let mermaidQueue: Promise<unknown> = Promise.resolve();
 
-/** A Mermaid diagram, rendered in the browser in the deck's colour scheme. */
+/**
+ * A Mermaid diagram, rendered in the browser in the deck's colour scheme. The source is the
+ * children or `code` (what a ```mermaid fence compiles to). Configuration layers, each over the
+ * one before: the scheme's theme (dark or neutral), the deck's `mermaid:` headmatter (and the
+ * plugin's `mermaid` option), this diagram's `config`, then its `theme`.
+ */
 export function Mermaid({
   children,
+  code,
   scale = 1,
+  theme,
+  config,
   className,
+  alt,
 }: {
   children?: ReactNode;
+  /** The diagram's source, when it is not the children. */
+  code?: string;
   scale?: number;
+  /** A Mermaid theme for this diagram: default, neutral, dark, forest, base. */
+  theme?: string;
+  /** Mermaid configuration for this diagram (themeVariables, look, flowchart…). */
+  config?: Record<string, unknown>;
   className?: string;
+  /** What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. */
+  alt?: string;
 }) {
   const source =
-    typeof children === "string" ? children : Array.isArray(children) ? children.join("") : "";
+    code ??
+    (typeof children === "string" ? children : Array.isArray(children) ? children.join("") : "");
   const scheme = useUi((s) => s.colorScheme);
+  const deckConfig = useConfig().mermaid;
   const [svg, setSvg] = useState("");
   const id = useMemo(() => `m${Math.random().toString(36).slice(2, 9)}`, []);
+  // Objects by value: a new object of the same config must not render again.
+  const configKey = JSON.stringify([deckConfig ?? null, config ?? null, theme ?? null]);
   useEffect(() => {
     let alive = true;
+    const [deckOpts, own, ownTheme] = JSON.parse(configKey) as [
+      Record<string, unknown> | null,
+      Record<string, unknown> | null,
+      string | null,
+    ];
     mermaidPromise ??= import("mermaid");
-    mermaidPromise.then(async ({ default: mermaid }) => {
+    mermaidQueue = mermaidQueue.then(async () => {
+      if (!alive) return;
+      const { default: mermaid } = await mermaidPromise!;
       mermaid.initialize({
         startOnLoad: false,
-        theme: scheme === "dark" ? "dark" : "neutral",
         securityLevel: "loose",
-      });
+        theme: scheme === "dark" ? "dark" : "neutral",
+        ...deckOpts,
+        ...own,
+        ...(ownTheme ? { theme: ownTheme } : null),
+      } as Parameters<typeof mermaid.initialize>[0]);
       try {
         const out = await mermaid.render(id, source.trim());
         if (alive) setSvg(out.svg);
@@ -67,11 +103,13 @@ export function Mermaid({
     return () => {
       alive = false;
     };
-  }, [source, scheme, id]);
+  }, [source, scheme, id, configKey]);
   return (
     <div
       className={["deck-mermaid", className].filter(Boolean).join(" ")}
       style={{ zoom: scale }}
+      role="img"
+      aria-label={alt || source.trim().split("\n")[0] || "Diagram"}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
@@ -260,37 +298,6 @@ export function Image({
       className={["deck-image", className].filter(Boolean).join(" ")}
       data-preview-image={previewSrc}
       data-preview-fit={fit}
-      {...rest}
-    />
-  );
-}
-
-export function Video({
-  src,
-  autoplay,
-  loop,
-  muted = true,
-  controls = false,
-  className,
-  ...rest
-}: {
-  src: string;
-  autoplay?: boolean;
-  loop?: boolean;
-  muted?: boolean;
-  controls?: boolean;
-  className?: string;
-  [key: string]: unknown;
-}) {
-  return (
-    <video
-      data-src={src}
-      data-autoplay={autoplay ? "" : undefined}
-      loop={loop}
-      muted={muted}
-      controls={controls}
-      playsInline
-      className={["deck-video", className].filter(Boolean).join(" ")}
       {...rest}
     />
   );
@@ -885,33 +892,6 @@ export function Timer({ seconds, className }: { seconds?: number; className?: st
         .join(" ")}
     >
       {m}:{String(s).padStart(2, "0")}
-    </span>
-  );
-}
-
-/** A hand-drawn mark around inline content, drawn on its click: underline, circle, box, highlight. */
-export function Mark({
-  type = "underline",
-  color = "var(--deck-accent)",
-  at,
-  children,
-  className,
-}: {
-  type?: "underline" | "circle" | "box" | "highlight" | "strike";
-  color?: string;
-  at?: number | string;
-  children?: ReactNode;
-  className?: string;
-}) {
-  const { shown } = useClick({ at });
-  return (
-    <span
-      className={["deck-mark", `type-${type}`, shown ? "is-on" : "", className]
-        .filter(Boolean)
-        .join(" ")}
-      style={{ "--mark-color": color } as React.CSSProperties}
-    >
-      {children}
     </span>
   );
 }

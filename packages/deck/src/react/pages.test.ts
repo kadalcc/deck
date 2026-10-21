@@ -28,4 +28,11 @@ describe("pageFor", () => {
     expect(pageFor("play", { presenter: Presenter, remote: Remote })).toBeNull();
     expect(pageFor("print", { presenter: Presenter })).toBeNull();
   });
+
+  test("the overview and the batch notes editor are the engine's own, for every deck", () => {
+    expect(pageFor("overview", {})).not.toBeNull();
+    expect(pageFor("notes-edit", {})).not.toBeNull();
+    const Mine = () => null;
+    expect(pageFor("overview", { overview: Mine })).toBe(Mine);
+  });
 });

@@ -6,19 +6,21 @@ import { key as navKey } from "../core/navigation.ts";
 import { readItem, writeItem } from "../core/storage.ts";
 import { useStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
+import { type ShapeKind, shapePoints } from "../draw/shapes.ts";
 import type { RemoteState } from "../live/protocol.ts";
 import { presenterTicket, splitFromHash } from "../live/ticket.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { useDeck } from "../react/context.ts";
 import { Listbox } from "../react/Listbox.tsx";
 import { useFit } from "../react/fit.ts";
+import { currentPart, splitNotes } from "../core/notes-markers.ts";
+import { formatClock, fromRemote, readTimer } from "../core/timer.ts";
 import { expectedElapsed, formatElapsed, formatPace, paceTone } from "../react/pacing.ts";
 import { SlideFrame } from "../react/SlideFrame.tsx";
 import {
   type Aim,
   createCoalescer,
   createOneEuro,
-  notesSegment,
   orientationToPoint,
   readOrientation,
 } from "./air.ts";
@@ -206,7 +208,7 @@ function useSettings(): [Settings, (patch: Partial<Settings>) => void] {
   const deck = useDeck();
   const key = `deck.remote.${deck.config.slug || "deck"}`;
   const [settings, setSettings] = useState<Settings>(() => {
-    const base = defaults(deck.config.totalTime || null);
+    const base = defaults(deck.config.totalTime || deck.config.duration || null);
     try {
       return { ...base, ...(JSON.parse(readItem(key) ?? "{}") as Partial<Settings>) };
     } catch {
@@ -259,6 +261,17 @@ const buzz = (on: boolean, pattern: number | number[] = 8) => {
 
 type Mode = "point" | "pen" | "zoom";
 
+/** What the pen draws on the phone: a stroke, a shape dragged out, or the eraser. */
+type PenTool = "pen" | ShapeKind | "eraser";
+const PEN_TOOLS: { tool: PenTool; icon: string; label: string }[] = [
+  { tool: "pen", icon: "pencil", label: "Freehand" },
+  { tool: "line", icon: "slash", label: "Line" },
+  { tool: "arrow", icon: "move-up-right", label: "Arrow" },
+  { tool: "rect", icon: "square", label: "Rectangle" },
+  { tool: "ellipse", icon: "circle", label: "Ellipse" },
+  { tool: "eraser", icon: "eraser", label: "Eraser" },
+];
+
 function Console({ link }: { link: RemoteLink }) {
   const deck = useDeck();
   const status = useStore(link.status);
@@ -266,6 +279,7 @@ function Console({ link }: { link: RemoteLink }) {
   const state = useStore(link.state);
   const [settings, set] = useSettings();
   const [mode, setMode] = useState<Mode>("point");
+  const [penTool, setPenTool] = useState<PenTool>("pen");
   const [sheet, setSheet] = useState<"overview" | "settings" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const flash = (m: string) => {
@@ -308,10 +322,17 @@ function Console({ link }: { link: RemoteLink }) {
 
   return (
     <>
-      <Header state={state} status={status} settings={settings} />
+      <Header state={state} status={status} settings={settings} run={run} />
       <div className="deck-remote-body">
         <section className="deck-remote-view">
-          <MiniSlide state={state} link={link} mode={mode} settings={settings} run={run} />
+          <MiniSlide
+            state={state}
+            link={link}
+            mode={mode}
+            penTool={penTool}
+            settings={settings}
+            run={run}
+          />
           <div className="deck-remote-modes" role="radiogroup" aria-label="What a touch does">
             <ModeButton
               mode="point"
@@ -324,19 +345,49 @@ function Console({ link }: { link: RemoteLink }) {
             <ModeButton mode="pen" current={mode} set={setMode} icon="pencil" label="Pen" />
             <ModeButton mode="zoom" current={mode} set={setMode} icon="zoom-in" label="Zoom" />
           </div>
-          <Notes state={state} size={settings.notes} setSize={(notes) => set({ notes })} />
+          <Notes
+            state={state}
+            size={settings.notes}
+            setSize={(notes) => set({ notes })}
+            run={run}
+          />
         </section>
         <section className="deck-remote-controls">
           {/* Drawing has no use for holding to point, so the pen's Undo and Clear take that place:
               the layout does not change between modes and the notes keep their room. */}
           {mode === "pen" ? (
-            <div className="deck-remote-row deck-remote-pen-tools">
-              <button type="button" onClick={() => run("draw.undo")}>
-                <Icon name="undo-2" /> Undo
-              </button>
-              <button type="button" onClick={() => run("draw.clear")}>
-                <Icon name="eraser" /> Clear
-              </button>
+            <div className="deck-remote-pen">
+              <div
+                className="deck-remote-pen-shapes"
+                role="radiogroup"
+                aria-label="What the pen draws"
+              >
+                {PEN_TOOLS.map((t) => (
+                  <button
+                    type="button"
+                    key={t.tool}
+                    role="radio"
+                    aria-checked={penTool === t.tool}
+                    aria-label={t.label}
+                    title={t.label}
+                    className={penTool === t.tool ? "is-on" : ""}
+                    onClick={() => setPenTool(t.tool)}
+                  >
+                    <Icon name={t.icon} />
+                  </button>
+                ))}
+              </div>
+              <div className="deck-remote-row deck-remote-pen-tools">
+                <button type="button" onClick={() => run("draw.undo")}>
+                  <Icon name="undo-2" /> Undo
+                </button>
+                <button type="button" onClick={() => run("draw.redo")}>
+                  <Icon name="redo-2" /> Redo
+                </button>
+                <button type="button" onClick={() => run("draw.clear")}>
+                  <Icon name="trash-2" /> Clear
+                </button>
+              </div>
             </div>
           ) : (
             <AirButton link={link} settings={settings} flash={flash} />
@@ -440,10 +491,12 @@ function Header({
   state,
   status,
   settings,
+  run,
 }: {
   state: RemoteState | null;
   status: string;
   settings: Settings;
+  run: (id: string, params?: Record<string, unknown>) => void;
 }) {
   const deck = useDeck();
   const [now, setNow] = useState(() => Date.now());
@@ -451,7 +504,18 @@ function Header({
     const t = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(t);
   }, []);
-  const elapsed = state?.startedAt ? (now - state.startedAt) / 1000 : null;
+  // The presenter's timer as it was sent, counted on from when it ARRIVED (core/timer.ts): paused
+  // stays paused, a countdown counts down, and the phone's own clock never matters.
+  const timer = useMemo(
+    () => (state?.timer ? fromRemote(state.timer, Date.now()) : null),
+    [state?.timer],
+  );
+  const reading = timer ? readTimer(timer, now) : null;
+  const elapsed = reading
+    ? reading.elapsed
+    : state?.startedAt
+      ? (now - state.startedAt) / 1000
+      : null;
   const expected = state ? expectedElapsed(deck, state.slide) : null;
   const pace = elapsed === null || expected === null ? null : elapsed - expected;
 
@@ -493,10 +557,33 @@ function Header({
             </small>
           ) : null}
         </span>
-        <span className={["deck-remote-timer", paceTone(pace), alarm ? "is-alarm" : ""].join(" ")}>
-          {elapsed === null ? "--:--:--" : formatElapsed(elapsed)}
-          {pace !== null ? <small>{formatPace(pace)}</small> : null}
-        </span>
+        <button
+          type="button"
+          className={[
+            "deck-remote-timer",
+            paceTone(pace),
+            alarm ? "is-alarm" : "",
+            reading && !reading.running ? "is-paused" : "",
+            reading?.overtime ? "is-overtime" : "",
+          ].join(" ")}
+          onClick={() => timer && run("present.timer", { action: "toggle" })}
+          disabled={!timer}
+          aria-label={
+            !timer
+              ? "Timer"
+              : reading!.running
+                ? "Pause the presenter's timer"
+                : "Resume the presenter's timer"
+          }
+        >
+          {elapsed === null
+            ? "--:--:--"
+            : reading && timer?.mode === "countdown"
+              ? formatClock(reading.shown, reading.overtime)
+              : formatElapsed(elapsed)}
+          {reading && !reading.running ? <small>paused</small> : null}
+          {pace !== null && reading?.running !== false ? <small>{formatPace(pace)}</small> : null}
+        </button>
       </div>
       <div className="deck-remote-slide-title">{state?.slide.title ?? " "}</div>
     </header>
@@ -508,12 +595,14 @@ function MiniSlide({
   state,
   link,
   mode,
+  penTool = "pen",
   settings,
   run,
 }: {
   state: RemoteState | null;
   link: RemoteLink;
   mode: Mode;
+  penTool?: PenTool;
   settings: Settings;
   run: (id: string, params?: Record<string, unknown>) => void;
 }) {
@@ -570,8 +659,13 @@ function MiniSlide({
       laser.flush();
       setDot(p);
     } else if (mode === "pen") {
-      link.fire("draw.pen", { phase: "start", ...p });
-      setInk([[p.x, p.y]]);
+      link.fire("draw.pen", {
+        phase: "start",
+        ...p,
+        ...(penTool === "eraser" ? { erase: true } : penTool !== "pen" ? { shape: penTool } : {}),
+      });
+      if (penTool === "eraser") setDot(p);
+      else setInk([[p.x, p.y]]);
     }
   };
   const onMove = (e: React.PointerEvent) => {
@@ -584,7 +678,13 @@ function MiniSlide({
       setDot(p);
     } else if (mode === "pen") {
       pen.push(p);
-      setInk((pts) => (pts ? [...pts, [p.x, p.y]] : pts));
+      if (penTool === "eraser") setDot(p);
+      else if (penTool === "pen") setInk((pts) => (pts ? [...pts, [p.x, p.y]] : pts));
+      else {
+        // The shape as it will land: drawn in slide pixels (so an arrowhead keeps its angle), shown in 0..1.
+        const pts = shapePoints(penTool, [t.x * W, t.y * H], [p.x * W, p.y * H], 8);
+        setInk(pts.map(([x, y]) => [x / W, y / H]));
+      }
     }
   };
   const onUp = (e: React.PointerEvent) => {
@@ -603,6 +703,7 @@ function MiniSlide({
       pen.flush();
       link.fire("draw.pen", { phase: "end", ...p });
       setInk(null);
+      setDot(null);
     } else if (mode === "zoom" && !t.moved) {
       run(state?.zoomed ? "view.zoomOut" : "view.zoom", state?.zoomed ? {} : p);
     } else if (mode === "zoom" && dir) {
@@ -878,18 +979,46 @@ function AirButton({
 const MOTION_REFUSED =
   "Motion was not allowed. To ask again, close Safari completely (swipe it away), reopen the remote and tap Allow. Until then, touch the slide to point.";
 
+/**
+ * The notes on the phone: every part of this slide's notes, the current step's marked and kept in
+ * view, the ones already said dimmed. Tapping a part takes the deck to its step.
+ */
 function Notes({
   state,
   size,
   setSize,
+  run,
 }: {
   state: RemoteState | null;
   size: number;
   setSize: (n: number) => void;
+  run: (id: string, params?: Record<string, unknown>) => void;
 }) {
   const deck = useDeck();
   const meta = state ? deck.columns[state.slide.h]?.slides[state.slide.v] : null;
-  const text = notesSegment(meta?.notesText ?? null, state?.slide.click ?? 0);
+  const click = state?.slide.click ?? 0;
+  const parts = useMemo(
+    () =>
+      meta?.notesText
+        ? splitNotes(meta.notesText)
+            .map((p, i) => ({ ...p, i, text: p.text.trim() }))
+            .filter((p) => p.text)
+        : [],
+    [meta?.notesText],
+  );
+  const now = currentPart(
+    parts.map((p) => p.click),
+    click,
+  );
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current?.querySelector<HTMLElement>(".is-current");
+    const scroller = box.current?.closest<HTMLElement>(".deck-remote-notes");
+    if (!el || !scroller || scroller.scrollHeight <= scroller.clientHeight) return;
+    const top =
+      el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    scroller.scrollTo({ top: Math.max(0, top - 36), behavior: "smooth" });
+  }, [now, meta]);
   return (
     <div className="deck-remote-notes">
       <div className="deck-remote-notes-tools">
@@ -909,9 +1038,40 @@ function Notes({
           A+
         </button>
       </div>
-      <p style={{ fontSize: size }} className={text ? "" : "deck-remote-muted"}>
-        {text ?? (meta?.hasNotes ? "No note for this step." : "No notes for this slide.")}
-      </p>
+      <div ref={box} className="deck-remote-notes-parts" style={{ fontSize: size }}>
+        {parts.length ? (
+          parts.map((p, k) => {
+            const tone = k === now ? "is-current" : p.click <= click ? "is-past" : "is-future";
+            const go = () => state && run("nav.goto", { index: state.slide.index, click: p.click });
+            // A paragraph that acts as a button: the notes scroll, and a real button is held to
+            // fitting on screen whole.
+            return parts.length > 1 && state ? (
+              <p
+                key={p.i}
+                role="button"
+                tabIndex={0}
+                className={`deck-remote-note-part ${tone}`}
+                onClick={go}
+                onKeyDown={(e) =>
+                  (e.key === "Enter" || e.key === " ") && (e.preventDefault(), go())
+                }
+                aria-label={`Go to step ${p.click}: ${p.text}`}
+              >
+                {p.click > 0 ? <b aria-hidden>{p.click}</b> : null}
+                {p.text}
+              </p>
+            ) : (
+              <p key={p.i} className="deck-remote-note-part is-current">
+                {p.text}
+              </p>
+            );
+          })
+        ) : (
+          <p className="deck-remote-muted">
+            {meta?.hasNotes ? "No note for this step." : "No notes for this slide."}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

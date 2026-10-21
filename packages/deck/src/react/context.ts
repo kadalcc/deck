@@ -13,11 +13,27 @@ import type {
   SlideOptions,
 } from "../core/model.ts";
 import type { NavState } from "../core/navigation.ts";
+import type { ShortcutRegistry } from "../core/shortcuts.ts";
 import type { Store } from "../core/store.ts";
+import type { MenuRegistry } from "./menu.ts";
+import type { NotesEditor } from "./notes.ts";
 import type { GlossaryEntry } from "../glossary/model.ts";
+import type { ResolvedLayers } from "../theming/contract.ts";
 
 /** Which page of the deck app is showing. */
-export type ViewMode = "play" | "presenter" | "audience" | "print" | "stats" | "notes" | "remote";
+export type ViewMode =
+  | "play"
+  | "presenter"
+  | "audience"
+  | "print"
+  | "stats"
+  | "notes"
+  | "remote"
+  | "export"
+  /** Every slide in a list with a step slider and its notes (react/OverviewPage.tsx). */
+  | "overview"
+  /** Every slide's notes, editable on one scrolling page (react/NotesEditPage.tsx). */
+  | "notes-edit";
 
 /** What the lightbox can show; "sketch" is an Excalidraw canvas keyed by its sketch. */
 export type LightboxKind = "image" | "video" | "iframe" | "sketch";
@@ -167,6 +183,20 @@ export interface DeckRuntime {
    * the ad frame's (core/ads.ts). The layout fits the slide into what is left.
    */
   stageInset: Store<StageInset>;
+  /**
+   * The global and slide layers to draw, each a stack (the theme's, the addons', the deck's):
+   * react/Layers.tsx. Absent when a runtime is made by hand (a test, an old host).
+   */
+  layers?: ResolvedLayers;
+  /**
+   * The keyboard's bindings, defaults and custom ones (core/shortcuts.ts): `add` layers more on
+   * top — from an addon's setup, a component, the console — and the help sheet lists them all.
+   */
+  shortcuts: ShortcutRegistry;
+  /** The right-click menu's items, and `add` for more (react/ContextMenu.tsx). */
+  menu: MenuRegistry;
+  /** Where edited speaker notes are saved, or null where they are read-only (react/notes.ts). */
+  notesEditor: NotesEditor | null;
 }
 
 export interface StageInset {

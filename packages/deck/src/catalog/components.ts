@@ -116,6 +116,21 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     example: "```ts {1|2-3|all} [app.ts]\nconst a = 1;\nconst b = 2;\nexport { a, b };\n```",
     mapping: true,
   },
+  CodeGroup: {
+    category: "code",
+    summary:
+      "Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as Slidev's `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print=\"all\"` prints every tab.",
+    example:
+      "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
+    props: {
+      children: "The fenced code blocks, one per tab (blank lines around them inside the tag).",
+      clicks: "Open the next tab on each click of the slide.",
+      at: "With `clicks`: the step of the first turn, like `<Click at>`.",
+      active: "The tab open at first (0-based).",
+      print: '"active" (default) prints the open tab; "all" prints every tab with its name.',
+      className: "Extra classes.",
+    },
+  },
   MagicMove: {
     category: "code",
     summary:
@@ -218,9 +233,23 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Mark: {
     category: "content",
     summary:
-      "A hand-drawn mark around inline text — underline, circle, box, highlight or strike — drawn on its click.",
-    example: `The answer is <Mark type="circle">forty-two</Mark>.`,
-    props: { at: "Click step, as for <Click>.", color: "CSS colour." },
+      "A hand-drawn mark (Slidev's v-mark, rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.",
+    example: `The answer is <Mark type="circle">forty-two</Mark>.\n\n<Mark type="bracket" brackets="left right" color="#e11d48" at={2}>Both sides</Mark>`,
+    props: {
+      type: "underline · box · circle · highlight · strike-through · crossed-off · bracket (Slidev's aliases strike, line-through, cross, crossed work too).",
+      at: "Click step, as for <Click> (0: always; [a, b]: from a until b).",
+      color: "CSS colour (default the theme's accent).",
+      strokeWidth: "Line width in px (default 3; a highlight is as tall as the line).",
+      padding: 'Space around the text in px: 5, or "top right bottom left".',
+      iterations: "Strokes per line (default 2).",
+      multiline: "Mark each wrapped line on its own (default on for the line-shaped types).",
+      brackets: 'Sides for a bracket: "left", "right" (default), "top", "bottom", or several.',
+      duration: "Drawing time in ms (default 800).",
+      animationDuration: "rough-notation's name for duration.",
+      delay: "Wait after the click, ms.",
+      animate: "false: appear whole.",
+      opacity: "0–1 (a highlight defaults to 0.35).",
+    },
   },
   Link: {
     category: "content",
@@ -297,7 +326,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Notes: {
     category: "content",
     summary:
-      "Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks.",
+      "Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.",
     example: `<Notes>\nOpen with the question. [click] Then reveal the number.\n</Notes>`,
   },
   Tex: {
@@ -319,7 +348,28 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     summary:
       "A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.",
     example: "<Mermaid>{`flowchart LR\n  A[Write] --> B[Check] --> C[Present]`}</Mermaid>",
-    props: { scale: "Scale factor.", children: "Mermaid source as a JSX template string." },
+    props: {
+      scale: "Scale factor.",
+      children: "Mermaid source as a JSX template string.",
+      code: "The source as a prop (what a ```mermaid fence compiles to).",
+      theme: "A Mermaid theme for this diagram: default, neutral, dark, forest, base.",
+      config: "Mermaid configuration for this diagram, over the deck's `mermaid:`.",
+      alt: "What the diagram shows, for screen readers (a fence's `{alt: '…'}`, Slidev's spelling); default its first line.",
+    },
+  },
+  KatexLines: {
+    category: "diagrams",
+    summary:
+      "Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.",
+    example: "$$ {1|2|all}\n\\begin{aligned}\na &= b + c \\\\\nd &= e\n\\end{aligned}\n$$",
+    mapping: true,
+    props: {
+      steps: "The steps, as in the fence: `1|3|all`.",
+      at: "The click the steps start at (a number, or `+n`).",
+      finally: "Lines shown once the slide's clicks pass the last step (default: the last step).",
+      startLine: "The number of the first line (default 1).",
+      children: "The rendered formula.",
+    },
   },
   Sketch: {
     category: "diagrams",
@@ -345,13 +395,22 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   // ── media ────────────────────────────────────────────────────────────────────────────────
   Video: {
     category: "media",
-    summary: "A video that plays while its slide is shown.",
-    example: `<Video src="/demo.mp4" autoplay loop />`,
+    summary:
+      "A video that knows the slide's clicks (Slidev's SlidevVideo and more): plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.",
+    example: `<Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />`,
     props: {
-      src: "Video URL (public/ path or https).",
-      autoplay: "Play on arrival.",
+      src: "Video URL (public/ path or https), or `<source>` children.",
+      autoplay: 'Play on arrival (or at `at`, or when its <Click> shows it); "once": not again after it has played.',
+      at: "The click at which it starts playing (implies autoplay).",
+      pauseAt: "The click at which it pauses.",
+      steps: '{ click: "play" | "pause" | "rewind" | seconds } — what happens at further clicks.',
+      autoreset: '"slide": back to `timestamp` when the slide is left; "click": when the deck steps back before `at`.',
+      timestamp: "Start here, seconds.",
+      printTimestamp: 'The frame shown in print and previews: seconds, or "last".',
+      poster: "Poster image.",
+      printPoster: "Poster in print and previews (default poster).",
       loop: "Loop.",
-      muted: "Muted.",
+      muted: "Muted (default true).",
       controls: "Show controls.",
     },
   },
@@ -469,12 +528,17 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   },
   Icon: {
     category: "bling",
-    summary: "Any lucide icon by name.",
-    example: `<Icon name="rocket" size="2em" />`,
+    summary:
+      "A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). Slidev's tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.",
+    example: `<Icon name="rocket" size="2em" /> <Icon name="mdi:account-circle" color="tomato" /> <logos-react class="text-3xl" />`,
     props: {
-      name: "lucide icon name, kebab-case or PascalCase.",
-      size: "CSS size or px.",
-      color: "CSS colour.",
+      name: "lucide name (kebab-case or PascalCase), or an Iconify `set:name`.",
+      size: "Height: CSS size or px (the width follows the icon's proportions). Tag form: 1.2em.",
+      color: "CSS colour (monochrome icons).",
+      strokeWidth: "Lucide icons only.",
+      class: "Slidev's spelling of className (`text-3xl`, `mx-2`).",
+      style: "An object, or a CSS string.",
+      title: "An accessible name; without one the icon is decorative.",
     },
   },
   Divider: {
@@ -600,5 +664,106 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       "The QR code and short link for the audience page — put it on the title or first slide.",
     example: `<QrJoin size={300} />`,
     props: { size: "Pixels.", caption: "Text under the code." },
+  },
+  // ── Slidev parity: context, placement, clicks ──────────────────────────────────────────────
+  LightOrDark: {
+    category: "content",
+    summary:
+      "One thing in the light colour scheme, another in the dark (the slide's own scheme when its frontmatter forces one): `light`/`dark` props, children marked `slot=\"light\"`/`slot=\"dark\"`, or a function of the scheme.",
+    example: `<LightOrDark>\n  <div slot="dark">![](/logo-white.svg)</div>\n  <div slot="light">![](/logo-black.svg)</div>\n</LightOrDark>`,
+    props: {
+      light: "Shown in the light scheme.",
+      dark: "Shown in the dark scheme.",
+      children: 'Elements with slot="light" / slot="dark", or ({ scheme }) => …',
+    },
+  },
+  RenderWhen: {
+    category: "content",
+    summary:
+      "Renders its children only in some places: `main` (the deck and the presenter's current slide), `slide`, `presenter`, `previewNext`, `overview`, `print`/`export`, `audience`, `visible`; `fallback` everywhere else.",
+    example: `<RenderWhen context="presenter">Only the speaker sees this.</RenderWhen>\n\n<RenderWhen context={["print", "overview"]} fallback={<Iframe src="https://example.com" />}>![](/still.png)</RenderWhen>`,
+    props: {
+      context: 'A context, several ("presenter overview" or an array): main, slide, presenter, previewNext, overview, print, export, audience, visible.',
+      fallback: "Rendered where the context does not match.",
+    },
+  },
+  SlideCurrentNo: {
+    category: "content",
+    summary: "This slide's number (in a global layer: the current slide's).",
+    example: `Slide <SlideCurrentNo /> of <SlidesTotal />`,
+    props: { format: '"c" (default), "c/t", "h.v" or "h/v".' },
+  },
+  SlidesTotal: {
+    category: "content",
+    summary: "How many slides the deck has (hidden ones left out).",
+    example: `<SlidesTotal /> slides`,
+  },
+  TitleRenderer: {
+    category: "content",
+    summary: "Another slide's title, by its number or id (no prop: this slide's own).",
+    example: `Next up: <TitleRenderer no={3} />`,
+    props: {
+      no: "Slide number, 1-based.",
+      id: "Or the slide's id.",
+      fallback: "Shown when that slide has no title.",
+      as: "The element: span (default), h1–h3, strong, div.",
+    },
+  },
+  BlueSky: {
+    category: "media",
+    summary:
+      "A Bluesky post, through Bluesky's embed, in the slide's colour scheme; `deck export` captures a poster for each scheme.",
+    example: `<BlueSky uri="https://bsky.app/profile/sli.dev/post/3la7gcgfwpe2n" />`,
+    props: {
+      uri: "The post's bsky.app address or its AT-URI.",
+      scale: "Scale factor.",
+      poster: "Stands in for the post in print, the overview and while it loads.",
+    },
+  },
+  Switch: {
+    category: "steps",
+    summary:
+      "One child at a time, switched by clicks (Slidev's v-switch): each `<Case>` takes the next step, or `at={n}` / `at=\"a-b\"` in the switch's own steps; the cases share one spot, so nothing below jumps.",
+    example: `<Switch transition="slide-up">\n<Case>First</Case>\n<Case>Then</Case>\n<Case at="4-6">Steps 4 and 5</Case>\n</Switch>`,
+    props: {
+      at: "When the switch's first step is, as <Click at>.",
+      transition: "fade (default), slide-up, slide-left, scale, none.",
+      unmount: "Leave hidden cases out of the page.",
+      as: "The switch's element (div).",
+      childAs: "Each case's element (div).",
+    },
+  },
+  Case: {
+    category: "steps",
+    summary:
+      "One case of a `<Switch>`. Without `at` it is one step after the case before; `at={0}` is what the slide starts with; the last case stays unless it has a range.",
+    example: `<Switch>\n<Case at={0}>Before</Case>\n<Case>After one click</Case>\n</Switch>`,
+    props: { at: 'A step (n), a range ("a-b" or [a, b]).', as: "This case's element.", className: "Extra classes." },
+  },
+  Drag: {
+    category: "layout",
+    summary:
+      "A block you place by hand (Slidev's v-drag). `pos` is \"x,y,w,h[,rotation]\" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.",
+    example: `<Drag pos="1400,120,380,_">\n\n![](/badge.png)\n\n</Drag>`,
+    props: {
+      pos: '"x,y,w,h[,r]" or a dragPos name; omitted: where it lies, until the first drag writes one.',
+      at: "A click step, as <Click at>.",
+      hide: "Start shown and hide at the step.",
+      effect: "The reveal effect with at.",
+      as: "The element (div).",
+    },
+  },
+  DragArrow: {
+    category: "layout",
+    summary:
+      "An `<Arrow>` whose ends are dragged into place in `kadal-deck dev` (Slidev's v-drag-arrow). `pos` is \"x,y,dx,dy\" (from x,y by dx,dy) or a dragPos name.",
+    example: `<DragArrow pos="300,700,600,-280" color="var(--deck-accent)" width={4} />`,
+    props: {
+      pos: '"x,y,dx,dy" or a dragPos name (default 100,100,300,300).',
+      width: "Line width.",
+      color: "CSS colour.",
+      twoWay: "Heads at both ends.",
+      at: "A click step.",
+    },
   },
 };

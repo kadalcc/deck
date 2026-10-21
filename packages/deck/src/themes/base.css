@@ -11,6 +11,13 @@
 @import "./listbox.css";
 @import "./remote.css";
 @import "./narrate.css";
+@import "./theming.css";
+@import "./export.css";
+@import "./code.css";
+@import "./presenting.css";
+@import "./draw.css";
+@import "./media.css";
+@import "./components.css";
 
 :root {
   --deck-bg: #ffffff;
@@ -61,6 +68,13 @@ body {
   overflow: hidden;
   /* Outside the stage: the bars that centre a 16:9 slide in a window of another shape. */
   --deck-bars: color-mix(in oklab, var(--deck-bg) 30%, #000);
+}
+/* The theme's text colour and body face start here. html and body read their colour and font
+   with :root's tokens, but the theme's class (and the `fonts` variables) sit on the deck root, so
+   without this every slide inherited the base's #111 and system-ui whatever the theme said. */
+.deck-root {
+  color: var(--deck-fg);
+  font-family: var(--deck-body-font);
 }
 .deck-root.mode-play {
   background: var(--deck-bars);
@@ -609,12 +623,17 @@ body {
 }
 
 /* ── clicks (fragments) ──────────────────────────────────────────────────── */
-.deck-click {
-  transition:
-    opacity 0.4s ease,
-    transform 0.4s ease,
-    color 0.4s ease,
-    filter 0.4s ease;
+/* The timing sits in a layer of its own: a layer always yields to rules outside it and to layers
+   declared after it — Tailwind's utilities among them — so `delay-300`, `duration-0` and the
+   direction variants (`forward:delay-300`, themes/presenting.css) can change a click's timing. */
+@layer deck-clicks {
+  .deck-click {
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease,
+      color 0.4s ease,
+      filter 0.4s ease;
+  }
 }
 .deck-click.is-hidden {
   opacity: 0;
@@ -1050,53 +1069,6 @@ pre.deck-code.has-lines .line::before {
 }
 .deck-timer.is-done {
   color: #dc2626;
-}
-.deck-mark {
-  position: relative;
-  display: inline;
-}
-.deck-mark::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-.deck-mark.is-on::after {
-  opacity: 1;
-}
-.deck-mark.type-underline::after {
-  left: 0;
-  right: 0;
-  bottom: -0.05em;
-  height: 0.15em;
-  background: var(--mark-color);
-  border-radius: 2px;
-  transform: rotate(-0.6deg);
-}
-.deck-mark.type-highlight::after {
-  inset: -0.05em -0.15em;
-  background: color-mix(in oklab, var(--mark-color) 35%, transparent);
-  border-radius: 4px;
-  z-index: -1;
-}
-.deck-mark.type-box::after,
-.deck-mark.type-circle::after {
-  inset: -0.2em -0.4em;
-  border: 3px solid var(--mark-color);
-  border-radius: 6px;
-}
-.deck-mark.type-circle::after {
-  border-radius: 50% / 45%;
-  transform: rotate(-2deg);
-}
-.deck-mark.type-strike::after {
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 0.12em;
-  background: var(--mark-color);
-  transform: rotate(-1.5deg);
 }
 .deck-confetti {
   position: absolute;
@@ -1831,7 +1803,10 @@ pre.deck-code.has-lines .line::before {
   bottom: 0;
   pointer-events: none;
 }
-.deck-chrome-area > * {
+/* `:where` keeps this at zero specificity, so a child that is click-through by its own rule —
+   the confetti layer and the pause curtain cover the whole viewport — stays click-through, and
+   the pen, the laser and the scroll view are not blocked by them. */
+:where(.deck-chrome-area > *) {
   pointer-events: auto;
 }
 
@@ -2099,4 +2074,37 @@ pre.deck-code.has-lines .line::before {
   .deck-ad-frame {
     display: none;
   }
+}
+
+/* ── Slidev syntax: stepped maths lines, PlantUML figures ──────────────────────── */
+/* `$$ {1|3|all}` (components/KatexLines.tsx): the lines outside the current step dim. */
+.deck-katex-lines .deck-katex-line {
+  transition: opacity 0.3s ease;
+}
+.deck-katex-lines .deck-katex-line.is-dim {
+  opacity: 0.3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-katex-lines .deck-katex-line {
+    transition: none;
+  }
+}
+/* ```plantuml fences: an SVG from the deck's PlantUML server, centred, never wider than the slide.
+   The server draws on white; dark schemes get a light card so the diagram stays legible. */
+.deck-plantuml {
+  margin: 0.5em auto;
+  text-align: center;
+}
+/* A PlantUML SVG is drawn at a screen's size, small on a 1920 stage: it fills its column, and a
+   tall one is held to the slide's height (`{scale}` on the fence adjusts either way). */
+.deck-plantuml img {
+  display: block;
+  width: 100%;
+  max-height: 600px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+[data-color-scheme="dark"] .deck-plantuml img {
+  background: #fff;
+  padding: 0.4em;
 }

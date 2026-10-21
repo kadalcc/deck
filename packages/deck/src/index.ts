@@ -26,6 +26,20 @@ export {
 } from "./renderers/index.ts";
 export { useMDXComponents } from "./react/mdx.tsx";
 export {
+  defineCodeRunners,
+  hasCodeRunner,
+  registerCodeRunner,
+  runCode,
+  setPythonRunnerIndexUrl,
+  type CodeOutput,
+  type CodeOutputLevel,
+  type CodeRunner,
+  type CodeRunnerContext,
+  type CodeRunners,
+  type CodeRunResult,
+} from "./monaco/runners.ts";
+export { type MonacoHost, type MonacoLoader, registerMonacoLoader } from "./monaco/loader.ts";
+export {
   DeckContext,
   SlideContext,
   useDeck,
@@ -50,6 +64,13 @@ export {
 } from "./react/hooks.ts";
 export { SlideFrame, loadSlide } from "./react/SlideFrame.tsx";
 export { BackgroundLayer, registerBackground, backgroundComponent } from "./react/Backgrounds.tsx";
+export {
+  type TransitionDefinition,
+  type TransitionHalves,
+  BUILTIN_TRANSITIONS,
+  registerTransition,
+  transitionNames,
+} from "./core/transitions.ts";
 export { LAYOUTS, type LayoutProps } from "./react/layouts.tsx";
 export * from "./components/index.ts";
 export {
@@ -108,3 +129,107 @@ export type { NavState, Position, Direction } from "./core/navigation.ts";
 export { HintLayer } from "./react/Hints.tsx";
 export { ThemeMenu } from "./react/ThemeMenu.tsx";
 export { FrameShell } from "./react/Frame.tsx";
+// Themes and addons (theming/contract.ts): the package contract, layers, and the merge rules.
+export {
+  BUILTIN_THEMES,
+  LAYER_NAMES,
+  normalizeModule as normalizePackageModule,
+  type AddonMeta,
+  type DeckLayers,
+  type LayerComponent,
+  type LayerName,
+  type LayerProps,
+  type ManifestPackages,
+  type PackageKind,
+  type PackageModule,
+  type PackageRef,
+  type ResolvedLayers,
+  type SetupApi,
+  type SetupResult,
+  type ThemeMeta,
+} from "./theming/contract.ts";
+export {
+  applySlideDefaults,
+  mergeComponents,
+  mergeDefaults,
+  mergeLayers,
+  mergeThemeConfig,
+  slideDefaultLayers,
+  themeConfigVars,
+} from "./theming/merge.ts";
+export {
+  resolveFonts,
+  type FontOptions,
+  type FontsInput,
+  type ResolvedFonts,
+} from "./theming/fonts.ts";
+export { deckFontsReady, extendSetupApi } from "./theming/react.tsx";
+export { useLayer } from "./react/Layers.tsx";
+
+// Presenting: slide lifecycle, direction, shortcuts, the context menu, notes editing, the timer.
+export {
+  onSlideEnter,
+  onSlideLeave,
+  useIsSlideActive,
+  useNavDirection,
+  useSlideEnter,
+  useSlideLeave,
+  type SlideLifecycleEvent,
+} from "./react/lifecycle.ts";
+export { navDirection, type NavDirection } from "./core/direction.ts";
+export {
+  createShortcutRegistry,
+  defaultShortcuts,
+  defineShortcuts,
+  keyLabel,
+  resolveShortcuts,
+  type ResolvedShortcut,
+  type Shortcut,
+  type ShortcutConflict,
+  type ShortcutRegistry,
+  type ShortcutsInput,
+} from "./core/shortcuts.ts";
+export {
+  createMenuRegistry,
+  defaultMenuItems,
+  type MenuInput,
+  type MenuItem,
+  type MenuRegistry,
+} from "./react/menu.ts";
+export {
+  devNotesEditor,
+  useNotesEditor,
+  useSlideNotes,
+  type NotesDraft,
+  type NotesEditor,
+  type NotesSaveResult,
+} from "./react/notes.ts";
+export { NotesView, type NotesViewProps } from "./react/NotesView.tsx";
+export { CLICK_MARKER, notesForClick, splitNotes, type NotesPart } from "./core/notes-markers.ts";
+export {
+  formatClock,
+  parseDuration,
+  readTimer,
+  type TimerMode,
+  type TimerReading,
+  type TimerState,
+} from "./core/timer.ts";
+export { plannedLength, presenterTimer } from "./react/pacing.ts";
+export { DEFAULT_FILTERS, filterCss, type DisplayFilters } from "./core/filters.ts";
+export { filtersStore, setFilters } from "./react/DisplaySettings.tsx";
+export {
+  registerIcons,
+  requestIcon,
+  setIconifyApi,
+  type IconState,
+} from "./icons/registry.ts";
+export { iconFromTag, parseIconName, type IconData, type IconifySet } from "./icons/data.ts";
+export {
+  RenderContextProvider,
+  useRenderContext,
+  type RenderContextName,
+  type RenderInfo,
+} from "./react/render-context.ts";
+export { useEffectiveScheme, type RenderWhenContext } from "./components/Contextual.tsx";
+export { switchRanges } from "./components/Switch.tsx";
+export { type MarkType } from "./components/mark-geometry.ts";

@@ -1,0 +1,355 @@
+/* Classic — a port of Slidev's default theme (@slidev/theme-default, MIT, © 2021 Slidev.js
+   Team) to Kadal Deck. Avenir Next (Nunito Sans where it is not installed), light headings,
+   square bullets, dashed links, a cyan primary; white on #121212 in the dark.
+
+   Units. Slidev draws on a 980px-wide canvas with a 16px rem and a 1.1rem body; Kadal draws on a
+   1920px one. Everything here is in `--classic-rem`, one Slidev rem at Kadal's scale, worked out
+   from the slide's base size the way Slidev's body is (1.1rem), so the proportions are Slidev's
+   exactly and a deck that changes --deck-base-size scales the whole theme with it.
+
+   Headings are weight 400 unless a layout says otherwise: Slidev's reset (Uno's preflight) makes
+   every heading inherit the body weight, and the default theme never sets one back.
+
+   themeConfig: `primary` → --theme-primary (links on hover, the quote's rule, the progress
+   bar). */
+
+.theme-classic {
+  --classic-rem: calc(var(--deck-base-size) / 1.1);
+  /* colour (Slidev's bg-main / text-main / border-main / code background) */
+  --deck-bg: #ffffff;
+  --deck-fg: #181818;
+  --deck-muted: #737373;
+  --deck-accent: var(--theme-primary, #3ab9d5);
+  --deck-accent-2: #2993a3;
+  --deck-surface: #f5f5f5;
+  --deck-border: rgba(156, 163, 175, 0.2);
+  --deck-live: var(--theme-primary, #3ab9d5);
+  /* type: config.fonts (package.json) points these at Avenir Next and Fira Code */
+  --deck-heading-font: "Avenir Next", "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --deck-body-font: "Avenir Next", "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --deck-mono-font: "Fira Code", ui-monospace, "SF Mono", Menlo, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 34.5px;
+  /* code */
+  --deck-code-bg: #f5f5f5;
+  --deck-code-fg: #1b1b1b;
+  --deck-code-active: rgba(58, 185, 213, 0.1);
+  /* shape: Slidev's 2.5rem × 3.5rem page padding; --deck-pad is the wider of the two */
+  --deck-radius: calc(var(--classic-rem) * 0.25);
+  --deck-pad: calc(var(--classic-rem) * 3.5);
+  --deck-transition: 500ms;
+  --deck-controls-color: var(--deck-fg);
+}
+.theme-classic[data-color-scheme="dark"] {
+  --deck-bg: #121212;
+  --deck-fg: #dddddd;
+  --deck-muted: #8a8a8a;
+  --deck-accent-2: #54b1bf;
+  --deck-surface: #1b1b1b;
+  --deck-border: rgba(156, 163, 175, 0.2);
+  --deck-code-bg: #1b1b1b;
+  --deck-code-fg: #eeeeee;
+  --deck-code-active: rgba(58, 185, 213, 0.16);
+}
+
+/* ── the page ─────────────────────────────────────────────────────────── */
+.theme-classic .deck-slide {
+  padding: calc(var(--classic-rem) * 2.5) calc(var(--classic-rem) * 3.5);
+  line-height: 1.5;
+}
+/* A `background:` covers the padding box: undo the two paddings, not one --deck-pad. */
+.theme-classic .deck-slide-background {
+  inset: calc(var(--classic-rem) * -2.5) calc(var(--classic-rem) * -3.5);
+}
+
+/* ── type (Slidev's layouts-base.css and the theme's layouts.css) ─────── */
+.theme-classic .deck-slide :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--deck-heading-font);
+  font-weight: 400;
+  letter-spacing: normal;
+  margin: 0;
+  text-wrap: wrap;
+}
+.theme-classic .deck-slide h1 {
+  font-size: calc(var(--classic-rem) * 2.25);
+  line-height: calc(var(--classic-rem) * 2.5);
+  margin-bottom: var(--classic-rem);
+  margin-inline-start: -0.05em;
+}
+.theme-classic .deck-slide h2 {
+  font-size: calc(var(--classic-rem) * 1.875);
+  line-height: calc(var(--classic-rem) * 2.25);
+}
+.theme-classic .deck-slide h3 {
+  font-size: calc(var(--classic-rem) * 1.5);
+  line-height: calc(var(--classic-rem) * 2);
+}
+.theme-classic .deck-slide h4 {
+  font-size: calc(var(--classic-rem) * 1.25);
+  line-height: calc(var(--classic-rem) * 1.75);
+}
+.theme-classic .deck-slide h5 {
+  font-size: var(--classic-rem);
+  line-height: calc(var(--classic-rem) * 1.5);
+}
+.theme-classic .deck-slide h6 {
+  font-size: calc(var(--classic-rem) * 0.875);
+  line-height: calc(var(--classic-rem) * 1.25);
+  padding-top: calc(var(--classic-rem) * 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  margin-inline-start: -0.05em;
+}
+.theme-classic .deck-slide h6:not(.opacity-100) {
+  opacity: 0.4;
+}
+.theme-classic .deck-slide p {
+  margin: var(--classic-rem) 0;
+  line-height: calc(var(--classic-rem) * 1.5);
+}
+.theme-classic .deck-slide h1 + p {
+  margin-top: calc(var(--classic-rem) * -0.5);
+  margin-bottom: var(--classic-rem);
+  opacity: 0.5;
+}
+.theme-classic .deck-slide :is(p, ul, table) + h2 {
+  margin-top: calc(var(--classic-rem) * 2.5);
+}
+.theme-classic .deck-slide :is(ul, ol) {
+  margin: 0;
+  padding: 0;
+}
+.theme-classic .deck-slide ul {
+  list-style: square;
+}
+.theme-classic .deck-slide ol {
+  list-style: decimal;
+}
+.theme-classic .deck-slide li {
+  margin: 0 0 0 1.1em;
+  padding-inline-start: 0.2em;
+  line-height: 1.8em;
+}
+.theme-classic .deck-slide blockquote {
+  margin: 0;
+  padding: calc(var(--classic-rem) * 0.25) calc(var(--classic-rem) * 0.5);
+  font-size: calc(var(--classic-rem) * 0.875);
+  line-height: calc(var(--classic-rem) * 1.25);
+  font-style: normal;
+  color: var(--deck-code-fg);
+  background: var(--deck-code-bg);
+  border: 0;
+  border-inline-start: 1px solid var(--deck-accent);
+  border-radius: calc(var(--classic-rem) * 0.25);
+}
+.theme-classic .deck-slide blockquote > * {
+  margin-block: 0;
+}
+.theme-classic .deck-slide table {
+  width: 100%;
+  font-size: 1em;
+  line-height: calc(var(--classic-rem) * 1.5);
+}
+.theme-classic .deck-slide :is(th, td) {
+  padding: calc(var(--classic-rem) * 0.75) calc(var(--classic-rem) * 0.5);
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-classic .deck-slide th {
+  text-align: left;
+  font-size: 1em;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+}
+.theme-classic .deck-slide a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+}
+.theme-classic .deck-slide a:hover {
+  color: var(--deck-accent);
+  border-bottom-style: solid;
+}
+.theme-classic .deck-slide :is(b, strong) {
+  font-weight: 600;
+}
+.theme-classic .deck-slide :not(pre) > code {
+  font-family: var(--deck-mono-font);
+  font-size: 0.9em;
+  font-weight: 300;
+  padding: calc(var(--classic-rem) * 0.125) calc(var(--classic-rem) * 0.375);
+  background: var(--deck-code-bg);
+  border-radius: calc(var(--classic-rem) * 0.25);
+}
+.theme-classic .deck-slide :is(kbd, .deck-kbd) {
+  font-family: var(--deck-mono-font);
+  font-size: calc(var(--classic-rem) * 0.75);
+  padding: calc(var(--classic-rem) * 0.125) calc(var(--classic-rem) * 0.25);
+  border: 1px solid var(--deck-border);
+  border-bottom-width: 2px;
+  border-radius: calc(var(--classic-rem) * 0.25);
+  background: rgba(156, 163, 175, 0.05);
+  box-shadow: none;
+}
+
+/* ── code: Slidev's 12px / 18px blocks with a 4px corner and no border ── */
+.theme-classic .deck-code-block {
+  margin: calc(var(--classic-rem) * 0.25) 0;
+  border: 0;
+  border-radius: calc(var(--classic-rem) * 0.25);
+}
+.theme-classic pre.deck-code,
+.theme-classic .shiki-magic-move-wrap {
+  font-size: calc(var(--classic-rem) * 0.75);
+  line-height: calc(var(--classic-rem) * 1.125);
+  padding: calc(var(--classic-rem) * 0.5) 0;
+}
+.theme-classic .shiki-magic-move-wrap {
+  padding-inline: calc(var(--classic-rem) * 0.5);
+}
+.theme-classic pre.deck-code .line {
+  padding: 0 calc(var(--classic-rem) * 0.5);
+}
+.theme-classic pre.deck-code .line.is-dim {
+  opacity: 0.3;
+}
+.theme-classic .deck-code-title {
+  font-size: calc(var(--classic-rem) * 0.75);
+  padding: calc(var(--classic-rem) * 0.5);
+  border-bottom-color: var(--deck-border);
+}
+
+/* ── the layouts ──────────────────────────────────────────────────────── */
+.theme-classic .deck-layout-default {
+  justify-content: flex-start;
+}
+/* Slidev's center does not centre the text by itself (its examples add `text-center`); Kadal's
+   does, which reads the same for a title and better for a line or two. */
+.theme-classic .deck-layout-center {
+  justify-content: center;
+}
+.theme-classic :is(.deck-layout-cover, .deck-layout-intro) {
+  align-items: stretch;
+  text-align: start;
+}
+.theme-classic :is(.deck-layout-cover, .deck-layout-intro) h1 {
+  font-size: calc(var(--classic-rem) * 3.75);
+  line-height: calc(var(--classic-rem) * 5);
+}
+/* cover with a background image: Slidev's dim (#0005 → #0008) and white words */
+.theme-classic .deck-layout-cover.classic-on-image {
+  color: #fff;
+}
+.theme-classic .classic-dim {
+  position: absolute;
+  inset: calc(var(--classic-rem) * -2.5) calc(var(--classic-rem) * -3.5);
+  background: linear-gradient(rgba(0, 0, 0, 0.333), rgba(0, 0, 0, 0.533));
+  pointer-events: none;
+}
+/* The dim sits under the words without lifting each one (`position: relative` on every child
+   would pin a deck's own `absolute` corners, Slidev's `abs-br`, back into the flow). */
+.theme-classic .deck-layout-cover.classic-on-image {
+  isolation: isolate;
+}
+.theme-classic .classic-on-image > .classic-dim {
+  z-index: -1;
+}
+.theme-classic .deck-layout-section {
+  align-items: stretch;
+  text-align: center;
+}
+.theme-classic .deck-layout-section h1 {
+  font-size: calc(var(--classic-rem) * 3.75);
+  line-height: calc(var(--classic-rem) * 5);
+  font-weight: 500;
+}
+.theme-classic .deck-layout-statement {
+  text-align: center;
+}
+.theme-classic .deck-layout-statement h1 {
+  font-size: calc(var(--classic-rem) * 3.75);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-classic .deck-layout-fact {
+  text-align: center;
+}
+.theme-classic .deck-layout-fact > :is(h1, h2, p, .deck-counter) {
+  letter-spacing: normal;
+}
+.theme-classic .deck-layout-fact h1 {
+  font-size: calc(var(--classic-rem) * 6);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-classic .deck-layout-fact h1 + p {
+  font-size: calc(var(--classic-rem) * 1.5);
+  line-height: calc(var(--classic-rem) * 2);
+  font-weight: 700;
+}
+.theme-classic .deck-layout-quote {
+  padding-inline: 0;
+  font-size: 1em;
+  font-style: normal;
+  align-items: stretch;
+}
+.theme-classic .deck-layout-quote h1 + p {
+  margin-top: calc(var(--classic-rem) * 0.5);
+}
+/* Slidev's built-in end: white letters, spaced, on black, "END" when the slide is empty */
+.theme-classic .deck-slide.layout-end {
+  background: #000;
+}
+.theme-classic .deck-layout-end {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: calc(var(--classic-rem) * 1.25);
+  letter-spacing: 0.1em;
+  user-select: none;
+}
+.theme-classic .deck-layout-end:empty::before {
+  content: "END";
+}
+.theme-classic .deck-layout-full {
+  padding: 0;
+}
+.theme-classic .deck-layout-two-cols {
+  column-gap: var(--classic-rem);
+}
+.theme-classic .deck-layout-two-cols-header {
+  column-gap: var(--classic-rem);
+}
+/* image-left / image-right / image: the picture flush to the edge, the words on Slidev's page
+   padding from the top (a .slidev-layout default beside the picture), not centred */
+.theme-classic :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content,
+.theme-classic :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  justify-content: flex-start;
+  padding: calc(var(--classic-rem) * 2.5) calc(var(--classic-rem) * 3.5);
+}
+.theme-classic .deck-layout-image .deck-layout-image-content {
+  inset: 0;
+  justify-content: flex-start;
+  padding: calc(var(--classic-rem) * 2.5) calc(var(--classic-rem) * 3.5);
+  background: none;
+}
+.theme-classic .deck-layout-image .deck-layout-image-content:empty {
+  display: none;
+}
+.theme-classic :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) {
+  padding: 0;
+  gap: 0;
+}
+.theme-classic .deck-frame.deck-layout-iframe-pane {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.theme-classic .deck-layout-two-cols-header > .deck-slot-bottom {
+  align-self: end;
+}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+.theme-classic .deck-progress span {
+  background: var(--deck-accent);
+}

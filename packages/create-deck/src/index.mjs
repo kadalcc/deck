@@ -1,7 +1,18 @@
 #!/usr/bin/env node
 // npm create @kadal/deck@latest [directory]
-import { cpSync, existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { basename, join, relative, resolve } from "node:path";
+// npm create @kadal/deck@latest -- --theme <name> [directory]    a theme package
+// npm create @kadal/deck@latest -- --addon <name> [directory]    an addon package
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
@@ -25,12 +36,95 @@ function pm() {
   return ua.startsWith("pnpm") ? "pnpm" : ua.startsWith("yarn") ? "yarn" : ua.startsWith("bun") ? "bun" : "npm";
 }
 
-const args = process.argv.slice(2).filter((a) => !a.startsWith("-"));
-if (process.argv.includes("--help") || process.argv.includes("-h")) {
-  console.log("Usage: npm create @kadal/deck@latest [directory]");
+/** `--theme aurora`, `--theme=aurora`; the rest are positionals. */
+function parse(argv) {
+  const flags = {};
+  const positionals = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const m = /^--(theme|addon|title)(?:=(.*))?$/.exec(a);
+    if (m) flags[m[1]] = m[2] ?? (argv[i + 1] && !argv[i + 1].startsWith("-") ? argv[++i] : "");
+    else if (a === "--help" || a === "-h") flags.help = true;
+    else if (!a.startsWith("-")) positionals.push(a);
+  }
+  return { flags, positionals };
+}
+
+const { flags, positionals } = parse(process.argv.slice(2));
+if (flags.help) {
+  console.log(`Usage: npm create @kadal/deck@latest [directory]
+       npm create @kadal/deck@latest -- --theme <name> [directory]   a theme package
+       npm create @kadal/deck@latest -- --addon <name> [directory]   an addon package`);
   process.exit(0);
 }
-const dirArg = args[0] ?? (await ask("Where should the deck go?", "my-deck"));
+
+const m = pm();
+const run = m === "npm" ? "npm run" : m;
+
+// ── a theme or an addon package ───────────────────────────────────────────────────────────────
+const kind = flags.theme !== undefined ? "theme" : flags.addon !== undefined ? "addon" : null;
+if (kind) {
+  // The same names `kadal-deck new --theme` makes (theming/scaffold.ts's scaffoldName/Title).
+  const name = String(flags[kind])
+    .trim()
+    .toLowerCase()
+    .replace(/^@[^/]+\//, "")
+    .replace(/^kadal-(theme|addon)-/, "")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!name) {
+    console.error(`--${kind} needs a name: npm create @kadal/deck -- --${kind} <name>`);
+    process.exit(1);
+  }
+  const title =
+    flags.title?.trim() ||
+    name
+      .split("-")
+      .filter(Boolean)
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join(" ");
+  const component = title.replace(/[^A-Za-z0-9]/g, "") || "Addon";
+  const source = fileURLToPath(new URL(`../template-${kind}`, import.meta.url));
+  const target = resolve(process.cwd(), positionals[0] ?? `kadal-${kind}-${name}`);
+  if (existsSync(target) && readdirSync(target).length > 0) {
+    console.error(
+      `${relative(process.cwd(), target) || "."} is not empty. Choose another directory.`,
+    );
+    process.exit(1);
+  }
+  // The template was rendered with sentinel names (scripts/sync-template.mjs): fill in the real ones.
+  const fill = (text) =>
+    text
+      .replaceAll("kadal-name-sentinel", name)
+      .replaceAll("Kadal Title Sentinel", title)
+      .replaceAll("KadalTitleSentinel", component);
+  const copy = (from, to) => {
+    for (const entry of readdirSync(from)) {
+      const src = join(from, entry);
+      const dest = join(to, entry === "_gitignore" ? ".gitignore" : entry);
+      if (statSync(src).isDirectory()) copy(src, dest);
+      else {
+        mkdirSync(dirname(dest), { recursive: true });
+        writeFileSync(dest, fill(readFileSync(src, "utf8")));
+      }
+    }
+  };
+  copy(source, target);
+  const cd = relative(process.cwd(), target);
+  console.log(`
+Your ${kind} is in ${cd || "."}. Next:
+
+  ${cd && cd !== "." ? `cd ${cd}\n  ` : ""}${m} install
+  ${run} dev                         the preview deck (preview/deck.mdx), live
+  npm publish                        keep the kadal-${kind} keyword
+
+Docs: https://deck.kadal.cc/docs/
+`);
+  process.exit(0);
+}
+
+// ── a deck ────────────────────────────────────────────────────────────────────────────────────
+const dirArg = positionals[0] ?? (await ask("Where should the deck go?", "my-deck"));
 const target = resolve(process.cwd(), dirArg);
 if (existsSync(target) && readdirSync(target).length > 0) {
   console.error(`${relative(process.cwd(), target) || "."} is not empty. Choose another directory.`);
@@ -44,8 +138,6 @@ const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 pkg.name = packageName(target);
 writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 
-const m = pm();
-const run = m === "npm" ? "npm run" : m;
 const x = m === "npm" ? "npx" : m === "bun" ? "bunx" : `${m} exec`;
 const cd = relative(process.cwd(), target);
 console.log(`

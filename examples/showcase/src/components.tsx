@@ -7,7 +7,10 @@ import {
   type SketchStep,
   useClickIndex,
   useNav,
+  useNavDirection,
   useSlide,
+  useSlideEnter,
+  useSlideLeave,
 } from "@kadal/deck";
 import { deckPython } from "@kadal/deck-python/build";
 import { wasmBindgenModule } from "@kadal/deck-wasm";
@@ -17,7 +20,7 @@ import { sketch } from "@kadal/deck/sketch";
 
 import "./island-demo.ts";
 import { Rocket, Sparkles, Users, Zap } from "lucide-react";
-import type { ComponentType, ReactNode } from "react";
+import { type ComponentType, type ReactNode, useState } from "react";
 
 /**
  * Components the slides use without importing. Anything here is available as `<Name />` in
@@ -408,6 +411,45 @@ function VueIsland({ label }: { label?: string }) {
   );
 }
 
+/** Which way the deck is moving, live: what `forward:` / `backward:` styles key on. */
+function DirectionBadge() {
+  const dir = useNavDirection();
+  return (
+    <span className={`sc-direction is-${dir}`} data-testid="direction-badge">
+      {dir === "forward" ? "→ forward" : "← backward"}
+    </span>
+  );
+}
+
+/**
+ * The slide lifecycle, counted: `useSlideEnter` and `useSlideLeave` fire once per arrival and
+ * departure in this window — never for the presenter's preview, the overview or print.
+ */
+function EnterCounter() {
+  const [log, setLog] = useState({ enters: 0, leaves: 0, last: "" });
+  useSlideEnter((e) => {
+    setLog((l) => ({ ...l, enters: l.enters + 1, last: `entered going ${e.direction}` }));
+    (window as unknown as { __enters?: number }).__enters =
+      ((window as unknown as { __enters?: number }).__enters ?? 0) + 1;
+  });
+  useSlideLeave((e) =>
+    setLog((l) => ({ ...l, leaves: l.leaves + 1, last: `left going ${e.direction}` })),
+  );
+  return (
+    <div className="sc-lifecycle" data-testid="enter-counter">
+      <div>
+        <b>{log.enters}</b>
+        <span>enters</span>
+      </div>
+      <div>
+        <b>{log.leaves}</b>
+        <span>leaves</span>
+      </div>
+      <p>{log.last || "not yet"}</p>
+    </div>
+  );
+}
+
 export const components: Record<string, ComponentType<Record<string, unknown>>> = {
   VueIsland: VueIsland as ComponentType<Record<string, unknown>>,
   SvelteIsland: SvelteIsland as ComponentType<Record<string, unknown>>,
@@ -429,6 +471,8 @@ export const components: Record<string, ComponentType<Record<string, unknown>>> 
   BgTile: BgTile as ComponentType<Record<string, unknown>>,
   ThemeCard: ThemeCard as ComponentType<Record<string, unknown>>,
   StepMeter: StepMeter as ComponentType<Record<string, unknown>>,
+  DirectionBadge: DirectionBadge as ComponentType<Record<string, unknown>>,
+  EnterCounter: EnterCounter as ComponentType<Record<string, unknown>>,
   LiveStatus: LiveStatus as ComponentType<Record<string, unknown>>,
   // `layout: spotlight` in frontmatter picks this; the `layout:` prefix is the whole convention.
   "layout:spotlight": SpotlightLayout as unknown as ComponentType<Record<string, unknown>>,

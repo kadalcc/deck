@@ -11,7 +11,8 @@ import type { RemoteState } from "../live/protocol.ts";
 import { presenterTicket } from "../live/ticket.ts";
 import { deckState, useCommand } from "../react/commands.ts";
 import { type DeckRuntime, useDeck } from "../react/context.ts";
-import { presenterClock } from "../react/pacing.ts";
+import { remoteTimer } from "../core/timer.ts";
+import { presenterClock, presenterTimer } from "../react/pacing.ts";
 import { createCoalescer } from "./air.ts";
 import { devHost, type HostLink, roomHost } from "./link.ts";
 import { ROTATE_MS } from "./relay.ts";
@@ -58,6 +59,10 @@ export function remoteState(rt: DeckRuntime): RemoteState {
     colorScheme: s.colorScheme,
     theme: s.theme,
     startedAt: presenterClock.get(),
+    timer: (() => {
+      const t = presenterTimer.get();
+      return t ? remoteTimer(t, Date.now()) : null;
+    })(),
   };
 }
 
@@ -167,6 +172,7 @@ export function RemoteHost() {
       deck.nav.subscribe(() => out.push(null)),
       deck.ui.subscribe(() => out.push(null)),
       presenterClock.subscribe(() => out.push(null)),
+      presenterTimer.subscribe(() => out.push(null)),
     ];
     return () => {
       for (const off of offs) off();

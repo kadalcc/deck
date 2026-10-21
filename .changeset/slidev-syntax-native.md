@@ -1,0 +1,5 @@
+---
+"@kadal/deck": minor
+---
+
+Slidev's syntax works in deck.mdx as it is. HTML comments at the end of a slide are its speaker notes (other comments are dropped instead of breaking the slide), a ```yaml fence at the top of a slide is its frontmatter, `defaults:` in the headmatter applies to every slide, `src: ./more.mdx#2-5` includes only some slides, and a `<style>` block styles only its own slide (`<style global>` for the whole deck). ```mermaid fences take Slidev's options, ```plantuml fences render through a PlantUML server (`plantUmlServer`), `$$ {1|3|all}` lights maths lines one click at a time, and `notesAutoRuby` adds readings to words in the notes. `kadal-deck build --without-notes` and `publish --without-notes` leave the notes out. The Vite plugin and the browser compiler take `remarkPlugins`, `rehypePlugins`, `preprocess`, `katex` and `mermaid` (the last two also as headmatter keys). Custom transitions are now a supported contract: name keyframes under `transitions:` (or `registerTransition`), or style `.deck-stage[data-transition="name"]`; a name nothing defines is a clean cut. The linter knows all of it.

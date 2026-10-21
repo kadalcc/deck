@@ -1,5 +1,6 @@
 import { readItem, writeItem } from "../core/storage.ts";
 import type { Stroke } from "../live/protocol.ts";
+import { polylineOf } from "./shapes.ts";
 
 /** A smooth SVG path through a stroke's points: quadratic curves through midpoints. */
 export function pathOf(points: [number, number][]): string {
@@ -119,6 +120,13 @@ export const CYCLE = 640;
 export function segmentsOf(stroke: Stroke, from = 0, run = 5): Segment[] {
   const pts = stroke.points;
   if (pts.length === 0) return [];
+  // A shape is one colour with straight edges (an ellipse keeps the smooth curve).
+  if (stroke.shape) {
+    const rest = pts.slice(from);
+    return [
+      { d: stroke.shape === "ellipse" ? pathOf(rest) : polylineOf(rest), color: stroke.color },
+    ];
+  }
   const [a, b, c] = familyOf(stroke.color);
   if (a === b && b === c) return [{ d: pathOf(pts.slice(from)), color: stroke.color }];
   const out: Segment[] = [];

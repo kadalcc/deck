@@ -9,6 +9,7 @@
  *      bridge, answers with a real PNG of the slide.
  *
  *   node tools/shell-check.mjs [deck.mdx]     (default examples/starter/deck.mdx; build first)
+ *   PORT=5411 node tools/shell-check.mjs      the port to serve on (default 5411)
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -68,7 +69,7 @@ const server = createServer(async (req, res) => {
     res.statusCode = 400;
     return res.end();
   }
-  if (["", "presenter", "join", "notes"].includes(p)) p = "index.html";
+  if (["", "presenter", "join", "notes", "export"].includes(p)) p = "index.html";
   for (const dir of [shell, deckDir, join(deckDir, "public")]) {
     try {
       return await send(res, join(dir, p));
@@ -77,7 +78,8 @@ const server = createServer(async (req, res) => {
   res.statusCode = 404;
   res.end();
 });
-await new Promise((r) => server.listen(5411, r));
+const PORT = Number(process.env.PORT ?? 5411);
+await new Promise((r) => server.listen(PORT, r));
 
 await mkdir(join(root, "examples/starter/check-output"), { recursive: true });
 const browser = await chromium.launch();
@@ -88,7 +90,7 @@ try {
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 
   const t0 = Date.now();
-  await page.goto("http://localhost:5411/@me/talk/");
+  await page.goto(`http://localhost:${PORT}/@me/talk/`);
   await page.waitForSelector(".deck-slide.is-present", { timeout: 60_000 });
   check("published: the first slide renders", true, `${Date.now() - t0} ms`);
   const counts = await page.evaluate(() => ({
@@ -101,11 +103,15 @@ try {
   check("published: ArrowRight moves", /^#\/1/.test(await page.evaluate(() => location.hash)));
   const ran = await page.evaluate(() => window.__deck.commands.run("nav.goto", { index: 2 }));
   check("published: a command runs", ran.ok && ran.value.index === 2, JSON.stringify(ran.value));
-  await page.goto("http://localhost:5411/@me/talk/presenter");
+  await page.goto(`http://localhost:${PORT}/@me/talk/presenter`);
   await page.waitForSelector(".deck-presenter", { timeout: 60_000 });
   check("published: the presenter view loads", true);
+  await page.goto(`http://localhost:${PORT}/@me/talk/export`);
+  await page.waitForSelector(".deck-export .deck-print-pages[data-ready]", { timeout: 60_000 });
+  const exportPages = await page.locator(".deck-export-preview .deck-print-page").count();
+  check("published: the browser exporter loads with its preview", exportPages > 0, `${exportPages} pages`);
 
-  await page.goto("http://localhost:5411/editor");
+  await page.goto(`http://localhost:${PORT}/editor`);
   await page.waitForFunction(() => window.msgs.some((m) => m.type === "nav"), null, { timeout: 60_000 });
   const compiled = await page.evaluate(() => window.msgs.find((m) => m.type === "compiled"));
   check(
@@ -176,6 +182,33 @@ try {
   }
   const bad = await ask("export.thumbnail", { width: "big" }, 999);
   check("preview: export.thumbnail refuses bad params", !bad.ok, bad.error ?? "");
+  // A theme this shell does not bundle: the deck still runs, in minimal, and says so — a warning
+  // diagnostic to the editor and a dismissible notice to the presenter (theming/registry.ts).
+  await page.evaluate((deckText) => {
+    window.msgs.length = 0;
+    const text = /^theme:/m.test(deckText)
+      ? deckText.replace(/^theme:.*$/m, "theme: no-such-theme")
+      : deckText.replace(/^---\n/, "---\ntheme: no-such-theme\n");
+    document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "source", text, at: 0 }, "*");
+  }, deck);
+  await page.waitForFunction(() => window.msgs.some((m) => m.type === "compiled"), null, { timeout: 30_000 });
+  const fallback = await page.evaluate(() => window.msgs.find((m) => m.type === "compiled"));
+  check(
+    "preview: an unknown theme compiles with a warning",
+    fallback.ok && fallback.diagnostics.some((d) => d.severity === "warning" && /no-such-theme/.test(d.message)),
+    fallback.diagnostics.map((d) => d.message).join(" | "),
+  );
+  const notice = page.frameLocator("iframe").locator(".deck-theme-notice");
+  await notice.waitFor({ timeout: 20_000 }).then(
+    () => check("preview: …falls back to minimal, with a notice", true),
+    () => check("preview: …falls back to minimal, with a notice", false),
+  );
+  check(
+    "preview: …and the deck wears minimal",
+    await page.frameLocator("iframe").locator(".deck-root.theme-minimal").count() === 1,
+  );
+  await notice.getByRole("button", { name: "Dismiss" }).click();
+  check("preview: the notice dismisses", (await notice.count()) === 0);
   check("no console errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 } finally {
   await browser.close();

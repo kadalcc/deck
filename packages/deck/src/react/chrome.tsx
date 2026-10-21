@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { KEY_BINDINGS } from "../core/keyboard.ts";
+import { keyLabel } from "../core/shortcuts.ts";
 import { availableRoutes, formatSlideNumber, progressOf } from "../core/navigation.ts";
 import { useDeck } from "./context.ts";
 import { HintLayer } from "./Hints.tsx";
@@ -8,6 +8,7 @@ import { ConfettiLayer } from "./ConfettiLayer.tsx";
 import { ThemeMenu } from "./ThemeMenu.tsx";
 import { useActions, useCurrentSlide, useNav, useUi } from "./hooks.ts";
 import { loadSlide } from "./SlideFrame.tsx";
+import { MDXProvider } from "./mdx.tsx";
 
 /**
  * The chrome around the slides: arrows, progress, the slide number, the pause curtain, the
@@ -181,7 +182,10 @@ export function PauseCurtain() {
 export function HelpSheet() {
   const open = useUi((s) => s.help);
   const actions = useActions();
+  const deck = useDeck();
   if (!open) return null;
+  // What the keys do HERE: the defaults with the deck's own changes laid over them.
+  const bindings = deck.shortcuts.list().filter((b) => !b.views || b.views.includes(deck.mode));
   return (
     <div
       className="deck-sheet deck-help"
@@ -193,12 +197,18 @@ export function HelpSheet() {
         <h2>Keyboard</h2>
         <table>
           <tbody>
-            {KEY_BINDINGS.map((b) => (
-              <tr key={b.action}>
+            {bindings.map((b, i) => (
+              <tr
+                key={`${b.action ?? b.command ?? "fn"}:${i}`}
+                className={b.custom ? "is-custom" : ""}
+              >
                 <td>
-                  <kbd>{b.label}</kbd>
+                  <kbd>{b.label ?? b.keys.map(keyLabel).join("  ")}</kbd>
                 </td>
-                <td>{b.description}</td>
+                <td>
+                  {b.description}
+                  {b.custom ? <span className="deck-help-custom">this deck</span> : null}
+                </td>
               </tr>
             ))}
             <tr>
@@ -376,7 +386,9 @@ export function NotesFooter() {
   if (!Notes) return null;
   return (
     <aside className="deck-notes-footer">
-      <Notes />
+      <MDXProvider>
+        <Notes />
+      </MDXProvider>
     </aside>
   );
 }

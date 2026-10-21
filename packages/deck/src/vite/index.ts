@@ -2,10 +2,15 @@ import { compile } from "@mdx-js/mdx";
 import { renderToString as renderKatex } from "katex";
 import { cpSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Highlighter, createHighlighter } from "shiki";
-import type { Plugin, ViteDevServer } from "vite";
+import {
+  type Highlighter,
+  type ShikiTransformer,
+  bundledLanguagesInfo,
+  createHighlighter,
+} from "shiki";
+import { type Plugin, type ViteDevServer, searchForWorkspaceRoot } from "vite";
 
 import { levelOf, titleOf } from "../compiler/index.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
@@ -17,8 +22,34 @@ import {
   slideTerms,
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
+import {
+  type DeckSetup,
+  katexOptions,
+  manifestHeadmatter,
+  notesRuby,
+  plantUmlServer,
+} from "../compiler/setup.ts";
+import { notationTransformers } from "../compiler/transformers.ts";
 import { DEFAULT_GLOSSARY } from "../glossary/model.ts";
 import { createRelay, type RelayPeer } from "../remote/relay.ts";
+import { applySlideDefaults, shikiThemes, slideDefaultLayers } from "../theming/merge.ts";
+import {
+  type DeckPackageSet,
+  deckPackageSet,
+  isLayerCandidate,
+  packageRoots,
+  packagesCode,
+} from "./packages.ts";
+import { monacoInstalled, monacoLangs, monacoModule, setupFile } from "./monaco.ts";
+import { monacoWriteDev } from "./monaco-dev.ts";
+import { loadTwoslash } from "./twoslash.ts";
+import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } from "./notes-dev.ts";
+import { drawingsDev, drawingsDir, drawingsExport, drawingsModule } from "./drawings-dev.ts";
+import { DRAG_PATH, dragEndpoint } from "./drag-dev.ts";
+import { iconRegistration, resolveIcons } from "../icons/node.ts";
+import { SIDE_EDITOR_DEPS, SOURCE_PATH, sideEditorCode, sourceEndpoint } from "./source-dev.ts";
+import { type RemoteGate, remoteGate, remoteSettings } from "./remote-dev.ts";
+import { deckSite, subdirConfig } from "./site.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -35,7 +66,11 @@ import { createRelay, type RelayPeer } from "../remote/relay.ts";
  *   virtual:deck/slide/N     slide N's compiled MDX (default export: the component)
  *   virtual:deck/notes/N     slide N's notes, compiled MDX (default export)
  *   virtual:deck/magic/N     slide N's precomputed magic-move steps
+ *                            (the manifest also carries `styles`: every slide's <style>, scoped)
+ *   virtual:deck/monaco      Monaco for `{monaco…}` blocks (vite/monaco.ts) — only when a slide has
+ *                            one; otherwise the manifest says `monaco: null`
  *   virtual:deck/kokoro      the narrator's Kokoro worker — only when the deck has `kokoro-js`
+ *   virtual:deck/drawings    the saved drawings, `drawings/*.svg` — in a build (vite/drawings-dev.ts)
  *                            installed; otherwise the manifest says `kokoro: null` and nothing of
  *                            it is built (it is an optional peer: ~400 MB of ONNX runtime)
  *
@@ -69,15 +104,39 @@ function kokoroWorkerFile(): string {
   return existsSync(js) ? js : fileURLToPath(new URL("../narrate/kokoro.worker.ts", import.meta.url));
 }
 
-export interface DeckPluginOptions {
+/**
+ * The plugin's options. Beyond `entry` and `shiki`, the setup hooks (compiler/setup.ts):
+ * `remarkPlugins`, `rehypePlugins`, `preprocess(text, file)`, `katex`, `mermaid`, and
+ * `withoutNotes` (also `KADAL_DECK_WITHOUT_NOTES=1`, which `kadal-deck build --without-notes` sets).
+ */
+export interface DeckPluginOptions extends DeckSetup {
   /** The deck file, relative to the Vite root. Default `deck.mdx`. */
   entry?: string;
-  /** Shiki themes. Defaults suit the neutral theme; the deck's theme CSS can override the colours. */
-  shiki?: { light?: string; dark?: string; langs?: string[] };
+  /**
+   * Shiki: the themes (without them the deck's theme package decides, `kadal.theme.shiki`, and
+   * without that GitHub's light and dark; the theme's CSS can still restyle the colours), the
+   * languages loaded, and transformers run on every code block after the built-in notation ones
+   * (`// [!code ++]`, see compiler/transformers.ts).
+   */
+  shiki?: { light?: string; dark?: string; langs?: string[]; transformers?: ShikiTransformer[] };
+  /**
+   * TwoSlash for ```ts twoslash blocks (needs `typescript` installed). Default true; false renders
+   * them as plain highlighted code.
+   */
+  twoslash?: boolean;
+  /**
+   * The module that registers `{monaco-run}` runners, relative to the Vite root. Default: the
+   * deck's `setup/code-runners.ts` when there is one. Its default export is the runners map (or a
+   * function returning it); see `defineCodeRunners`.
+   */
+  codeRunners?: string;
 }
 
 /** Build-time KaTeX for the maths in a definition; the browser gets finished HTML. */
-const renderMath = (tex: string) => renderKatex(tex, { throwOnError: false });
+const katexRenderer =
+  (options: object = {}) =>
+  (tex: string) =>
+    renderKatex(tex, { throwOnError: false, ...options });
 
 /**
  * The phone remote's line to the dev server (src/remote/relay.ts), in the one module of the deck
@@ -104,41 +163,89 @@ export const relay = hot
     }
   : null;`;
 
+/** Whether any slide of the deck (includes too) has a `{monaco…}` block; false when it cannot tell. */
+function deckUsesMonaco(entryPath: string): boolean {
+  try {
+    const { slides } = prepareDeck(readFileSync(entryPath, "utf8"), {
+      file: entryPath,
+      resolveInclude: (path, from) => {
+        const file = resolve(dirname(from), path);
+        return existsSync(file) ? { file, text: readFileSync(file, "utf8") } : null;
+      },
+    });
+    return monacoLangs(slides.map((s) => s.content)).size > 0;
+  } catch {
+    return false;
+  }
+}
+
 const VIRTUAL = "virtual:deck";
 const RESOLVED = "\0virtual:deck";
 
 export function deck(options: DeckPluginOptions = {}): Plugin {
-  const entry = options.entry ?? "deck.mdx";
-  const themes = {
-    light: options.shiki?.light ?? "github-light",
-    dark: options.shiki?.dark ?? "github-dark",
-  };
+  // `kadal-deck build a.mdx b.mdx` builds each file in turn through the same config (cli/build.ts).
+  const entry = process.env.KADAL_DECK_ENTRY || (options.entry ?? "deck.mdx");
+  // The Shiki themes: the plugin's options, else the deck's theme package's, else GitHub's —
+  // decided again at every manifest build, since the headmatter's theme can change.
+  let themes = shikiThemes(options.shiki, null);
   let root = process.cwd();
   let entryPath = "";
   let base = "/";
   let outDir = "dist";
   let building = false;
+  let publicDir: string | null = null;
+  let watching = false;
   let highlighter: Highlighter | null = null;
   let server: ViteDevServer | null = null;
   let manifest: ReturnType<typeof build> | null = null;
   const included = new Set<string>();
+  /** The resolved themes' and addons' package.json files: their metadata is in the manifest. */
+  const packageFiles = new Set<string>();
   /** The glossary file the last build read (or looked for), watched like an included file. */
   let glossaryFile: string | null = null;
   /** Whether `kokoro-js` resolves from this package (decided once, at the first manifest). */
   let kokoro: Promise<boolean> | null = null;
+  const withoutNotes = options.withoutNotes ?? process.env.KADAL_DECK_WITHOUT_NOTES === "1";
+  /** TwoSlash, loaded the first time a slide has a `twoslash` block (it starts TypeScript). */
+  let twoslash: Promise<ShikiTransformer | null> | null = null;
+  /** Files `/__kadal/monaco-write` just saved: their change must not reload the page. */
+  const quietWrites = new Map<string, string>();
+  /**
+   * The text of each file's last quiet write, kept (quietWrites is consumed by the watcher): what
+   * `hotUpdate` checks, so Tailwind, which reloads the page when a file it scans changes, is not
+   * told about a save the page already shows (a drag, a Monaco edit).
+   */
+  const quietText = new Map<string, string>();
+  const quiet = (file: string, text: string) => {
+    quietWrites.set(file, text);
+    quietText.set(file, text);
+  };
+  const transformers = [...notationTransformers(), ...(options.shiki?.transformers ?? [])];
+  /** Icons already reported as not bundled, so a rebuild does not repeat itself. */
+  const warnedIcons = new Set<string>();
 
+  let highlighterKey = "";
   const getHighlighter = async () => {
-    highlighter ??= await createHighlighter({
-      themes: [themes.light, themes.dark],
-      langs: options.shiki?.langs ?? DEFAULT_LANGS,
-    });
+    const key = `${themes.light}|${themes.dark}`;
+    if (!highlighter || key !== highlighterKey) {
+      highlighterKey = key;
+      highlighter = await createHighlighter({
+        themes: [themes.light, themes.dark],
+        langs: options.shiki?.langs ?? DEFAULT_LANGS,
+      }).catch((err: unknown) => {
+        throw new Error(
+          `[deck] Shiki could not load the code themes "${themes.light}" / "${themes.dark}" (from the plugin options or the theme package's kadal.theme.shiki): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      });
+    }
     return highlighter;
   };
 
   function build() {
     included.clear();
     const text = readFileSync(entryPath, "utf8");
-    const { headmatter, slides } = prepareDeck(text, {
+    const deckDir = dirname(entryPath);
+    const { headmatter, slides, styles } = prepareDeck(text, {
       file: entryPath,
       resolveInclude: (path, from) => {
         const file = resolve(dirname(from), path);
@@ -146,11 +253,43 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         included.add(file);
         return { file, text: readFileSync(file, "utf8") };
       },
+      preprocess: options.preprocess,
+      withoutNotes,
+      // `<<<` imports: deck-root relative paths, read from the disk and watched like includes.
+      snippets: {
+        dirOf: (file) => relative(deckDir, dirname(file)).split(sep).join("/"),
+        read: (path) => {
+          const file = resolve(deckDir, path);
+          included.add(file);
+          server?.watcher.add(file);
+          if (!existsSync(file) || !statSync(file).isFile()) return null;
+          return { path, text: readFileSync(file, "utf8") };
+        },
+        onProblem: (message, s) => console.warn(`[deck] ${s.source.file}:${s.source.line}: ${message}`),
+      },
     });
-    return { headmatter, slides, glossary: readGlossary(headmatter) };
+    const katex = katexOptions(headmatter, options);
+    // Themes, addons and layer files (vite/packages.ts): resolved from the deck's folder, and the
+    // theme's slide defaults filled in under every slide's own before anything compiles.
+    const packages = deckPackageSet(headmatter, dirname(entryPath));
+    for (const f of packages.watch) {
+      packageFiles.add(f);
+      server?.watcher.add(f);
+    }
+    applySlideDefaults(slides, slideDefaultLayers(headmatter, packages.theme, packages.addons));
+    themes = shikiThemes(options.shiki, packages.theme);
+    return {
+      headmatter,
+      slides,
+      styles,
+      katex,
+      math: katexRenderer(katex),
+      glossary: readGlossary(headmatter, katexRenderer(katex)),
+      packages,
+    };
   }
 
-  function readGlossary(headmatter: Record<string, unknown>) {
+  function readGlossary(headmatter: Record<string, unknown>, renderMath: (tex: string) => string) {
     const g = deckGlossary(
       headmatter,
       (src) => {
@@ -170,7 +309,23 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     return manifest;
   };
 
-  const invalidate = () => {
+  /** Rebuild; when the change touched notes only, push them over HMR and say so (notes-dev.ts). */
+  const hotNotes = (): boolean => {
+    const before = manifest!;
+    let after: ReturnType<typeof build>;
+    try {
+      after = build();
+    } catch {
+      return false;
+    }
+    const changes = notesOnlyChanges(before, after);
+    if (!changes || !server) return false;
+    manifest = after;
+    if (changes.length) pushNotes(server, base, after, changes, plainText);
+    return true;
+  };
+
+  const invalidate = (quiet = false) => {
     manifest = null;
     if (!server) return;
     const mods = [...server.moduleGraph.idToModuleMap.keys()].filter((id) =>
@@ -180,28 +335,76 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       const mod = server.moduleGraph.getModuleById(id);
       if (mod) server.moduleGraph.invalidateModule(mod);
     }
-    server.ws.send({ type: "full-reload" });
+    if (!quiet) server.ws.send({ type: "full-reload" });
   };
 
-  /** `terms` is the slide's own frontmatter switch; null compiles without the glossary (notes). */
-  async function compileMdx(source: string, file: string, terms: unknown = null) {
-    const out = await compile(source, {
-      jsx: false,
-      jsxImportSource: "react",
-      development: false,
-      ...mdxPlugins({
-        highlighter: await getHighlighter(),
-        themes,
-        glossary: ensure().glossary,
-        terms,
-        math: renderMath,
-        warn: (message) => console.warn(`[deck] ${file}: ${message}`),
-      }),
-      providerImportSource: "@kadal/deck/mdx-provider",
-      format: "mdx",
-    });
-    return `// ${file}\n${String(out)}`;
+  /**
+   * `terms` is the slide's own frontmatter switch; null compiles without the glossary (notes).
+   * Notes that are not valid MDX — Slidev notes, written for a Markdown parser, often are not —
+   * compile again as plain Markdown, with a warning, rather than fail the build.
+   */
+  async function compileMdx(source: string, file: string, terms: unknown = null, notes = false) {
+    const m = ensure();
+    if (options.twoslash !== false && /\btwoslash\b/.test(source))
+      twoslash ??= loadTwoslash(dirname(entryPath), (msg) => console.warn(`[deck] ${msg}`));
+    const ts = twoslash ? await twoslash : null;
+    // Iconify icons the slide names: bundled into its module from the deck's installed sets.
+    const iconNames = new Set<string>();
+    const run = async (format: "mdx" | "md") =>
+      compile(source, {
+        jsx: false,
+        jsxImportSource: "react",
+        development: false,
+        ...mdxPlugins({
+          highlighter: await getHighlighter(),
+          themes,
+          glossary: m.glossary,
+          terms,
+          math: m.math,
+          warn: (message) => console.warn(`[deck] ${file}: ${message}`),
+          katex: m.katex,
+          plantUmlServer: plantUmlServer(m.headmatter),
+          ruby: notes ? notesRuby(m.headmatter) : null,
+          remarkPlugins: options.remarkPlugins,
+          rehypePlugins: options.rehypePlugins,
+          transformers,
+          twoslash: ts,
+          icons: { onIcon: (name) => iconNames.add(name) },
+        }),
+        providerImportSource: "@kadal/deck/mdx-provider",
+        format,
+      });
+    let out;
+    try {
+      out = await run("mdx");
+    } catch (err) {
+      if (!notes) throw err;
+      console.warn(
+        `[deck] ${file}: the notes are not valid MDX (${err instanceof Error ? err.message.split("\n")[0] : String(err)}); compiled as plain Markdown instead.`,
+      );
+      out = await run("md");
+    }
+    const icons = resolveIcons(iconNames, dirname(entryPath));
+    for (const m of icons.missing)
+      if (!warnedIcons.has(m.name)) {
+        warnedIcons.add(m.name);
+        console.warn(`[deck] ${file}: icon ${m.name}: ${m.reason}.`);
+      }
+    return `// ${file}\n${iconRegistration(icons.icons)}${String(out)}`;
   }
+
+  // The head, the OG card, the PWA, bundled remote assets and the static-host files (vite/site.ts).
+  const site = deckSite({
+    root: () => root,
+    entry: () => entryPath,
+    base: () => base,
+    outDir: () => outDir,
+    publicDir: () => publicDir,
+    building: () => building,
+    watching: () => watching,
+    deck: () => ensure(),
+    manifestId: RESOLVED,
+  });
 
   return {
     name: "stack:deck",
@@ -212,24 +415,72 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       base = config.base.endsWith("/") ? config.base : `${config.base}/`;
       outDir = resolve(root, config.build.outDir);
       building = config.command === "build";
+      publicDir = config.publicDir || null;
+      watching = !!config.build.watch;
     },
     async config(user, env) {
-      const out: { worker?: { format: "es" }; server?: { https: object } } = {};
+      const out: {
+        base?: string;
+        build?: { outDir: string };
+        worker?: { format: "es" };
+        server?: { https?: object; fs?: { allow: string[] }; allowedHosts?: string[] };
+        resolve?: { dedupe: string[] };
+        optimizeDeps?: { include: string[] };
+      } = {};
+      // A theme or addon package (or a layer file) brings modules from outside the deck's own
+      // tree: one React, one engine for all of them, and a `../my-theme` the dev server may serve.
+      const userRoot = resolve(user.root ?? process.cwd());
+      const peek = peekPackages(resolve(userRoot, entry));
+      if (peek) {
+        out.resolve = { dedupe: ["react", "react-dom", "@kadal/deck"] };
+        if (env.command === "serve" && !user.server?.fs?.allow) {
+          const workspace = searchForWorkspaceRoot(userRoot);
+          const outside = packageRoots(peek).filter((r) => !isWithin(workspace, r));
+          if (outside.length) out.server = { fs: { allow: [workspace, ...outside] } };
+        }
+      }
       // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
       // only an ES-module worker can do. A deck that set its own worker format keeps it.
       if (!user.worker?.format) out.worker = { format: "es" };
+      // One of several decks in one `kadal-deck build`: its own folder and base (cli/build.ts).
+      Object.assign(out, subdirConfig(user, env.command));
       // `kadal-deck dev --https`: a self-signed certificate, so a phone gets a secure context (the
       // air pointer's motion sensors need one). The deck's own `server.https` wins.
+      // A deck with Monaco editors: their few Shiki/Monaco glue packages are pre-bundled up front, so
+      // the first editor does not make Vite discover them, re-optimize and reload the page.
+      if (env.command === "serve" && deckUsesMonaco(resolve(user.root ?? process.cwd(), entry)))
+        out.optimizeDeps = {
+          include: [
+            "@kadal/deck > @shikijs/monaco",
+            "@kadal/deck > shiki/core",
+            "@kadal/deck > shiki/engine/javascript",
+          ],
+        };
+      // The side editor's CodeMirror (vite/source-dev.ts), pre-bundled so its first opening does
+      // not reload the page.
+      if (env.command === "serve")
+        out.optimizeDeps = { include: [...(out.optimizeDeps?.include ?? []), ...SIDE_EDITOR_DEPS] };
+      // `kadal-deck dev --tunnel` (vite/remote-dev.ts): requests arrive with the tunnel's host name,
+      // which Vite's DNS-rebinding guard would turn away.
+      if (env.command === "serve" && remoteSettings().tunnel && user.server?.allowedHosts !== true)
+        out.server = {
+          ...out.server,
+          allowedHosts: [...(user.server?.allowedHosts || []), ".trycloudflare.com"],
+        };
       if (env.command === "serve" && process.env.KADAL_DECK_HTTPS === "1" && !user.server?.https) {
         const { devCertificate } = await import("./https.ts");
         const https = devCertificate(resolve(user.root ?? process.cwd()));
-        if (https) out.server = { https };
+        if (https) out.server = { ...out.server, https };
       }
       return Object.keys(out).length ? out : undefined;
     },
     configureServer(s) {
       server = s;
-      remoteRelay(s);
+      // First: the password gate stands in front of every endpoint registered after it.
+      const gate = remoteGate(s, { base: () => base });
+      remoteRelay(s, gate);
+      monacoWriteDev(s, { root: () => root, entry: () => entryPath, quiet });
+      drawingsDev(s, { dir: () => drawingsDir(entryPath), base: () => base });
       const dist = excalidrawDist();
       s.middlewares.use((req, res, next) => {
         const url = (req.url ?? "").split("?")[0]!;
@@ -252,12 +503,48 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       // The default glossary path is watched from the start, so creating the file is noticed too.
       s.watcher.add(resolve(dirname(entryPath), DEFAULT_GLOSSARY.src!));
       const changed = (file: string) => {
-        if (file === entryPath || included.has(file) || file === glossaryFile) invalidate();
+        if (
+          !(
+            file === entryPath ||
+            included.has(file) ||
+            file === glossaryFile ||
+            packageFiles.has(file) ||
+            isLayerCandidate(file, dirname(entryPath))
+          )
+        )
+          return;
+        // A `{monaco-write}` save: the slide already shows it, so recompile quietly, no reload.
+        const quiet = quietWrites.get(file);
+        if (quiet !== undefined) {
+          quietWrites.delete(file);
+          if (existsSync(file) && readFileSync(file, "utf8") === quiet) return invalidate(true);
+        }
+        // Only notes changed (a save from the presenter, say): push those, keep every view as it is.
+        if (manifest && file !== glossaryFile && hotNotes()) return;
+        invalidate();
       };
+      notesEndpoint(s, { entry: () => entryPath, base: () => base });
+      dragEndpoint(s, { entry: () => entryPath, base: () => base, quiet });
+      sourceEndpoint(s, { entry: () => entryPath, base: () => base });
       s.watcher.on("change", changed);
       s.watcher.on("add", changed);
       s.watcher.on("unlink", changed);
     },
+    // Tailwind full-reloads the page when a file it scans changes (deck.mdx is one). A change that
+    // touched only notes is handled here first (hotNotes: pushed over HMR) and answered with no
+    // modules, which leaves Tailwind nothing to reload; any other change goes on as before.
+    hotUpdate({ file, type }) {
+      if (this.environment && this.environment.name !== "client") return;
+      if (type !== "update" || !(file === entryPath || included.has(file))) return;
+      const quietly = quietText.get(file);
+      if (quietly !== undefined && existsSync(file) && readFileSync(file, "utf8") === quietly)
+        return [];
+      if (manifest && hotNotes()) return [];
+    },
+    transformIndexHtml: site.transformIndexHtml,
+    transform: site.transform,
+    generateBundle: site.generateBundle,
+    closeBundle: site.closeBundle,
     writeBundle() {
       if (!building) return;
       const dist = excalidrawDist();
@@ -279,6 +566,16 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       if (!id.startsWith(RESOLVED)) return null;
       const m = ensure();
 
+      if (id === `${RESOLVED}/monaco`) {
+        return monacoModule({
+          langs: monacoLangs(m.slides.map((s) => s.content)),
+          themes,
+          deckDir: dirname(entryPath),
+          writeEndpoint: building ? null : `${base}__kadal/monaco-write`,
+          languages: bundledLanguagesInfo,
+        });
+      }
+
       if (id === `${RESOLVED}/kokoro`) {
         return `import KokoroWorker from ${JSON.stringify(`${kokoroWorkerFile()}?worker`)};
 export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kokoro" }); }
@@ -293,6 +590,10 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
           () => false,
         );
         const hasKokoro = await kokoro;
+        const hasMonaco = monacoInstalled() && monacoLangs(m.slides.map((s) => s.content)).size > 0;
+        const runnersFile = options.codeRunners
+          ? resolve(root, options.codeRunners)
+          : setupFile(dirname(entryPath), "code-runners");
         const entries = m.slides.map((s, i) => {
           const title = titleOf(s);
           return `  {
@@ -312,19 +613,37 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
     loadMagic: ${s.magic.length ? `() => import("${VIRTUAL}/magic/${i}")` : "null"},
   }`;
         });
-        return `export const headmatter = ${JSON.stringify(m.headmatter)};
+        const pk = packagesCode(m.packages);
+        return `${pk.imports}
+export const headmatter = ${JSON.stringify(manifestHeadmatter(m.headmatter, options))};
+export const packages = ${pk.value};
 export const slides = [
 ${entries.join(",\n")}
 ];
 export const glossary = ${JSON.stringify(m.glossary.entries)};
+export const styles = ${JSON.stringify(m.styles)};
 ${building ? "export const relay = null;" : DEV_RELAY}
 export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
-export default { headmatter, slides, glossary, relay, kokoro };
+export const monaco = ${hasMonaco ? `() => import("${VIRTUAL}/monaco").then((m) => m.default())` : "null"};
+export const codeRunners = ${runnersFile && existsSync(runnersFile) ? `() => import(${JSON.stringify(runnersFile)})` : "null"};
+export const dev = ${building ? "false" : "true"};
+export const notesApi = ${building ? "null" : JSON.stringify(`${base}${NOTES_PATH}`)};
+export const dragApi = ${building ? "null" : JSON.stringify(`${base}${DRAG_PATH}`)};
+${building ? "" : DEV_NOTES}
+${drawingsExport({ building, base, dir: drawingsDir(entryPath) })}
+export const sourceApi = ${building ? "null" : JSON.stringify(`${base}${SOURCE_PATH}`)};
+export const sideEditor = ${sideEditorCode(building)};
+export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, drawings, dragApi, sourceApi, sideEditor };
 `;
       }
 
+      if (id === `${RESOLVED}/drawings`) return drawingsModule(drawingsDir(entryPath));
+
       if (!id.startsWith("\0virtual:deck/")) return null;
-      const slide = /^(slide|notes|magic)\/(\d+)$/.exec(id.slice("\0virtual:deck/".length));
+      // A hot notes update asks for `notes/N?t=…`: the query only busts the browser's cache.
+      const slide = /^(slide|notes|magic)\/(\d+)(?:\?.*)?$/.exec(
+        id.slice("\0virtual:deck/".length),
+      );
       if (!slide) return null;
       const kind = slide[1]!;
       const s = m.slides[Number(slide[2])];
@@ -337,7 +656,7 @@ export default { headmatter, slides, glossary, relay, kokoro };
           slideTerms(s),
         );
       if (kind === "notes")
-        return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`);
+        return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`, null, true);
 
       // magic: precompute keyed tokens for each step, plus that step's own line highlights.
       const blocks = magicMoveData(s.magic, await getHighlighter(), themes);
@@ -353,8 +672,14 @@ export default deck;
  * HMR socket every page of the deck already holds, so it listens wherever Vite does — and nowhere
  * Vite does not. Only `serve` has it; a build has no relay.
  */
-function remoteRelay(s: ViteDevServer) {
-  const relay = createRelay({ urls: () => s.resolvedUrls?.network ?? [] });
+function remoteRelay(s: ViteDevServer, gate?: RemoteGate) {
+  // The tunnel's address first, when there is one: a phone can reach it from any network.
+  const relay = createRelay({
+    urls: () => {
+      const tunnel = gate?.publicUrl();
+      return [...(tunnel ? [tunnel] : []), ...(s.resolvedUrls?.network ?? [])];
+    },
+  });
   const peers = new WeakMap<object, RelayPeer>();
   type Client = { send(event: string, payload?: unknown): void };
   const peerOf = (client: Client): RelayPeer => {
@@ -373,3 +698,34 @@ function remoteRelay(s: ViteDevServer) {
     if (peer) relay.leave(peer);
   });
 }
+
+/** Is `p` inside `dir` (or `dir` itself)? */
+function isWithin(dir: string, p: string): boolean {
+  const rel = relative(dir, p);
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+/**
+ * The deck's packages as the config hook needs them — before the manifest exists, and without
+ * failing: a theme that does not resolve is reported when the manifest is built, with the full
+ * message, not here. Null for a deck with only built-in themes and no layer files.
+ */
+function peekPackages(file: string): DeckPackageSet | null {
+  if (!existsSync(file)) return null;
+  try {
+    const { headmatter } = prepareDeck(readFileSync(file, "utf8"), {
+      file,
+      resolveInclude: () => null,
+    });
+    const set = deckPackageSet(headmatter, dirname(file));
+    const external =
+      set.themes.some((t) => !t.builtin) ||
+      set.addons.length > 0 ||
+      Object.keys(set.layers).length > 0;
+    return external ? set : null;
+  } catch {
+    return null;
+  }
+}
+
+export { deckPackages, type DeckPackagesOptions } from "./packages.ts";

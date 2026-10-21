@@ -46,6 +46,7 @@
     "LICENSING.md",
     "THIRD_PARTY_NOTICES.md",
     "README.md",
+    "THEMES.md",
     "tools/verify-island.mjs"
   ],
   "bin": {
@@ -73,6 +74,10 @@
     "./authoring": {
       "types": "./dist/authoring/index.d.ts",
       "import": "./dist/authoring/index.js"
+    },
+    "./import": {
+      "types": "./dist/import/index.d.ts",
+      "import": "./dist/import/index.js"
     },
     "./runtime": {
       "types": "./dist/runtime/index.d.ts",
@@ -110,6 +115,10 @@
       "types": "./dist/renderers/contract.d.ts",
       "import": "./dist/renderers/contract.js"
     },
+    "./monaco": {
+      "types": "./dist/monaco/index.d.ts",
+      "import": "./dist/monaco/index.js"
+    },
     "./sketch": {
       "types": "./dist/sketch/index.d.ts",
       "import": "./dist/sketch/index.js"
@@ -141,15 +150,35 @@
     "catalog": "bun tools/catalog.ts"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.8.0",
+    "@codemirror/lang-css": "^6.3.0",
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-javascript": "^6.2.3",
+    "@codemirror/lang-markdown": "^6.3.2",
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/language": "^6.11.0",
+    "@codemirror/search": "^6.5.10",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.36.5",
     "@excalidraw/excalidraw": "0.18.1",
     "@excalidraw/mermaid-to-excalidraw": "2.2.2",
+    "@kadal/prettier-plugin": "^0.3.6",
+    "@lezer/highlight": "^1.2.1",
     "@mdx-js/mdx": "^3.1.1",
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "@shikijs/monaco": "^3.23.0",
+    "@shikijs/transformers": "^3.23.0",
+    "@shikijs/twoslash": "^3.23.0",
+    "dompurify": "^3.4.16",
     "katex": "^0.16.22",
     "lucide-react": "^1.18.0",
     "mermaid": "^11.4.1",
     "modern-screenshot": "^4.7.0",
+    "monaco-editor": "0.57.0",
     "motion": "^12.23.24",
+    "pdf-lib": "^1.17.1",
+    "pptxgenjs": "^3.12.0",
+    "prettier": "^3.9.10",
     "qrcode": "^1.5.4",
     "rehype-katex": "^7.0.1",
     "remark-frontmatter": "^5.0.0",
@@ -157,6 +186,7 @@
     "remark-math": "^6.0.0",
     "shiki": "^3.13.0",
     "shiki-magic-move": "^1.1.0",
+    "sucrase": "^3.35.1",
     "unist-util-visit": "^5.0.0",
     "yaml": "^2.8.0",
     "zod": "^4.1.12"
@@ -170,7 +200,6 @@
     "vite": "^8.0.16",
     "@types/node": "^25.9.3",
     "playwright": "1.61.1",
-    "pptxgenjs": "^3.12.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
@@ -179,17 +208,17 @@
     "react-dom": "^19.2.0",
     "vite": "^7.0.0 || ^8.0.0",
     "playwright": "^1.50.0",
-    "pptxgenjs": "^3.12.0",
-    "kokoro-js": "^1.2.1"
+    "kokoro-js": "^1.2.1",
+    "typescript": ">=5.5.0"
   },
   "peerDependenciesMeta": {
     "playwright": {
       "optional": true
     },
-    "pptxgenjs": {
+    "kokoro-js": {
       "optional": true
     },
-    "kokoro-js": {
+    "typescript": {
       "optional": true
     }
   }

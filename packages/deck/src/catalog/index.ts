@@ -51,6 +51,7 @@ import type {
 export type * from "./types.ts";
 export { catalogMarkdown, sectionMarkdown } from "./markdown.ts";
 export { frontmatterSchema, shapeSchema } from "./schema.ts";
+export { THEME_PACKAGES } from "./reference.ts";
 
 function components(): ComponentInfo[] {
   const byName = new Map(GENERATED.components.map((c) => [c.name, c]));
@@ -138,6 +139,12 @@ function deckFrontmatter(): FrontmatterKey[] {
     if (f.name === "theme") type = withSuggest(type, SUGGEST.theme);
     if (f.name === "transition" || f.name === "backgroundTransition")
       type = withSuggest(type, GENERATED.transitions);
+    // `duration: 30min` — read into seconds by core/timer.ts, written as a string or minutes.
+    if (f.name === "duration")
+      type = {
+        text: 'string | number | null ("30min", "1h", "90s", "25:00", or minutes)',
+        variants: [{ type: "string" }, { type: "number" }, { type: "null" }],
+      };
     if (f.name === "keyboard")
       type = {
         text: "boolean | Record<string, KeyAction | null>",

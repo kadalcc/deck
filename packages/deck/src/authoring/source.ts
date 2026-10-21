@@ -111,6 +111,9 @@ export function estimateClicks(slide: Pick<RawSlide, "content" | "frontmatter">)
     n += (block[1]!.match(/^\s*(?:[-*+]|\d+[.)])\s+/gm) ?? []).length;
   for (const fence of text.matchAll(/^\s*(`{3,}|~{3,})\S*[^\n]*?\{([^}]*\|[^}]*)\}/gm))
     n += fence[2]!.split("|").length - 1;
+  // `$$ {1|3|all}`: stepped maths lines, one click per step after the first.
+  for (const math of text.matchAll(/^\s*\$\$\s*\{([^}:]*\|[^}:]*)\}/gm))
+    n += math[1]!.split("|").length - 1;
   for (const m of text.matchAll(/^````+md magic-move[\s\S]*?^````+\s*$/gm))
     n += Math.max(0, (m[0].match(/^```(?!`)/gm) ?? []).length / 2 - 1);
   return n;

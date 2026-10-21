@@ -1,0 +1,88 @@
+{
+  "name": "@kadal/theme-classic",
+  "version": "0.3.6",
+  "description": "Classic: Slidev's default theme, ported to Kadal Deck. Avenir Next, light headings, square bullets, light and dark.",
+  "keywords": [
+    "kadal-theme",
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "theme",
+    "slidev-port"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/theme-classic"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "MIT",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "files": [
+    "style.css",
+    "index.tsx",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
+  },
+  "kadal": {
+    "theme": {
+      "name": "classic",
+      "title": "Classic",
+      "description": "Slidev's default theme: Avenir Next, light headings, square bullets.",
+      "colorScheme": "both",
+      "themeConfig": {
+        "primary": "#3ab9d5"
+      },
+      "config": {
+        "fonts": {
+          "sans": "Avenir Next,Nunito Sans",
+          "mono": "Fira Code",
+          "local": "Avenir Next",
+          "weights": "300,400,500,600,700"
+        }
+      },
+      "shiki": {
+        "light": "vitesse-light",
+        "dark": "vitesse-dark"
+      },
+      "defaults": {},
+      "layouts": [
+        "cover"
+      ],
+      "components": []
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "dev": "kadal-deck dev -C preview",
+    "build": "kadal-deck build -C preview",
+    "check": "kadal-deck check -C preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "^0.3.6",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}

@@ -85,6 +85,45 @@ The main point, in Markdown.
 | `children` | `ReactNode` |  |  |
 | `align` | `string` |  | CSS align-items; "start" stops cards in a row from sharing a height. |
 
+#### `<Drag>`
+
+A block you place by hand (Slidev's v-drag). `pos` is "x,y,w,h[,rotation]" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.
+
+```mdx
+<Drag pos="1400,120,380,_">
+
+![](/badge.png)
+
+</Drag>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `pos` | `string` |  | "x,y,w,h[,r]" in stage pixels (`_` height: automatic), or a name in the frontmatter's `dragPos`. |
+| `at` | `ClickAt` |  | A click step, as `<Click at>`. |
+| `hide` | `boolean` |  | Start shown and hide at the step. |
+| `effect` | `string` | `"fade-in"` | The reveal effect with `at` (see `<Click effect>`). |
+| `as` | `ElementType` |  | The element (div). |
+| `children` | `ReactNode` |  |  |
+
+#### `<DragArrow>`
+
+An `<Arrow>` whose ends are dragged into place in `kadal-deck dev` (Slidev's v-drag-arrow). `pos` is "x,y,dx,dy" (from x,y by dx,dy) or a dragPos name.
+
+```mdx
+<DragArrow pos="300,700,600,-280" color="var(--deck-accent)" width={4} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `pos` | `string` |  | "x,y,dx,dy": from (x, y) by (dx, dy), stage pixels — or a frontmatter `dragPos` name. |
+| `width` | `number` | `2` | Line width (px). |
+| `color` | `string` | `"currentColor"` | CSS colour. |
+| `twoWay` | `boolean` | `false` | Heads at both ends. |
+| `at` | `ClickAt` |  | A click step. |
+| `hide` | `boolean` |  |  |
+| `effect` | `string` | `"fade-in"` |  |
+
 #### `<FitText>`
 
 Text as large as fits its box (reveal.js r-fit-text), between `min` and `max` px.
@@ -207,6 +246,23 @@ Shows together with the previous click instead of taking a step of its own.
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
 | `children` | `ReactNode` |  | What is revealed. |
 
+#### `<Case>`
+
+One case of a `<Switch>`. Without `at` it is one step after the case before; `at={0}` is what the slide starts with; the last case stays unless it has a range.
+
+```mdx
+<Switch>
+<Case at={0}>Before</Case>
+<Case>After one click</Case>
+</Switch>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `at` | `string \| number \| [number, number]` |  | When, in the switch's own steps: n, "a-b", or [a, b]. Default: one after the case before. |
+| `as` | `ElementType` |  | This case's element. |
+| `children` | `ReactNode` |  |  |
+
 #### `<Click>`
 
 One click step (Slidev's v-click, reveal.js's fragment): shows its children from its step on, or hides them with `hide`.
@@ -252,6 +308,27 @@ reveal.js's name for `<Click>`; identical.
 ```mdx
 <Fragment effect="highlight-red">Same as Click</Fragment>
 ```
+
+#### `<Switch>`
+
+One child at a time, switched by clicks (Slidev's v-switch): each `<Case>` takes the next step, or `at={n}` / `at="a-b"` in the switch's own steps; the cases share one spot, so nothing below jumps.
+
+```mdx
+<Switch transition="slide-up">
+<Case>First</Case>
+<Case>Then</Case>
+<Case at="4-6">Steps 4 and 5</Case>
+</Switch>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `at` | `ClickAt` |  | When the switch's first step is: as `<Click at>`. Default one after the previous click. |
+| `transition` | `(string & {}) \| "fade" \| "slide-up" \| "slide-left" \| "scale" \| "none"` | `"fade"` | "fade" (default), "slide-up", "slide-left", "scale", or "none". |
+| `unmount` | `boolean` | `false` | Leave hidden cases out of the page rather than hidden in it. |
+| `as` | `ElementType` |  | The switch's element (`tag` in Slidev); `div` by default. |
+| `childAs` | `ElementType` |  | Each case's element (`childTag`); `div` by default. |
+| `children` | `ReactNode` |  | `<Case>`s — or any elements, each one step. |
 
 ### Markdown
 
@@ -395,6 +472,23 @@ Press <Kbd>?</Kbd> for help
 | --- | --- | --- | --- |
 | `children` | `ReactNode` |  |  |
 
+#### `<LightOrDark>`
+
+One thing in the light colour scheme, another in the dark (the slide's own scheme when its frontmatter forces one): `light`/`dark` props, children marked `slot="light"`/`slot="dark"`, or a function of the scheme.
+
+```mdx
+<LightOrDark>
+  <div slot="dark">![](/logo-white.svg)</div>
+  <div slot="light">![](/logo-black.svg)</div>
+</LightOrDark>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `light` | `ReactNode` |  | Shown in the light scheme. |
+| `dark` | `ReactNode` |  | Shown in the dark scheme. |
+| `children` | `ReactNode \| ((props: { scheme: Scheme; } & Record<string, unknown>) => ReactNode)` |  | Either children marked `slot="light"` / `slot="dark"` (any element: `<div slot="dark">…</div>`), or a function of the scheme and the other props: `{({ scheme }) => …}`. |
+
 #### `<Link>`
 
 A link to another slide by 1-based number, `h.v`, or slide id.
@@ -411,17 +505,29 @@ A link to another slide by 1-based number, `h.v`, or slide id.
 
 #### `<Mark>`
 
-A hand-drawn mark around inline text — underline, circle, box, highlight or strike — drawn on its click.
+A hand-drawn mark (Slidev's v-mark, rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.
 
 ```mdx
 The answer is <Mark type="circle">forty-two</Mark>.
+
+<Mark type="bracket" brackets="left right" color="#e11d48" at={2}>Both sides</Mark>
 ```
 
 | prop | type | default | |
 | --- | --- | --- | --- |
-| `type` | `"strike" \| "circle" \| "underline" \| "box" \| "highlight"` | `"underline"` |  |
-| `color` | `string` | `"var(--deck-accent)"` | CSS colour. |
-| `at` | `string \| number` |  | Click step, as for <Click>. |
+| `type` | `"strike" \| MarkType \| "line-through" \| "linethrough" \| "cross" \| "crossed"` | `"underline"` | underline · box · circle · highlight · strike-through · crossed-off · bracket (Slidev's aliases strike, line-through, cross, crossed work too). |
+| `color` | `string` | `"var(--deck-accent)"` | Any CSS colour; default the theme's accent. |
+| `at` | `ClickAt` |  | When: as `<Click at>` (default: the next click; 0 = always; [a, b] from a until b). |
+| `strokeWidth` | `number` |  | Line width in px (default 3; a highlight is as tall as the line). |
+| `padding` | `string \| number \| number[]` |  | Space around the text in px: one number, or "top right bottom left" like CSS. Default 5. |
+| `iterations` | `number` | `2` | Strokes per line, each a little different (default 2, rough-notation's). |
+| `multiline` | `boolean` |  | One mark per line of wrapped text. Default: on for underline, highlight, strike-through, crossed-off. |
+| `brackets` | `string \| string[]` | `"right"` | For a bracket: which sides — "left", "right", "top", "bottom", or several. Default "right". |
+| `duration` | `number` |  | How long the stroke takes to draw, ms (default 800). |
+| `animationDuration` | `number` |  | rough-notation's name for `duration`. |
+| `delay` | `number` | `0` | Wait this long after the click before drawing, ms. |
+| `animate` | `boolean` | `true` | Turn the drawing animation off: the mark appears whole. |
+| `opacity` | `number` |  | 0–1. Default 1 (a highlight: 0.35, so the text shows through). |
 | `children` | `ReactNode` |  |  |
 
 #### `<Math>` (= `<Tex>`)
@@ -434,7 +540,7 @@ Another name for `<Tex>`.
 
 #### `<Notes>`
 
-Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks.
+Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.
 
 ```mdx
 <Notes>
@@ -458,6 +564,42 @@ A QR code for any text or URL, rendered locally.
 | --- | --- | --- | --- |
 | `value` * | `string` |  | Text or URL to encode. |
 | `size` | `number` | `240` | Pixels. |
+
+#### `<RenderWhen>`
+
+Renders its children only in some places: `main` (the deck and the presenter's current slide), `slide`, `presenter`, `previewNext`, `overview`, `print`/`export`, `audience`, `visible`; `fallback` everywhere else.
+
+```mdx
+<RenderWhen context="presenter">Only the speaker sees this.</RenderWhen>
+
+<RenderWhen context={["print", "overview"]} fallback={<Iframe src="https://example.com" />}>![](/still.png)</RenderWhen>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `context` * | `string \| RenderWhenContext[]` |  | Where to render: `main` (the deck and the presenter's current slide — and the audience's phone), `slide`, `presenter`, `previewNext` (the presenter's next box), `overview`, `print` (also `export`), `audience`, `visible` (on screen right now). Several — an array or "presenter overview" — render in any of them; `visible` combined with others must also hold. |
+| `fallback` | `ReactNode` | `null` | Rendered where the context does not match. |
+| `children` | `ReactNode` |  |  |
+
+#### `<SlideCurrentNo>`
+
+This slide's number (in a global layer: the current slide's).
+
+```mdx
+Slide <SlideCurrentNo /> of <SlidesTotal />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `format` | `"c" \| "c/t" \| "h.v" \| "h/v"` | `"c"` | "c" the flat number (default), "h.v" or "h/v" with vertical slides, "c/t" with the total. |
+
+#### `<SlidesTotal>`
+
+How many slides the deck has (hidden ones left out).
+
+```mdx
+<SlidesTotal /> slides
+```
 
 #### `<Tex>`
 
@@ -484,6 +626,21 @@ A countdown (with `seconds`) or a stopwatch that starts when its slide is shown.
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `seconds` | `number` |  | Count down from this; omit for a stopwatch. |
+
+#### `<TitleRenderer>`
+
+Another slide's title, by its number or id (no prop: this slide's own).
+
+```mdx
+Next up: <TitleRenderer no={3} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `no` | `string \| number` |  | Slide number, 1-based. |
+| `id` | `string` |  | Or the slide's id. |
+| `fallback` | `ReactNode` |  | Shown when that slide has no title (or there is no such slide). |
+| `as` | `"div" \| "h1" \| "h2" \| "h3" \| "span" \| "strong"` | `"span"` | The element: span (default), h1–h3, strong, div. |
 
 #### `<Toc>`
 
@@ -533,6 +690,20 @@ An audio player.
 | `autoplay` | `boolean` |  | Play on arrival. |
 | `loop` | `boolean` |  | Loop. |
 | `controls` | `boolean` | `true` | Show controls. |
+
+#### `<BlueSky>`
+
+A Bluesky post, through Bluesky's embed, in the slide's colour scheme; `deck export` captures a poster for each scheme.
+
+```mdx
+<BlueSky uri="https://bsky.app/profile/sli.dev/post/3la7gcgfwpe2n" />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `uri` * | `string` |  | The post: its bsky.app address or its AT-URI. |
+| `scale` | `string \| number` | `1` | Scale factor. |
+| `poster` | `string` |  | Stands in for the post in print, the overview and while it loads. |
 
 #### `<Iframe>`
 
@@ -585,19 +756,28 @@ An embedded post from X/Twitter.
 
 #### `<Video>`
 
-A video that plays while its slide is shown.
+A video that knows the slide's clicks (Slidev's SlidevVideo and more): plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.
 
 ```mdx
-<Video src="/demo.mp4" autoplay loop />
+<Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />
 ```
 
 | prop | type | default | |
 | --- | --- | --- | --- |
-| `src` * | `string` |  | Video URL (public/ path or https). |
-| `autoplay` | `boolean` |  | Play on arrival. |
+| `src` | `string` |  | Video URL (public/ path or https), or `<source>` children. |
+| `autoplay` | `boolean \| "once"` |  | Play when the slide (or `at`, or the enclosing `<Click>`) arrives; "once": only the first time. |
+| `at` | `ClickAt` |  | The click at which it starts playing (as `<Click at>`); implies `autoplay`. |
+| `pauseAt` | `ClickAt` |  | The click at which it pauses. |
+| `steps` | `Record<string \| number, VideoStep>` |  | What happens at further clicks: `{ 3: "pause", 4: "play", 6: 12.5, 8: "rewind" }` (absolute clicks). |
+| `autoreset` | `"slide" \| "click"` |  | "slide": back to `timestamp` whenever the slide is left; "click": whenever the deck steps back before `at`. |
+| `timestamp` | `string \| number` |  | Start here, in seconds. |
 | `loop` | `boolean` |  | Loop. |
-| `muted` | `boolean` | `true` | Muted. |
+| `muted` | `boolean` | `true` | Muted (default true). |
 | `controls` | `boolean` | `false` | Show controls. |
+| `poster` | `string` |  | Poster image. |
+| `printPoster` | `string` |  | The poster in print, the overview and the next-slide box (default `poster`). |
+| `printTimestamp` | `string \| number` |  | The frame shown in print and previews: seconds, or "last". Default `timestamp`. |
+| `children` | `ReactNode` |  | `<source>` elements, captions (`<track>`), fallback text. |
 
 #### `<Youtube>`
 
@@ -743,18 +923,20 @@ A ring of light around an icon or emoji.
 
 #### `<Icon>`
 
-Any lucide icon by name.
+A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). Slidev's tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.
 
 ```mdx
-<Icon name="rocket" size="2em" />
+<Icon name="rocket" size="2em" /> <Icon name="mdi:account-circle" color="tomato" /> <logos-react class="text-3xl" />
 ```
 
 | prop | type | default | |
 | --- | --- | --- | --- |
-| `name` * | `string` |  | lucide icon name, kebab-case or PascalCase. |
-| `size` | `string \| number` | `"1em"` | CSS size or px. |
-| `color` | `string` |  | CSS colour. |
-| `strokeWidth` | `number` | `1.75` |  |
+| `name` * | `string` |  | A Lucide name (`rocket`), or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). |
+| `size` | `string \| number` | `"1em"` | Height: CSS size or px (the width follows the icon's proportions). Tag form: 1.2em. |
+| `color` | `string` |  | CSS colour (monochrome icons). |
+| `strokeWidth` | `number` | `1.75` | Lucide icons only. |
+| `class` | `string` |  | Slidev's spelling of `className`. |
+| `title` | `string` |  | An accessible name; without one the icon is decorative. |
 
 #### `<Ribbon>`
 
@@ -810,6 +992,32 @@ export { a, b };
 ```
 ````
 
+#### `<CodeGroup>`
+
+Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as Slidev's `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print="all"` prints every tab.
+
+````mdx
+::code-group
+
+```sh [npm]
+npm i @kadal/deck
+```
+
+```sh [bun]
+bun add @kadal/deck
+```
+
+::
+````
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  | The fenced code blocks, one per tab (blank lines around them inside the tag). |
+| `clicks` | `boolean` |  | Open the next tab on each click of the slide, from the group's own step on. |
+| `at` | `string \| number` |  | With `clicks`: when the first turn happens, like `<Click at>` (`"+1"`, an absolute step). |
+| `active` | `number` | `0` | The tab open at first (0-based). Default 0. |
+| `print` | `"active" \| "all"` |  | What print and export show: the open tab (default) or every tab. |
+
 #### `<MagicMove>`
 
 Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step.
@@ -824,6 +1032,62 @@ const n = 1
 ```
 ````
 `````
+
+### Diagrams
+
+#### `<KatexLines>`
+
+Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.
+
+```mdx
+$$ {1|2|all}
+\begin{aligned}
+a &= b + c \\
+d &= e
+\end{aligned}
+$$
+```
+
+#### `<Mermaid>`
+
+A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.
+
+```mdx
+<Mermaid>{`flowchart LR
+  A[Write] --> B[Check] --> C[Present]`}</Mermaid>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  | Mermaid source as a JSX template string. |
+| `code` | `string` |  | The diagram's source, when it is not the children. |
+| `scale` | `number` | `1` | Scale factor. |
+| `theme` | `string` |  | A Mermaid theme for this diagram: default, neutral, dark, forest, base. |
+| `config` | `Record<string, unknown>` |  | Mermaid configuration for this diagram (themeVariables, look, flowchart…). |
+| `alt` | `string` |  | What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. |
+
+#### `<Sketch>`
+
+An Excalidraw drawing in the deck's colours: from the sketch DSL (`scene`), an .excalidraw file (`src`), or Mermaid (children); `steps` tours its regions one click at a time.
+
+```mdx
+<Sketch>{`flowchart LR; idea --> slide --> talk`}</Sketch>
+
+<Sketch src="/diagrams/flow.excalidraw" height="600px" />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `scene` | `SketchScene` |  | A scene built with `sketch()` from @kadal/deck/sketch (import it in src/components.tsx or the slide). |
+| `src` | `string \| ExcalidrawFile` |  | Path to an .excalidraw file in public/. |
+| `mermaid` | `string` |  | Mermaid source to convert. |
+| `children` | `ReactNode` |  |  |
+| `steps` | `SketchStep[]` | `[]` | Regions to light up, one per click, after the whole diagram has shown. |
+| `caption` | `ReactNode` |  | Shown under the diagram when no step's caption is. |
+| `width` | `string` |  | CSS size limits for the drawing. |
+| `height` | `string` |  | CSS max height. |
+| `fontSize` | `number` |  | Font size for Mermaid conversions. |
+| `zoomable` | `boolean` | `true` | Show the button that opens it in Excalidraw's viewer. |
 
 ### Live
 
@@ -936,45 +1200,6 @@ The audience answers in a word or two; the words grow as they repeat.
 | --- | --- | --- | --- |
 | `id` * | `string` |  | Stable id, unique in the deck. |
 | `question` * | `string` |  | The prompt. |
-
-### Diagrams
-
-#### `<Mermaid>`
-
-A Mermaid diagram rendered in the browser in the deck's colours. Pass the source as a template string.
-
-```mdx
-<Mermaid>{`flowchart LR
-  A[Write] --> B[Check] --> C[Present]`}</Mermaid>
-```
-
-| prop | type | default | |
-| --- | --- | --- | --- |
-| `children` | `ReactNode` |  | Mermaid source as a JSX template string. |
-| `scale` | `number` | `1` | Scale factor. |
-
-#### `<Sketch>`
-
-An Excalidraw drawing in the deck's colours: from the sketch DSL (`scene`), an .excalidraw file (`src`), or Mermaid (children); `steps` tours its regions one click at a time.
-
-```mdx
-<Sketch>{`flowchart LR; idea --> slide --> talk`}</Sketch>
-
-<Sketch src="/diagrams/flow.excalidraw" height="600px" />
-```
-
-| prop | type | default | |
-| --- | --- | --- | --- |
-| `scene` | `SketchScene` |  | A scene built with `sketch()` from @kadal/deck/sketch (import it in src/components.tsx or the slide). |
-| `src` | `string \| ExcalidrawFile` |  | Path to an .excalidraw file in public/. |
-| `mermaid` | `string` |  | Mermaid source to convert. |
-| `children` | `ReactNode` |  |  |
-| `steps` | `SketchStep[]` | `[]` | Regions to light up, one per click, after the whole diagram has shown. |
-| `caption` | `ReactNode` |  | Shown under the diagram when no step's caption is. |
-| `width` | `string` |  | CSS size limits for the drawing. |
-| `height` | `string` |  | CSS max height. |
-| `fontSize` | `number` |  | Font size for Mermaid conversions. |
-| `zoomable` | `boolean` | `true` | Show the button that opens it in Excalidraw's viewer. |
 
 ### Motion
 
@@ -1128,6 +1353,79 @@ a
 b
 ```
 ````
+
+- `// [!code ++]` — Shiki notation comments, at the end of a line (any comment style): `[!code ++]` / `[!code --]` added and removed lines, `[!code highlight]` (or `highlight:3` for 3 lines), `[!code focus]` blurs the rest until hover, `[!code error]` / `[!code warning]`, `[!code word:name]` marks every `name`. The comment is removed. Works with click steps; `deck({ shiki: { transformers } })` adds your own transformers.
+
+````mdx
+```ts
+const a = 1 // [!code --]
+const a = 2 // [!code ++]
+const b = a // [!code highlight]
+```
+````
+
+- `::code-group` — Fences between `::code-group` and `::` (or `:::`) become tabs (`<CodeGroup>`), named by each fence's `[title]`. Options after the opener: `{clicks:true}` turns tabs on clicks, `{print:'all'}` prints every tab.
+
+````mdx
+::code-group
+
+```sh [npm]
+npm i @kadal/deck
+```
+
+```sh [bun]
+bun add @kadal/deck
+```
+
+::
+````
+
+- `<<< @/snippets/file.ts#region` — Import code from a file (`@` = the deck's folder; `./x` relative to the slide's file), optionally one `#region` (marked `// #region name` … `// #endregion` in any comment style). A language word and any fence meta may follow: `<<< @/a.js ts {2|4}{lines:true} [a.ts]`. Watched in dev; in the hosted shell the file must be published beside deck.mdx.
+
+```mdx
+<<< @/snippets/tide.ts#ask {2-3} [tide.ts]
+```
+
+- `twoslash` — TypeScript type information rendered at build time: hover (or Tab to) a name for its type, errors underlined with the compiler's message, `// ^?` pins a type under the token above. Needs `typescript` installed; the hosted shell renders the block plain.
+
+````mdx
+```ts twoslash
+const tide = { height: 6.1 }
+//    ^?
+```
+````
+
+- `{monaco}` — A Monaco editor on the slide (lazy-loaded; print, export and the phone remote show the highlighted code). Options: height (CSS or 'auto' to grow), lines, editorOptions (Monaco IEditorOptions), readonly. Esc gives the keys back to the deck.
+
+````mdx
+```ts {monaco}{height:'auto'}
+const greeting = 'hello'
+```
+````
+
+- `{monaco-diff}` — A Monaco diff editor: the original code, a line of `~~~`, then the modified code. Print shows a unified line diff. `{sideBySide:false}` for inline.
+
+````mdx
+```ts {monaco-diff}
+const tide = 6.1
+~~~
+const tide = 6.4
+```
+````
+
+- `{monaco-run}` — An editor with a Run button (Ctrl/⌘+Enter) and the output under it: JS/TS run in a Web Worker (console captured, timeouts), Python in Pyodide; other languages through `registerCodeRunner` or setup/code-runners.ts. Options: autorun (default true, re-runs on edit), showOutputAt (a click, e.g. '+1'), outputHeight, outputPosition ('bottom' | 'right'), timeout (ms), runnerOptions.
+
+````mdx
+```ts {monaco-run}{showOutputAt:'+1'}
+console.log([1, 2, 3].map((n) => n * 2))
+```
+````
+
+- `{monaco-write}` — An editor whose edits are saved back to the source in `kadal-deck dev` (the imported file with `<<<`, else the fence in deck.mdx); read-only in a build and in the hosted shell.
+
+```mdx
+<<< @/snippets/tide.ts#ask {monaco-write}
+```
 
 - `` ````md magic-move `` — A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.
 

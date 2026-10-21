@@ -16,3 +16,13 @@ export {
   isToPreview,
 } from "./protocol.ts";
 export { type ShellOptions, shellBase, startShell } from "./shell.tsx";
+export {
+  type PackageRegistry,
+  type RegisteredPackage,
+  createPackageRegistry,
+  packageRegistry,
+  registerAddon,
+  registerTheme,
+  resolveRuntimePackages,
+} from "../theming/registry.ts";
+export { type MonacoHost, type MonacoLoader, registerMonacoLoader } from "../monaco/loader.ts";

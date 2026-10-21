@@ -4,18 +4,23 @@ import {
   builtinComponentNames,
   catalog as builtin,
 } from "../catalog/index.ts";
-import { parseCodeMeta } from "../compiler/code-meta.ts";
+import { CODE_OPTION_KEYS, parseCodeMeta } from "../compiler/code-meta.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
 import {
   type RawSlide,
   unclosedSettings,
   unclosedSettingsMessage,
 } from "../compiler/split.ts";
+import { extractRegion, parseSnippetLine } from "../compiler/snippets.ts";
 import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
+import { checkDeckSyntax, checkSlideSyntax, deckTransitionNames, maskSlideBody } from "./lint-syntax.ts";
+import { checkSlidevLeftovers } from "./lint-slidev.ts";
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
 import { checkValue, closest } from "./validate.ts";
+import { parseDuration } from "../core/timer.ts";
+import { type IconSetLoader, checkIcons } from "./lint-icons.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -27,7 +32,8 @@ import { checkValue, closest } from "./validate.ts";
  * themes and transitions the engine does not have; MDX that does not compile (with the line in
  * the file, not in the slide); JSX tags that are neither built in, the deck's own, nor imported;
  * includes that cannot be read; local images and videos that will not be served; glossary
- * problems; code-fence options the highlighter will ignore. Errors break the deck; warnings are
+ * problems; code-fence options the highlighter will ignore; and the Slidev syntax the compiler
+ * reads natively (lint-syntax.ts). Errors break the deck; warnings are
  * worth a look. Pure apart from the MDX compiler, which is imported only when `compile` is on.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -61,6 +67,8 @@ export interface DeckExtensions {
   components: string[];
   layouts: string[];
   backgrounds: string[];
+  /** Transitions registered with `registerTransition("name", …)` in the deck's source. */
+  transitions?: string[];
   /** True when the components map could not be read completely (a spread, a computed key). */
   open: boolean;
 }
@@ -79,6 +87,12 @@ export interface LintOptions {
   /** Compile every slide's MDX (slower, finds syntax errors). Default true. */
   compile?: boolean;
   catalog?: Catalog;
+  /**
+   * Reads an Iconify set from the deck's node_modules (null: not installed), so icons can be
+   * checked against it (`kadal-deck check` passes `loadIconSet`). Without it, only the set names
+   * are checked.
+   */
+  icons?: IconSetLoader;
 }
 
 const LANG_ALIASES = new Set([
@@ -98,6 +112,7 @@ const LANG_ALIASES = new Set([
   "txt",
   "plain",
   "mermaid",
+  "plantuml",
   "math",
 ]);
 
@@ -155,6 +170,45 @@ function esmNames(code: string): string[] {
   return out;
 }
 
+const TWOSLASH_LANGS = new Set(["ts", "tsx", "js", "jsx", "typescript", "javascript", "mts", "cts"]);
+const RUNNABLE = new Set(["js", "javascript", "mjs", "cjs", "ts", "typescript", "mts", "cts", "py", "python", "python3"]);
+
+/**
+ * The slide's lines as MDX will see them: `<<<` imports and `::code-group` markers are the
+ * compiler's own syntax (they become fences and `<CodeGroup>` before MDX runs), so they are
+ * blanked — line numbers stay — after `onSnippet` has looked at each import.
+ */
+function withoutCodeSugar(lines: string[], onSnippet: (line: string, index: number) => void): string {
+  const out = [...lines];
+  let fence: { mark: string; magic: boolean } | null = null;
+  let group = false;
+  for (let i = 0; i < out.length; i++) {
+    const line = out[i]!;
+    const open = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (open) {
+      if (!fence) fence = { mark: open[1]!, magic: /^\s*md\s+magic-move/.test(open[2]!) };
+      else if (open[1]![0] === fence.mark[0] && open[1]!.length >= fence.mark.length && !open[2]!.trim())
+        fence = null;
+      continue;
+    }
+    if (fence && !fence.magic) continue;
+    if (/^[ \t]*<<<[ \t]+\S/.test(line)) {
+      onSnippet(line, i);
+      if (!fence) out[i] = "";
+      continue;
+    }
+    if (fence) continue;
+    if (/^[ \t]*:{2,}code-group\b/.test(line)) {
+      group = true;
+      out[i] = "";
+    } else if (group && /^[ \t]*:{2,}[ \t]*$/.test(line)) {
+      group = false;
+      out[i] = "";
+    }
+  }
+  return out.join("\n");
+}
+
 export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const cat = options.catalog ?? builtin;
   const files = options.files;
@@ -163,6 +217,84 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const ext = options.extensions ?? { components: [], layouts: [], backgrounds: [], open: false };
   const diagnostics: Diagnostic[] = [];
   const add = (d: Diagnostic) => diagnostics.push(d);
+  /** Iconify sets already reported as not installed (once per run each). */
+  const iconSetsReported = new Set<string>();
+
+  /** A code fence's language and meta: what the highlighter, Monaco and TwoSlash will ignore. */
+  const checkFence = (
+    lang: string,
+    meta: string,
+    value: string,
+    at: { file: string; line: number; slide: number; column?: number },
+  ) => {
+    if (lang === "md" && /magic-move/.test(meta)) return;
+    // Diagram fences take options of their own; remark-fences.ts checks them.
+    if (lang === "mermaid" || lang === "plantuml") return;
+    if (lang && !DEFAULT_LANGS.includes(lang) && !LANG_ALIASES.has(lang))
+      add({
+        ...at,
+        severity: "info",
+        code: "code-lang",
+        message: `\`${lang}\` is not among the languages loaded by default; it renders as plain text unless vite.config.ts passes deck({ shiki: { langs: [...] } }).`,
+      });
+    if (!meta) return;
+    const total = value.split("\n").length;
+    const parsed = parseCodeMeta(meta);
+    const beyond = (parsed.steps ?? [])
+      .flatMap((st) => (st ? [...st] : []))
+      .filter((x) => x > total + parsed.startLine - 1);
+    if (beyond.length && !parsed.monaco)
+      add({
+        ...at,
+        severity: "warning",
+        code: "code-meta",
+        message: `Highlight line ${beyond[0]} is past the end of the block (${total} lines).`,
+      });
+    for (const key of Object.keys(parsed.options))
+      if (!(CODE_OPTION_KEYS as readonly string[]).includes(key))
+        add({
+          ...at,
+          severity: "warning",
+          code: "code-meta",
+          message: `Unknown code option "${key}" (${CODE_OPTION_KEYS.join(", ")}).`,
+        });
+    const words = parsed.words.filter((w) => !w.startsWith("data-") && w !== "magic-move");
+    if (words.length)
+      add({
+        ...at,
+        severity: "info",
+        code: "code-meta",
+        message: `Code fence meta "${words.join(" ")}" is not understood and is ignored.`,
+      });
+    if (parsed.twoslash && !TWOSLASH_LANGS.has(lang))
+      add({
+        ...at,
+        severity: "info",
+        code: "code-twoslash",
+        message: `\`twoslash\` works on TypeScript and JavaScript blocks; this \`${lang || "text"}\` block renders without it.`,
+      });
+    if (parsed.monaco === "run" && !RUNNABLE.has(lang.toLowerCase()))
+      add({
+        ...at,
+        severity: "info",
+        code: "code-runner",
+        message: `No built-in runner for \`${lang || "text"}\` (JavaScript, TypeScript and Python have one): register one with registerCodeRunner("${lang}", …) or in setup/code-runners.ts, or the block shows "No runner".`,
+      });
+    if (parsed.monaco === "diff" && !/^~~~\s*$/m.test(value))
+      add({
+        ...at,
+        severity: "warning",
+        code: "code-meta",
+        message: "A {monaco-diff} block needs a line of ~~~ between the original and the modified code.",
+      });
+    if (parsed.monaco && parsed.steps)
+      add({
+        ...at,
+        severity: "info",
+        code: "code-meta",
+        message: "Line-highlight steps do not apply to a Monaco editor; they are ignored.",
+      });
+  };
 
   let deck: ReturnType<typeof readDeck>;
   try {
@@ -184,7 +316,11 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         ? "include-outside"
         : /cannot include/.test(p.message)
           ? "include-missing"
-          : "yaml",
+          : p.message.startsWith("circular include")
+            ? "include-circular"
+            : p.message.startsWith('src "')
+              ? "include-range"
+              : "yaml",
       message: p.message,
       file: p.file,
       line: p.line,
@@ -202,7 +338,10 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const deckKeys = new Map(cat.deckFrontmatter.map((k) => [k.name, k]));
   const layouts = new Set([...cat.layouts.map((l) => l.name), ...ext.layouts]);
   const bgs = new Set([...backgroundNames(cat), ...ext.backgrounds]);
-  const transitions = new Set(cat.transitions.map((t) => t.name));
+  const transitions = new Set([
+    ...cat.transitions.map((t) => t.name),
+    ...deckTransitionNames(deck.headmatter, deck.slides, ext.transitions),
+  ]);
   const themes = new Set(options.themes ?? cat.themes.map((t) => t.name));
   const components = new Set([...builtinComponentNames(cat), ...ext.components]);
   // Built-in components the deck has not replaced with its own of the same name.
@@ -211,6 +350,16 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   );
 
   // ── frontmatter ──────────────────────────────────────────────────────────────────────────
+  if (deck.slides[0]?.range.head)
+    checkDeckSyntax(
+      deck.headmatter,
+      {
+        file: deck.slides[0].range.file,
+        line: deck.slides[0].range.frontmatter ? deck.slides[0].range.frontmatter.open + 2 : 1,
+      },
+      slideKeys,
+      add,
+    );
   const ids = new Map<string, RawSlide>();
   for (const s of deck.slides) {
     const head = s.index === 0 && s.range.head;
@@ -256,6 +405,16 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       if (why)
         add({ ...at, severity: "error", code: "frontmatter-type", message: `"${key}": ${why}.` });
     }
+    // `duration: 30min` is a string the schema cannot check: read it as the timer does.
+    if (head && s.frontmatter.duration != null && parseDuration(s.frontmatter.duration) === null)
+      add({
+        ...at,
+        severity: "warning",
+        code: "duration-unreadable",
+        message: `"duration": ${JSON.stringify(s.frontmatter.duration)} is not a length of time, so the timer ignores it.`,
+        hint: 'Write it as 30min, 1h, 1h30m, 90s, 25:00, or a number of minutes.',
+      });
+    if (head) lintSiteKeys(s.frontmatter, at);
     const layout = s.frontmatter.layout;
     if (typeof layout === "string" && !layouts.has(layout)) {
       const near = closest(layout, layouts);
@@ -301,7 +460,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         severity: "warning",
         code: "theme-unknown",
         message: `Theme "${s.frontmatter.theme}" is not one the deck ships (${[...themes].join(", ")}).`,
-        hint: "Import its CSS in src/main.tsx and list it in `themes`, or pick a built-in theme.",
+        hint: "Install it as a package (@kadal/theme-<name> or kadal-theme-<name>), point at a folder (theme: ./theme), define .theme-<name> in your CSS, or pick a built-in theme.",
       });
     const id = idOf(s);
     if (typeof s.frontmatter.id === "string") {
@@ -332,6 +491,46 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         slide: s.index,
         hint: "Slide settings sit between two `---` lines: `---`, then `background: spotlight`, then `---`, then the slide.",
       });
+  }
+
+  /** The build's own keys (vite/site.ts): files it will look for, and what a link preview needs. */
+  function lintSiteKeys(
+    fm: Record<string, unknown>,
+    at: { file: string; line: number; slide: number },
+  ) {
+    if (typeof fm.favicon === "string") checkAsset(fm.favicon, at.file, at.line, at.slide);
+    const seo =
+      fm.seoMeta && typeof fm.seoMeta === "object" ? (fm.seoMeta as Record<string, unknown>) : {};
+    const og = typeof seo.ogImage === "string" ? seo.ogImage.trim() : "";
+    if (og && og !== "auto" && !isUrl(og)) {
+      const rel = og.replace(/^\.?\//, "");
+      if (!exists(joinPath(joinPath(root, "public"), rel)) && !exists(joinPath(root, rel)))
+        add({
+          ...at,
+          severity: "warning",
+          code: "og-image-missing",
+          message: `seoMeta.ogImage "${og}" is not in the deck folder or public/, so the build leaves og:image out.`,
+          hint: "Use `ogImage: auto` to photograph slide 1, or a full URL.",
+        });
+    }
+    if (og && !isUrl(og) && !seo.ogUrl && !seo.canonical)
+      add({
+        ...at,
+        severity: "info",
+        code: "og-url-missing",
+        message: "og:image will be a path, not a full URL: most link previews (Slack, X, LinkedIn) skip it.",
+        hint: "Add seoMeta.ogUrl: the address the deck will be served at, e.g. https://you.github.io/talk/.",
+      });
+    if (fm.pwa && typeof fm.pwa === "object" && !Array.isArray(fm.pwa))
+      for (const key of Object.keys(fm.pwa))
+        if (!["name", "shortName", "themeColor", "backgroundColor", "display"].includes(key))
+          add({
+            ...at,
+            severity: "warning",
+            code: "pwa-unknown-key",
+            message: `Unknown pwa option "${key}".`,
+            hint: "pwa takes name, shortName, themeColor, backgroundColor and display.",
+          });
   }
 
   function checkAsset(url: string, file: string, line: number, slide: number, column?: number) {
@@ -393,11 +592,13 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       { default: remarkGfm },
       { default: remarkMath },
       { rehypeGlossary },
+      { remarkDeckFences },
     ] = await Promise.all([
       import("@mdx-js/mdx"),
       import("remark-gfm"),
       import("remark-math"),
       import("../compiler/rehype-glossary.ts"),
+      import("../compiler/remark-fences.ts"),
     ]);
     const lineCache = new Map<string, string[]>();
     const linesOf = (file: string) => {
@@ -409,9 +610,49 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       return l;
     };
     for (const s of deck.slides) {
-      const body = linesOf(s.range.file).slice(s.range.body, s.range.end).join("\n");
+      const raw = linesOf(s.range.file).slice(s.range.body, s.range.end).join("\n");
       const offset = s.range.body;
       const file = s.range.file;
+      checkSlideSyntax(
+        raw,
+        { file, offset, slide: s.index, head: s.range.head, hasFence: !!s.range.frontmatter },
+        add,
+      );
+      // What the compiler compiles: HTML comments and <style> blocks out, lines kept.
+      // What the compiler compiles: HTML comments and <style> blocks out, lines kept; `<<<`
+      // imports checked and code-group / snippet sugar set aside.
+      const body = withoutCodeSugar(
+        maskSlideBody(raw).split("\n"),
+        (line, i) => {
+          // A `<<<` import: the file must be there, and the region in it.
+          const imp = parseSnippetLine(line);
+          if (!imp) return;
+          const raw = imp.spec.split("#")[0]!;
+          const target = raw.startsWith("@/")
+            ? joinPath(root, raw.slice(2))
+            : joinPath(dirOf(file), raw.replace(/^\//, ""));
+          const at = { file, line: offset + i + 1, slide: s.index };
+          const text = files.read(target);
+          if (text === null)
+            return add({
+              ...at,
+              severity: "warning",
+              code: "snippet-missing",
+              message: `<<< ${imp.spec}: ${target} does not exist; the slide shows a notice in its place.`,
+              hint: "`@/` is the deck's folder; other paths are relative to the file the slide is in.",
+            });
+          const region = extractRegion(text, imp.region);
+          if (!region)
+            return add({
+              ...at,
+              severity: "warning",
+              code: "snippet-region",
+              message: `<<< ${imp.spec}: there is no \`#region ${imp.region}\` in ${target}.`,
+              hint: "Mark it with `// #region name` and `// #endregion name` (any comment style).",
+            });
+          checkFence(imp.lang, imp.meta, region.code, at);
+        },
+      );
       const nodes: Node[] = [];
       const collect = () => (tree: Node) => {
         const walk = (n: Node) => {
@@ -422,10 +663,19 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       };
       const terms = s.frontmatter.terms;
       const termWarnings: string[] = [];
+      const fenceWarnings: Array<{ message: string; line?: number }> = [];
       const processor = createProcessor({
         format: "mdx",
         jsx: false,
-        remarkPlugins: [remarkGfm, remarkMath, collect],
+        remarkPlugins: [
+          remarkGfm,
+          remarkMath,
+          collect,
+          [
+            remarkDeckFences,
+            { warn: (message: string, line?: number) => fenceWarnings.push({ message, line }) },
+          ],
+        ],
         rehypePlugins: [
           [
             rehypeGlossary,
@@ -471,6 +721,19 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         });
         continue;
       }
+      for (const w of fenceWarnings)
+        add({
+          severity: "warning",
+          code: /mermaid/i.test(w.message)
+            ? "mermaid-option"
+            : /plantuml/i.test(w.message)
+              ? "plantuml-option"
+              : "math-steps",
+          message: w.message,
+          file,
+          line: offset + (w.line ?? 1),
+          slide: s.index,
+        });
       for (const m of termWarnings)
         add({
           severity: "warning",
@@ -543,57 +806,10 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
             }
           }
         }
+        checkIcons(n, at, add, options.icons, iconSetsReported);
+        checkSlidevLeftovers(n, at, add);
         if (n.type === "image" && n.url) checkAsset(n.url, file, line, s.index, column);
-        if (n.type === "code") {
-          const lang = n.lang ?? "";
-          const meta = n.meta ?? "";
-          if (lang === "md" && /magic-move/.test(meta)) continue;
-          if (lang && !DEFAULT_LANGS.includes(lang) && !LANG_ALIASES.has(lang))
-            add({
-              ...at,
-              severity: "info",
-              code: "code-lang",
-              message: `\`${lang}\` is not among the languages loaded by default; it renders as plain text unless vite.config.ts passes deck({ shiki: { langs: [...] } }).`,
-            });
-          if (!meta) continue;
-          const total = (n.value ?? "").split("\n").length;
-          const parsed = parseCodeMeta(meta);
-          const beyond = (parsed.steps ?? [])
-            .flatMap((st) => (st ? [...st] : []))
-            .filter((x) => x > total + parsed.startLine - 1);
-          if (beyond.length)
-            add({
-              ...at,
-              severity: "warning",
-              code: "code-meta",
-              message: `Highlight line ${beyond[0]} is past the end of the block (${total} lines).`,
-            });
-          for (const b of meta.matchAll(/\{([^}]*)\}/g)) {
-            if (!/^\s*[\w-]+\s*:/.test(b[1]!)) continue;
-            for (const pair of b[1]!.split(",")) {
-              const key = /^\s*([\w-]+)\s*:/.exec(pair)?.[1];
-              if (key && !["lines", "startLine", "maxHeight"].includes(key))
-                add({
-                  ...at,
-                  severity: "warning",
-                  code: "code-meta",
-                  message: `Unknown code option "${key}" (lines, startLine, maxHeight).`,
-                });
-            }
-          }
-          const braces = meta
-            .replace(/\[[^\]]*\]/g, "")
-            .replace(/\{[^}]*\}/g, "")
-            .replace(/data-[\w-]+(="[^"]*")?/g, "")
-            .trim();
-          if (braces && !/^(magic-move|\{|twoslash)/.test(braces))
-            add({
-              ...at,
-              severity: "info",
-              code: "code-meta",
-              message: `Code fence meta "${braces}" is not understood and is ignored.`,
-            });
-        }
+        if (n.type === "code") checkFence(n.lang ?? "", n.meta ?? "", n.value ?? "", at);
       }
     }
   }
@@ -666,8 +882,11 @@ export function readExtensions(
       }
     } else if (!/export\s+const\s+components/.test(src)) out.open = true;
   }
-  for (const s of [componentsSource ?? "", ...otherSources])
+  for (const s of [componentsSource ?? "", ...otherSources]) {
     for (const m of s.matchAll(/registerBackground\(\s*["']([^"']+)["']/g))
       out.backgrounds.push(m[1]!);
+    for (const m of s.matchAll(/registerTransition\(\s*["']([^"']+)["']/g))
+      (out.transitions ??= []).push(m[1]!);
+  }
   return out;
 }

@@ -1,0 +1,729 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Folio — an editorial theme for essays and keynotes. Warm paper and ink, Playfair Display for
+   the display lines, Newsreader for the reading text, IBM Plex Mono for code; one oxblood accent,
+   a gilt second. Generous margins, a measure kept to reading length, booktabs tables, an
+   asterism for a rule, small capitals for labels.
+
+   Scoped under .theme-folio; dark ("night edition") is .theme-folio[data-color-scheme="dark"].
+   themeConfig: `accent` / `accentDark` (--theme-accent, --theme-accent-dark), `paper`
+   (--theme-paper, the light page's colour).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-folio {
+  --deck-bg: var(--theme-paper, #f6f0e4);
+  --deck-fg: #211b14;
+  --deck-muted: #675948;
+  --deck-accent: var(--theme-accent, #9b2c1c);
+  --deck-accent-2: #a2772a;
+  --deck-surface: rgba(33, 27, 20, 0.045);
+  --deck-border: rgba(33, 27, 20, 0.18);
+  --deck-live: var(--theme-accent, #9b2c1c);
+  --deck-controls-color: var(--deck-fg);
+  --folio-rule: #211b14;
+  --folio-ground:
+    radial-gradient(140% 100% at 50% 35%, transparent 55%, rgba(120, 88, 40, 0.09) 100%),
+    var(--deck-bg);
+  --folio-good: #3f6b2a;
+  --folio-warn: #8a5a00;
+  /* type */
+  --deck-heading-font: "Playfair Display", Georgia, "Times New Roman", serif;
+  --deck-serif-font: "Newsreader", Georgia, Cambria, "Times New Roman", serif;
+  --deck-body-font: var(--deck-serif-font);
+  --deck-mono-font: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-base-size: 38px;
+  /* code: Gruvbox, soft, on the paper */
+  --deck-code-bg: #efe6d3;
+  --deck-code-fg: #3c3836;
+  --deck-code-active: rgba(155, 44, 28, 0.1);
+  --deck-radius: 4px;
+  --deck-pad: 120px;
+  --deck-transition: 700ms;
+}
+.theme-folio[data-color-scheme="dark"] {
+  --deck-bg: #1a1612;
+  --deck-fg: #efe6d6;
+  --deck-muted: #b6a68f;
+  /* an accent set in themeConfig, lifted for the dark page; invalid (so skipped) when unset */
+  --folio-accent-lifted: color-mix(in oklab, var(--theme-accent) 60%, white);
+  --deck-accent: var(--theme-accent-dark, var(--folio-accent-lifted, #e8957c));
+  --deck-accent-2: #d9b46a;
+  --deck-surface: rgba(239, 230, 214, 0.06);
+  --deck-border: rgba(239, 230, 214, 0.17);
+  --deck-live: var(--deck-accent);
+  --folio-rule: #efe6d6;
+  --folio-ground:
+    radial-gradient(140% 100% at 50% 35%, transparent 50%, rgba(0, 0, 0, 0.32) 100%),
+    var(--deck-bg);
+  --folio-good: #a9c98a;
+  --folio-warn: #e3b55e;
+  --deck-code-bg: #221d17;
+  --deck-code-fg: #ebdbb2;
+  --deck-code-active: rgba(232, 149, 124, 0.12);
+  color-scheme: dark;
+}
+
+/* ── the page ──────────────────────────────────────────────────────────── */
+.theme-folio :is(
+    .deck-backgrounds,
+    .deck-print-page,
+    .deck-overview-tile,
+    .deck-scroll-sticky,
+    .deck-thumbnail-capture
+  ),
+.theme-folio .deck-background[data-color-scheme],
+.theme-folio.deck-background[data-color-scheme] {
+  background: var(--folio-ground);
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-folio .deck-slide {
+  line-height: 1.5;
+  font-feature-settings: "kern", "liga", "onum";
+  hanging-punctuation: first;
+}
+.theme-folio .deck-slide :is(h1, h2) {
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  line-height: 1.06;
+  font-feature-settings: "kern", "liga", "lnum";
+}
+.theme-folio .deck-slide h1 {
+  font-size: 3.2em;
+}
+.theme-folio .deck-slide h2 {
+  font-size: 2.05em;
+  margin-bottom: 0.6em;
+}
+.theme-folio .deck-slide h3 {
+  font-size: 1.25em;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0;
+}
+.theme-folio .deck-slide h4 {
+  font-family: var(--deck-serif-font);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--deck-accent);
+}
+.theme-folio .deck-slide :is(p, li) {
+  text-wrap: pretty;
+}
+.theme-folio .deck-layout-default > p,
+.theme-folio .deck-layout-default > ul,
+.theme-folio .deck-layout-default > ol {
+  max-width: 34em;
+}
+.theme-folio .deck-slide ul {
+  list-style: none;
+  padding-inline-start: 1.3em;
+}
+.theme-folio .deck-slide ul > li {
+  position: relative;
+}
+.theme-folio .deck-slide ul > li::before {
+  content: "\2014";
+  position: absolute;
+  left: -1.3em;
+  color: var(--deck-accent);
+}
+.theme-folio .deck-slide ul ul > li::before {
+  content: "\2013";
+  color: var(--deck-muted);
+}
+.theme-folio .deck-slide ul ul {
+  margin: 0.15em 0 0.25em;
+  font-size: 0.92em;
+  color: var(--deck-muted);
+}
+.theme-folio .deck-slide ol > li::marker {
+  color: var(--deck-accent);
+  font-variant-numeric: oldstyle-nums;
+  font-style: italic;
+}
+.theme-folio .deck-slide em {
+  font-style: italic;
+}
+.theme-folio .deck-slide strong {
+  font-weight: 700;
+}
+.theme-folio .deck-slide a {
+  color: inherit;
+  text-decoration-color: var(--deck-accent);
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.16em;
+}
+.theme-folio .deck-slide a:hover {
+  color: var(--deck-accent);
+}
+.theme-folio .deck-slide blockquote {
+  margin: 0.6em 0;
+  padding: 0 0 0 1em;
+  border: 0;
+  border-inline-start: 1px solid var(--deck-accent);
+  border-radius: 0;
+  background: none;
+  color: var(--deck-fg);
+  font-style: italic;
+  font-size: 1.12em;
+  line-height: 1.4;
+}
+.theme-folio .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+/* a rule is an asterism, centred, not a line */
+.theme-folio .deck-slide hr {
+  border: 0;
+  margin: 0.8em 0;
+  text-align: center;
+  color: var(--deck-accent);
+  overflow: visible;
+}
+.theme-folio .deck-slide hr::after {
+  content: "\2042";
+  font-size: 1.1em;
+  letter-spacing: 0.4em;
+}
+/* booktabs: a heavy rule above and below, a light one under the head, nothing vertical */
+.theme-folio .deck-slide table {
+  font-size: 0.78em;
+  border-top: 2px solid var(--folio-rule);
+  border-bottom: 2px solid var(--folio-rule);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.theme-folio .deck-slide th {
+  font-weight: 600;
+  font-size: 0.8em;
+  letter-spacing: 0.1em;
+  color: var(--deck-fg);
+  border-bottom: 1px solid var(--folio-rule);
+}
+.theme-folio .deck-slide td {
+  border-bottom: 0;
+}
+.theme-folio .deck-slide :is(th, td) {
+  padding: 0.45em 0.9em 0.45em 0;
+}
+.theme-folio .deck-slide tbody tr:first-child td {
+  padding-top: 0.65em;
+}
+.theme-folio .deck-slide tbody tr:last-child td {
+  padding-bottom: 0.65em;
+}
+.theme-folio .deck-slide :not(pre) > code {
+  font-size: 0.78em;
+  padding: 0.08em 0.32em;
+  border-radius: 3px;
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+}
+.theme-folio .deck-kbd {
+  font-size: 0.68em;
+  border-color: var(--deck-border);
+  border-radius: 3px;
+}
+.theme-folio .deck-slide img {
+  border-radius: 2px;
+}
+
+/* ── code ──────────────────────────────────────────────────────────────── */
+.theme-folio .deck-code-block {
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  border-top: 2px solid var(--folio-rule);
+}
+.theme-folio .deck-code-title {
+  font: 600 0.48em var(--deck-mono-font);
+  letter-spacing: 0.08em;
+  color: var(--deck-muted);
+  padding: 0.6em 1.2em;
+  border-bottom-color: var(--deck-border);
+}
+.theme-folio .deck-code-title-dot {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 0;
+  transform: rotate(45deg);
+  background: var(--deck-accent);
+}
+.theme-folio pre.deck-code,
+.theme-folio .shiki-magic-move-wrap {
+  font-size: 0.56em;
+  line-height: 1.7;
+}
+.theme-folio pre.deck-code {
+  padding: 0.85em 0;
+}
+.theme-folio pre.deck-code .line {
+  padding: 0 1.4em;
+}
+.theme-folio .shiki-magic-move-wrap {
+  padding: 0.85em 1.4em;
+}
+.theme-folio pre.deck-code .line.is-active {
+  box-shadow: inset 3px 0 0 var(--deck-accent);
+}
+.theme-folio pre.deck-code .line.is-dim {
+  opacity: 0.32;
+}
+
+/* ── components ────────────────────────────────────────────────────────── */
+/* a callout is a marginal note: a rule in the kind's colour, a small-capitals head, no box */
+.theme-folio .deck-callout {
+  padding: 0.15em 0 0.15em 0.9em;
+  border: 0;
+  border-inline-start: 2px solid var(--folio-kind, var(--deck-accent));
+  border-radius: 0;
+  background: none;
+  font-size: 0.82em;
+  --folio-kind: var(--deck-accent);
+}
+.theme-folio .deck-callout.kind-tip {
+  --folio-kind: var(--folio-good);
+}
+.theme-folio .deck-callout.kind-warn {
+  --folio-kind: var(--folio-warn);
+}
+.theme-folio .deck-callout.kind-danger {
+  --folio-kind: var(--deck-accent);
+}
+.theme-folio .deck-callout.kind-note {
+  --folio-kind: var(--deck-muted);
+}
+.theme-folio .deck-callout-title {
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--folio-kind);
+  margin-bottom: 0.25em;
+}
+.theme-folio .deck-callout > div {
+  font-style: italic;
+}
+.theme-folio .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-folio .deck-badge {
+  font-family: var(--deck-serif-font);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  border-radius: 2px;
+}
+.theme-folio .deck-toc {
+  counter-reset: folio-toc;
+}
+.theme-folio .deck-toc li {
+  margin: 0.25em 0;
+}
+.theme-folio .deck-toc li.level-1 {
+  counter-increment: folio-toc;
+  font-family: var(--deck-heading-font);
+  font-size: 1.05em;
+}
+.theme-folio .deck-toc li.level-1 > a::before {
+  content: counter(folio-toc, upper-roman) ".";
+  display: inline-block;
+  min-width: 2.2em;
+  font-family: var(--deck-serif-font);
+  font-size: 0.8em;
+  font-style: italic;
+  color: var(--deck-accent);
+}
+.theme-folio .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 2.6em;
+  font-style: italic;
+}
+.theme-folio .deck-toc li.is-current > a {
+  color: var(--deck-accent);
+  font-weight: 700;
+}
+.theme-folio .deck-mark {
+  --mark-color: var(--deck-accent);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-folio .deck-progress {
+  height: 3px;
+  background: transparent;
+}
+.theme-folio .deck-progress span {
+  background: var(--deck-accent);
+}
+.theme-folio .deck-slide-number {
+  font: italic 15px var(--deck-serif-font);
+  font-variant-numeric: oldstyle-nums;
+  letter-spacing: 0.04em;
+  color: var(--deck-muted);
+  background: none;
+  padding: 4px 6px;
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+.theme-folio .deck-layout-center p {
+  max-width: 30em;
+}
+.theme-folio .deck-layout-cover {
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding-bottom: 0.4em;
+}
+.theme-folio .deck-layout-cover::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-top: 2px solid var(--folio-rule);
+  border-bottom: 1px solid var(--folio-rule);
+  height: 5px;
+}
+.theme-folio .deck-layout-cover h1 {
+  font-size: 4.6em;
+  font-weight: 800;
+  line-height: 0.98;
+  max-width: 11ch;
+  margin-bottom: 0.25em;
+}
+.theme-folio .deck-layout-cover > p {
+  font-size: 1.15em;
+  font-style: italic;
+  max-width: 30em;
+  color: var(--deck-muted);
+}
+.theme-folio .deck-layout-cover h4 {
+  margin-bottom: 0.9em;
+}
+.theme-folio .deck-layout-intro {
+  align-items: flex-start;
+}
+.theme-folio .deck-layout-intro h1 {
+  font-size: 3.4em;
+  max-width: 14ch;
+  padding-bottom: 0.25em;
+  margin-bottom: 0.4em;
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-folio .deck-layout-intro > p {
+  max-width: 30em;
+  font-size: 1.08em;
+}
+.theme-folio .deck-layout-section {
+  align-items: center;
+  text-align: center;
+}
+.theme-folio .deck-layout-section::before {
+  content: "\2766";
+  display: block;
+  font-size: 1.3em;
+  color: var(--deck-accent);
+  margin-bottom: 0.5em;
+}
+.theme-folio .deck-layout-section :is(h1, h2) {
+  font-size: 3.4em;
+  font-style: italic;
+  font-weight: 600;
+  max-width: 16ch;
+}
+.theme-folio .deck-layout-section > p {
+  font-style: italic;
+  color: var(--deck-muted);
+  max-width: 28em;
+}
+.theme-folio .deck-layout-end::before {
+  content: "\2766";
+  font-size: 1.4em;
+  color: var(--deck-accent);
+  margin-bottom: 0.4em;
+}
+.theme-folio .deck-layout-end :is(h1, h2) {
+  font-size: 3.6em;
+  font-style: italic;
+  font-weight: 600;
+}
+.theme-folio .deck-layout-end > p {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  color: var(--deck-muted);
+}
+.theme-folio .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  font-family: var(--deck-heading-font);
+  font-size: 5.6em;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--deck-accent);
+  font-variant-numeric: lining-nums;
+  margin-bottom: 0.15em;
+}
+.theme-folio .deck-layout-fact > :not(:first-child) {
+  font-size: 1.1em;
+  font-style: italic;
+  font-weight: 400;
+  max-width: 26em;
+  color: var(--deck-muted);
+}
+.theme-folio .deck-layout-quote {
+  padding-inline: 10%;
+  font-size: 1em;
+  font-style: normal;
+  align-items: center;
+  text-align: center;
+}
+.theme-folio .deck-layout-quote blockquote {
+  position: relative;
+  border: 0;
+  padding: 0;
+  font-family: var(--deck-heading-font);
+  font-size: 2em;
+  font-weight: 500;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.theme-folio .deck-layout-quote blockquote::before {
+  content: "\201C";
+  display: block;
+  height: 0.55em;
+  font-size: 2.6em;
+  line-height: 1;
+  color: var(--deck-accent);
+}
+.theme-folio .deck-layout-quote > p {
+  margin-top: 0.9em;
+  font-style: normal;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  color: var(--deck-muted);
+}
+.theme-folio .deck-layout-quote > p::before {
+  content: "\2014\2002";
+}
+.theme-folio .deck-layout-statement :is(h1, h2) {
+  font-size: 3.2em;
+  font-weight: 600;
+  font-style: italic;
+  max-width: 17ch;
+  margin-inline: auto;
+}
+.theme-folio .deck-layout-full {
+  padding: 0;
+}
+/* two columns set like a newspaper: a hairline between them */
+.theme-folio .deck-layout-two-cols {
+  column-gap: 3em;
+}
+.theme-folio .deck-layout-two-cols > .deck-slot-right {
+  position: relative;
+}
+.theme-folio .deck-layout-two-cols > .deck-slot-right::before {
+  content: "";
+  position: absolute;
+  top: 0.2em;
+  bottom: 0.2em;
+  left: -1.5em;
+  border-left: 1px solid var(--deck-border);
+}
+.theme-folio .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) > :first-child {
+  margin-top: 0;
+}
+.theme-folio .deck-layout-two-cols-header {
+  column-gap: 3em;
+}
+.theme-folio .deck-layout-two-cols-header > .deck-slot-default {
+  padding-bottom: 0.5em;
+  margin-bottom: 0.5em;
+  border-bottom: 3px double var(--folio-rule);
+}
+.theme-folio .deck-layout-two-cols-header > .deck-slot-right {
+  position: relative;
+}
+.theme-folio .deck-layout-two-cols-header > .deck-slot-right::before {
+  content: "";
+  position: absolute;
+  top: 0.2em;
+  bottom: 0.2em;
+  left: -1.5em;
+  border-left: 1px solid var(--deck-border);
+}
+.theme-folio .deck-layout-two-cols-header h3 {
+  margin-bottom: 0.35em;
+}
+.theme-folio .deck-layout-image .deck-layout-image-content {
+  background: linear-gradient(180deg, transparent, rgba(20, 14, 8, 0.78));
+}
+.theme-folio .deck-layout-image .deck-layout-image-content :is(h1, h2) {
+  font-style: italic;
+}
+.theme-folio :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: var(--deck-pad) calc(var(--deck-pad) * 0.8);
+}
+.theme-folio :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content > p {
+  font-size: 0.95em;
+}
+.theme-folio .deck-layout-image-pane {
+  background-color: var(--deck-surface);
+  filter: saturate(0.88) sepia(0.06);
+}
+.theme-folio :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border-radius: 2px;
+  border: 1px solid var(--folio-rule);
+  box-shadow: none;
+}
+.theme-folio :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── the theme's own layouts (index.tsx) ───────────────────────────────── */
+/* pull-quote: the line that carries the piece, between two rules */
+.theme-folio .deck-layout-pull-quote {
+  justify-content: center;
+  align-items: flex-start;
+  padding-inline-end: 12%;
+}
+.theme-folio .folio-pull {
+  padding: 0.55em 0 0.6em;
+  border-top: 5px solid var(--deck-accent);
+  border-bottom: 1px solid var(--folio-rule);
+}
+.theme-folio .folio-pull > :is(blockquote, p:first-child) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--deck-heading-font);
+  font-size: 2.3em;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--deck-fg);
+  text-wrap: balance;
+}
+.theme-folio .folio-pull > blockquote p {
+  margin: 0;
+}
+.theme-folio .folio-pull-by {
+  margin-top: 0.8em;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  color: var(--deck-muted);
+}
+.theme-folio .folio-pull-by::before {
+  content: "\2014\2002";
+}
+/* essay: one column at reading measure, a drop cap, and an aside in the margin */
+.theme-folio .deck-layout-essay {
+  display: grid;
+  grid-template-columns: minmax(0, 30em) minmax(0, 1fr);
+  column-gap: 2.6em;
+  align-content: start;
+}
+.theme-folio .deck-layout-essay > :not(.deck-slot-aside) {
+  grid-column: 1;
+}
+.theme-folio .deck-layout-essay > :is(.deck-slot-default, .deck-slot-aside) {
+  grid-row: 1;
+}
+/* the note sits level with the column's last lines, as a marginal note does */
+.theme-folio .deck-layout-essay > .deck-slot-aside {
+  grid-column: 2;
+  align-self: end;
+  padding-top: 0.5em;
+  border-top: 1px solid var(--deck-border);
+  font-size: 0.72em;
+  font-style: italic;
+  color: var(--deck-muted);
+}
+.theme-folio .deck-layout-essay :is(h1, h2) {
+  font-size: 1.9em;
+}
+.theme-folio :is(.deck-layout-essay, .deck-layout-essay > .deck-slot-default, .folio-lede) > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--deck-heading-font);
+  font-weight: 700;
+  font-size: 3.6em;
+  line-height: 0.82;
+  padding: 0.06em 0.08em 0 0;
+  color: var(--deck-accent);
+}
+/* chapter: a roman numeral, the title, an epigraph */
+.theme-folio .deck-layout-chapter {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.theme-folio .folio-chapter-number {
+  font-family: var(--deck-heading-font);
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--deck-accent);
+  margin-bottom: 0.4em;
+}
+.theme-folio .folio-chapter-number b {
+  display: block;
+  font-size: 3.4em;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  font-weight: 400;
+  font-style: italic;
+}
+.theme-folio .deck-layout-chapter :is(h1, h2) {
+  font-size: 2.8em;
+  max-width: 18ch;
+}
+.theme-folio .deck-layout-chapter blockquote {
+  max-width: 26em;
+  margin: 0.6em auto 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.86em;
+  color: var(--deck-muted);
+}
+.theme-folio .deck-layout-chapter blockquote + p {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  font-size: 0.8em;
+  color: var(--deck-muted);
+}
+/* Byline and Lede */
+.theme-folio .folio-byline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em 0.9em;
+  align-items: baseline;
+  margin: 0.4em 0 0.8em;
+  padding: 0.35em 0;
+  border-top: 1px solid var(--deck-border);
+  border-bottom: 1px solid var(--deck-border);
+  font-size: 0.66em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.theme-folio .folio-byline b {
+  color: var(--deck-fg);
+  font-weight: 600;
+}
+.theme-folio .folio-lede {
+  font-size: 1.12em;
+  line-height: 1.45;
+  max-width: 30em;
+}
+
+/* ── still copies ──────────────────────────────────────────────────────── */
+.theme-folio .deck-print-page .deck-layout-image-pane {
+  filter: none;
+}
+@media print {
+  .theme-folio .deck-layout-image-pane {
+    filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-folio .deck-progress span {
+    transition: none;
+  }
+}

@@ -1,6 +1,7 @@
 import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
 import { createStore, type Store } from "../core/store.ts";
+import type { TimerState } from "../core/timer.ts";
 import type { DeckRuntime } from "./context.ts";
 
 /**
@@ -8,6 +9,36 @@ import type { DeckRuntime } from "./context.ts";
  * window's own clock: the phone remote. Written by the presenter view's timer.
  */
 export const presenterClock: Store<number | null> = createStore<number | null>(null);
+
+/**
+ * The presenter's timer itself (core/timer.ts): mode, length, paused or running. Published by the
+ * presenter view's timer for the phone remote, the sidebar's pace line and the `present.timer`
+ * command; `presenterClock` stays beside it as the effective start, for anything that only ever
+ * counted up from one.
+ */
+export const presenterTimer: Store<TimerState | null> = createStore<TimerState | null>(null);
+
+/**
+ * The talk's planned length in seconds: `duration`, else `totalTime`, else every visible slide's
+ * `timing` (default `defaultTiming`) added up. Null when the deck plans none of these.
+ */
+export function plannedLength(
+  deck: Pick<DeckRuntime, "columns" | "options" | "config">,
+): number | null {
+  if (deck.config.duration) return deck.config.duration;
+  if (deck.config.totalTime) return deck.config.totalTime;
+  let sum = 0;
+  let any = false;
+  for (const c of deck.columns)
+    for (let v = 0; v < c.slides.length; v++) {
+      const t = deck.options.get(navKey(c.h, v))?.timing ?? deck.config.defaultTiming;
+      if (t) {
+        sum += t;
+        any = true;
+      }
+    }
+  return any ? sum : null;
+}
 
 /**
  * Seconds the talk should have taken by the time it reaches this slide: the deck's `totalTime`
@@ -19,7 +50,9 @@ export function expectedElapsed(
 ): number | null {
   const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
   const flat = N.progressOf({ ...N.initialNav(), h: at.h, v: at.v }, deck.columns) * (total - 1);
-  if (deck.config.totalTime) return (deck.config.totalTime / total) * flat;
+  // `totalTime` (reveal.js) or `duration` (Slidev): the length spread evenly over the slides.
+  const length = deck.config.totalTime ?? deck.config.duration;
+  if (length) return (length / total) * flat;
   if (!deck.config.defaultTiming) return null;
   let sum = 0;
   let i = 0;

@@ -1,0 +1,754 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Ocean — Kadal's own theme. Kadal is Tamil for the sea, and the palette is the one kadal.cc
+   dives through: sunlit shallows in the light scheme (foam, sky, deep-sea ink), midnight water
+   in the dark one (twilight blue sinking to the abyss, bioluminescent cyan, lure amber).
+   Calm gradients for the ground, Catamaran for type, Night Owl for code.
+
+   Everything is scoped under .theme-ocean; dark is .theme-ocean[data-color-scheme="dark"].
+   themeConfig: `accent` (--theme-accent) and `accentDark` (--theme-accent-dark) recolour the
+   accent per scheme; `waves: false` (--theme-waves: 0) hides the swells on covers.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-ocean {
+  /* colour — sunlit */
+  --deck-bg: #f2f8fc;
+  --deck-fg: #0e2238;
+  --deck-muted: #3b5670;
+  --deck-accent: var(--theme-accent, #1d63a8);
+  --deck-accent-2: #13908e;
+  --deck-surface: rgba(255, 255, 255, 0.74);
+  --deck-border: rgba(14, 34, 56, 0.13);
+  --deck-live: var(--theme-accent, #1d63a8);
+  --deck-controls-color: var(--deck-accent);
+  /* the ground: open water under a high sun */
+  --ocean-ground:
+    radial-gradient(120% 70% at 12% -10%, rgba(255, 255, 255, 0.95), transparent 60%),
+    radial-gradient(90% 60% at 100% 110%, rgba(63, 210, 207, 0.16), transparent 70%),
+    linear-gradient(172deg, #f6fbff 0%, #ebf5fc 48%, #dceef5 100%);
+  --ocean-heading: linear-gradient(100deg, #0e2238 10%, #1d63a8 70%, #13908e 100%);
+  --ocean-coral: #c43a30;
+  --ocean-good: #13795b;
+  --ocean-warn: #a35b00;
+  --ocean-wave-1: rgba(29, 99, 168, 0.12);
+  --ocean-wave-2: rgba(19, 144, 142, 0.14);
+  --ocean-wave-3: rgba(29, 99, 168, 0.2);
+  --ocean-shadow: 0 18px 48px -22px rgba(10, 40, 80, 0.35);
+  /* type */
+  --deck-heading-font: "Catamaran", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --deck-body-font: "Catamaran", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --deck-mono-font: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 36px;
+  /* code: Night Owl Light */
+  --deck-code-bg: #fbfdff;
+  --deck-code-fg: #403f53;
+  --deck-code-active: rgba(29, 99, 168, 0.1);
+  /* shape */
+  --deck-radius: 18px;
+  --deck-pad: 96px;
+  --deck-transition: 550ms;
+}
+.theme-ocean[data-color-scheme="dark"] {
+  /* colour — midnight water */
+  --deck-bg: #071a3a;
+  --deck-fg: #e6f2ff;
+  --deck-muted: #9fb7d4;
+  /* an accent set in themeConfig, lifted for deep water; invalid (so skipped) when unset */
+  --ocean-accent-lifted: color-mix(in oklab, var(--theme-accent) 55%, white);
+  --deck-accent: var(--theme-accent-dark, var(--ocean-accent-lifted, #5ff7ff));
+  --deck-accent-2: #ffd46b;
+  --deck-surface: rgba(140, 200, 255, 0.07);
+  --deck-border: rgba(95, 247, 255, 0.17);
+  --deck-live: var(--deck-accent);
+  --ocean-ground:
+    radial-gradient(90% 55% at 50% -18%, rgba(95, 247, 255, 0.13), transparent 70%),
+    radial-gradient(60% 50% at 95% 105%, rgba(255, 98, 212, 0.07), transparent 70%),
+    linear-gradient(178deg, #0d3466 0%, #0a2550 34%, #071a3a 72%, #041128 100%);
+  --ocean-heading: linear-gradient(100deg, #e6f2ff 15%, #5ff7ff 75%, #7dffa0 105%);
+  --ocean-coral: #ff8a80;
+  --ocean-good: #7dffa0;
+  --ocean-warn: #ffd46b;
+  --ocean-wave-1: rgba(95, 247, 255, 0.07);
+  --ocean-wave-2: rgba(95, 247, 255, 0.1);
+  --ocean-wave-3: rgba(2, 6, 15, 0.45);
+  --ocean-shadow: 0 22px 60px -26px rgba(0, 0, 0, 0.7);
+  --deck-code-bg: #011627;
+  --deck-code-fg: #d6deeb;
+  --deck-code-active: rgba(95, 247, 255, 0.1);
+  color-scheme: dark;
+}
+
+/* ── the ground: every place a slide's page is painted ───────────────────── */
+.theme-ocean :is(
+    .deck-backgrounds,
+    .deck-print-page,
+    .deck-overview-tile,
+    .deck-scroll-sticky,
+    .deck-thumbnail-capture
+  ),
+.theme-ocean .deck-background[data-color-scheme],
+.theme-ocean.deck-background[data-color-scheme] {
+  background: var(--ocean-ground);
+  background-color: var(--deck-bg);
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-ocean .deck-slide {
+  line-height: 1.45;
+}
+.theme-ocean .deck-slide :is(h1, h2, h3, h4) {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+  color: var(--deck-fg);
+}
+.theme-ocean .deck-slide h1 {
+  font-size: 3em;
+}
+.theme-ocean .deck-slide h2 {
+  font-size: 2em;
+  margin-bottom: 0.55em;
+}
+.theme-ocean .deck-slide h3 {
+  font-size: 1.3em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.theme-ocean .deck-slide h4 {
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--deck-accent);
+}
+.theme-ocean .deck-slide :is(p, li) {
+  text-wrap: pretty;
+}
+.theme-ocean .deck-slide ul > li::marker {
+  color: var(--deck-accent);
+  font-size: 1.1em;
+}
+.theme-ocean .deck-slide ol > li::marker {
+  color: var(--deck-accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.theme-ocean .deck-slide li {
+  padding-inline-start: 0.15em;
+}
+.theme-ocean .deck-slide strong {
+  font-weight: 800;
+}
+.theme-ocean .deck-slide em {
+  color: var(--deck-accent);
+  font-style: normal;
+  font-weight: 600;
+}
+.theme-ocean .deck-slide a {
+  color: var(--deck-accent);
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in oklab, var(--deck-accent) 45%, transparent);
+}
+.theme-ocean .deck-slide a:hover {
+  text-decoration-color: currentColor;
+}
+.theme-ocean .deck-slide blockquote {
+  position: relative;
+  margin: 0.6em 0;
+  padding: 0.15em 0 0.15em 1.1em;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--deck-fg);
+  font-size: 1.12em;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.theme-ocean .deck-slide blockquote::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.2em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--deck-accent), var(--deck-accent-2));
+}
+.theme-ocean .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+.theme-ocean .deck-slide hr {
+  border-top: 2px solid var(--deck-border);
+  margin: 0.9em 0;
+}
+.theme-ocean .deck-slide table {
+  font-size: 0.74em;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--deck-surface);
+  outline: 1px solid var(--deck-border);
+}
+.theme-ocean .deck-slide th {
+  color: var(--deck-accent);
+  font-size: 0.68em;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  border-bottom: 2px solid color-mix(in oklab, var(--deck-accent) 55%, transparent);
+  background: color-mix(in oklab, var(--deck-accent) 7%, transparent);
+}
+.theme-ocean .deck-slide :is(th, td) {
+  padding: 0.5em 0.85em;
+}
+.theme-ocean .deck-slide tbody tr:nth-child(even) td {
+  background: color-mix(in oklab, var(--deck-accent) 4%, transparent);
+}
+.theme-ocean .deck-slide tbody tr:last-child td {
+  border-bottom: 0;
+}
+.theme-ocean .deck-slide :not(pre) > code {
+  font-size: 0.8em;
+  padding: 0.12em 0.42em;
+  border-radius: 8px;
+  color: var(--deck-fg);
+  background: color-mix(in oklab, var(--deck-accent) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--deck-accent) 18%, transparent);
+}
+.theme-ocean .deck-kbd {
+  border-color: color-mix(in oklab, var(--deck-accent) 30%, var(--deck-border));
+  background: var(--deck-surface);
+}
+.theme-ocean .deck-slide img,
+.theme-ocean .deck-slide video {
+  border-radius: var(--deck-radius);
+}
+
+/* ── code ──────────────────────────────────────────────────────────────── */
+.theme-ocean .deck-code-block {
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  box-shadow: var(--ocean-shadow);
+}
+.theme-ocean .deck-code-title {
+  padding: 0.6em 1.2em;
+  font-size: 0.5em;
+  letter-spacing: 0.02em;
+  color: var(--deck-muted);
+  background: color-mix(in oklab, var(--deck-accent) 6%, transparent);
+  border-bottom-color: var(--deck-border);
+}
+.theme-ocean .deck-code-title-dot {
+  width: 0.7em;
+  height: 0.7em;
+  background: linear-gradient(135deg, var(--deck-accent), var(--deck-accent-2));
+}
+.theme-ocean pre.deck-code {
+  padding: 0.9em 0;
+  font-size: 0.62em;
+  line-height: 1.65;
+}
+.theme-ocean pre.deck-code .line {
+  padding: 0 1.5em;
+}
+.theme-ocean pre.deck-code .line.is-active {
+  background: var(--deck-code-active);
+  box-shadow: inset 0.22em 0 0 var(--deck-accent);
+}
+.theme-ocean pre.deck-code .line.is-dim {
+  opacity: 0.3;
+}
+.theme-ocean pre.deck-code.has-lines .line::before {
+  color: var(--deck-muted);
+  opacity: 0.55;
+}
+.theme-ocean .shiki-magic-move-wrap {
+  padding: 0.9em 1.5em;
+  font-size: 0.62em;
+  line-height: 1.65;
+}
+.theme-ocean .deck-code-copy {
+  border-radius: 8px;
+}
+
+/* ── components ────────────────────────────────────────────────────────── */
+.theme-ocean .deck-callout {
+  position: relative;
+  padding: 0.75em 1.1em 0.75em 1.25em;
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  border-inline-start-width: 1px;
+  background: var(--deck-surface);
+  box-shadow: var(--ocean-shadow);
+  font-size: 0.82em;
+  --ocean-kind: var(--deck-accent);
+}
+.theme-ocean .deck-callout::before {
+  content: "";
+  position: absolute;
+  inset: 0.7em auto 0.7em 0;
+  width: 0.2em;
+  border-radius: 0 999px 999px 0;
+  background: var(--ocean-kind);
+}
+.theme-ocean .deck-callout.kind-tip {
+  --ocean-kind: var(--ocean-good);
+}
+.theme-ocean .deck-callout.kind-warn {
+  --ocean-kind: var(--ocean-warn);
+}
+.theme-ocean .deck-callout.kind-danger {
+  --ocean-kind: var(--ocean-coral);
+}
+.theme-ocean .deck-callout.kind-note {
+  --ocean-kind: var(--deck-muted);
+}
+.theme-ocean .deck-callout-title {
+  color: var(--ocean-kind);
+  font-size: 0.78em;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.3em;
+}
+.theme-ocean .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-ocean .deck-badge {
+  border-color: var(--deck-border);
+  background: var(--deck-surface);
+  letter-spacing: 0.1em;
+}
+.theme-ocean .deck-badge.tone-accent {
+  color: var(--deck-accent);
+  border-color: color-mix(in oklab, var(--deck-accent) 40%, transparent);
+  background: color-mix(in oklab, var(--deck-accent) 10%, transparent);
+}
+.theme-ocean .deck-badge.tone-good {
+  color: var(--ocean-good);
+}
+.theme-ocean .deck-badge.tone-warn {
+  color: var(--ocean-warn);
+}
+.theme-ocean .deck-badge.tone-bad {
+  color: var(--ocean-coral);
+}
+.theme-ocean .deck-toc {
+  counter-reset: ocean-toc;
+}
+.theme-ocean .deck-toc li {
+  margin: 0.3em 0;
+}
+.theme-ocean .deck-toc li.level-1 {
+  counter-increment: ocean-toc;
+  font-weight: 700;
+}
+.theme-ocean .deck-toc li.level-1 > a::before {
+  content: counter(ocean-toc, decimal-leading-zero);
+  display: inline-block;
+  min-width: 2.2em;
+  font: 600 0.62em var(--deck-mono-font);
+  letter-spacing: 0.05em;
+  color: var(--deck-accent);
+  vertical-align: 0.2em;
+}
+.theme-ocean .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 2.2em;
+  font-weight: 500;
+  color: var(--deck-muted);
+}
+.theme-ocean .deck-toc li.is-current > a {
+  color: var(--deck-accent);
+}
+.theme-ocean .deck-counter {
+  font-weight: 800;
+}
+.theme-ocean .deck-mark {
+  --mark-color: var(--deck-accent);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-ocean .deck-progress {
+  height: 5px;
+  background: color-mix(in oklab, var(--deck-accent) 12%, transparent);
+}
+.theme-ocean .deck-progress span {
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2));
+  border-radius: 0 999px 999px 0;
+}
+.theme-ocean .deck-slide-number {
+  font: 600 13px var(--deck-mono-font);
+  letter-spacing: 0.06em;
+  color: var(--deck-muted);
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-border);
+  border-radius: 999px;
+  padding: 4px 11px;
+  backdrop-filter: blur(8px);
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+.theme-ocean .deck-layout-default > :is(h1, h2):first-child {
+  margin-top: 0.1em;
+}
+.theme-ocean .deck-layout-center {
+  gap: 0.2em;
+}
+.theme-ocean :is(.deck-layout-cover, .deck-layout-intro, .deck-layout-end, .deck-layout-waves) :is(h1, h2) {
+  background: var(--ocean-heading);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* a background-clipped line needs room below for descenders */
+  padding-bottom: 0.06em;
+}
+.theme-ocean .deck-layout-cover {
+  align-items: flex-start;
+  justify-content: center;
+  padding-bottom: 1.6em;
+}
+.theme-ocean .deck-layout-cover h1 {
+  font-size: 4.1em;
+  max-width: 13ch;
+  margin-bottom: 0.3em;
+}
+.theme-ocean .deck-layout-cover > p {
+  font-size: 1.1em;
+  max-width: 34ch;
+  color: var(--deck-muted);
+}
+/* the cover's waves: three still swells along the bottom edge (the `waves` layout moves them),
+   on the slide rather than the layout so they never count as the layout's overflow */
+.theme-ocean .deck-slide.layout-cover::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32%;
+  pointer-events: none;
+  opacity: var(--theme-waves, 1);
+  background:
+    radial-gradient(60% 120% at 20% 120%, var(--ocean-wave-3), transparent 70%),
+    radial-gradient(70% 140% at 85% 130%, var(--ocean-wave-2), transparent 70%),
+    radial-gradient(90% 100% at 50% 140%, var(--ocean-wave-1), transparent 75%);
+}
+.theme-ocean .deck-layout-intro {
+  align-items: flex-start;
+}
+.theme-ocean .deck-layout-intro::before,
+.theme-ocean .deck-layout-section::before {
+  content: "";
+  display: block;
+  width: 2.6em;
+  height: 0.5em;
+  margin-bottom: 0.9em;
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 10'%3E%3Cpath d='M1 5c4.3-4 8.7-4 13 0s8.7 4 13 0 8.7-4 13 0 8.7 4 11 2' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 10'%3E%3Cpath d='M1 5c4.3-4 8.7-4 13 0s8.7 4 13 0 8.7-4 13 0 8.7 4 11 2' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+}
+.theme-ocean .deck-layout-intro h1 {
+  font-size: 3.4em;
+  max-width: 16ch;
+}
+.theme-ocean .deck-layout-intro > p {
+  max-width: 40ch;
+  color: var(--deck-muted);
+}
+.theme-ocean .deck-layout-section {
+  align-items: flex-start;
+}
+.theme-ocean .deck-layout-section :is(h1, h2) {
+  font-size: 3.5em;
+  max-width: 15ch;
+}
+.theme-ocean .deck-layout-section > p {
+  color: var(--deck-muted);
+  font-size: 1.05em;
+  max-width: 40ch;
+}
+.theme-ocean .deck-layout-end :is(h1, h2) {
+  font-size: 3.8em;
+}
+.theme-ocean .deck-layout-end > p {
+  color: var(--deck-muted);
+}
+.theme-ocean .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  font-size: 4.6em;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 0.15em;
+  background: var(--ocean-heading);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.theme-ocean .deck-layout-fact > :not(:first-child) {
+  font-size: 1.05em;
+  font-weight: 500;
+  color: var(--deck-muted);
+}
+.theme-ocean .deck-layout-quote {
+  padding-inline: 9%;
+  font-style: normal;
+  font-size: 1.35em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.theme-ocean .deck-layout-quote::before {
+  content: "\201C";
+  display: block;
+  height: 0.5em;
+  margin-bottom: 0.15em;
+  font: 800 3.4em/1 var(--deck-heading-font);
+  color: var(--deck-accent);
+}
+.theme-ocean .deck-layout-quote blockquote {
+  padding: 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+.theme-ocean .deck-layout-quote blockquote::before {
+  display: none;
+}
+.theme-ocean .deck-layout-quote :is(p:last-child:not(:first-child), cite, footer) {
+  margin-top: 0.7em;
+  font-size: 0.6em;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.theme-ocean .deck-layout-statement :is(h1, h2) {
+  font-size: 3.3em;
+  max-width: 18ch;
+  margin-inline: auto;
+}
+.theme-ocean .deck-layout-statement > p {
+  color: var(--deck-muted);
+  max-width: 44ch;
+}
+.theme-ocean .deck-layout-full {
+  padding: 0;
+}
+.theme-ocean .deck-layout-two-cols {
+  column-gap: 2.6em;
+}
+.theme-ocean .deck-layout-two-cols > .deck-slot-default > :first-child,
+.theme-ocean .deck-layout-two-cols > .deck-slot-right > :first-child {
+  margin-top: 0;
+}
+.theme-ocean .deck-layout-two-cols-header {
+  column-gap: 2.6em;
+}
+.theme-ocean .deck-layout-two-cols-header > .deck-slot-default {
+  position: relative;
+  padding-bottom: 0.55em;
+  margin-bottom: 0.45em;
+}
+.theme-ocean .deck-layout-two-cols-header > .deck-slot-default::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2) 40%, transparent);
+}
+.theme-ocean .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) {
+  padding: 0.75em 1em;
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+}
+.theme-ocean .deck-layout-two-cols-header > :is(.deck-slot-left, .deck-slot-right) > :last-child {
+  margin-bottom: 0;
+}
+.theme-ocean .deck-layout-image .deck-layout-image-content {
+  padding-bottom: calc(var(--deck-pad) * 0.8);
+  background: linear-gradient(180deg, transparent, rgba(4, 17, 40, 0.82));
+}
+.theme-ocean .deck-layout-image .deck-layout-image-content :is(h1, h2) {
+  color: #fff;
+}
+.theme-ocean :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: calc(var(--deck-pad) * 0.9);
+}
+.theme-ocean .deck-layout-image-pane {
+  background-color: color-mix(in oklab, var(--deck-accent) 12%, var(--deck-bg));
+}
+.theme-ocean .deck-layout-image-left .deck-layout-image-pane {
+  border-radius: 0 28px 28px 0;
+}
+.theme-ocean .deck-layout-image-right .deck-layout-image-pane {
+  border-radius: 28px 0 0 28px;
+}
+.theme-ocean :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border-radius: 20px;
+  border-color: var(--deck-border);
+  box-shadow: var(--ocean-shadow);
+}
+.theme-ocean :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── the theme's own layouts (index.tsx) ───────────────────────────────── */
+/* waves: the cover with the sea moving along the bottom */
+.theme-ocean .deck-layout-waves {
+  justify-content: center;
+  align-items: flex-start;
+  padding-bottom: 2.2em;
+}
+.theme-ocean .deck-layout-waves.is-center {
+  align-items: center;
+  text-align: center;
+}
+.theme-ocean .deck-layout-waves h1 {
+  font-size: 4.2em;
+  max-width: 13ch;
+  margin-bottom: 0.3em;
+}
+.theme-ocean .deck-layout-waves.is-center h1 {
+  margin-inline: auto;
+}
+.theme-ocean .deck-layout-waves > .ocean-waves-body > p {
+  font-size: 1.1em;
+  max-width: 36ch;
+  color: var(--deck-muted);
+}
+.theme-ocean .deck-layout-waves.is-center > .ocean-waves-body > p {
+  margin-inline: auto;
+}
+.theme-ocean .ocean-waves-body {
+  position: relative;
+  z-index: 1;
+}
+.theme-ocean .ocean-waves {
+  position: absolute;
+  left: calc(var(--deck-pad) * -1);
+  right: calc(var(--deck-pad) * -1);
+  bottom: calc(var(--deck-pad) * -1);
+  height: 34%;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: var(--theme-waves, 1);
+}
+.theme-ocean .ocean-waves svg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 200%;
+  height: 100%;
+}
+.theme-ocean .ocean-waves .ocean-swell-1 {
+  fill: var(--ocean-wave-1);
+  animation: ocean-drift 26s linear infinite;
+}
+.theme-ocean .ocean-waves .ocean-swell-2 {
+  fill: var(--ocean-wave-2);
+  animation: ocean-drift 19s linear infinite reverse;
+}
+.theme-ocean .ocean-waves .ocean-swell-3 {
+  fill: var(--ocean-wave-3);
+  animation: ocean-drift 14s linear infinite;
+}
+@keyframes ocean-drift {
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* depth: a section opener with its number and a sounding line down the side */
+.theme-ocean .deck-layout-depth {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 1.4em;
+  align-content: center;
+  align-items: center;
+}
+.theme-ocean .ocean-depth-number {
+  font: 800 6.4em/0.9 var(--deck-heading-font);
+  letter-spacing: -0.05em;
+  background: var(--ocean-heading);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.theme-ocean .ocean-depth-body :is(h1, h2) {
+  font-size: 2.8em;
+  max-width: 16ch;
+  margin-bottom: 0.25em;
+}
+.theme-ocean .ocean-depth-body > p {
+  color: var(--deck-muted);
+  max-width: 42ch;
+}
+.theme-ocean .ocean-depth-meta {
+  display: block;
+  margin-bottom: 0.6em;
+  font: 600 0.5em var(--deck-mono-font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--deck-accent);
+}
+.theme-ocean .ocean-depth-gauge {
+  position: absolute;
+  top: 4%;
+  bottom: 12%;
+  right: calc(var(--deck-pad) * -0.45);
+  width: 0.5em;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.theme-ocean .ocean-depth-gauge span {
+  display: block;
+  width: 0.5em;
+  height: 2px;
+  background: var(--deck-border);
+}
+.theme-ocean .ocean-depth-gauge span:nth-child(5n + 1) {
+  width: 1em;
+  background: color-mix(in oklab, var(--deck-muted) 60%, transparent);
+}
+.theme-ocean .ocean-depth-gauge span.is-here {
+  width: 1.4em;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--deck-accent);
+}
+/* Wave: a divider, a single swell drawn across the column */
+.theme-ocean .ocean-wave {
+  display: block;
+  width: 100%;
+  height: 0.7em;
+  margin: 0.5em 0 0.7em;
+  color: var(--deck-accent);
+}
+.theme-ocean .ocean-wave path {
+  stroke: currentColor;
+}
+
+/* ── still copies: print, export, thumbnails ───────────────────────────── */
+.theme-ocean .deck-print-page :is(.deck-code-block, .deck-callout, .deck-frame),
+.theme-ocean .deck-slide.is-print :is(.deck-code-block, .deck-callout, .deck-frame) {
+  box-shadow: none;
+}
+.theme-ocean .deck-slide:is(.is-print, .is-tile) .ocean-waves :is(.ocean-swell-1, .ocean-swell-2, .ocean-swell-3) {
+  animation: none;
+}
+@media print {
+  .theme-ocean :is(.deck-code-block, .deck-callout, .deck-frame) {
+    box-shadow: none;
+  }
+  .theme-ocean .ocean-waves :is(.ocean-swell-1, .ocean-swell-2, .ocean-swell-3) {
+    animation: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-ocean .ocean-waves :is(.ocean-swell-1, .ocean-swell-2, .ocean-swell-3) {
+    animation: none;
+  }
+}

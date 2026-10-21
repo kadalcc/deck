@@ -41,6 +41,26 @@ createRoot(document.getElementById("root")!).render(
         stats: StatsPage,
         remote: RemotePage,
       }}
+      // The deck's own key and menu item (core/shortcuts.ts, react/menu.ts): E says hello, and
+      // the right-click menu goes back to the start.
+      shortcuts={[
+        {
+          keys: ["KeyE"],
+          command: "view.toast",
+          params: { message: "Hello from this deck's own shortcut" },
+          description: "Say hello (this deck's own key)",
+        },
+      ]}
+      contextMenu={(items) => [
+        ...items,
+        {
+          id: "showcase.start",
+          label: "Back to the start",
+          icon: "house",
+          command: "nav.first",
+          separator: true,
+        },
+      ]}
     >
       <LiveProvider />
     </Deck>

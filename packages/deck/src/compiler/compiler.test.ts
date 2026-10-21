@@ -91,7 +91,8 @@ layout: center
       file: "deck.mdx",
     });
     expect(slides[0]!.notes).toBe("Say **hello**.");
-    expect(slides[0]!.content).toBe("# A\n\n\n\nBody");
+    // The block's lines stay (empty), so the lines after it keep their numbers.
+    expect(slides[0]!.content).toBe("# A\n\n\n\n\n\nBody");
   });
 
   test("src: includes another file's slides and merges frontmatter into the first", () => {

@@ -1,0 +1,33 @@
+{
+  "name": "kadal-deck-themes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The theme gallery: Kadal's eight first-party themes on one deck — press T to switch between them.",
+  "type": "module",
+  "scripts": {
+    "dev": "kadal-deck dev",
+    "build": "kadal-deck build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kadal/deck": "workspace:*",
+    "@kadal/theme-brand": "workspace:*",
+    "@kadal/theme-crayon": "workspace:*",
+    "@kadal/theme-folio": "workspace:*",
+    "@kadal/theme-lecture": "workspace:*",
+    "@kadal/theme-neon": "workspace:*",
+    "@kadal/theme-ocean": "workspace:*",
+    "@kadal/theme-swiss": "workspace:*",
+    "@kadal/theme-terminal": "workspace:*",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}

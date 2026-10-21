@@ -8,3 +8,5 @@ examples/showcase/rust-ticker/target/
 .wrangler/
 coverage/
 examples/*/check-output/
+theme-shots/
+.kadal-deck/

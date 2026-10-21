@@ -1,0 +1,100 @@
+{
+  "name": "@kadal/theme-bricks",
+  "version": "0.3.6",
+  "description": "Bricks: Slidev's bricks theme, ported to Kadal Deck. Building blocks in coral, butter, rose and sky on a cream page, with the Polygon components.",
+  "keywords": [
+    "kadal-theme",
+    "kadal-deck",
+    "presentation",
+    "slides",
+    "theme",
+    "slidev-port"
+  ],
+  "homepage": "https://deck.kadal.cc/docs/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/theme-bricks"
+  },
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "MIT",
+  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "type": "module",
+  "files": [
+    "style.css",
+    "index.tsx",
+    "polygons.tsx",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
+  },
+  "kadal": {
+    "theme": {
+      "name": "bricks",
+      "title": "Bricks",
+      "description": "Building blocks on a cream page: Sigmar One headings, a block arrangement per layout, Polygon1–11.",
+      "colorScheme": "light",
+      "themeConfig": {},
+      "config": {
+        "fonts": {
+          "sans": "Signika Negative",
+          "serif": "Sigmar One",
+          "mono": "Fira Code"
+        }
+      },
+      "shiki": {
+        "light": "vitesse-light",
+        "dark": "vitesse-light"
+      },
+      "defaults": {},
+      "layouts": [
+        "items",
+        "blank"
+      ],
+      "components": [
+        "Polygon1",
+        "Polygon2",
+        "Polygon3",
+        "Polygon4",
+        "Polygon5",
+        "Polygon6",
+        "Polygon7",
+        "Polygon8",
+        "Polygon9",
+        "Polygon10",
+        "Polygon11"
+      ]
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "dev": "kadal-deck dev -C preview",
+    "build": "kadal-deck build -C preview",
+    "check": "kadal-deck check -C preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "^0.3.6",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}

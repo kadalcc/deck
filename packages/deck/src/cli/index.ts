@@ -2,12 +2,20 @@
  * kadal-deck — the command line for a Kadal Deck folder (bin: ./bin.ts).
  *
  *   kadal-deck new <dir>                  a deck from the starter, no questions asked
- *   kadal-deck dev [vite flags]           the deck with live reload (vite)
- *   kadal-deck build [vite flags]         dist/ for any static host (vite build)
+ *   kadal-deck new --theme <name> [dir]   a theme package, ready to publish (--addon: an addon)
+ *   kadal-deck theme eject [--dir theme]  copy the deck's theme into the deck, to change it
+ *   kadal-deck import slidev <slides.md>  a Kadal deck from a Slidev one, with a report of the rest
+ *   kadal-deck dev [vite flags]           the deck with live reload (vite); --tunnel, --remote [pwd]
+ *   kadal-deck build [a.mdx b.mdx…]       dist/ for any static host (vite build); --without-notes,
+ *                                         --base, --out, several decks into folders (cli/build.ts)
+ *   kadal-deck serve [dist]               the build, served as a static host would (cli/serve.ts)
+ *   kadal-deck ci <host>                  the files a host needs: github-pages, netlify, vercel,
+ *                                         cloudflare, docker (cli/hosting.ts)
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
+ *   kadal-deck format [files] [--check]   format deck files (@kadal/prettier-plugin)
  *   kadal-deck info [topic]               the catalog: components, layouts, backgrounds, keys…
  *   kadal-deck screenshot                 PNGs of slides (headless Chromium)
- *   kadal-deck export [--png] [--pptx]    PDF/PNG/PPTX into export/ (needs playwright, pptxgenjs)
+ *   kadal-deck export [--format …]        PDF/PNG/PPTX/editable PPTX/Markdown into export/ (Playwright)
  *   kadal-deck login [--host URL]         sign this machine in to a Kadal Deck host
  *   kadal-deck logout                     forget the saved token
  *   kadal-deck whoami                     who and which workspace the token is for
@@ -21,7 +29,7 @@
  * credentials, which is how CI publishes.
  */
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 
 import { type FlagSpecs, UsageError, bool, num, parseArgs, str } from "./args.ts";
 import {
@@ -41,16 +49,47 @@ export const EXIT = { ok: 0, failed: 1, usage: 2, auth: 3, missing: 4 } as const
 export const HELP = `kadal-deck <command> [options]
 
   new <dir>   create a deck from the starter      --title <t> --yes --no-install --pm <npm|pnpm|yarn|bun>
+              --ci <host[,host]>  with the hosting files too (see ci)
+              --theme <name> [dir]  a theme package instead (kadal-theme-<name>)   --addon <name>  an addon
+  theme       theme eject [--dir ./theme] [--force]  copy the deck's theme (or a built-in) into the
+              deck and point the headmatter at it   (-C <deck> for a deck elsewhere)
+  import      import slidev <slides.md | folder>  convert a Slidev deck into a new Kadal deck folder,
+              with IMPORT-REPORT.md for what did not carry over, then check it
+              --out <dir> (default <folder>-kadal)  --force (write into a folder that is not empty)
+              --install [--pm npm|pnpm|yarn|bun]  install its packages afterwards
   dev         run the deck locally with live reload (Vite flags pass through)
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
-  build       build the deck into dist/ (any static host can serve it)
+              --tunnel  on the internet through a Cloudflare Quick Tunnel (needs cloudflared): an
+              https address and QR in the terminal, used by the phone remote; always password-guarded
+              --remote [password]  on your network; with a password, the presenter, notes and
+              editing ask for it from any other device (and over the tunnel)
+  build       build the deck into dist/ (any static host can serve it)   [deck files…]
+              a.mdx b.mdx  several decks: dist/a/, dist/b/ and a page listing them
+              --base /talks/x/  where it will be served   --out <dir>  where it goes (--outDir)
+              --without-notes  leave the speaker notes out of the build
+              --pwa / --no-pwa  the offline app (\`pwa: true\` in the deck)
+              --bundle-remote-assets  download remote images and fonts into the build
+              --download  also print it to dist/deck.pdf for the deck's Download button
+              (\`download: true\` in the deck does the same; --no-download skips it)
+  serve       serve a built deck as a static host would   [folder, default dist]
+              --port <n> (4173)  --host <addr> (127.0.0.1; 0.0.0.0 for a container)  --base <path>
+  ci          write a host's deploy files: ci <github-pages|netlify|vercel|cloudflare|docker>[,…]
+              --force  replace files that are there
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
+  format      format deck.mdx (and the files it includes) or the files named: separators,
+              frontmatter YAML, each slide's Markdown; code, notes and sugar kept as written
+              --check  write nothing; exit 1 if a file would change
   info        the reference: info [components|layouts|backgrounds|themes|transitions|clicks|code|
               deck|slide|keys|routes|live|cli|exit] [name]   --search <words>   --markdown
   screenshot  PNGs of slides into screenshots/   --slide <N|all> --out <dir> --theme <t>
               --scheme <light|dark> --width <px> --url <deck url> --dev
   export      PDF (and --png, --pptx) into export/   --out <dir> --scale <n> --url <deck url> --no-pdf
+              --format pdf,png,pptx,pptx-editable,md   or the switches --pptx-editable --md
+              --range 1,3-5   --dark / --scheme light|dark   --with-clicks / --no-with-clicks
+              --omit-background (transparent)   --no-with-toc (no PDF bookmarks)   --per-slide
+              --output <name>   --timeout <ms> --wait <ms> --wait-until networkidle|load|domcontentloaded|none
+              --executable-path <chrome>   --port <n> (the local preview server)
               --vector-pdf (print with the browser alone: all vector, effects vary by viewer)
   login       sign in to a Kadal Deck host (opens the browser)   --host <url>
   logout      forget the saved token on this machine
@@ -58,6 +97,8 @@ export const HELP = `kadal-deck <command> [options]
   publish     build and publish the deck; prints its URL
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
               --no-thumbnail  skip the picture of slide 1 the host shows in its lists
+              --without-notes  publish without the speaker notes
+              --pwa  keep the deck's service worker (left out on the host by default)
   narrate     bake the narration: every notes segment spoken by Kokoro into public/narration/
               --voice <id> (default af_heart)  --dtype <fp32|fp16|q8|q4|q4f16>  --force (redo all)
               --setup  install kokoro-js into the deck first (an optional, ~400 MB dependency)
@@ -83,11 +124,17 @@ const GLOBAL: FlagSpecs = {
 const COMMAND_FLAGS: Record<string, FlagSpecs> = {
   new: {
     title: { kind: "string" },
+    theme: { kind: "string" },
+    addon: { kind: "string" },
     yes: { kind: "boolean", short: "y" },
     install: { kind: "boolean" },
     pm: { kind: "string" },
+    ci: { kind: "string" },
   },
+  serve: { port: { kind: "number" }, host: { kind: "string" }, base: { kind: "string" } },
+  ci: { force: { kind: "boolean" } },
   check: { compile: { kind: "boolean" } },
+  format: { check: { kind: "boolean" } },
   info: { search: { kind: "string" }, markdown: { kind: "boolean" } },
   screenshot: {
     slide: { kind: "string", multiple: true },
@@ -107,8 +154,17 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     title: { kind: "string" },
     host: { kind: "string" },
     thumbnail: { kind: "boolean" },
+    "without-notes": { kind: "boolean" },
+    pwa: { kind: "boolean" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
+  // Mirrors IMPORT_FLAGS in import.ts, which is imported only when the command runs.
+  import: {
+    out: { kind: "string", short: "o" },
+    force: { kind: "boolean" },
+    install: { kind: "boolean" },
+    pm: { kind: "string" },
+  },
   // Mirrors NARRATE_FLAGS in narrate.ts, which is imported only when the command runs.
   narrate: {
     voice: { kind: "string" },
@@ -147,7 +203,9 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
     const code =
       e instanceof UsageError || (e as Error)?.name === "TargetNotEmptyError"
         ? EXIT.usage
-        : e instanceof MissingDependencyError || e instanceof NoDeckError
+        : e instanceof MissingDependencyError ||
+            e instanceof NoDeckError ||
+            (e as Error)?.name === "PackageResolveError"
           ? EXIT.missing
           : e instanceof HostError && e.status === 401
             ? EXIT.auth
@@ -194,24 +252,80 @@ async function run(
 ): Promise<number> {
   const { json, say, emit } = io;
   switch (command) {
-    case "dev":
-    case "build": {
-      // Vite's own flags pass straight through; only --dir is ours.
+    case "dev": {
+      // Vite's own flags pass straight through; these are ours.
       const {
         flags,
         rest: vite,
         positionals,
-      } = parseArgs(rest, { dir: GLOBAL.dir! }, { passthrough: true });
+      } = parseArgs(
+        rest,
+        { dir: GLOBAL.dir!, tunnel: { kind: "boolean" }, remote: { kind: "optional-string" } },
+        { passthrough: true },
+      );
       const dir = resolve(cwd, str(flags.dir) ?? ".");
       // `dev --https`: Vite dropped its own flag, so the deck's plugin makes a certificate
       // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
-      const https = command === "dev" && vite.includes("--https");
-      if (https) process.env.KADAL_DECK_HTTPS = "1";
+      if (vite.includes("--https")) process.env.KADAL_DECK_HTTPS = "1";
       const passed = vite.filter((a) => a !== "--https");
-      await runVite(
-        dir,
-        command === "build" ? ["build", ...positionals, ...passed] : [...positionals, ...passed],
+      // `dev --tunnel` and `--remote [password]`: checked now, carried out by the deck's plugin
+      // (cli/remote.ts → vite/remote-dev.ts).
+      const extra: string[] = [];
+      if (flags.tunnel === true || flags.remote !== undefined) {
+        const { devRemote } = await import("./remote.ts");
+        const r = devRemote({ tunnel: flags.tunnel === true, remote: flags.remote, viteArgs: passed });
+        Object.assign(process.env, r.env);
+        extra.push(...r.args);
+      }
+      await runVite(dir, [...positionals, ...passed, ...extra]);
+      return EXIT.ok;
+    }
+    case "build": {
+      // Vite's own flags pass straight through (--base, --outDir, --mode…); these are ours.
+      const {
+        flags,
+        rest: vite,
+        positionals,
+      } = parseArgs(
+        rest,
+        {
+          dir: GLOBAL.dir!,
+          download: { kind: "boolean" },
+          port: { kind: "number" },
+          out: { kind: "string" },
+          "without-notes": { kind: "boolean" },
+          pwa: { kind: "boolean" },
+          "bundle-remote-assets": { kind: "boolean" },
+        },
+        { passthrough: true },
       );
+      const dir = resolve(cwd, str(flags.dir) ?? ".");
+      // The deck's plugin reads these (vite/index.ts, vite/site.ts).
+      if (flags["without-notes"] === true) process.env.KADAL_DECK_WITHOUT_NOTES = "1";
+      if (flags.pwa !== undefined) process.env.KADAL_DECK_PWA = flags.pwa ? "1" : "0";
+      if (flags["bundle-remote-assets"] !== undefined)
+        process.env.KADAL_DECK_REMOTE_ASSETS = flags["bundle-remote-assets"] ? "1" : "0";
+      // Deck files on the command line build one after another, each in its folder (cli/build.ts).
+      const { planBuild, runBuild } = await import("./build.ts");
+      const plan = planBuild(positionals, vite, str(flags.out));
+      const port = num(flags.port);
+      await runBuild({
+        dir,
+        plan,
+        say,
+        // `--download` (or `download: true` in the deck): the PDF its Download button offers.
+        after: async (record) => {
+          if (flags.download === false) return;
+          const { buildDownload, deckWantsDownload } = await import("./download.ts");
+          if (flags.download === true || (await deckWantsDownload(dir, record.entry)))
+            await buildDownload(dir, {
+              outDir: record.outDir,
+              base: record.base,
+              ...(port ? { port } : {}),
+              say,
+            });
+        },
+      });
       return EXIT.ok;
     }
     case undefined:
@@ -228,9 +342,11 @@ async function run(
       else say(version);
       return EXIT.ok;
     }
+    case "theme":
+      return themeCommand(rest, cwd, io);
     case "export": {
-      const { EXPORT_FLAGS, runExport } = await import("../export/run.ts");
-      const { flags } = parseArgs(rest, { ...GLOBAL, ...EXPORT_FLAGS });
+      const { EXPORT_FLAGS, joinSwitchValues, runExport } = await import("../export/run.ts");
+      const { flags } = parseArgs(joinSwitchValues(rest), { ...GLOBAL, ...EXPORT_FLAGS });
       if (flags.help) {
         say(HELP);
         return EXIT.ok;
@@ -244,6 +360,8 @@ async function run(
           outDir: result.outDir,
           files: result.files,
           posters: result.posters,
+          ...(result.outline !== undefined ? { outline: result.outline } : {}),
+          ...(result.editable ? { editable: result.editable } : {}),
         });
       return EXIT.ok;
     }
@@ -260,11 +378,37 @@ async function run(
 
   switch (command) {
     case "new": {
-      const target = positionals[0];
-      if (!target) throw new UsageError("Where should the deck go? kadal-deck new <dir>");
       const pm = str(flags.pm);
       if (pm && !["npm", "pnpm", "yarn", "bun"].includes(pm))
         throw new UsageError(`--pm must be npm, pnpm, yarn or bun`);
+      const kind = flags.theme !== undefined ? "theme" : flags.addon !== undefined ? "addon" : null;
+      if (kind) {
+        if (flags.theme !== undefined && flags.addon !== undefined)
+          throw new UsageError("--theme or --addon, not both");
+        const raw = str(flags[kind]);
+        if (!raw) throw new UsageError(`--${kind} needs a name: kadal-deck new --${kind} <name>`);
+        const { newPackage } = await import("./new.ts");
+        const result = await newPackage(
+          kind,
+          raw,
+          positionals[0] ? resolve(cwd, positionals[0]) : null,
+          cwd,
+          {
+            title: str(flags.title),
+            install: flags.install === true,
+            pm: pm as never,
+            stdio: json ? "stderr" : "inherit",
+          },
+        );
+        if (json) emit({ ok: true, kind, ...result });
+        else
+          say(
+            `\nYour ${kind} is in ${result.dir}. Next:\n\n  ${result.next.join("\n  ")}\n\nDocs: https://deck.kadal.cc/docs/`,
+          );
+        return EXIT.ok;
+      }
+      const target = positionals[0];
+      if (!target) throw new UsageError("Where should the deck go? kadal-deck new <dir>");
       const { newDeck } = await import("./new.ts");
       const result = await newDeck(resolve(cwd, target), {
         title: str(flags.title),
@@ -272,11 +416,47 @@ async function run(
         pm: pm as never,
         stdio: json ? "stderr" : "inherit",
       });
+      // `--ci github-pages,docker`: the hosting recipes too (cli/hosting.ts).
+      const ci = str(flags.ci);
+      if (ci) {
+        const { hostTargets, writeHosting } = await import("./hosting.ts");
+        const hosting = writeHosting(result.dir, hostTargets(ci));
+        result.next.push(...hosting.next);
+      }
       if (json) emit({ ok: true, ...result });
       else
         say(
           `\nYour deck is in ${result.dir}. Next:\n\n  ${result.next.join("\n  ")}\n\nDocs: https://deck.kadal.cc/docs/`,
         );
+      return EXIT.ok;
+    }
+    case "serve": {
+      const { detectBase, startStaticServer } = await import("./serve.ts");
+      const root = resolve(dir, positionals[0] ?? "dist");
+      const base = str(flags.base) ?? detectBase(root);
+      const host = str(flags.host) ?? "127.0.0.1";
+      const port = num(flags.port) ?? 4173;
+      const server = await startStaticServer({ root, base, port, host });
+      const shown = host === "0.0.0.0" || host === "::" ? "localhost" : host;
+      const url = `http://${shown}:${port}${base.endsWith("/") ? base : `${base}/`}`;
+      if (json) emit({ ok: true, url, root, base });
+      else say(`serve  ${root}\n       ${url}   (Ctrl+C stops)`);
+      await new Promise<void>((done) => {
+        const stop = () => server.close(() => done());
+        process.once("SIGINT", stop);
+        process.once("SIGTERM", stop);
+      });
+      return EXIT.ok;
+    }
+    case "ci": {
+      const spec = positionals.join(",");
+      const { hostTargets, writeHosting } = await import("./hosting.ts");
+      const result = writeHosting(dir, hostTargets(spec), { force: flags.force === true });
+      if (json) emit({ ok: true, ...result });
+      else {
+        for (const f of result.files) say(`wrote  ${f}`);
+        say(`\nNext:\n  ${result.next.join("\n  ")}`);
+      }
       return EXIT.ok;
     }
     case "check": {
@@ -291,6 +471,33 @@ async function run(
         });
       else say(formatDiagnostics(result, (f) => rel(project, f)));
       return result.ok ? EXIT.ok : EXIT.failed;
+    }
+    case "format": {
+      const { formatFiles } = await import("./format.ts");
+      const check = flags.check === true;
+      // Files are named relative to the deck folder (`-C` runs there), as `check` reports them.
+      const run = await formatFiles(dir, positionals, { check });
+      const name = (f: string) => {
+        const r = relative(dir, f);
+        return r && !r.startsWith("..") ? r : f;
+      };
+      if (json)
+        emit({
+          ok: !check || run.changed === 0,
+          check,
+          files: run.files.map((f) => ({ ...f, file: name(f.file) })),
+        });
+      else {
+        for (const f of run.files) {
+          say(
+            `${f.changed ? (check ? "would change" : "formatted   ") : "unchanged   "} ${name(f.file)}`,
+          );
+          for (const k of f.kept) say(`  slide ${k.slide} (line ${k.line}): ${k.reason}`);
+        }
+        if (check && run.changed)
+          say(`\n${run.changed} file(s) need formatting. Run \`kadal-deck format\`.`);
+      }
+      return check && run.changed ? EXIT.failed : EXIT.ok;
     }
     case "narrate": {
       const { narrate, setupKokoro } = await import("./narrate.ts");
@@ -313,7 +520,7 @@ async function run(
       return EXIT.ok;
     }
     case "info":
-      return info(positionals, flags, io);
+      return info(positionals, { ...flags, dir }, io);
     case "screenshot":
       return screenshot(dir, flags, io);
     case "login": {
@@ -371,6 +578,10 @@ async function run(
     }
     case "publish":
       return publishCommand(dir, flags, io);
+    case "import": {
+      const { importCommand } = await import("./import.ts");
+      return importCommand(positionals, flags, cwd, io);
+    }
     case "mcp": {
       const { serveStdio } = await import("../mcp/index.ts");
       await serveStdio({ dir, allowOutside: flags["allow-outside"] === true });
@@ -436,6 +647,7 @@ async function info(
     else say(cat.sectionMarkdown({ ...cat.catalog, [section]: [entry] }, section));
     return EXIT.ok;
   }
+  if (section === "themes") return infoThemes(cat, flags, { json, say, emit });
   if (json) emit({ ok: true, section, entries: cat.catalog[section] });
   else if (
     bool(flags.markdown) ||
@@ -454,6 +666,87 @@ async function info(
         `  ${item.name.padEnd(24)} ${item.category ? `${item.category.padEnd(11)} ` : ""}${item.summary ?? item.description ?? ""}`,
       );
     say(`\nkadal-deck info ${topic} <name> for one in full; --markdown for all of them.`);
+  }
+  return EXIT.ok;
+}
+
+/**
+ * `info themes`: the engine's themes, then every theme and addon package the deck in --dir can
+ * see (its node_modules and above), with their layouts — what `theme:` and `addons:` can name.
+ */
+async function infoThemes(
+  cat: typeof import("../catalog/index.ts"),
+  flags: Record<string, unknown>,
+  { json, say, emit }: Io,
+): Promise<number> {
+  const { listInstalledPackages } = await import("../theming/resolve.ts");
+  const dir = resolve(str(flags.dir) ?? ".");
+  const installed = listInstalledPackages(dir).map((p) => ({
+    kind: p.kind,
+    name: p.name,
+    package: p.package,
+    title: p.meta.title ?? null,
+    description: p.meta.description ?? null,
+    layouts: p.meta.layouts ?? [],
+    components: p.meta.components ?? [],
+    colorScheme: "colorScheme" in p.meta ? p.meta.colorScheme : null,
+    root: p.root,
+  }));
+  if (json) {
+    emit({ ok: true, section: "themes", entries: cat.catalog.themes, installed });
+    return EXIT.ok;
+  }
+  say(cat.sectionMarkdown(cat.catalog, "themes"));
+  const themes = installed.filter((p) => p.kind === "theme");
+  const addons = installed.filter((p) => p.kind === "addon");
+  say(`\nInstalled where ${dir} can see them:`);
+  if (!installed.length)
+    say(
+      "  none — npm install a kadal-theme-* or @kadal/theme-* package, or `kadal-deck new --theme <name>`",
+    );
+  for (const p of themes)
+    say(
+      `  theme  ${p.name.padEnd(16)} ${(p.package ?? "").padEnd(28)} ${p.layouts.length ? `layouts: ${p.layouts.join(", ")}` : ""}`,
+    );
+  for (const p of addons)
+    say(
+      `  addon  ${p.name.padEnd(16)} ${(p.package ?? "").padEnd(28)} ${[...p.components, ...p.layouts.map((l) => `layout:${l}`)].join(", ")}`,
+    );
+  return EXIT.ok;
+}
+
+/** `kadal-deck theme eject [--dir ./theme] [--force]`; `-C <deck>` points at the deck. */
+async function themeCommand(rest: string[], cwd: string, { json, say, emit }: Io): Promise<number> {
+  const { flags, positionals } = parseArgs(rest, {
+    json: { kind: "boolean" },
+    help: { kind: "boolean", short: "h" },
+    deck: { kind: "string", short: "C" },
+    dir: { kind: "string" },
+    force: { kind: "boolean" },
+    theme: { kind: "string" },
+  });
+  const sub = positionals[0];
+  if (flags.help || !sub) {
+    say(HELP);
+    return flags.help ? EXIT.ok : EXIT.usage;
+  }
+  if (sub !== "eject")
+    throw new UsageError(`Unknown theme command "${sub}". Try: kadal-deck theme eject`);
+  const { ejectTheme } = await import("../theming/eject.ts");
+  const result = ejectTheme(resolve(cwd, str(flags.deck) ?? "."), {
+    dir: str(flags.dir),
+    force: flags.force === true,
+    theme: str(flags.theme),
+  });
+  if (json) emit({ ok: true, ...result });
+  else {
+    say(
+      `Theme "${result.name}" ejected to ${result.dir}; the headmatter now says theme: ${result.to}`,
+    );
+    for (const line of result.removedImports)
+      say(`removed from src/main.tsx: ${line} (the copy styles .theme-${result.name} now)`);
+    if (result.dependencies.length)
+      say(`its module imports ${result.dependencies.join(", ")}: keep them installed in the deck.`);
   }
   return EXIT.ok;
 }
@@ -560,6 +853,12 @@ export async function publishCommand(
     log: say,
     build: async (base, out) => {
       await rm(out, { recursive: true, force: true });
+      // `--without-notes`: the deck's plugin builds no notes (vite/index.ts reads this).
+      if (flags["without-notes"] === true) process.env.KADAL_DECK_WITHOUT_NOTES = "1";
+      // The host routes the deck and writes its room into index.html: no static-host fallbacks,
+      // and no service worker on its origin unless asked (vite/site.ts).
+      process.env.KADAL_DECK_TARGET = "host";
+      if (flags.pwa === true) process.env.KADAL_DECK_PWA = "1";
       await runVite(dir, ["build", "--base", base, "--outDir", out, "--emptyOutDir"]);
     },
   });

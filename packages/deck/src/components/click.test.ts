@@ -59,3 +59,21 @@ describe("<Clicks every>", () => {
     expect(render([["a", "b", "c"]], 1)).toEqual(["a@1", "b@2", "c@3"]);
   });
 });
+
+describe("<Click as> a void element", () => {
+  test('renders with no children at all (Slidev\'s <img v-click> imports as <Click as="img">)', async () => {
+    const { Click } = await import("./Click.tsx");
+    const slide = {
+      registry: createClickRegistry(),
+      click: 0,
+      active: true,
+      preview: false,
+    } as unknown as SlideContextValue;
+    const html = (el: ReturnType<typeof createElement>) =>
+      renderToStaticMarkup(createElement(SlideContext.Provider, { value: slide }, el));
+    expect(html(createElement(Click, { as: "img", src: "/a.png", alt: "" }))).toContain(
+      '<img src="/a.png" alt="" class="deck-click',
+    );
+    expect(html(createElement(Click, null, "hi"))).toContain(">hi</div>");
+  });
+});

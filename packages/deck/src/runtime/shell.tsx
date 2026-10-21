@@ -28,7 +28,10 @@ import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts"
 declare const __KADAL_DECK_VERSION__: string | undefined;
 const VERSION = typeof __KADAL_DECK_VERSION__ === "string" ? __KADAL_DECK_VERSION__ : "dev";
 
-const MODE_SEGMENTS = new Set(["presenter", "join", "audience", "notes", "stats", "remote"]);
+const MODE_SEGMENTS = new Set(["presenter", "join", "audience", "notes", "stats", "remote", "export"]);
+// The engine's own pages (react/OverviewPage.tsx, react/NotesEditPage.tsx).
+MODE_SEGMENTS.add("overview");
+MODE_SEGMENTS.add("notes-edit");
 
 /** The deck's root path, from the host's word or the address: the last mode segment comes off. */
 export function shellBase(pathname: string, injected?: unknown): string {
@@ -128,11 +131,15 @@ function Shell({
           if (!res.ok) throw new Error(`deck.mdx: ${res.status}`);
           const text = await res.text();
           const files: Record<string, string> = {};
+          // A file that is not there stays out of `files`, so the compiler reports it as missing
+          // (a `<<<` snippet then shows its notice) — and is asked for once, not every round.
+          const tried = new Set<string>();
           const fetchAll = (names: string[]) =>
             Promise.all(
               names.map(async (name) => {
-                const r = await fetch(`${base}${name}`);
-                files[name] = r.ok ? await r.text() : "";
+                tried.add(name);
+                const r = await fetch(`${base}${name}`).catch(() => null);
+                if (r?.ok) files[name] = await r.text();
               }),
             );
           // The host lists what it published beside deck.mdx; otherwise ask the compiler what
@@ -142,7 +149,7 @@ function Shell({
           if (Array.isArray(listed)) await fetchAll(listed.filter((f) => typeof f === "string"));
           for (let round = 0; round < 3; round++) {
             const { missing } = await compileDeck(text, { files });
-            const todo = missing.filter((m) => !(m in files));
+            const todo = missing.filter((m) => !(m in files) && !tried.has(m));
             if (!todo.length) break;
             await fetchAll(todo);
           }

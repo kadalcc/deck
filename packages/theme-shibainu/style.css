@@ -1,0 +1,447 @@
+/* Shibainu — a port of Slidev's shibainu theme (@slidev/theme-shibainu, MIT, © 2021 Slidev.js
+   Team; the theme by Inès Fendi) to Kadal Deck: soft blobs and paw-print dots in the browns of a shiba's coat, Titillium Web, and
+   fourteen layouts that are each a different arrangement of the blobs. Dark only, as in Slidev.
+
+   Every theme layout has its own background (assets/page-*.svg, the theme's own drawings),
+   painted on the slide itself so it reaches the edges whatever the padding. The words are pale
+   (#ebeef2) on the dark ones and the deep brown primary (#402312) on the light tan ones (cover,
+   center, section-2), as in Slidev. The engine's other layouts sit on the coat brown, pale.
+
+   Units. Slidev draws on a 980px-wide canvas with a 16px rem and a 1.1rem body; Kadal draws on a
+   1920px one. Everything here is in `--shibainu-rem`, one Slidev rem at Kadal's scale, worked out
+   from the slide's base size the way Slidev's body is (1.1rem), so the proportions are Slidev's
+   exactly and a deck that changes --deck-base-size scales the whole theme with it.
+
+   themeConfig: `primary` → --theme-primary (the deep brown of the words on the light layouts). */
+
+.theme-shibainu {
+  --shibainu-rem: calc(var(--deck-base-size) / 1.1);
+  --shibainu-primary: var(--theme-primary, #402312);
+  --shibainu-pale: #ebeef2;
+  color-scheme: dark;
+  /* colour */
+  --deck-bg: #734226;
+  --deck-fg: var(--shibainu-pale);
+  --deck-muted: #c9b29c;
+  --deck-accent: #bf926b;
+  --deck-accent-2: #8c6645;
+  --deck-surface: rgba(27, 15, 8, 0.22);
+  --deck-border: rgba(235, 238, 242, 0.2);
+  --deck-live: #bf926b;
+  /* type: config.fonts loads Titillium Web and Fira Code */
+  --deck-heading-font: "Titillium Web", ui-sans-serif, system-ui, sans-serif;
+  --deck-body-font: "Titillium Web", ui-sans-serif, system-ui, sans-serif;
+  --deck-mono-font: "Fira Code", ui-monospace, "SF Mono", Menlo, monospace;
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 34.5px;
+  /* code: Slidev's dark code page */
+  --deck-code-bg: #1b1b1b;
+  --deck-code-fg: #eeeeee;
+  --deck-code-active: rgba(191, 146, 107, 0.2);
+  /* shape */
+  --deck-radius: calc(var(--shibainu-rem) * 0.25);
+  --deck-pad: calc(var(--shibainu-rem) * 3.5);
+  --deck-transition: 500ms;
+  --deck-controls-color: var(--shibainu-pale);
+}
+
+/* ── the page ─────────────────────────────────────────────────────────── */
+.theme-shibainu .deck-slide {
+  padding: calc(var(--shibainu-rem) * 2.5) calc(var(--shibainu-rem) * 3.5);
+  line-height: 1.5;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+.theme-shibainu .deck-slide-background {
+  inset: calc(var(--shibainu-rem) * -2.5) calc(var(--shibainu-rem) * -3.5);
+}
+
+/* ── type (Slidev's layouts-base.css and the theme's layouts.css) ─────── */
+.theme-shibainu .deck-slide :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--deck-heading-font);
+  font-weight: 400;
+  letter-spacing: normal;
+  margin: 0;
+  text-wrap: wrap;
+}
+.theme-shibainu .deck-slide h1 {
+  font-size: calc(var(--shibainu-rem) * 2.25);
+  line-height: calc(var(--shibainu-rem) * 2.5);
+  margin-bottom: var(--shibainu-rem);
+  margin-inline-start: -0.05em;
+}
+.theme-shibainu .deck-slide h2 {
+  font-size: calc(var(--shibainu-rem) * 1.875);
+  line-height: calc(var(--shibainu-rem) * 2.25);
+}
+.theme-shibainu .deck-slide h3 {
+  font-size: calc(var(--shibainu-rem) * 1.5);
+  line-height: calc(var(--shibainu-rem) * 2);
+}
+.theme-shibainu .deck-slide h4 {
+  font-size: calc(var(--shibainu-rem) * 1.25);
+  line-height: calc(var(--shibainu-rem) * 1.75);
+}
+.theme-shibainu .deck-slide h5 {
+  font-size: var(--shibainu-rem);
+  line-height: calc(var(--shibainu-rem) * 1.5);
+}
+.theme-shibainu .deck-slide h6 {
+  font-size: calc(var(--shibainu-rem) * 0.875);
+  line-height: calc(var(--shibainu-rem) * 1.25);
+  padding-top: calc(var(--shibainu-rem) * 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  margin-inline-start: -0.05em;
+}
+.theme-shibainu .deck-slide h6:not(.opacity-100) {
+  opacity: 0.4;
+}
+.theme-shibainu .deck-slide p {
+  margin: var(--shibainu-rem) 0;
+  line-height: calc(var(--shibainu-rem) * 1.5);
+}
+.theme-shibainu .deck-slide h1 + p {
+  margin-top: calc(var(--shibainu-rem) * -0.5);
+  margin-bottom: var(--shibainu-rem);
+  opacity: 0.5;
+}
+.theme-shibainu .deck-slide :is(p, ul, table) + h2 {
+  margin-top: calc(var(--shibainu-rem) * 2.5);
+}
+.theme-shibainu .deck-slide :is(ul, ol) {
+  margin: 0;
+  padding: 0;
+}
+.theme-shibainu .deck-slide ul {
+  list-style: square;
+}
+.theme-shibainu .deck-slide ol {
+  list-style: decimal;
+}
+.theme-shibainu .deck-slide li {
+  margin: 0 0 0 1.1em;
+  padding-inline-start: 0.2em;
+  line-height: 1.8em;
+}
+.theme-shibainu .deck-slide blockquote {
+  margin: 0;
+  padding: calc(var(--shibainu-rem) * 0.25) calc(var(--shibainu-rem) * 0.5);
+  font-size: calc(var(--shibainu-rem) * 0.875);
+  line-height: calc(var(--shibainu-rem) * 1.25);
+  font-style: normal;
+  color: var(--deck-code-fg);
+  background: var(--deck-code-bg);
+  border: 0;
+  border-inline-start: 1px solid var(--deck-accent);
+  border-radius: calc(var(--shibainu-rem) * 0.25);
+}
+.theme-shibainu .deck-slide blockquote > * {
+  margin-block: 0;
+}
+.theme-shibainu .deck-slide table {
+  width: 100%;
+  font-size: 1em;
+  line-height: calc(var(--shibainu-rem) * 1.5);
+}
+.theme-shibainu .deck-slide :is(th, td) {
+  padding: calc(var(--shibainu-rem) * 0.75) calc(var(--shibainu-rem) * 0.5);
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-shibainu .deck-slide th {
+  text-align: left;
+  font-size: 1em;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+}
+.theme-shibainu .deck-slide a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+}
+.theme-shibainu .deck-slide a:hover {
+  color: var(--deck-accent);
+  border-bottom-style: solid;
+}
+.theme-shibainu .deck-slide :is(b, strong) {
+  font-weight: 600;
+}
+.theme-shibainu .deck-slide :not(pre) > code {
+  font-family: var(--deck-mono-font);
+  font-size: 0.9em;
+  font-weight: 300;
+  padding: calc(var(--shibainu-rem) * 0.125) calc(var(--shibainu-rem) * 0.375);
+  background: var(--deck-code-bg);
+  border-radius: calc(var(--shibainu-rem) * 0.25);
+}
+.theme-shibainu .deck-slide :is(kbd, .deck-kbd) {
+  font-family: var(--deck-mono-font);
+  font-size: calc(var(--shibainu-rem) * 0.75);
+  padding: calc(var(--shibainu-rem) * 0.125) calc(var(--shibainu-rem) * 0.25);
+  border: 1px solid var(--deck-border);
+  border-bottom-width: 2px;
+  border-radius: calc(var(--shibainu-rem) * 0.25);
+  background: rgba(156, 163, 175, 0.05);
+  box-shadow: none;
+}
+
+/* ── code: Slidev's 12px / 18px blocks with a 4px corner and no border ── */
+.theme-shibainu .deck-code-block {
+  margin: calc(var(--shibainu-rem) * 0.25) 0;
+  border: 0;
+  border-radius: calc(var(--shibainu-rem) * 0.25);
+}
+.theme-shibainu pre.deck-code,
+.theme-shibainu .shiki-magic-move-wrap {
+  font-size: calc(var(--shibainu-rem) * 0.75);
+  line-height: calc(var(--shibainu-rem) * 1.125);
+  padding: calc(var(--shibainu-rem) * 0.5) 0;
+}
+.theme-shibainu .shiki-magic-move-wrap {
+  padding-inline: calc(var(--shibainu-rem) * 0.5);
+}
+.theme-shibainu pre.deck-code .line {
+  padding: 0 calc(var(--shibainu-rem) * 0.5);
+}
+.theme-shibainu pre.deck-code .line.is-dim {
+  opacity: 0.3;
+}
+.theme-shibainu .deck-code-title {
+  font-size: calc(var(--shibainu-rem) * 0.75);
+  padding: calc(var(--shibainu-rem) * 0.5);
+  border-bottom-color: var(--deck-border);
+}
+
+/* shibainu: small-caps h3, and inline code as a dark chip on the brown */
+.theme-shibainu .deck-slide h3 {
+  font-size: calc(var(--shibainu-rem) * 0.875);
+  line-height: calc(var(--shibainu-rem) * 1.25);
+  padding-top: calc(var(--shibainu-rem) * 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  margin-inline-start: -0.05em;
+}
+.theme-shibainu .deck-slide h3:not(.opacity-100) {
+  opacity: 0.4;
+}
+.theme-shibainu .deck-slide :not(pre) > code {
+  background: rgba(27, 15, 8, 0.25);
+}
+.theme-shibainu .deck-slide blockquote {
+  background: rgba(27, 15, 8, 0.25);
+  color: inherit;
+}
+
+/* ── the layouts ──────────────────────────────────────────────────────── */
+/* the blobs behind each layout */
+.theme-shibainu .deck-slide.layout-cover {
+  background-image: url("./assets/page-1.svg");
+}
+.theme-shibainu .deck-slide.layout-center {
+  background-image: url("./assets/page-2.svg");
+}
+.theme-shibainu .deck-slide.layout-section {
+  background-image: url("./assets/page-3.svg");
+}
+.theme-shibainu .deck-slide.layout-default-2 {
+  background-image: url("./assets/page-4.svg");
+}
+.theme-shibainu .deck-slide.layout-default-3 {
+  background-image: url("./assets/page-5.svg");
+}
+.theme-shibainu .deck-slide.layout-default {
+  background-image: url("./assets/page-6.svg");
+}
+.theme-shibainu .deck-slide.layout-section-2 {
+  background-image: url("./assets/page-7.svg");
+}
+.theme-shibainu .deck-slide:is(.layout-default-4, .layout-right) {
+  background-image: url("./assets/page-9.svg");
+}
+.theme-shibainu .deck-slide.layout-default-5 {
+  background-image: url("./assets/page-10.svg");
+}
+.theme-shibainu .deck-slide.layout-default-6 {
+  background-image: url("./assets/page-12.svg");
+}
+.theme-shibainu .deck-slide.layout-default-7 {
+  background-image: url("./assets/page-13.svg");
+}
+.theme-shibainu .deck-slide.layout-section-3 {
+  background-image: url("./assets/page-14.svg");
+}
+.theme-shibainu .deck-slide.layout-quote {
+  background-image: url("./assets/page-15.svg");
+}
+
+/* the light tan layouts carry the deep brown words */
+.theme-shibainu :is(.deck-layout-cover, .deck-layout-center, .deck-layout-section-2) {
+  color: var(--shibainu-primary);
+  --deck-muted: color-mix(in srgb, var(--shibainu-primary) 60%, #bf926b);
+}
+
+/* default: the words in the left 70% */
+.theme-shibainu .deck-layout-default {
+  justify-content: flex-start;
+  padding-inline-end: 30%;
+}
+/* cover: the title centred top to bottom, on the left */
+.theme-shibainu .deck-layout-cover {
+  align-items: stretch;
+  text-align: start;
+}
+.theme-shibainu .deck-layout-cover h1 {
+  font-size: calc(var(--shibainu-rem) * 3.75);
+  line-height: calc(var(--shibainu-rem) * 5);
+}
+/* center: a centred column 60% wide */
+.theme-shibainu .deck-layout-center {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.theme-shibainu .deck-layout-center > * {
+  width: 60%;
+}
+/* section: the title centred top to bottom, a little indented */
+.theme-shibainu :is(.deck-layout-section, .deck-layout-section-2) {
+  justify-content: center;
+  align-items: stretch;
+  text-align: start;
+  padding-inline: calc(var(--shibainu-rem) * 2.5);
+}
+.theme-shibainu .deck-layout-section {
+  padding-top: calc(var(--shibainu-rem) * 3.75);
+}
+.theme-shibainu :is(.deck-layout-section, .deck-layout-section-2) h1 {
+  font-size: calc(var(--shibainu-rem) * 3.75);
+  line-height: calc(var(--shibainu-rem) * 5);
+  font-weight: 500;
+}
+/* section-3 and quote: centred, the title at 3em and 4em of the page's type */
+.theme-shibainu :is(.deck-layout-section-3, .deck-layout-quote) {
+  justify-content: center;
+  align-items: stretch;
+  text-align: center;
+  padding-inline: 0;
+  font-size: 1em;
+  font-style: normal;
+}
+.theme-shibainu .deck-layout-section-3 h1 {
+  font-size: 3em;
+  line-height: 1.25;
+}
+.theme-shibainu .deck-layout-quote h1 {
+  font-size: 4em;
+  line-height: 1.25;
+}
+.theme-shibainu .deck-layout-quote h1 + p {
+  margin-top: calc(var(--shibainu-rem) * 0.5);
+}
+/* default-2 … default-7 and right: the words in a box placed differently on each */
+.theme-shibainu .shibainu-box {
+  min-width: 0;
+}
+.theme-shibainu .deck-layout-default-2 > .shibainu-box {
+  width: 80%;
+  padding: calc(var(--shibainu-rem) * 2.5);
+}
+.theme-shibainu .deck-layout-default-3 > .shibainu-box {
+  padding: 2% 8%;
+  flex: 1;
+}
+.theme-shibainu .deck-layout-default-4 > .shibainu-box {
+  padding: 2% 0 2% 20%;
+}
+.theme-shibainu .deck-layout-default-5 > .shibainu-box {
+  padding: 2% 10% 2% 0;
+}
+.theme-shibainu .deck-layout-default-6 > .shibainu-box {
+  padding: 5% 15%;
+}
+.theme-shibainu .deck-layout-default-7 > .shibainu-box {
+  padding: 2% 25% 2% 0;
+}
+.theme-shibainu .deck-layout-right > .shibainu-box {
+  padding: calc(var(--shibainu-rem) * 1.25) calc(var(--shibainu-rem) * 1.25)
+    calc(var(--shibainu-rem) * 1.25) 30%;
+  text-align: right;
+}
+/* fact and statement (the engine's, which Slidev's theme restyles) */
+.theme-shibainu :is(.deck-layout-fact, .deck-layout-statement) {
+  text-align: center;
+}
+.theme-shibainu .deck-layout-fact > :is(h1, h2, p, .deck-counter) {
+  letter-spacing: normal;
+}
+.theme-shibainu .deck-layout-fact h1 {
+  font-size: calc(var(--shibainu-rem) * 6);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-shibainu .deck-layout-fact h1 + p {
+  font-size: calc(var(--shibainu-rem) * 1.5);
+  line-height: calc(var(--shibainu-rem) * 2);
+  font-weight: 700;
+}
+.theme-shibainu .deck-layout-statement h1 {
+  font-size: calc(var(--shibainu-rem) * 3.75);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-shibainu .deck-layout-intro {
+  align-items: stretch;
+  text-align: start;
+}
+.theme-shibainu .deck-layout-intro h1 {
+  font-size: calc(var(--shibainu-rem) * 3.75);
+  line-height: calc(var(--shibainu-rem) * 5);
+}
+.theme-shibainu .deck-slide.layout-end {
+  background: #000;
+}
+.theme-shibainu .deck-layout-end {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: calc(var(--shibainu-rem) * 1.25);
+  letter-spacing: 0.1em;
+  user-select: none;
+}
+.theme-shibainu .deck-layout-end:empty::before {
+  content: "END";
+}
+.theme-shibainu .deck-layout-full {
+  padding: 0;
+}
+.theme-shibainu :is(.deck-layout-two-cols, .deck-layout-two-cols-header) {
+  column-gap: var(--shibainu-rem);
+}
+.theme-shibainu .deck-layout-two-cols-header > .deck-slot-bottom {
+  align-self: end;
+}
+.theme-shibainu :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content,
+.theme-shibainu :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  justify-content: flex-start;
+  padding: calc(var(--shibainu-rem) * 2.5) calc(var(--shibainu-rem) * 3.5);
+}
+.theme-shibainu .deck-layout-image .deck-layout-image-content:empty {
+  display: none;
+}
+.theme-shibainu :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) {
+  padding: 0;
+  gap: 0;
+}
+.theme-shibainu .deck-frame.deck-layout-iframe-pane {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+.theme-shibainu .deck-progress span {
+  background: #bf926b;
+}

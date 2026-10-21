@@ -1,0 +1,362 @@
+/* Seriph — a port of Slidev's seriph theme (@slidev/theme-seriph, MIT, © 2021 Slidev.js Team)
+   to Kadal Deck. PT Serif for everything, PT Mono for code, headings in the primary colour (slate
+   teal, #5d8392) except on the cover and intro, a centred cover over a dimmed picture; white on
+   #121212 in the dark.
+
+   Units. Slidev draws on a 980px-wide canvas with a 16px rem and a 1.1rem body; Kadal draws on a
+   1920px one. Everything here is in `--seriph-rem`, one Slidev rem at Kadal's scale, worked out
+   from the slide's base size the way Slidev's body is (1.1rem), so the proportions are Slidev's
+   exactly and a deck that changes --deck-base-size scales the whole theme with it.
+
+   Headings are weight 400 unless a layout says otherwise: Slidev's reset (Uno's preflight) makes
+   every heading inherit the body weight, and the theme never sets one back.
+
+   themeConfig: `primary` → --theme-primary (the headings, links on hover, the quote's rule, the
+   progress bar). Slidev's README spells it `themeConfig: { primary: '#5d8392' }`; so does Kadal. */
+
+.theme-seriph {
+  --seriph-rem: calc(var(--deck-base-size) / 1.1);
+  /* colour (Slidev's bg-main / text-main / border-main / code background) */
+  --deck-bg: #ffffff;
+  --deck-fg: #181818;
+  --deck-muted: #737373;
+  --deck-accent: var(--theme-primary, #5d8392);
+  --deck-accent-2: #4d7534;
+  --deck-surface: #f5f5f5;
+  --deck-border: rgba(156, 163, 175, 0.2);
+  --deck-live: var(--theme-primary, #5d8392);
+  /* type: the fonts mechanism (config.fonts in package.json) loads PT Serif and PT Mono */
+  --deck-heading-font: "PT Serif", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-body-font: "PT Serif", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-mono-font: "PT Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --deck-serif-font: "PT Serif", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --deck-base-size: 34.5px;
+  /* code */
+  --deck-code-bg: #f5f5f5;
+  --deck-code-fg: #1b1b1b;
+  --deck-code-active: rgba(93, 131, 146, 0.12);
+  /* shape: Slidev's 2.5rem × 3.5rem page padding; --deck-pad is the wider of the two */
+  --deck-radius: calc(var(--seriph-rem) * 0.25);
+  --deck-pad: calc(var(--seriph-rem) * 3.5);
+  --deck-transition: 500ms;
+  --deck-controls-color: var(--deck-fg);
+}
+.theme-seriph[data-color-scheme="dark"] {
+  --deck-bg: #121212;
+  --deck-fg: #dddddd;
+  --deck-muted: #8a8a8a;
+  --deck-accent-2: #7fa36a;
+  --deck-surface: #1b1b1b;
+  --deck-border: rgba(156, 163, 175, 0.2);
+  --deck-code-bg: #1b1b1b;
+  --deck-code-fg: #eeeeee;
+  --deck-code-active: rgba(93, 131, 146, 0.2);
+}
+
+/* ── the page ─────────────────────────────────────────────────────────── */
+.theme-seriph .deck-slide {
+  padding: calc(var(--seriph-rem) * 2.5) calc(var(--seriph-rem) * 3.5);
+  line-height: 1.5;
+}
+/* A `background:` covers the padding box: undo the two paddings, not one --deck-pad. */
+.theme-seriph .deck-slide-background {
+  inset: calc(var(--seriph-rem) * -2.5) calc(var(--seriph-rem) * -3.5);
+}
+
+/* ── type (Slidev's layouts-base.css and the theme's layouts.css) ─────── */
+.theme-seriph .deck-slide :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--deck-heading-font);
+  font-weight: 400;
+  letter-spacing: normal;
+  margin: 0;
+  text-wrap: wrap;
+}
+.theme-seriph .deck-slide h1 {
+  color: var(--deck-accent);
+  font-size: calc(var(--seriph-rem) * 2.25);
+  line-height: calc(var(--seriph-rem) * 2.5);
+  margin-bottom: var(--seriph-rem);
+  margin-inline-start: -0.05em;
+}
+.theme-seriph .deck-slide h2 {
+  font-size: calc(var(--seriph-rem) * 1.875);
+  line-height: calc(var(--seriph-rem) * 2.25);
+}
+.theme-seriph .deck-slide h3 {
+  font-size: calc(var(--seriph-rem) * 1.5);
+  line-height: calc(var(--seriph-rem) * 2);
+}
+.theme-seriph .deck-slide h4 {
+  font-size: calc(var(--seriph-rem) * 1.25);
+  line-height: calc(var(--seriph-rem) * 1.75);
+}
+.theme-seriph .deck-slide h5 {
+  font-size: var(--seriph-rem);
+  line-height: calc(var(--seriph-rem) * 1.5);
+}
+.theme-seriph .deck-slide h6 {
+  font-size: calc(var(--seriph-rem) * 0.875);
+  line-height: calc(var(--seriph-rem) * 1.25);
+  padding-top: calc(var(--seriph-rem) * 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  margin-inline-start: -0.05em;
+}
+.theme-seriph .deck-slide h6:not(.opacity-100) {
+  opacity: 0.4;
+}
+.theme-seriph .deck-slide p {
+  margin: var(--seriph-rem) 0;
+  line-height: calc(var(--seriph-rem) * 1.5);
+}
+.theme-seriph .deck-slide h1 + p {
+  margin-top: calc(var(--seriph-rem) * -0.5);
+  margin-bottom: var(--seriph-rem);
+  opacity: 0.5;
+}
+.theme-seriph .deck-slide :is(p, ul, table) + h2 {
+  margin-top: calc(var(--seriph-rem) * 2.5);
+}
+.theme-seriph .deck-slide :is(ul, ol) {
+  margin: 0;
+  padding: 0;
+}
+.theme-seriph .deck-slide ul {
+  list-style: square;
+}
+.theme-seriph .deck-slide ol {
+  list-style: decimal;
+}
+.theme-seriph .deck-slide li {
+  margin: 0 0 0 1.1em;
+  padding-inline-start: 0.2em;
+  line-height: 1.8em;
+}
+.theme-seriph .deck-slide blockquote {
+  margin: 0;
+  padding: calc(var(--seriph-rem) * 0.25) calc(var(--seriph-rem) * 0.5);
+  font-size: calc(var(--seriph-rem) * 0.875);
+  line-height: calc(var(--seriph-rem) * 1.25);
+  font-style: normal;
+  color: var(--deck-code-fg);
+  background: var(--deck-code-bg);
+  border: 0;
+  border-inline-start: 1px solid var(--deck-accent);
+  border-radius: calc(var(--seriph-rem) * 0.25);
+}
+.theme-seriph .deck-slide blockquote > * {
+  margin-block: 0;
+}
+.theme-seriph .deck-slide table {
+  width: 100%;
+  font-size: 1em;
+  line-height: calc(var(--seriph-rem) * 1.5);
+}
+.theme-seriph .deck-slide :is(th, td) {
+  padding: calc(var(--seriph-rem) * 0.75) calc(var(--seriph-rem) * 0.5);
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-seriph .deck-slide th {
+  text-align: left;
+  font-size: 1em;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+}
+.theme-seriph .deck-slide a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+}
+.theme-seriph .deck-slide a:hover {
+  color: var(--deck-accent);
+  border-bottom-style: solid;
+}
+.theme-seriph .deck-slide :is(b, strong) {
+  font-weight: 600;
+}
+.theme-seriph .deck-slide :not(pre) > code {
+  font-family: var(--deck-mono-font);
+  font-size: 0.9em;
+  font-weight: 300;
+  padding: calc(var(--seriph-rem) * 0.125) calc(var(--seriph-rem) * 0.375);
+  background: var(--deck-code-bg);
+  border-radius: calc(var(--seriph-rem) * 0.25);
+}
+.theme-seriph .deck-slide :is(kbd, .deck-kbd) {
+  font-family: var(--deck-mono-font);
+  font-size: calc(var(--seriph-rem) * 0.75);
+  padding: calc(var(--seriph-rem) * 0.125) calc(var(--seriph-rem) * 0.25);
+  border: 1px solid var(--deck-border);
+  border-bottom-width: 2px;
+  border-radius: calc(var(--seriph-rem) * 0.25);
+  background: rgba(156, 163, 175, 0.05);
+  box-shadow: none;
+}
+
+/* ── code: Slidev's 12px / 18px blocks with a 4px corner and no border ── */
+.theme-seriph .deck-code-block {
+  margin: calc(var(--seriph-rem) * 0.25) 0;
+  border: 0;
+  border-radius: calc(var(--seriph-rem) * 0.25);
+}
+.theme-seriph pre.deck-code,
+.theme-seriph .shiki-magic-move-wrap {
+  font-size: calc(var(--seriph-rem) * 0.75);
+  line-height: calc(var(--seriph-rem) * 1.125);
+  padding: calc(var(--seriph-rem) * 0.5) 0;
+}
+.theme-seriph .shiki-magic-move-wrap {
+  padding-inline: calc(var(--seriph-rem) * 0.5);
+}
+.theme-seriph pre.deck-code .line {
+  padding: 0 calc(var(--seriph-rem) * 0.5);
+}
+.theme-seriph pre.deck-code .line.is-dim {
+  opacity: 0.3;
+}
+.theme-seriph .deck-code-title {
+  font-size: calc(var(--seriph-rem) * 0.75);
+  padding: calc(var(--seriph-rem) * 0.5);
+  border-bottom-color: var(--deck-border);
+}
+
+/* ── the layouts ──────────────────────────────────────────────────────── */
+.theme-seriph .deck-layout-default {
+  justify-content: flex-start;
+}
+/* Slidev's center does not centre the text by itself (its examples add `text-center`); Kadal's
+   does, which reads the same for a title and better for a line or two. */
+.theme-seriph .deck-layout-center {
+  justify-content: center;
+}
+.theme-seriph :is(.deck-layout-cover, .deck-layout-intro) {
+  align-items: stretch;
+  text-align: start;
+}
+.theme-seriph :is(.deck-layout-cover, .deck-layout-intro) h1 {
+  color: inherit;
+  font-size: calc(var(--seriph-rem) * 3.75);
+  line-height: calc(var(--seriph-rem) * 5);
+}
+/* seriph's cover is centred (Slidev's `cover text-center`) */
+.theme-seriph .deck-layout-cover {
+  text-align: center;
+}
+/* cover with a background image: Slidev's dim (#0005 → #0008) and white words */
+.theme-seriph .deck-layout-cover.seriph-on-image {
+  color: #fff;
+}
+.theme-seriph .seriph-dim {
+  position: absolute;
+  inset: calc(var(--seriph-rem) * -2.5) calc(var(--seriph-rem) * -3.5);
+  background: linear-gradient(rgba(0, 0, 0, 0.333), rgba(0, 0, 0, 0.533));
+  pointer-events: none;
+}
+/* The dim sits under the words without lifting each one (`position: relative` on every child
+   would pin a deck's own `absolute` corners, Slidev's `abs-br`, back into the flow). */
+.theme-seriph .deck-layout-cover.seriph-on-image {
+  isolation: isolate;
+}
+.theme-seriph .seriph-on-image > .seriph-dim {
+  z-index: -1;
+}
+.theme-seriph .deck-layout-section {
+  align-items: stretch;
+  text-align: center;
+}
+.theme-seriph .deck-layout-section h1 {
+  font-size: calc(var(--seriph-rem) * 3.75);
+  line-height: calc(var(--seriph-rem) * 5);
+  font-weight: 500;
+}
+.theme-seriph .deck-layout-statement {
+  text-align: center;
+}
+.theme-seriph .deck-layout-statement h1 {
+  font-size: calc(var(--seriph-rem) * 3.75);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-seriph .deck-layout-fact {
+  text-align: center;
+}
+.theme-seriph .deck-layout-fact > :is(h1, h2, p, .deck-counter) {
+  letter-spacing: normal;
+}
+.theme-seriph .deck-layout-fact h1 {
+  font-size: calc(var(--seriph-rem) * 6);
+  line-height: 1;
+  font-weight: 700;
+}
+.theme-seriph .deck-layout-fact h1 + p {
+  font-size: calc(var(--seriph-rem) * 1.5);
+  line-height: calc(var(--seriph-rem) * 2);
+  font-weight: 700;
+}
+.theme-seriph .deck-layout-quote {
+  padding-inline: 0;
+  font-size: 1em;
+  font-style: normal;
+  align-items: stretch;
+}
+.theme-seriph .deck-layout-quote h1 + p {
+  margin-top: calc(var(--seriph-rem) * 0.5);
+}
+/* Slidev's built-in end: white letters, spaced, on black, "END" when the slide is empty */
+.theme-seriph .deck-slide.layout-end {
+  background: #000;
+}
+.theme-seriph .deck-layout-end {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: calc(var(--seriph-rem) * 1.25);
+  letter-spacing: 0.1em;
+  user-select: none;
+}
+.theme-seriph .deck-layout-end:empty::before {
+  content: "END";
+}
+.theme-seriph .deck-layout-full {
+  padding: 0;
+}
+.theme-seriph .deck-layout-two-cols {
+  column-gap: var(--seriph-rem);
+}
+.theme-seriph .deck-layout-two-cols-header {
+  column-gap: var(--seriph-rem);
+}
+/* image-left / image-right / image: the picture flush to the edge, the words on Slidev's page
+   padding from the top (a .slidev-layout default beside the picture), not centred */
+.theme-seriph :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content,
+.theme-seriph :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  justify-content: flex-start;
+  padding: calc(var(--seriph-rem) * 2.5) calc(var(--seriph-rem) * 3.5);
+}
+.theme-seriph .deck-layout-image .deck-layout-image-content {
+  inset: 0;
+  justify-content: flex-start;
+  padding: calc(var(--seriph-rem) * 2.5) calc(var(--seriph-rem) * 3.5);
+  background: none;
+}
+.theme-seriph .deck-layout-image .deck-layout-image-content:empty {
+  display: none;
+}
+.theme-seriph :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) {
+  padding: 0;
+  gap: 0;
+}
+.theme-seriph .deck-frame.deck-layout-iframe-pane {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.theme-seriph .deck-layout-two-cols-header > .deck-slot-bottom {
+  align-self: end;
+}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+.theme-seriph .deck-progress span {
+  background: var(--deck-accent);
+}

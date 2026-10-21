@@ -2,17 +2,21 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { splitTransition } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
+import { isKnownTransition, transitionAnimation } from "../core/transitions.ts";
 import { animateFrom, snapshot, type Snapshot } from "./AutoAnimate.ts";
 import { transitionMs } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
 import { useLayout, useNav } from "./hooks.ts";
+import { StageLayer } from "./Layers.tsx";
+import { useNavDirection } from "./lifecycle.ts";
 import { SlideFrame } from "./SlideFrame.tsx";
 
 /**
  * The stage: the authored canvas, scaled to the viewport, holding the slides near the current one.
  * The current slide is `present`; its neighbours are mounted hidden within `viewDistance` so their
  * media is ready; the slide just left stays mounted as `leaving` for the length of the transition.
- * Transitions and directions are CSS classes the base stylesheet animates.
+ * Transitions and directions are CSS classes the base stylesheet animates; a named custom
+ * transition (core/transitions.ts) sets its keyframes on the stage as `--deck-anim-in/out`.
  */
 export function Stage() {
   const deck = useDeck();
@@ -26,6 +30,8 @@ export function Stage() {
     overview: s.overview,
   }));
   const stageRef = useRef<HTMLDivElement>(null);
+  // Forward or backward, for `forward:` / `backward:` styles (core/direction.ts).
+  const navDir = useNavDirection();
   // The slide just left keeps the click it was showing while it animates out — rendering it at
   // its total (or at zero) would flash every hidden fragment for the length of the transition.
   const [leaving, setLeaving] = useState<{
@@ -77,11 +83,29 @@ export function Stage() {
     lastOptions.current = current;
   }, [h, v, click, seq, current, deck.config.autoAnimate]);
 
-  // Drop the leaving slide when the transition is over.
+  // Drop the leaving slide when the transition is over — or at once when its way out has no
+  // animation at all (a name nothing defines): that is a cut, not two slides drawn over each other.
   useEffect(() => {
     if (!leaving) return;
     const t = setTimeout(() => setLeaving(null), transitionMs(speed) + 50);
-    return () => clearTimeout(t);
+    const name = transitionOut;
+    const frame =
+      name === "none" || name === "view-transition"
+        ? 0
+        : requestAnimationFrame(() => {
+            const el = stageRef.current?.querySelector<HTMLElement>(".deck-slide.is-leaving");
+            // No running animation: none named, or keyframes that do not exist.
+            const animated = el?.getAnimations
+              ? el.getAnimations().length > 0
+              : !!el && getComputedStyle(el).animationName !== "none";
+            if (!el || animated) return;
+            if (!isKnownTransition(name, deck.config.transitions)) warnUnknown(name);
+            setLeaving(null);
+          });
+    return () => {
+      clearTimeout(t);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [leaving, speed]);
 
   // Run auto-animate once the incoming slide has painted.
@@ -133,11 +157,16 @@ export function Stage() {
   });
 
   const autoAnimating = !!leaving && autoSnapWas(leaving, current);
+  // A named custom transition's keyframes for this direction (none for built-ins and pure CSS).
+  const customIn = transitionAnimation(transition, "in", direction, deck.config.transitions);
+  const customOut = transitionAnimation(transitionOut, "out", direction, deck.config.transitions);
   const stageStyle: React.CSSProperties = {
     width: deck.config.width,
     height: deck.config.height,
     transform: `translate(${layout.left}px, ${layout.top}px) scale(${layout.scale})`,
-  };
+    ...(customIn ? { "--deck-anim-in": customIn } : null),
+    ...(customOut ? { "--deck-anim-out": customOut } : null),
+  } as React.CSSProperties;
 
   return (
     <div
@@ -148,8 +177,10 @@ export function Stage() {
       data-transition-out={autoAnimating || seq === 0 ? "none" : transitionOut}
       data-speed={speed}
       data-direction={direction}
+      data-nav-direction={navDir}
       data-overview={overview || undefined}
     >
+      <StageLayer name="global-bottom" />
       {frames.map((f) => {
         const meta = deck.columns[f.h]!.slides[f.v]!;
         const options = deck.options.get(navKey(f.h, f.v))!;
@@ -176,11 +207,22 @@ export function Stage() {
             active={isPresent}
             click={frameClick}
             prefetch={prefetch}
+            navDirection={isPresent || f.role === "leaving" ? navDir : undefined}
             className={`is-${f.role}`}
           />
         );
       })}
+      <StageLayer name="global-top" />
     </div>
+  );
+}
+
+const warned = new Set<string>();
+function warnUnknown(name: string) {
+  if (warned.has(name)) return;
+  warned.add(name);
+  console.warn(
+    `[deck] transition "${name}" has no animation, so it is a cut. Name its keyframes in the headmatter (transitions: { ${name}: { in: …, out: … } }) or style .deck-stage[data-transition="${name}"].`,
   );
 }
 

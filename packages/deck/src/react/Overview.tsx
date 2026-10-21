@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { key as navKey } from "../core/navigation.ts";
 import { useDeck } from "./context.ts";
 import { useActions, useNav } from "./hooks.ts";
+import { RenderContextProvider } from "./render-context.ts";
 import { SlideFrame } from "./SlideFrame.tsx";
 
 /**
@@ -56,16 +57,20 @@ export function Overview() {
                       transform: `scale(${scale})`,
                     }}
                   >
-                    <SlideFrame
-                      meta={meta}
-                      options={options}
-                      h={col.h}
-                      v={cv}
-                      active={false}
-                      click={0}
-                      preview
-                      className="is-tile"
-                    />
+                    <RenderContextProvider value="overview">
+                      <SlideFrame
+                        meta={meta}
+                        options={options}
+                        h={col.h}
+                        v={cv}
+                        active={false}
+                        click={0}
+                        preview
+                        layers={deck.config.layers.overview}
+                        globalLayers={deck.config.layers.overview}
+                        className="is-tile"
+                      />
+                    </RenderContextProvider>
                   </div>
                   <span className="deck-overview-label">
                     {col.h + 1}

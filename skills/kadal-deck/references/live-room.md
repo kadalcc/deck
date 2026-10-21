@@ -39,6 +39,18 @@ Viewers start in step with the presenter. Any move of their own (key, swipe, ove
 following, and a pill offers to follow again. The presenter's drawings, confetti and shared term
 cards reach every screen; the laser and spotlight do not.
 
+## Drawing, camera, recording
+
+- Pen tools: pen, highlighter, line, arrow, rect, ellipse, eraser (whole strokes or a cut).
+  Agents use `draw.shape` (`circle`, `box`, `underline`, `arrow`, `line`, `ellipse` over a 0–1
+  region), `draw.tool`, `draw.undo` / `draw.redo` / `draw.clear`.
+- Saved drawings: `drawings/<slide id or number>.svg` beside deck.mdx. `drawings: { persist:
+  "files" }` writes them on `kadal-deck dev`; they ship with the build and print into every
+  export. To pre-annotate a slide, write that SVG (any `<line>`, `<rect>`, `<ellipse>`, `<path>`
+  in a viewBox of the deck's size). `perClick: true` ties strokes to click steps.
+- `media.camera` (key V) shows the speaker's camera in a bubble on the slide in every window;
+  `media.record` records the screen, the camera, or both as two files (presenter view).
+
 ## Phone remote
 
 The presenter view's **Phone remote** button shows a QR. The phone that scans it opens

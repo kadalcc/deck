@@ -8,6 +8,7 @@ import type {
   QueryParamInfo,
   RouteInfo,
   ThemeInfo,
+  ThemePackageInfo,
   ValueShape,
 } from "./types.ts";
 
@@ -91,6 +92,14 @@ export const LAYOUT_META: Record<string, Omit<LayoutInfo, "name">> = {
     slots: ["default", "right"],
     example:
       "---\nlayout: two-cols\n---\n\n## Before\n\nThe old way.\n\n::right::\n\n## After\n\nThe new way.",
+  },
+  "two-cols-header": {
+    summary:
+      "A header across the top (everything before the first slot), then `::left::` and `::right::` side by side; an optional `::bottom::` spans both again.",
+    keys: [],
+    slots: ["default", "left", "right", "bottom"],
+    example:
+      "---\nlayout: two-cols-header\n---\n\n## Then and now\n\n::left::\n\nThe old way.\n\n::right::\n\nThe new way.",
   },
   image: {
     summary: "A full-slide image (frontmatter `image`) with the content over it.",
@@ -275,6 +284,170 @@ export const THEMES: ThemeInfo[] = [
   },
 ];
 
+/**
+ * The first-party theme packages (packages/theme-*). Not built in: a Vite deck installs one
+ * (`npm i @kadal/theme-seriph`) and names it (`theme: seriph`); the prebuilt shell bundles them
+ * all. The ports keep their Slidev theme's layouts, frontmatter and look (THEMES.md has the
+ * name mapping, for decks moving over). Eight more are Kadal's own designs, with no `slidev`
+ * field.
+ */
+export const THEME_PACKAGES: ThemePackageInfo[] = [
+  {
+    name: "classic",
+    package: "@kadal/theme-classic",
+    summary:
+      "Slidev's default theme: Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover.",
+    scheme: "both",
+    layouts: ["cover"],
+    components: [],
+    slidev: "default",
+  },
+  {
+    name: "seriph",
+    package: "@kadal/theme-seriph",
+    summary:
+      "Slidev's seriph: PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover.",
+    scheme: "both",
+    layouts: ["cover"],
+    components: [],
+    slidev: "seriph",
+  },
+  {
+    name: "crisp",
+    package: "@kadal/theme-crisp",
+    summary:
+      "Plain black on white: Helvetica Neue, bold titles under a bold subtitle, pictures set in a margin.",
+    scheme: "both",
+    layouts: ["intro-image", "intro-image-right", "image-right", "3-images", "bullets"],
+    components: [],
+    slidev: "apple-basic",
+  },
+  {
+    name: "bricks",
+    package: "@kadal/theme-bricks",
+    summary:
+      "Slidev's bricks: building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only.",
+    scheme: "light",
+    layouts: ["items", "blank"],
+    components: [
+      "Polygon1",
+      "Polygon2",
+      "Polygon3",
+      "Polygon4",
+      "Polygon5",
+      "Polygon6",
+      "Polygon7",
+      "Polygon8",
+      "Polygon9",
+      "Polygon10",
+      "Polygon11",
+    ],
+    slidev: "bricks",
+  },
+  {
+    name: "shibainu",
+    package: "@kadal/theme-shibainu",
+    summary:
+      "Slidev's shibainu: soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only.",
+    scheme: "dark",
+    layouts: [
+      "default-2",
+      "default-3",
+      "default-4",
+      "default-5",
+      "default-6",
+      "default-7",
+      "right",
+      "section-2",
+      "section-3",
+    ],
+    components: [],
+    slidev: "shibainu",
+  },
+  {
+    name: "brand",
+    package: "@kadal/theme-brand",
+    summary:
+      "A corporate theme branded from themeConfig alone — primary and secondary colours, a logo (and a dark one), the company and a footer line — on a white page with Plus Jakarta Sans and calm cards.",
+    scheme: "both",
+    layouts: ["title-logo", "agenda", "metrics"],
+    components: ["Metric", "Logo"],
+  },
+  {
+    name: "crayon",
+    package: "@kadal/theme-crayon",
+    summary:
+      "A playful pastel theme for workshops and classrooms: Fredoka and Nunito, cream paper and plum ink, chunky outlines, callouts as tilted stickers, a blockquote as a speech bubble.",
+    scheme: "both",
+    layouts: ["activity", "cards"],
+    components: ["Sticker", "Bubble"],
+  },
+  {
+    name: "folio",
+    package: "@kadal/theme-folio",
+    summary:
+      "An editorial theme for essays and keynotes: warm paper and ink, Playfair Display over Newsreader, booktabs tables, an asterism for a rule, a drop cap, generous margins.",
+    scheme: "both",
+    layouts: ["pull-quote", "essay", "chapter"],
+    components: ["Byline", "Lede"],
+  },
+  {
+    name: "lecture",
+    package: "@kadal/theme-lecture",
+    summary:
+      "An academic theme: the Source family, numbered sections, a footer with the course, author, section and page, definition / theorem / proof blocks, citations and a references slide; prints on white.",
+    scheme: "both",
+    layouts: ["section", "definition", "theorem", "references"],
+    components: [
+      "Definition",
+      "Theorem",
+      "Lemma",
+      "Corollary",
+      "Proposition",
+      "Proof",
+      "Example",
+      "Remark",
+      "Cite",
+    ],
+  },
+  {
+    name: "neon",
+    package: "@kadal/theme-neon",
+    summary:
+      "A dark synthwave theme for meetups and launches: a striped sunset over a running grid, Orbitron and Space Grotesk, glows that keep the letters near white, a solid print fallback. Dark only.",
+    scheme: "dark",
+    layouts: ["launch", "horizon"],
+    components: ["Glow"],
+  },
+  {
+    name: "ocean",
+    package: "@kadal/theme-ocean",
+    summary:
+      "Kadal's own theme: the sea's palette, sunlit shallows in light and midnight water in dark, calm gradients, Catamaran, Night Owl code; a wave cover and depth-gauge section openers.",
+    scheme: "both",
+    layouts: ["waves", "depth"],
+    components: ["Wave"],
+  },
+  {
+    name: "swiss",
+    package: "@kadal/theme-swiss",
+    summary:
+      "The International Typographic Style: huge Inter Tight headings flush left on a twelve-column grid, heavy rules, one signal red, a running header with the section and page.",
+    scheme: "both",
+    layouts: ["poster", "index", "grid"],
+    components: ["Rule"],
+  },
+  {
+    name: "terminal",
+    package: "@kadal/theme-terminal",
+    summary:
+      "A developer theme for code-heavy talks: JetBrains Mono headings, code blocks as editor windows, line numbers and a lit active line, Ayu colours; dark first with a light variant.",
+    scheme: "both",
+    layouts: ["code", "shell"],
+    components: ["Terminal"],
+  },
+];
+
 export const TRANSITION_META: Record<string, string> = {
   none: "Cut straight to the next slide.",
   fade: "Cross-fade.",
@@ -364,6 +537,54 @@ export const CODE_META: CodeMetaOption[] = [
     example: '```js data-line-numbers="1|2"\na\nb\n```',
   },
   {
+    syntax: "// [!code ++]",
+    summary:
+      "Shiki notation comments, at the end of a line (any comment style): `[!code ++]` / `[!code --]` added and removed lines, `[!code highlight]` (or `highlight:3` for 3 lines), `[!code focus]` blurs the rest until hover, `[!code error]` / `[!code warning]`, `[!code word:name]` marks every `name`. The comment is removed. Works with click steps; `deck({ shiki: { transformers } })` adds your own transformers.",
+    example: "```ts\nconst a = 1 // [!code --]\nconst a = 2 // [!code ++]\nconst b = a // [!code highlight]\n```",
+  },
+  {
+    syntax: "::code-group",
+    summary:
+      "Fences between `::code-group` and `::` (or `:::`) become tabs (`<CodeGroup>`), named by each fence's `[title]`. Options after the opener: `{clicks:true}` turns tabs on clicks, `{print:'all'}` prints every tab.",
+    example: "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
+  },
+  {
+    syntax: "<<< @/snippets/file.ts#region",
+    summary:
+      "Import code from a file (`@` = the deck's folder; `./x` relative to the slide's file), optionally one `#region` (marked `// #region name` … `// #endregion` in any comment style). A language word and any fence meta may follow: `<<< @/a.js ts {2|4}{lines:true} [a.ts]`. Watched in dev; in the hosted shell the file must be published beside deck.mdx.",
+    example: "<<< @/snippets/tide.ts#ask {2-3} [tide.ts]",
+  },
+  {
+    syntax: "twoslash",
+    summary:
+      "TypeScript type information rendered at build time: hover (or Tab to) a name for its type, errors underlined with the compiler's message, `// ^?` pins a type under the token above. Needs `typescript` installed; the hosted shell renders the block plain.",
+    example: "```ts twoslash\nconst tide = { height: 6.1 }\n//    ^?\n```",
+  },
+  {
+    syntax: "{monaco}",
+    summary:
+      "A Monaco editor on the slide (lazy-loaded; print, export and the phone remote show the highlighted code). Options: height (CSS or 'auto' to grow), lines, editorOptions (Monaco IEditorOptions), readonly. Esc gives the keys back to the deck.",
+    example: "```ts {monaco}{height:'auto'}\nconst greeting = 'hello'\n```",
+  },
+  {
+    syntax: "{monaco-diff}",
+    summary:
+      "A Monaco diff editor: the original code, a line of `~~~`, then the modified code. Print shows a unified line diff. `{sideBySide:false}` for inline.",
+    example: "```ts {monaco-diff}\nconst tide = 6.1\n~~~\nconst tide = 6.4\n```",
+  },
+  {
+    syntax: "{monaco-run}",
+    summary:
+      "An editor with a Run button (Ctrl/⌘+Enter) and the output under it: JS/TS run in a Web Worker (console captured, timeouts), Python in Pyodide; other languages through `registerCodeRunner` or setup/code-runners.ts. Options: autorun (default true, re-runs on edit), showOutputAt (a click, e.g. '+1'), outputHeight, outputPosition ('bottom' | 'right'), timeout (ms), runnerOptions.",
+    example: "```ts {monaco-run}{showOutputAt:'+1'}\nconsole.log([1, 2, 3].map((n) => n * 2))\n```",
+  },
+  {
+    syntax: "{monaco-write}",
+    summary:
+      "An editor whose edits are saved back to the source in `kadal-deck dev` (the imported file with `<<<`, else the fence in deck.mdx); read-only in a build and in the hosted shell.",
+    example: "<<< @/snippets/tide.ts#ask {monaco-write}",
+  },
+  {
     syntax: "````md magic-move",
     summary:
       "A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.",
@@ -379,7 +600,7 @@ export const ROUTES: RouteInfo[] = [
   {
     path: "/<slug>/presenter",
     summary:
-      "Presenter view: current + next slide, notes with click markers, timer, tools, the room panel.",
+      "Presenter view: current + next slide, notes with click markers (click one to jump to its step; Edit under `kadal-deck dev`), a stopwatch or countdown timer with pause, reset, progress and pacing, tools, the room panel.",
   },
   {
     path: "/<slug>/join",
@@ -390,8 +611,32 @@ export const ROUTES: RouteInfo[] = [
     summary:
       "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev`. One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
   },
-  { path: "/<slug>/notes", summary: "Every speaker note on one page." },
+  {
+    path: "/<slug>/notes",
+    summary:
+      "Every speaker note on one page, following the presenter: the current part marked, markers jump to their step; editable per slide under `kadal-deck dev`.",
+  },
+  {
+    path: "/<slug>/notes-edit",
+    summary:
+      "The batch notes editor: every slide's notes as Markdown on one scrolling page, saved into deck.mdx as you type (`kadal-deck dev`, or a host's `notesEditor`; read-only elsewhere).",
+  },
+  {
+    path: "/<slug>/overview",
+    summary:
+      "Every slide in order with a slider through its click steps and its notes beside it (editable under `kadal-deck dev`); a thumbnail opens the deck at that step.",
+  },
+  {
+    path: "/<slug>/export",
+    summary:
+      "The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.",
+  },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
+  {
+    path: "/<slug>/__kadal/drawings",
+    summary:
+      '`kadal-deck dev` only: GET every `drawings/*.svg`; PUT `{ file, svg }` writes one (same origin, JSON; the SVG is re-serialised, never written as sent) and tells every open page. Used by `drawings.persist: "files"`.',
+  },
 ];
 
 export const QUERY_PARAMS: QueryParamInfo[] = [
@@ -399,6 +644,26 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
     param: "?print-pdf",
     summary:
       "Every slide (and click step) as a printable page; what export drives. Also ?print=pdf.",
+  },
+  {
+    param: "?range=1,3-5",
+    summary: "With ?print-pdf: only those slides (1-based, in play order; `8-` runs to the end).",
+  },
+  {
+    param: "?clicks=0|1",
+    summary: "With ?print-pdf: a page per click step (1) or one per slide at its last step (0); overrides pdfSeparateFragments.",
+  },
+  {
+    param: "?notes=0|1|page",
+    summary: "With ?print-pdf: notes off, in a box on each slide, or on pages of their own; overrides showNotes.",
+  },
+  {
+    param: "?omit-background",
+    summary: "With ?print-pdf: no page colour and no background layer (transparent PNGs).",
+  },
+  {
+    param: "?scheme=light|dark",
+    summary: "Open in that colour scheme (also ?dark), without changing the viewer's remembered choice.",
   },
   {
     param: "?view=scroll",
@@ -413,7 +678,8 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
   },
   {
     param: "?narrate",
-    summary: "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
+    summary:
+      "Show the narration bar on the deck itself, to rehearse on the main screen (R does too).",
   },
   {
     param: "?at",
@@ -461,7 +727,8 @@ export const LIVE: LiveFeature[] = [
   },
   {
     name: "Shared ink",
-    summary: "The presenter's drawings, confetti and shared term cards reach every screen.",
+    summary:
+      "The presenter's drawings (pen, highlighter, line, arrow, rectangle, ellipse; erasing, undo and redo), confetti and shared term cards reach every screen. Without a room, the deck's windows in one browser share the drawing and the camera bubble over the window bus.",
     components: ["Confetti", "Term"],
   },
   {
@@ -481,22 +748,56 @@ export const LIVE: LiveFeature[] = [
 export const CLI: CliCommand[] = [
   {
     name: "new",
-    usage: "kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun]",
-    summary: "Scaffold a deck (non-interactive).",
+    usage:
+      "kadal-deck new <dir> [--title t] [--yes] [--no-install] [--pm npm|pnpm|yarn|bun] [--ci host[,host]] · kadal-deck new --theme <name> [dir] · kadal-deck new --addon <name> [dir]",
+    summary:
+      "Scaffold a deck (non-interactive); with --theme or --addon, a package ready to publish: package.json per the contract, a stylesheet with every token and layout class in light and dark, a layout, a layer, a README and a preview deck.",
+    json: true,
+  },
+  {
+    name: "theme",
+    usage: "kadal-deck theme eject [--dir ./theme] [--force] [--theme name] [-C deck] [--json]",
+    summary:
+      "Copy the deck's theme (a package, or a built-in as a package-shaped folder) into the deck and point the headmatter at it, to change it there.",
+    json: true,
+  },
+  {
+    name: "import",
+    usage:
+      "kadal-deck import slidev <slides.md | folder> [--out dir] [--force] [--install] [--pm npm|pnpm|yarn|bun] [--json]",
+    summary:
+      "Convert a Slidev deck into a new Kadal deck folder (made as `new` makes one): deck.mdx, `src:` includes as pages/*.mdx, the project's .vue components, layouts and global layers as TSX, styles/, public/ and snippets/, the theme's package and icon sets in package.json, src/slidev.css with the UnoCSS utilities the slides use at Kadal's scale, and IMPORT-REPORT.md listing what did not carry over, slide by slide. Then it runs `check`. Nothing in the Slidev project is changed or run; --out defaults to <folder>-kadal and must be empty unless --force. The converter is `convertSlidev` in @kadal/deck/import.",
     json: true,
   },
   {
     name: "dev",
-    usage: "kadal-deck dev [--https] [vite flags]",
+    usage: "kadal-deck dev [--https] [--tunnel] [--remote [password]] [vite flags]",
     summary:
-      "The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work.",
+      "The deck with live reload, and the phone remote's relay. `--host` makes it reachable from a phone on the same network; `--https` serves a self-signed certificate (made with openssl) so the phone's motion sensors work. `--tunnel` puts it on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`; prints the https address and a QR, and the phone remote pairs through it; always password-guarded, with a password made up and printed unless `--remote <password>` gives one). `--remote [password]` serves on the network like `--host`, and with a password the presenter, notes, notes-edit and overview pages and the dev endpoints ask anyone not on this computer for it. In the browser, E (or `view.editor`) opens the side editor: the current slide's source beside it, saved back into the deck file with Cmd/Ctrl+S.",
     json: false,
   },
   {
     name: "build",
-    usage: "kadal-deck build [vite flags]",
-    summary: "dist/ for any static host.",
+    usage:
+      "kadal-deck build [deck files…] [--base /path/] [--out dir] [--without-notes] [--download] [--pwa | --no-pwa] [--bundle-remote-assets] [--port n] [vite flags]",
+    summary:
+      "dist/ for any static host. `--base /talks/x/` builds for that address (every route, the Excalidraw fonts, the workers and the narrator follow it); `--out` (Vite's --outDir) names the folder. Several deck files (`build a.mdx b.mdx`) build into dist/a/ and dist/b/ at <base>a/ and <base>b/, with a page listing them. The head comes from the headmatter (title, info, lang, favicon, seoMeta: Open Graph, Twitter, canonical; `ogImage: auto` photographs slide 1 into og-image.png). Each route also gets an index.html copy, plus 404.html and _redirects, so GitHub Pages, S3 and nginx serve /presenter without rewrites. `--without-notes` leaves the speaker notes out (no notes modules; the presenter and narrator have none). --download (or `download: true`) also prints dist/deck.pdf for the deck's Download button; --no-download skips it. --pwa (or `pwa: true`) makes it an installable app that presents offline; --bundle-remote-assets (or `bundleRemoteAssets: true`) downloads the remote images, media and fonts into it.",
     json: false,
+  },
+  {
+    name: "serve",
+    usage: "kadal-deck serve [folder] [--port n] [--host addr] [--base /path/] [--json]",
+    summary:
+      "Serve a built deck (dist/ by default) as a static host would: at the base it was built for (read from the build, or --base), every route answered by the deck's page, Range requests for video, a CDN's cache headers. For checking a build, the PWA offline, or a container (--host 0.0.0.0). Ctrl+C stops it.",
+    json: true,
+  },
+  {
+    name: "ci",
+    usage:
+      "kadal-deck ci <github-pages|netlify|vercel|cloudflare|docker>[,…] [--force] [-C deck] [--json]",
+    summary:
+      "Write what a host needs to build and serve the deck, for its package manager and its folder in the repository: a GitHub Pages workflow (.github/workflows/deploy-deck.yml, --base /<repo>/), netlify.toml, vercel.json, wrangler.jsonc (Workers static assets), or a Dockerfile with nginx.conf. A deck whose build needs Chromium (download, ogImage: auto, pwa) gets the step that installs it. --force replaces existing files.",
+    json: true,
   },
   {
     name: "check",
@@ -506,9 +807,17 @@ export const CLI: CliCommand[] = [
     json: true,
   },
   {
+    name: "format",
+    usage: "kadal-deck format [files…] [--check] [--json]",
+    summary:
+      "Format deck files with @kadal/prettier-plugin (default: deck.mdx and the files it includes): `---`/`----` separators and frontmatter normalised, the YAML through Prettier with its comments and key order kept, each slide's Markdown through Prettier — code fences, notes, magic-move, `<style>`, maths, `::slot::` markers, code groups and `<<<` imports left byte for byte. Every formatted slide is checked to mean the same, or keeps its text (and the command says why). The deck's own Prettier config applies. `--check` writes nothing and exits 1 when a file would change.",
+    json: true,
+  },
+  {
     name: "info",
     usage: "kadal-deck info [topic] [--search q] [--json]",
-    summary: "Print the catalog: components, layouts, backgrounds, frontmatter…",
+    summary:
+      "Print the catalog: components, layouts, backgrounds, frontmatter… `info themes` adds the theme and addon packages the deck can see, with their layouts.",
     json: true,
   },
   {
@@ -521,9 +830,9 @@ export const CLI: CliCommand[] = [
   {
     name: "export",
     usage:
-      "kadal-deck export [--png] [--pptx] [--no-pdf] [--vector-pdf] [--out dir] [--scale n] [--url u] [--json]",
+      "kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--png] [--pptx] [--pptx-editable] [--md] [--no-pdf] [--vector-pdf] [--range 1,3-5] [--dark | --scheme light|dark] [--with-clicks | --no-with-clicks] [--omit-background] [--no-with-toc] [--per-slide] [--out dir] [--output name] [--scale n] [--timeout ms] [--wait ms] [--wait-until networkidle|load|domcontentloaded|none] [--executable-path path] [--url u] [--port n] [--json]",
     summary:
-      "PDF/PNG/PPTX into export/. The PDF looks like the web in every viewer: each page is a picture of the slide with its text printed over it as text. --vector-pdf prints with the browser alone.",
+      "PDF/PNG/PPTX/Markdown into export/. The PDF looks like the web in every viewer (each page a picture of the slide with its text printed over it as text), with bookmarks from the slide titles and levels (--no-with-toc for none) and the deck's metadata; --vector-pdf prints with the browser alone. --format pptx-editable rebuilds the slides as native PowerPoint text, lists, shapes, pictures and tables (what cannot be, it places as a picture where it stood) with the notes. --format md writes a .md file of the PNGs with each slide's notes. --range picks slides, --dark the dark scheme, --no-with-clicks one page per slide, --omit-background transparent pages, --per-slide one page load per slide.",
     json: true,
   },
   {
@@ -546,13 +855,16 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "publish",
-    usage: "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--json]",
-    summary: "Build and publish to a host; prints the URL.",
+    usage:
+      "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--without-notes] [--pwa] [--json]",
+    summary:
+      "Build and publish to a host; prints the URL. `--without-notes` publishes the deck without its speaker notes. The host routes the deck itself, so the build has no static-host fallbacks, and no service worker unless --pwa (for a self-run host that serves decks on a real origin: deck.kadal.cc sandboxes them, and an opaque origin gets no worker; the live room and the host's API are never cached either way).",
     json: true,
   },
   {
     name: "narrate",
-    usage: "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
+    usage:
+      "kadal-deck narrate [--voice id] [--dtype fp32|fp16|q8|q4|q4f16] [--force] [--setup] [--json]",
     summary:
       "Bake the narration: every notes segment spoken by Kokoro into public/narration/ (MP3 or Opus with ffmpeg, else WAV) and public/narration.json; skips clips that exist. --setup installs kokoro-js.",
     json: true,
@@ -634,7 +946,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   autoSlideStoppable: "Any input stops auto-slide.",
   mouseWheel: "Scroll-wheel navigation.",
   previewLinks: "Open links in an overlay.",
-  transition: "Slide transition (see transitions).",
+  transition:
+    'Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`).',
   transitionSpeed: "default · fast · slow.",
   backgroundTransition: "Transition for backgrounds.",
   viewDistance: "Slides kept mounted on either side.",
@@ -644,8 +957,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   view: '"slide" (the stage) or "scroll" (a page).',
   scrollProgress: "The scroll view's progress bar.",
   scrollSnap: "Scroll snapping in the scroll view.",
-  theme: "The theme: minimal, rla, stack, or one your CSS defines as .theme-<name>.",
-  themes: "Themes the theme menu offers (main.tsx must import their CSS).",
+  theme:
+    "The theme: a built-in (minimal, rla, stack, none), a package (`seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then a package of that name), a folder (`./theme`), or a class your own CSS defines (.theme-<name>). The Vite plugin imports a package's CSS and module for you; `kadal-deck theme eject` copies it into the deck.",
   colorScheme: '"auto" (follow the system), "light" or "dark".',
   pdfSeparateFragments: "A page per click step in print/PDF.",
   pdfMaxPagesPerSlide: "Pages a tall slide may spill onto.",
@@ -656,7 +969,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   selectable: "Text can be selected.",
   lineNumbers: "Line numbers on every code block.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
-  drawings: "Drawing: { enabled, persist, presenterOnly, syncAll }.",
+  drawings:
+    'Drawing: { enabled: true | false | "dev", persist: true (browser storage) | "files" (drawings/<slide>.svg beside deck.mdx, written on `kadal-deck dev`, bundled into the build, printed into every export) | false, presenterOnly, syncAll, perClick (a stroke shows from the click step it was drawn on) }. Files in drawings/ are always shown under the live strokes.',
   narration:
     'Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled ("auto" = when some slide has notes; false turns it off), engine ("auto" · "baked" · "kokoro" · "browser" · "silent"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: "estimate", "skip" or ms), model (Hugging Face id), dtype ("auto" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser\'s own voice reads. `kadal-deck narrate` bakes clips.',
   reactions: "Audience reactions in the live room.",
@@ -665,8 +979,14 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   slug: "The deck's slug; set by the build from the Vite base.",
   badge: "Set by the host; leave it alone.",
   ads: "Set by the host; leave it alone.",
-  fonts: 'Google Fonts families to load, e.g. ["Inter:wght@400;600"].',
-  seoMeta: "Extra <meta> tags.",
+  fonts:
+    'Web fonts. A list of Google Fonts families as written (["Inter:wght@400;600"]), or Slidev\'s object, which also points the theme\'s font tokens at them: { sans, heading, serif, mono, weights: "300,400,600,700", italic, provider: google | bunny | none, local: [families already installed], fallbacks: true }. Exports wait for them.',
+  addons:
+    "Addon packages, in order (a later one wins a name clash): `qr` finds @kadal/addon-qr, then kadal-addon-qr, then a package of that name; `./my-addon` is a folder. Each brings components, layouts, layers, CSS and a setup.",
+  themeConfig:
+    'The theme\'s knobs, over its own defaults: each key becomes a CSS custom property `--theme-<kebab-key>` on the deck root (`primaryColor: "#0f766e"` → `--theme-primary-color`; nested keys join with dashes). What a theme reads is in its README.',
+  layers:
+    "Where the global and slide layers (global-top.tsx and friends, or a theme's or addon's) draw besides the deck, print and export: { presenter: true, overview: false }.",
 };
 
 /** Deck-level keys that are not DeckConfig fields. */
@@ -681,6 +1001,15 @@ export const EXTRA_DECK_KEYS = [
     name: "canvasWidth",
     type: N(),
     description: "Slidev spelling: the stage width used with aspectRatio.",
+    scope: "deck" as const,
+  },
+  {
+    name: "remoteAssets",
+    type: {
+      text: 'boolean | "build"',
+      variants: [{ type: "boolean" as const }, { type: "string" as const }],
+    },
+    description: "Slidev spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing).",
     scope: "deck" as const,
   },
 ];
@@ -731,7 +1060,12 @@ export const SLIDE_KEYS = [
     description: '"hidden" leaves it out; "uncounted" shows it without a number.',
   },
   { name: "hideInToc", type: B(), description: "Keep the slide out of <Toc>." },
-  { name: "transition", type: S(), description: "This slide's transition (see transitions)." },
+  {
+    name: "transition",
+    type: S(),
+    description:
+      "This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half.",
+  },
   {
     name: "transitionSpeed",
     type: E("default", "fast", "slow"),
@@ -839,7 +1173,8 @@ export const SLIDE_KEYS = [
   {
     name: "posterWait",
     type: N(),
-    description: "Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000).",
+    description:
+      "Milliseconds to let the page settle before the poster capture, counted once its network has gone quiet (default 5000).",
   },
   {
     name: "terms",
@@ -853,8 +1188,9 @@ export const SLIDE_KEYS = [
   {
     name: "src",
     type: S(),
-    description: "Include the slides of another .mdx file here (a frontmatter-only slide).",
-    example: "src: ./part-two.mdx",
+    description:
+      "Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them.",
+    example: "src: ./part-two.mdx#2-5",
   },
   {
     name: "say",
@@ -871,6 +1207,16 @@ export const SLIDE_KEYS = [
     },
     description:
       "false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck.",
+  },
+  {
+    name: "dragPos",
+    type: {
+      text: "Record<string, string>",
+      variants: [{ type: "object" as const }],
+    },
+    description:
+      'Named positions for `<Drag pos="name">` / `<DragArrow pos="name">` (Slidev\'s v-drag): "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged.',
+    example: 'dragPos:\n  logo: "1500,80,300,_"',
   },
 ];
 

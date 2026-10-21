@@ -23,6 +23,7 @@
             "full",
             "none",
             "two-cols",
+            "two-cols-header",
             "image",
             "image-left",
             "image-right",
@@ -90,7 +91,7 @@
             "zoom",
             "view-transition"
           ],
-          "description": "This slide's transition (see transitions)."
+          "description": "This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half."
         },
         "transitionSpeed": {
           "type": "string",
@@ -273,7 +274,7 @@
         },
         "src": {
           "type": "string",
-          "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+          "description": "Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them."
         },
         "say": {
           "type": "string",
@@ -282,6 +283,10 @@
         "narration": {
           "type": "boolean",
           "description": "false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck."
+        },
+        "dragPos": {
+          "type": "object",
+          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">` (Slidev's v-drag): \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
         }
       },
       "additionalProperties": true
@@ -304,6 +309,7 @@
             "full",
             "none",
             "two-cols",
+            "two-cols-header",
             "image",
             "image-left",
             "image-right",
@@ -364,10 +370,10 @@
         "transition": {
           "type": "string",
           "enum": [
-            "zoom",
-            "none",
-            "fade",
             "slide",
+            "fade",
+            "none",
+            "zoom",
             "convex",
             "concave",
             "view-transition"
@@ -381,7 +387,7 @@
             "zoom",
             "view-transition"
           ],
-          "description": "Slide transition (see transitions).",
+          "description": "Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition=\"name\"]` setting `--deck-anim-in` / `--deck-anim-out`).",
           "default": "slide"
         },
         "transitionSpeed": {
@@ -397,10 +403,10 @@
         "backgroundTransition": {
           "type": "string",
           "enum": [
-            "zoom",
-            "none",
-            "fade",
             "slide",
+            "fade",
+            "none",
+            "zoom",
             "convex",
             "concave",
             "view-transition"
@@ -470,9 +476,9 @@
         "colorScheme": {
           "type": "string",
           "enum": [
-            "auto",
             "light",
-            "dark"
+            "dark",
+            "auto"
           ],
           "description": "\"auto\" (follow the system), \"light\" or \"dark\".",
           "default": "auto"
@@ -574,7 +580,7 @@
         },
         "src": {
           "type": "string",
-          "description": "Include the slides of another .mdx file here (a frontmatter-only slide)."
+          "description": "Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them."
         },
         "say": {
           "type": "string",
@@ -653,6 +659,10 @@
           ],
           "description": "Narration (autoplay rehearsal: the notes read aloud, each `[click]` part at its step, the pages turning by themselves): { enabled (\"auto\" = when some slide has notes; false turns it off), engine (\"auto\" · \"baked\" · \"kokoro\" · \"browser\" · \"silent\"), voice (Kokoro id, default af_heart), rate (0.5–3), gap (ms between steps), silent (a slide without notes: \"estimate\", \"skip\" or ms), model (Hugging Face id), dtype (\"auto\" · fp32 · fp16 · q8 · q4 · q4f16) }. The bar is in the presenter view; on the deck, `?narrate` or R. Kokoro needs `kokoro-js` installed (`kadal-deck narrate --setup`); without it the browser's own voice reads. `kadal-deck narrate` bakes clips."
         },
+        "dragPos": {
+          "type": "object",
+          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">` (Slidev's v-drag): \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
+        },
         "author": {
           "type": "string",
           "description": "Who gives the talk.",
@@ -725,9 +735,9 @@
         "controlsBackArrows": {
           "type": "string",
           "enum": [
+            "visible",
             "faded",
-            "hidden",
-            "visible"
+            "hidden"
           ],
           "description": "How the back arrows look.",
           "default": "faded"
@@ -742,10 +752,10 @@
             {
               "type": "string",
               "enum": [
-                "h.v",
-                "h/v",
                 "c",
-                "c/t"
+                "c/t",
+                "h.v",
+                "h/v"
               ]
             },
             {
@@ -759,8 +769,8 @@
           "type": "string",
           "enum": [
             "all",
-            "speaker",
-            "print"
+            "print",
+            "speaker"
           ],
           "description": "Where slide numbers show.",
           "default": "all"
@@ -1005,12 +1015,12 @@
             "rla",
             "stack"
           ],
-          "description": "The theme: minimal, rla, stack, or one your CSS defines as .theme-<name>.",
+          "description": "The theme: a built-in (minimal, rla, stack, none), a package (`seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then a package of that name), a folder (`./theme`), or a class your own CSS defines (.theme-<name>). The Vite plugin imports a package's CSS and module for you; `kadal-deck theme eject` copies it into the deck.",
           "default": "minimal"
         },
         "themes": {
           "type": "array",
-          "description": "Themes this deck ships (their CSS is imported by main.tsx); the theme menu lists them."
+          "description": "The themes the theme menu offers, besides `theme`: built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines."
         },
         "pdfSeparateFragments": {
           "type": "boolean",
@@ -1107,19 +1117,42 @@
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "dev"
+                  ]
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
             },
             "persist": {
-              "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "files"
+                  ]
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
             },
             "presenterOnly": {
               "type": "boolean"
             },
             "syncAll": {
               "type": "boolean"
+            },
+            "perClick": {
+              "type": "boolean"
             }
           },
-          "description": "Drawing: { enabled, persist, presenterOnly, syncAll }."
+          "description": "Drawing: { enabled: true | false | \"dev\", persist: true (browser storage) | \"files\" (drawings/<slide>.svg beside deck.mdx, written on `kadal-deck dev`, bundled into the build, printed into every export) | false, presenterOnly, syncAll, perClick (a stroke shows from the click step it was drawn on) }. Files in drawings/ are always shown under the live strokes."
         },
         "glossary": {
           "anyOf": [
@@ -1214,13 +1247,194 @@
           "description": "Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them.",
           "default": false
         },
+        "download": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there is none; a URL links that file instead. A host may switch it off, or on, for the decks it serves (`window.__KADAL_DECK__.download`). See core/download.ts.",
+          "default": false
+        },
         "fonts": {
-          "type": "array",
-          "description": "Google Fonts families to load, e.g. [\"Inter:wght@400;600\"]."
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "sans": {
+                  "type": "string"
+                },
+                "heading": {
+                  "type": "string"
+                },
+                "serif": {
+                  "type": "string"
+                },
+                "mono": {
+                  "type": "string"
+                },
+                "weights": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "array"
+                    }
+                  ]
+                },
+                "italic": {
+                  "type": "boolean"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "google",
+                    "bunny"
+                  ]
+                },
+                "local": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array"
+                    }
+                  ]
+                },
+                "fallbacks": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ],
+          "description": "Web fonts: Google Fonts families as written (`[\"Inter:wght@400;600\"]`), or Slidev's object — `{ sans, heading, serif, mono, weights, italic, provider: google|bunny|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts)."
         },
         "seoMeta": {
           "type": "object",
-          "description": "Extra <meta> tags."
+          "description": "The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html."
+        },
+        "lang": {
+          "type": "string",
+          "description": "The page's language: `<html lang>` and og:locale. Empty leaves index.html's.",
+          "default": ""
+        },
+        "favicon": {
+          "type": "string",
+          "description": "The tab icon: a file in public/ (`/logo.svg`) or a URL. The PWA's icon, when it is local.",
+          "default": ""
+        },
+        "pwa": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "`kadal-deck build` makes the deck an installable web app that presents offline: a web manifest, icons, and a service worker that precaches the build (vite/pwa.ts). Never in dev; `kadal-deck publish` leaves it out unless `--pwa`. An object sets { name, shortName, themeColor, backgroundColor, display }.",
+          "default": false
+        },
+        "bundleRemoteAssets": {
+          "type": "boolean",
+          "description": "At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache.",
+          "default": false
+        },
+        "defaults": {
+          "type": "object",
+          "description": "Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it."
+        },
+        "plantUmlServer": {
+          "type": "string",
+          "description": "The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`.",
+          "default": "https://www.plantuml.com/plantuml"
+        },
+        "notesAutoRuby": {
+          "type": "object",
+          "description": "Words in the speaker notes and their reading, shown as ruby: `{ 日本語: \"ni hon go\" }`."
+        },
+        "katex": {
+          "type": "object",
+          "description": "KaTeX options for every formula, e.g. `{ macros: { \"\\\\RR\": \"\\\\mathbb{R}\" } }`."
+        },
+        "mermaid": {
+          "type": "object",
+          "description": "Mermaid configuration for every diagram (theme, themeVariables, look, flowchart…)."
+        },
+        "transitions": {
+          "type": "object",
+          "description": "Named custom transitions: `{ flip: { in: \"flip-in\", out: \"flip-out\", back: {…} } }`, the keyframes defined in the theme's CSS or a `<style global>` (core/transitions.ts)."
+        },
+        "addons": {
+          "type": "array",
+          "description": "Addon packages: `@kadal/addon-<name>`, `kadal-addon-<name>`, a package name or a folder."
+        },
+        "themeConfig": {
+          "type": "object",
+          "description": "The theme's knobs: each key becomes a `--theme-<kebab-key>` custom property on the deck root (`primary: \"#0f766e\"` → `--theme-primary`), over the theme's own defaults."
+        },
+        "layers": {
+          "type": "object",
+          "properties": {
+            "presenter": {
+              "type": "boolean"
+            },
+            "overview": {
+              "type": "boolean"
+            }
+          },
+          "description": "Where the global and slide layers draw besides the deck, print and export."
+        },
+        "timer": {
+          "type": "string",
+          "enum": [
+            "stopwatch",
+            "countdown"
+          ],
+          "description": "The presenter's timer: \"stopwatch\" counts up, \"countdown\" counts down from `duration` (Slidev's `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either.",
+          "default": "stopwatch"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes."
+        },
+        "contextMenu": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "dev",
+                "build"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "The right-click menu on the slides: true (always), false (never), \"dev\" (only under `kadal-deck dev`) or \"build\" (only in a built deck). Shift + right-click always gives the browser's own menu.",
+          "default": true
         },
         "aspectRatio": {
           "type": "number",
@@ -1229,6 +1443,17 @@
         "canvasWidth": {
           "type": "number",
           "description": "Slidev spelling: the stage width used with aspectRatio."
+        },
+        "remoteAssets": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Slidev spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing)."
         }
       },
       "additionalProperties": true

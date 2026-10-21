@@ -23,16 +23,27 @@ export {
   type EditResult,
   type FrontmatterPatch,
   type NewSlide,
+  type NotesForm,
+  type NotesSource,
   type SlideUpdate,
   EditError,
+  NotesConflict,
   addSlide,
   deckOnlyKeys,
   moveSlide,
+  notesVersion,
+  readNotes,
   removeSlide,
+  replaceCode,
   setNotes,
   updateHeadmatter,
   updateSlide,
+  writeNotes,
+  setDragPosition,
 } from "./edit.ts";
+export { type DragSite, DragSourceError, dragSites, rewriteDragPos } from "./drag.ts";
+export { type IconSetLoader, checkIcons, iconsOf } from "./lint-icons.ts";
+export { type SlideSource, SourceConflict, readSlideSource, writeSlideSource } from "./edit.ts";
 export {
   type DeckExtensions,
   type Diagnostic,

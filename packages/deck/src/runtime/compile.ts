@@ -2,7 +2,7 @@ import { compile, run } from "@mdx-js/mdx";
 import { renderToString as renderKatex } from "katex";
 import { type ComponentType, createElement } from "react";
 import * as jsxRuntime from "react/jsx-runtime";
-import type { Highlighter } from "shiki";
+import type { Highlighter, ShikiTransformer } from "shiki";
 
 import {
   levelOf,
@@ -21,8 +21,22 @@ import {
   slideTerms,
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
+import {
+  type DeckSetup,
+  katexOptions,
+  manifestHeadmatter,
+  notesRuby,
+  plantUmlServer,
+} from "../compiler/setup.ts";
 import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
+import { sourceFromFiles } from "../draw/source.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
+import { applySlideDefaults, shikiThemes, slideDefaultLayers } from "../theming/merge.ts";
+import {
+  type PackageRegistry,
+  packageRegistry,
+  resolveRuntimePackages,
+} from "../theming/registry.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -53,12 +67,26 @@ export interface Diagnostic {
   slide: number | null;
 }
 
-export interface CompileDeckOptions {
+/**
+ * Besides the files, the same setup hooks the Vite plugin takes (compiler/setup.ts):
+ * `remarkPlugins`, `rehypePlugins`, `preprocess`, `katex`, `mermaid`, `withoutNotes`.
+ */
+export interface CompileDeckOptions extends DeckSetup {
   /** The deck file's name, for diagnostics. Default "deck.mdx". */
   file?: string;
-  /** Other files the deck reads by path: `src:` includes and the glossary. */
+  /** Other files the deck reads by path: `src:` includes, `<<<` snippets, the glossary, `drawings/*.svg`. */
   files?: Record<string, string>;
-  shiki?: { light?: string; dark?: string; langs?: string[] };
+  /** As `deck({ shiki })`: themes, languages, and transformers after the notation ones. */
+  shiki?: { light?: string; dark?: string; langs?: string[]; transformers?: ShikiTransformer[] };
+  /** Slide defaults beneath the headmatter's `defaults:` (a theme's), see `prepareDeck`. */
+  defaults?: Record<string, unknown> | Array<Record<string, unknown> | null | undefined> | null;
+  /**
+   * The themes and addons this page bundled, to resolve the headmatter's `theme`, `themes` and
+   * `addons` against (theming/registry.ts). Default: the page's registry, which the prebuilt
+   * shell fills with every first-party package. An unknown theme falls back to minimal with a
+   * warning; `false` skips packages entirely (the headmatter's theme names a stylesheet).
+   */
+  packages?: PackageRegistry | false;
 }
 
 export interface CompiledDeck {
@@ -96,7 +124,29 @@ async function getHighlighter(themes: { light: string; dark: string }, langs: st
   return highlighter;
 }
 
-const renderMath = (tex: string) => renderKatex(tex, { throwOnError: false });
+const katexRenderer =
+  (options: object = {}) =>
+  (tex: string) =>
+    renderKatex(tex, { throwOnError: false, ...options });
+
+/**
+ * TwoSlash needs the TypeScript compiler, which a page compiling decks does not have: `twoslash`
+ * blocks render as plain highlighted code here (a built deck has the types), said once a page.
+ */
+let twoslashNoted = false;
+const noteTwoslash = () => {
+  if (twoslashNoted) return;
+  twoslashNoted = true;
+  console.info(
+    "[deck] `twoslash` blocks show without type information here: TwoSlash runs when the deck is built with `kadal-deck build` (it needs TypeScript).",
+  );
+};
+
+/** The folder of a deck-relative path: `slides/a.mdx` → `slides`. */
+const folderOf = (file: string) => {
+  const i = file.lastIndexOf("/");
+  return i < 0 ? "" : file.slice(0, i);
+};
 
 /** A slide that did not compile shows why, where it would have been. */
 function errorSlide(message: string, where: string): ComponentType {
@@ -123,6 +173,7 @@ function lineOf(err: unknown, slideLine: number): number | null {
 async function compileToComponent(
   source: string,
   plugins: ReturnType<typeof mdxPlugins>,
+  format: "mdx" | "md" = "mdx",
 ): Promise<ComponentType> {
   // Imports cannot resolve without a bundler; say so instead of failing somewhere deeper.
   if (/^\s*import\s/m.test(source.replace(/```[\s\S]*?```/g, "")))
@@ -135,7 +186,7 @@ async function compileToComponent(
     // Any value makes the compiled slide ask `useMDXComponents` (passed to `run`) for its tags.
     providerImportSource: "@kadal/deck/mdx-provider",
     development: false,
-    format: "mdx",
+    format,
   });
   const mod = await run(String(code), {
     ...(jsxRuntime as unknown as Parameters<typeof run>[1]),
@@ -160,14 +211,14 @@ export async function compileDeck(
   const push = (d: Omit<Diagnostic, "severity"> & { severity?: Diagnostic["severity"] }) =>
     diagnostics.push({ severity: "error", ...d });
 
-  const themes = {
-    light: options.shiki?.light ?? "github-light",
-    dark: options.shiki?.dark ?? "github-dark",
-  };
+  let themes = shikiThemes(options.shiki, null);
 
-  let prepared: { headmatter: Record<string, unknown>; slides: PreparedSlide[] };
+  let prepared: { headmatter: Record<string, unknown>; slides: PreparedSlide[]; styles: string };
   try {
     prepared = prepareDeck(text, {
+      preprocess: options.preprocess,
+      withoutNotes: options.withoutNotes,
+      defaults: options.defaults,
       file,
       resolveInclude: (path) => {
         const clean = path.replace(/^\.\//, "");
@@ -176,6 +227,18 @@ export async function compileDeck(
         return null;
       },
       onError: (e) => push({ message: e.message, file: e.file, line: e.line, slide: null }),
+      // `<<<` imports read from `files` too; one that is not there is reported as missing, so a
+      // caller that can fetch it (the shell does) fetches it and compiles again.
+      snippets: {
+        dirOf: (f) => folderOf(f === file ? "" : f.replace(/^\.\//, "")),
+        read: (path) => {
+          if (path in files) return { path, text: files[path]! };
+          missing.add(path);
+          return null;
+        },
+        onProblem: (message, s) =>
+          push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: null }),
+      },
     });
   } catch (err) {
     push({ message: err instanceof Error ? err.message : String(err), file, line: null, slide: null });
@@ -185,6 +248,30 @@ export async function compileDeck(
       missing: [...missing],
       ok: false,
     };
+  }
+
+  const katex = katexOptions(prepared.headmatter, options);
+  const renderMath = katexRenderer(katex);
+  const server = plantUmlServer(prepared.headmatter);
+  const ruby = notesRuby(prepared.headmatter);
+  // The theme and addons, from what this page bundled: their slide defaults go in under every
+  // slide's own before anything compiles, and the theme's Shiki themes colour the code.
+  const runtimePackages =
+    options.packages === false
+      ? null
+      : await resolveRuntimePackages(prepared.headmatter, options.packages ?? packageRegistry);
+  if (runtimePackages) {
+    for (const message of runtimePackages.warnings)
+      push({ severity: "warning", message, file, line: null, slide: null });
+    applySlideDefaults(
+      prepared.slides,
+      slideDefaultLayers(
+        prepared.headmatter,
+        runtimePackages.packages.theme,
+        runtimePackages.packages.addons,
+      ),
+    );
+    themes = shikiThemes(options.shiki, runtimePackages.packages.theme);
   }
 
   const glossary: DeckGlossary = deckGlossary(
@@ -203,7 +290,11 @@ export async function compileDeck(
     },
   );
 
-  const hl = await getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS);
+  const [hl, { notationTransformers }] = await Promise.all([
+    getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS),
+    import("../compiler/transformers.ts"),
+  ]);
+  const transformers = [...notationTransformers(), ...(options.shiki?.transformers ?? [])];
   const slides: SlideMeta[] = await Promise.all(
     prepared.slides.map(async (s, i): Promise<SlideMeta> => {
       const where = `${s.source.file}:${s.source.line}`;
@@ -211,14 +302,40 @@ export async function compileDeck(
         push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: i });
       const loose = unclosedSettings(s.content);
       if (loose) warn(unclosedSettingsMessage(loose));
-      const build = async (source: string, terms: unknown): Promise<SlideModule> => {
+      const build = async (source: string, terms: unknown, notes = false): Promise<SlideModule> => {
+        const plugins = mdxPlugins({
+          highlighter: hl,
+          themes,
+          glossary,
+          terms,
+          math: renderMath,
+          warn,
+          katex,
+          plantUmlServer: server,
+          ruby: notes ? ruby : null,
+          remarkPlugins: options.remarkPlugins,
+          rehypePlugins: options.rehypePlugins,
+          transformers,
+          twoslash: null,
+          onTwoslashMissing: noteTwoslash,
+        });
         try {
-          const Component = await compileToComponent(
-            source,
-            mdxPlugins({ highlighter: hl, themes, glossary, terms, math: renderMath, warn }),
-          );
+          const Component = await compileToComponent(source, plugins);
           return { default: Component } as SlideModule;
         } catch (err) {
+          // Notes written for a Markdown parser (Slidev's) are often not valid MDX: read them as
+          // plain Markdown rather than lose them, and say so.
+          if (notes) {
+            try {
+              const Component = await compileToComponent(source, plugins, "md");
+              warn(
+                `The notes are not valid MDX (${err instanceof Error ? err.message.split("\n")[0] : String(err)}); they were read as plain Markdown.`,
+              );
+              return { default: Component } as SlideModule;
+            } catch {
+              /* fall through to the error below */
+            }
+          }
           const message = err instanceof Error ? err.message : String(err);
           push({ message, file: s.source.file, line: lineOf(err, s.source.line), slide: i });
           return { default: errorSlide(message, where) } as SlideModule;
@@ -226,7 +343,7 @@ export async function compileDeck(
       };
       const [slide, notes] = await Promise.all([
         build(s.content, slideTerms(s)),
-        s.notes ? build(s.notes, null) : Promise.resolve(null),
+        s.notes ? build(s.notes, null, true) : Promise.resolve(null),
       ]);
       let magic: ReturnType<typeof magicMoveData> | null = null;
       if (s.magic.length) {
@@ -261,7 +378,15 @@ export async function compileDeck(
   );
 
   return {
-    manifest: { headmatter: prepared.headmatter, slides, glossary: glossary.entries },
+    manifest: {
+      headmatter: manifestHeadmatter(prepared.headmatter, options),
+      slides,
+      glossary: glossary.entries,
+      styles: prepared.styles,
+      ...(runtimePackages ? { packages: runtimePackages.packages } : {}),
+      // Saved drawings among the files (`drawings/<slide>.svg`): shown under the live strokes.
+      drawings: sourceFromFiles(files),
+    },
     diagnostics,
     missing: [...missing],
     ok: !diagnostics.some((d) => d.severity === "error"),

@@ -1,0 +1,613 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Code, the developer-talk kit: notation marks (`// [!code ++]`…), file badges, code groups,
+   TwoSlash popups, Monaco editors and their run output, snippet notices. Imported by base.css;
+   every colour is a token here, set for light and dark, so a theme can retune them in one place.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --deck-code-add-bg: rgba(16, 185, 129, 0.14);
+  --deck-code-add-mark: #059669;
+  --deck-code-remove-bg: rgba(244, 63, 94, 0.12);
+  --deck-code-remove-mark: #e11d48;
+  --deck-code-highlight-bg: rgba(37, 99, 235, 0.12);
+  --deck-code-error-bg: rgba(244, 63, 94, 0.14);
+  --deck-code-error-mark: #e11d48;
+  --deck-code-warning-bg: rgba(245, 158, 11, 0.16);
+  --deck-code-warning-mark: #d97706;
+  --deck-code-word-bg: rgba(37, 99, 235, 0.12);
+  --deck-code-word-ring: rgba(37, 99, 235, 0.5);
+  --deck-code-popup-bg: #ffffff;
+  --deck-code-popup-shadow: 0 6px 24px rgba(15, 23, 42, 0.14), 0 1px 3px rgba(15, 23, 42, 0.12);
+  --deck-run-bg: rgba(0, 0, 0, 0.035);
+}
+[data-color-scheme="dark"] {
+  --deck-code-add-bg: rgba(52, 211, 153, 0.14);
+  --deck-code-add-mark: #34d399;
+  --deck-code-remove-bg: rgba(251, 113, 133, 0.13);
+  --deck-code-remove-mark: #fb7185;
+  --deck-code-highlight-bg: rgba(96, 165, 250, 0.16);
+  --deck-code-error-bg: rgba(251, 113, 133, 0.15);
+  --deck-code-error-mark: #fb7185;
+  --deck-code-warning-bg: rgba(251, 191, 36, 0.15);
+  --deck-code-warning-mark: #fbbf24;
+  --deck-code-word-bg: rgba(96, 165, 250, 0.16);
+  --deck-code-word-ring: rgba(96, 165, 250, 0.6);
+  --deck-code-popup-bg: #1d1d22;
+  --deck-code-popup-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --deck-run-bg: rgba(255, 255, 255, 0.04);
+}
+
+/* ── notation marks ──────────────────────────────────────────────────────── */
+pre.deck-code .line {
+  position: relative;
+}
+pre.deck-code .line.diff.add {
+  background: var(--deck-code-add-bg);
+}
+pre.deck-code .line.diff.remove {
+  background: var(--deck-code-remove-bg);
+}
+pre.deck-code .line.diff.remove > span {
+  opacity: 0.7;
+}
+pre.deck-code .line.diff::after {
+  position: absolute;
+  inset-inline-start: 0.35em;
+  top: 0;
+  font-weight: 700;
+  user-select: none;
+}
+pre.deck-code .line.diff.add::after {
+  content: "+";
+  color: var(--deck-code-add-mark);
+}
+pre.deck-code .line.diff.remove::after {
+  content: "−";
+  color: var(--deck-code-remove-mark);
+}
+pre.deck-code .line.highlighted {
+  background: var(--deck-code-highlight-bg);
+}
+pre.deck-code .line.highlighted.error {
+  background: var(--deck-code-error-bg);
+  box-shadow: inset 3px 0 0 var(--deck-code-error-mark);
+}
+pre.deck-code .line.highlighted.warning {
+  background: var(--deck-code-warning-bg);
+  box-shadow: inset 3px 0 0 var(--deck-code-warning-mark);
+}
+pre.deck-code .highlighted-word {
+  background: var(--deck-code-word-bg);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--deck-code-word-ring);
+  padding: 0 0.08em;
+  margin: 0 -0.08em;
+}
+/* Focus: every other line steps back until the block is hovered (or the code is being read). */
+pre.deck-code.has-focused .line:not(.focused) {
+  opacity: 0.45;
+  filter: blur(0.07em);
+  transition:
+    filter 0.35s ease,
+    opacity 0.35s ease;
+}
+.deck-code-block:hover pre.deck-code.has-focused .line:not(.focused),
+.deck-code-block:focus-within pre.deck-code.has-focused .line:not(.focused) {
+  opacity: 1;
+  filter: none;
+}
+/* A click step on top of a mark: the step's light wins, the mark still shows beneath it. */
+pre.deck-code .line.is-active:is(.diff, .highlighted) {
+  background-image: linear-gradient(var(--deck-code-active), var(--deck-code-active));
+}
+pre.deck-code .line.is-dim:is(.focused) {
+  filter: none;
+}
+
+/* ── file badges and titles ──────────────────────────────────────────────── */
+.deck-file-icon {
+  flex: none;
+  vertical-align: -0.22em;
+  border-radius: 0.2em;
+}
+.deck-code-title .deck-file-icon + .deck-code-title-dot {
+  display: none;
+}
+.deck-code-title-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── code groups ─────────────────────────────────────────────────────────── */
+.deck-code-group {
+  margin: 0.5em 0;
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+  background: var(--deck-code-bg);
+  overflow: hidden;
+}
+.deck-code-group .deck-code-block {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+.deck-code-group-tabs {
+  display: flex;
+  gap: 0.15em;
+  padding: 0 0.6em;
+  border-bottom: 1px solid var(--deck-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.deck-code-group-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  margin: 0;
+  padding: 0.55em 0.8em 0.5em;
+  font: 0.55em var(--deck-mono-font);
+  color: var(--deck-muted);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+.deck-code-group-tabs button:hover {
+  color: var(--deck-fg);
+}
+.deck-code-group-tabs button.is-active {
+  color: var(--deck-fg);
+  border-bottom-color: var(--deck-accent);
+}
+.deck-code-group-tabs button:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: -3px;
+  border-radius: 6px;
+}
+.deck-code-group-panel[hidden] {
+  display: none;
+}
+.deck-code-group-print-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.35em 1em;
+  font: 0.55em var(--deck-mono-font);
+  color: var(--deck-muted);
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-code-group.is-print-all .deck-code-group-tabs {
+  display: none;
+}
+.deck-code-group.is-print-all .deck-code-group-panel + .deck-code-group-panel {
+  border-top: 1px solid var(--deck-border);
+}
+
+/* ── TwoSlash ────────────────────────────────────────────────────────────── */
+pre.deck-code.twoslash .twoslash-hover,
+pre.deck-code.twoslash .twoslash-error-hover {
+  position: relative;
+  border-bottom: 1px dotted transparent;
+  transition: border-color 0.25s ease;
+}
+pre.deck-code.twoslash:hover .twoslash-hover {
+  border-bottom-color: color-mix(in srgb, currentColor 55%, transparent);
+}
+pre.deck-code.twoslash .twoslash-hover:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+pre.deck-code.twoslash .twoslash-popup-container {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  inset-inline-start: 0;
+  translate: var(--twoslash-shift, 0) 0.35em;
+  display: inline-flex;
+  flex-direction: column;
+  min-width: max-content;
+  max-width: 34em;
+  padding: 0;
+  border: 1px solid var(--deck-border);
+  border-radius: 8px;
+  background: var(--deck-code-popup-bg);
+  color: var(--deck-code-fg);
+  box-shadow: var(--deck-code-popup-shadow);
+  text-align: start;
+  white-space: pre-wrap;
+  font-size: 0.95em;
+  line-height: 1.5;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    visibility 0.18s;
+}
+pre.deck-code.twoslash .twoslash-popup-container.is-above {
+  top: auto;
+  bottom: 100%;
+  translate: var(--twoslash-shift, 0) -0.35em;
+}
+pre.deck-code.twoslash .twoslash-hover:hover > .twoslash-popup-container,
+pre.deck-code.twoslash .twoslash-hover:focus > .twoslash-popup-container,
+pre.deck-code.twoslash .twoslash-hover:focus-within > .twoslash-popup-container,
+pre.deck-code.twoslash .twoslash-error-hover:hover > .twoslash-popup-container,
+pre.deck-code.twoslash .twoslash-query-persisted > .twoslash-popup-container {
+  opacity: 1;
+  visibility: inherit;
+  pointer-events: auto;
+}
+pre.deck-code.twoslash .twoslash-query-persisted > .twoslash-popup-container {
+  z-index: 19;
+}
+pre.deck-code.twoslash .twoslash-popup-arrow {
+  display: none;
+}
+pre.deck-code.twoslash .twoslash-popup-code {
+  display: block;
+  padding: 0.4em 0.7em;
+  font-family: var(--deck-mono-font);
+}
+/* The slide's inline-code look (smaller, tinted) is not for code inside a popup. */
+pre.deck-code.twoslash .twoslash-popup-container code {
+  font-size: inherit;
+  background: none;
+  border-radius: 0;
+}
+pre.deck-code.twoslash .twoslash-popup-container code:not(.twoslash-popup-code) {
+  padding: 0;
+}
+pre.deck-code.twoslash .twoslash-popup-pre {
+  display: block;
+  margin: 0;
+  white-space: pre-wrap;
+  background: none !important;
+}
+pre.deck-code.twoslash .twoslash-popup-container .line {
+  display: inline;
+  width: auto;
+  padding: 0;
+  background: none;
+}
+pre.deck-code.twoslash .twoslash-popup-docs,
+pre.deck-code.twoslash .twoslash-popup-error {
+  padding: 0.4em 0.7em;
+  font-family: var(--deck-body-font);
+  font-size: 0.85em;
+  color: var(--deck-muted);
+  border-top: 1px solid var(--deck-border);
+  white-space: pre-wrap;
+}
+pre.deck-code.twoslash .twoslash-popup-error {
+  color: var(--deck-code-error-mark);
+}
+pre.deck-code.twoslash .twoslash-popup-docs-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+pre.deck-code.twoslash .twoslash-popup-docs-tag-name {
+  font-family: var(--deck-mono-font);
+  color: var(--deck-accent);
+  margin-inline-end: 0.5em;
+}
+pre.deck-code.twoslash .twoslash-error {
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%206%203'%20enable-background%3D'new%200%200%206%203'%20height%3D'3'%20width%3D'6'%3E%3Cg%20fill%3D'%23e11d48'%3E%3Cpolygon%20points%3D'5.5%2C0%202.5%2C3%201.1%2C3%204.1%2C0'%2F%3E%3Cpolygon%20points%3D'4%2C0%206%2C2%206%2C0.6%205.4%2C0'%2F%3E%3Cpolygon%20points%3D'0%2C2%201%2C3%202.4%2C3%200%2C0.6'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E")
+    repeat-x bottom left;
+  padding-bottom: 2px;
+}
+pre.deck-code.twoslash .twoslash-error.twoslash-error-level-warning {
+  filter: hue-rotate(40deg) saturate(1.4);
+}
+pre.deck-code.twoslash .twoslash-error-line,
+pre.deck-code.twoslash .twoslash-tag-line {
+  display: block;
+  position: relative;
+  margin: 0.15em 1.2em 0.3em;
+  padding: 0.25em 0.7em;
+  border-inline-start: 3px solid var(--deck-code-error-mark);
+  border-radius: 4px;
+  background: var(--deck-code-error-bg);
+  color: var(--deck-code-fg);
+  font-family: var(--deck-body-font);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  width: auto;
+}
+pre.deck-code.twoslash .twoslash-error-line.twoslash-error-level-warning,
+pre.deck-code.twoslash .twoslash-tag-warn-line {
+  border-inline-start-color: var(--deck-code-warning-mark);
+  background: var(--deck-code-warning-bg);
+}
+pre.deck-code.twoslash .twoslash-tag-line {
+  border-inline-start-color: var(--deck-accent);
+  background: var(--deck-code-highlight-bg);
+}
+pre.deck-code.twoslash .twoslash-highlighted {
+  background: var(--deck-code-warning-bg);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--deck-code-warning-mark);
+}
+pre.deck-code.twoslash .twoslash-completion-cursor {
+  position: relative;
+}
+pre.deck-code.twoslash .twoslash-completion-list {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  z-index: 20;
+  margin: 0.3em 0 0;
+  padding: 0.3em 0;
+  list-style: none;
+  background: var(--deck-code-popup-bg);
+  border: 1px solid var(--deck-border);
+  border-radius: 8px;
+  box-shadow: var(--deck-code-popup-shadow);
+  min-width: 14em;
+}
+pre.deck-code.twoslash .twoslash-completion-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.1em 0.7em;
+}
+pre.deck-code.twoslash .twoslash-completions-unmatched {
+  color: var(--deck-muted);
+}
+pre.deck-code.twoslash .twoslash-completions-icon {
+  color: var(--deck-accent);
+  width: 1em;
+  flex: none;
+}
+pre.deck-code.twoslash .twoslash-completions-icon svg {
+  width: 1em;
+  height: 1em;
+}
+/* The block scrolls sideways; its popups must not be cut off at its edge. */
+.deck-code-block:has(pre.deck-code.twoslash) {
+  overflow: visible;
+}
+.deck-code-block:has(pre.deck-code.twoslash) pre.deck-code {
+  overflow: visible;
+}
+
+/* ── Monaco ──────────────────────────────────────────────────────────────── */
+.deck-monaco {
+  /* Monaco's own hovers and suggestions overflow the editor; the block must not clip them. */
+  overflow: visible;
+}
+.deck-monaco:focus {
+  outline: none;
+}
+.deck-monaco:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+.deck-monaco-main {
+  display: flex;
+  flex-direction: column;
+}
+.deck-monaco.has-output-right .deck-monaco-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+.deck-monaco-body {
+  position: relative;
+  min-width: 0;
+}
+.deck-monaco-host {
+  width: 100%;
+  min-height: 2em;
+}
+.deck-monaco-host .monaco-editor,
+.deck-monaco-host .monaco-editor .overflow-guard {
+  border-radius: 0 0 var(--deck-radius) var(--deck-radius);
+}
+.deck-monaco-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-inline-start: auto;
+}
+.deck-monaco:not(.has-title) > .deck-monaco-toolbar {
+  position: absolute;
+  z-index: 3;
+  top: 0.4em;
+  inset-inline-end: 0.5em;
+}
+.deck-monaco-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font: 0.45em var(--deck-mono-font);
+  padding: 0.3em 0.7em;
+  border-radius: 6px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: var(--deck-muted);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+.deck-code-title .deck-monaco-toolbar button {
+  font-size: 0.85em;
+}
+.deck-monaco-toolbar button:hover:not(:disabled) {
+  color: var(--deck-fg);
+  border-color: var(--deck-accent);
+}
+.deck-monaco-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.deck-monaco-toolbar button:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+}
+.deck-monaco-toolbar .deck-monaco-run {
+  color: var(--deck-bg);
+  background: var(--deck-accent);
+  border-color: var(--deck-accent);
+  font-weight: 600;
+}
+.deck-monaco-toolbar .deck-monaco-run:hover:not(:disabled) {
+  color: var(--deck-bg);
+  filter: brightness(1.08);
+}
+.deck-monaco-toolbar .deck-monaco-run[aria-busy="true"] svg {
+  animation: deck-run-pulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes deck-run-pulse {
+  to {
+    opacity: 0.3;
+  }
+}
+.deck-monaco:not(.has-title) .deck-monaco-toolbar button:not(.deck-monaco-run) {
+  opacity: 0;
+}
+.deck-monaco:not(.has-title):is(:hover, :focus-within)
+  .deck-monaco-toolbar
+  button:not(.deck-monaco-run) {
+  opacity: 1;
+}
+.deck-monaco-status {
+  font: 0.55em var(--deck-mono-font);
+  color: var(--deck-muted);
+  padding-inline-end: 0.4em;
+}
+.deck-code-title .deck-monaco-status {
+  font-size: 1em;
+}
+.deck-monaco-status.is-saved {
+  color: var(--deck-code-add-mark);
+}
+.deck-monaco-status.is-error {
+  color: var(--deck-code-error-mark);
+}
+.deck-monaco-note {
+  margin: 0;
+  padding: 0.3em 1.2em 0.5em;
+  font: 0.55em var(--deck-body-font);
+  color: var(--deck-muted);
+}
+
+/* ── run output ──────────────────────────────────────────────────────────── */
+.deck-run-output {
+  min-height: 2.2em;
+  max-height: 14em;
+  overflow: auto;
+  padding: 0.55em 1.2em 0.65em;
+  border-top: 1px solid var(--deck-border);
+  background: var(--deck-run-bg);
+  font: 0.55em/1.55 var(--deck-mono-font);
+  color: var(--deck-code-fg);
+  border-radius: 0 0 var(--deck-radius) var(--deck-radius);
+}
+.deck-monaco.has-output-right .deck-run-output {
+  max-height: none;
+  border-top: 0;
+  border-inline-start: 1px solid var(--deck-border);
+  border-radius: 0 var(--deck-radius) var(--deck-radius) 0;
+}
+.deck-run-output[hidden] {
+  display: none;
+}
+.deck-run-empty {
+  color: var(--deck-muted);
+  font-style: italic;
+}
+.deck-run-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-inline-start: 1.1em;
+  position: relative;
+}
+.deck-run-line::before {
+  position: absolute;
+  inset-inline-start: 0;
+  color: var(--deck-muted);
+  content: "›";
+}
+.deck-run-line.is-info::before {
+  content: "i";
+  font-style: italic;
+}
+.deck-run-line.is-info,
+.deck-run-line.is-debug {
+  color: var(--deck-muted);
+}
+.deck-run-line.is-warn {
+  color: var(--deck-code-warning-mark);
+}
+.deck-run-line.is-warn::before {
+  content: "!";
+  color: inherit;
+}
+.deck-run-line.is-error {
+  color: var(--deck-code-error-mark);
+}
+.deck-run-line.is-error::before {
+  content: "✕";
+  color: inherit;
+}
+.deck-run-line.is-result::before {
+  content: "⇐";
+}
+.deck-run-html {
+  font-family: var(--deck-body-font);
+}
+
+/* ── snippet notices ─────────────────────────────────────────────────────── */
+.deck-notice.deck-snippet-missing {
+  margin: 0.5em 0;
+  padding: 0.6em 1em;
+  border: 1px dashed var(--deck-code-warning-mark);
+  border-radius: var(--deck-radius);
+  background: var(--deck-code-warning-bg);
+  font-size: 0.55em;
+  color: var(--deck-fg);
+}
+
+/* ── print and export ────────────────────────────────────────────────────── */
+.deck-print .deck-code-block:hover pre.deck-code.has-focused .line:not(.focused) {
+  opacity: 0.45;
+  filter: blur(0.07em);
+}
+.deck-print pre.deck-code.twoslash .twoslash-hover > .twoslash-popup-container,
+.deck-print pre.deck-code.twoslash .twoslash-error-hover > .twoslash-popup-container {
+  display: none;
+}
+.deck-print pre.deck-code.twoslash .twoslash-query-persisted > .twoslash-popup-container {
+  display: inline-flex;
+  opacity: 1;
+  visibility: inherit;
+}
+.deck-print .deck-monaco-toolbar button:not(.deck-monaco-run),
+.deck-print .deck-code-copy {
+  display: none;
+}
+.deck-print .deck-run-output {
+  max-height: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  pre.deck-code.has-focused .line,
+  .deck-code-group-tabs button,
+  pre.deck-code.twoslash .twoslash-popup-container,
+  .deck-monaco-toolbar button {
+    transition: none;
+  }
+  .deck-monaco-toolbar .deck-monaco-run[aria-busy="true"] svg {
+    animation: none;
+  }
+}

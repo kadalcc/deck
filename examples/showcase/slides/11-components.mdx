@@ -1,0 +1,275 @@
+---
+layout: section
+id: components
+background:
+  component: dots
+  color: "rgba(14,165,233,0.25)"
+---
+
+<p className="sc-eyebrow">Chapter 11</p>
+
+# Every icon, and Slidev's components
+
+<p className="sc-icon-row"><logos-react /> <logos-vue /> <logos-svelte-icon /> <logos-typescript-icon /> <mdi-rocket-launch /> <mdi-anchor /></p>
+
+Any Iconify icon by name, marks drawn by hand, switches, elements placed with the mouse, and the small pieces a Slidev deck reaches for.
+
+<Notes>
+Chapter eleven: the components a Slidev deck expects, the Kadal way. The row of logos above is Slidev's tag form — `<logos-react />` — and none of it came from the network: the build read the drawings from the deck's own icon packages.
+</Notes>
+
+---
+id: icons
+---
+
+<p className="sc-eyebrow">Components · icons</p>
+
+## Any icon, by name
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<p className="sc-icons-big"><logos-github-icon /> <logos-figma /> <logos-docker-icon /> <logos-cloudflare-icon /> <logos-python /></p>
+
+<p className="sc-icons-big"><mdi-weather-night class="text-sky-500" /> <mdi-heart style="color: #e11d48" /> <Icon name="mdi:compass-rose" size="1.2em" color="var(--deck-accent)" /> <Icon name="anchor" size="1.2em" /></p>
+
+Slidev's tag form or `<Icon name>`: every Iconify set, and Lucide names still work bare. Sized and coloured like text.
+
+<p className="sc-small">A built deck carries the drawings from its own <code>@iconify-json/*</code> packages; the hosted builder fetches them once from the Iconify API. <code>kadal-deck check</code> names a misspelt icon and the set to install.</p>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<logos-github-icon /> <logos-figma />
+
+<mdi-weather-night class="text-sky-500" />
+<mdi-heart style="color: #e11d48" />
+
+<Icon name="mdi:compass-rose" color="var(--deck-accent)" />
+<Icon name="anchor" />
+```
+
+```sh
+bun add -d @iconify-json/logos @iconify-json/mdi
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Icons from any Iconify set. The tag form is Slidev's: the compiler turns `<mdi-heart />` into `<Icon name="mdi:heart" />`. Class and style size and colour them like text. Lucide icons by their bare names keep working, and need no package.
+</Notes>
+
+---
+id: marks-rough
+---
+
+<p className="sc-eyebrow">Components · marks</p>
+
+## Marks, drawn by hand
+
+<Cols cols="1.15fr 1fr" gap="2.5rem" align="start">
+<Col className="sc-words">
+
+A <Mark at={1}>plain underline</Mark>, a <Mark type="box" at={2} color="#0ea5e9">box</Mark>, a <Mark type="circle" at={3} color="#e11d48">circle</Mark>, a <Mark type="highlight" at={4} color="#f59e0b">highlight that runs across words</Mark>, a line <Mark type="strike-through" at={5}>struck through</Mark>, one <Mark type="crossed-off" at={6} color="#e11d48">crossed off</Mark>, and <Mark type="bracket" brackets="left right" at={7} color="#10b981">a bracketed phrase</Mark>.
+
+<p className="sc-small">The wobble is seeded from the words, so the presenter, the audience and the PDF see the same stroke.</p>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Mark type="circle" at={3} color="#e11d48">circle</Mark>
+<Mark type="highlight" at={4}>…</Mark>
+<Mark type="crossed-off" at={6}>…</Mark>
+<Mark type="bracket" brackets="left right"
+  at={7}>…</Mark>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Every mark rough-notation has, drawn on its click. [click] Underline. [click] Box. [click] Circle. [click] A highlight, line by line. [click] Strike-through. [click] Crossed off. [click] And brackets, on both sides.
+</Notes>
+
+---
+id: switch
+---
+
+<p className="sc-eyebrow">Components · switch</p>
+
+## One at a time
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<Switch transition="slide-up" className="sc-switch">
+<Case at={0}><Callout kind="note" title="Before the first click">A switch shows one case at a time.</Callout></Case>
+<Case><Callout kind="info" title="Step one">Each case takes the next click…</Callout></Case>
+<Case><Callout kind="tip" title="Step two">…in the same spot, so nothing below it moves.</Callout></Case>
+<Case at="3-4"><Callout kind="warn" title="Step three only">A range: gone again at step four.</Callout></Case>
+<Case at={4}><Callout kind="danger" title="And the last one stays">Unless it has a range of its own.</Callout></Case>
+</Switch>
+
+<p className="sc-small">Slidev's <code>v-switch</code>: its slot numbers are the cases' <code>at</code>.</p>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Switch transition="slide-up">
+<Case at={0}>Before</Case>
+<Case>Step one</Case>
+<Case>Step two</Case>
+<Case at="3-4">Step three only</Case>
+<Case at={4}>The last one stays</Case>
+</Switch>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+A switch holds one case at a time. [click] The first case. [click] The second, in the same place. [click] A case with a range of its own. [click] And the last, which stays.
+</Notes>
+
+---
+id: drag
+dragPos:
+  badge: 1300,170,480,_
+---
+
+<p className="sc-eyebrow">Components · placed by hand</p>
+
+## Drag it where it goes
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+In `kadal-deck dev`, **double-click** a placed element: drag it, pull a corner or an edge (Shift keeps the shape), turn it by the round handle, nudge it with the arrow keys. The new position is written into deck.mdx a moment later — and nothing else in the file changes.
+
+<How>
+
+```mdx
+---
+dragPos:
+  badge: 1300,170,480,_
+---
+
+<Drag pos="badge">…</Drag>
+<Drag pos="1180,600,460,_,-4">…</Drag>
+<DragArrow pos="1060,520,330,-200" />
+```
+
+</How>
+
+</Col>
+<Col />
+</Cols>
+
+<Drag pos="badge">
+<Glass glow>
+<p className="sc-drag-card"><logos-cloudflare-icon /> Placed by name, from the frontmatter</p>
+</Glass>
+</Drag>
+
+<Drag pos="1180,600,460,_,-4">
+<Callout kind="tip" title="Drag me">Positions are stage pixels: x, y, width, height (`_`: as tall as it needs) and a turn.</Callout>
+</Drag>
+
+<DragArrow pos="1060,520,330,-200" color="var(--deck-accent)" width={4} />
+
+<Notes>
+Elements placed by hand, Slidev's v-drag. The card at the top right takes its position from this slide's frontmatter by name; the tip below it carries its own. In kadal-deck dev, double-click either to move, resize or turn it; the arrow's ends drag the same way. Elsewhere — a build, the hosted copy, a PDF — they are simply placed.
+</Notes>
+
+---
+id: in-context
+---
+
+<p className="sc-eyebrow">Components · in context</p>
+
+## Pieces that know where they are
+
+<Grid cols={2} gap="1.5rem">
+<Glass>
+
+**This is slide <SlideCurrentNo /> of <SlidesTotal />**, and the last one is called “<TitleRenderer id="the-end" />”.
+
+<p className="sc-small"><code>{"<SlideCurrentNo />"}</code>, <code>{"<SlidesTotal />"}</code>, <code>{'<TitleRenderer id="the-end" />'}</code></p>
+
+</Glass>
+<Glass>
+
+<LightOrDark>
+<p slot="light"><mdi-white-balance-sunny /> The light scheme is on: <Kbd>T</Kbd> switches it.</p>
+<p slot="dark"><mdi-weather-night /> The dark scheme is on: <Kbd>T</Kbd> switches it.</p>
+</LightOrDark>
+
+<p className="sc-small"><code>{'<LightOrDark>'}</code> with <code>{'slot="light"'}</code> and <code>{'slot="dark"'}</code> children.</p>
+
+</Glass>
+<Glass>
+
+<RenderWhen context="presenter" fallback={<p>The presenter's copy of this slide says something else here.</p>}>
+<p><strong>Only on the presenter's screen:</strong> remember to slow down.</p>
+</RenderWhen>
+
+<p className="sc-small"><code>{'<RenderWhen context="presenter" fallback={…}>'}</code></p>
+
+</Glass>
+<Glass>
+
+<RenderWhen context={["print", "overview", "previewNext"]} fallback={<p>Live on the stage. On paper, in the overview and in the next-slide box, this reads differently.</p>}>
+<p><strong>On paper, as a tile, or coming up next.</strong></p>
+</RenderWhen>
+
+<p className="sc-small">Contexts: main, slide, presenter, previewNext, overview, print, audience, visible.</p>
+
+</Glass>
+</Grid>
+
+<Notes>
+Small pieces that know their context: the slide's number and the deck's length, another slide's title, one thing in light and another in dark, and content that renders only in the presenter view, or only in print.
+</Notes>
+
+---
+id: video-cues
+---
+
+<p className="sc-eyebrow">Components · media on cue</p>
+
+## A video on cue, and a Bluesky post
+
+<Cols cols="1.1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<Video src="media/tide.webm" at={1} pauseAt={3} steps={{ 2: 0 }} autoreset="slide" poster="media/tide-poster-half.jpg" printTimestamp={2} className="sc-video" />
+
+<p className="sc-small">Plays at click 1, jumps back to the start at 2, pauses at 3: <code>{"<Video at={1} pauseAt={3} steps={{ 2: 0 }} />"}</code>.</p>
+
+</Col>
+<Col>
+
+<BlueSky uri="https://bsky.app/profile/sli.dev/post/3la7gcgfwpe2n" />
+
+</Col>
+</Cols>
+
+<Notes>
+Video that follows the clicks: [click] it starts, [click] jumps back to the beginning, [click] and pauses. In print it shows its frame at two seconds. Beside it, a Bluesky post in the deck's colour scheme; the export captured a poster of it for each scheme.
+</Notes>

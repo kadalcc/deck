@@ -12,6 +12,7 @@ export default defineConfig({
     "compiler/index": "src/compiler/index.ts",
     "catalog/index": "src/catalog/index.ts",
     "authoring/index": "src/authoring/index.ts",
+    "import/index": "src/import/index.ts",
     "runtime/index": "src/runtime/index.ts",
     "live/index": "src/live/index.ts",
     "live/protocol": "src/live/protocol.ts",
@@ -22,6 +23,7 @@ export default defineConfig({
     "renderers/index": "src/renderers/index.ts",
     "renderers/contract": "src/renderers/contract.ts",
     "sketch/index": "src/sketch/index.ts",
+    "monaco/index": "src/monaco/index.ts",
     "export/index": "src/export/index.ts",
     "cli/index": "src/cli/index.ts",
     "cli/bin": "src/cli/bin.ts",
@@ -29,6 +31,8 @@ export default defineConfig({
     "cli/kokoro-child": "src/cli/kokoro-child.ts",
     // Not imported by anything: the Vite plugin bundles it as a worker when kokoro-js is installed.
     "narrate/kokoro.worker": "src/narrate/kokoro.worker.ts",
+    // Not imported by anything: the dev server's manifest loads it for the side editor.
+    "editor/side-editor": "src/editor/side-editor.ts",
   },
   format: "esm",
   platform: "neutral",

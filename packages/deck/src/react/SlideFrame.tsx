@@ -14,6 +14,7 @@ import type { MagicMoveData, SlideMeta, SlideOptions } from "../core/model.ts";
 import { key as navKey, setTotal } from "../core/navigation.ts";
 import { SlideContext, type SlideContextValue, useDeck } from "./context.ts";
 import { useUi } from "./hooks.ts";
+import { LayerSlot, layerProps, layersShown } from "./Layers.tsx";
 import { layoutFor } from "./layouts.tsx";
 import { MDXProvider } from "./mdx.tsx";
 import { Watermark } from "./Watermark.tsx";
@@ -52,6 +53,18 @@ export interface SlideFrameProps {
    * is a preview in every other respect and turns this on.
    */
   terms?: boolean;
+  /**
+   * Draw the slide layers (`slide-top`, `slide-bottom`) on this frame. Default: yes, except in
+   * the presenter view when `layers.presenter` is off; the overview passes `layers.overview`.
+   */
+  layers?: boolean;
+  /**
+   * Draw the GLOBAL layers on this frame too, with this slide as theirs: a printed page, an
+   * overview tile, a thumbnail. The stage draws them once instead (react/Layers.tsx).
+   */
+  globalLayers?: boolean;
+  /** Which way the deck moved, on the slides taking part in the move (core/direction.ts). */
+  navDirection?: "forward" | "backward";
   className?: string;
   style?: React.CSSProperties;
   children?: ReactNode;
@@ -212,6 +225,9 @@ export function SlideFrame({
   prefetch = false,
   reportTotal = !preview,
   terms = !preview,
+  layers,
+  globalLayers = false,
+  navDirection,
   className,
   style,
   children,
@@ -296,6 +312,8 @@ export function SlideFrame({
     const media = el.querySelectorAll<HTMLMediaElement>("video, audio");
     if (active) {
       for (const m of media) {
+        // A click-driven <Video> plays and pauses itself (components/Video.tsx).
+        if (m.dataset.clicks !== undefined) continue;
         const wants =
           deck.config.autoPlayMedia === true ||
           (deck.config.autoPlayMedia !== false && m.dataset.autoplay !== undefined);
@@ -303,7 +321,7 @@ export function SlideFrame({
       }
     } else {
       for (const m of media) {
-        if (m.dataset.ignore !== undefined) continue;
+        if (m.dataset.ignore !== undefined || m.dataset.clicks !== undefined) continue;
         m.pause();
         if (m.dataset.autoplay !== undefined) m.currentTime = 0;
       }
@@ -375,6 +393,11 @@ export function SlideFrame({
   // are keyed `.theme-x[data-color-scheme]`, which only an element carrying both can match.
   const theme = useUi((s) => s.theme);
   const stateClasses = options.state.map((s) => `state-${s}`).join(" ");
+  const drawLayers = !!deck.layers && (layers ?? layersShown(deck));
+  const layer = (name: "global-bottom" | "slide-bottom" | "slide-top" | "global-top") =>
+    drawLayers && (globalLayers || name.startsWith("slide-")) && deck.layers![name].length ? (
+      <LayerSlot name={name} props={layerProps(deck, name, h, v, click, preview)} />
+    ) : null;
 
   return (
     <SlideContext.Provider value={value}>
@@ -397,10 +420,13 @@ export function SlideFrame({
         data-layout={options.layout}
         data-active={active ? "true" : undefined}
         data-click={click}
+        data-nav-direction={navDirection}
         data-color-scheme={options.colorScheme ?? undefined}
         aria-hidden={active ? undefined : true}
         style={{ ...style, ...(options.zoom !== 1 ? { zoom: options.zoom } : null) }}
       >
+        {layer("global-bottom")}
+        {layer("slide-bottom")}
         {failed ? (
           <div className="deck-slide-error">
             <strong>Slide {meta.index + 1} failed to load</strong>
@@ -431,6 +457,8 @@ export function SlideFrame({
         ) : (
           <div className="deck-slide-loading" />
         )}
+        {layer("slide-top")}
+        {layer("global-top")}
         {children}
         {deck.config.badge ? <Watermark /> : null}
       </section>

@@ -52,6 +52,12 @@ export interface ClickProps {
   [key: string]: unknown;
 }
 
+/**
+ * Whether the nearest enclosing `<Click>` is showing its children right now, or null outside one:
+ * media inside a reveal (`<Click><Video autoplay /></Click>`) start when it does.
+ */
+export const ClickShownContext = createContext<boolean | null>(null);
+
 export function Click({
   at,
   hide,
@@ -82,7 +88,10 @@ export function Click({
       data-click-at={range.start}
       aria-hidden={shown ? undefined : true}
     >
-      {children}
+      {/* nothing at all for a childless one: `<Click as="img">` is a void element */}
+      {children == null ? undefined : (
+        <ClickShownContext.Provider value={shown}>{children}</ClickShownContext.Provider>
+      )}
     </Tag>
   );
 }

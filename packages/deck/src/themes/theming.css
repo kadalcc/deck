@@ -1,0 +1,143 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Theming: the two-cols-header layout, the global and slide layers, and the notice a deck shows
+   when its theme is not one this player has. Imported by base.css. Themes restyle the layout
+   with `.theme-<name> .deck-layout-two-cols-header …`; see THEMES.md for every class.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* The serif face (`fonts.serif`, Tailwind's font-serif): a token base.css's :root predates. */
+:root {
+  --deck-serif-font: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+/* two-cols-header: the default slot is a header across both columns, then `::left::` and
+   `::right::` side by side, then an optional `::bottom::` across both again (Slidev's layout).
+   Two classes, so it wins over base.css's `.deck-layout` (flex), which this file precedes. */
+.deck-layout.deck-layout-two-cols-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr auto;
+  column-gap: 2em;
+  row-gap: 0.5em;
+  align-content: start;
+  align-items: start;
+}
+.deck-layout-two-cols-header > .deck-slot-default {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+}
+.deck-layout-two-cols-header > .deck-slot-left {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+}
+.deck-layout-two-cols-header > .deck-slot-right {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+}
+.deck-layout-two-cols-header > .deck-slot-bottom {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  min-width: 0;
+}
+.deck-layout-two-cols-header > .deck-slot-default > :last-child,
+.deck-layout-two-cols-header > .deck-slot-left > :first-child,
+.deck-layout-two-cols-header > .deck-slot-right > :first-child {
+  margin-block-start: 0;
+}
+/* A narrow page (the scroll view on a phone) stacks the columns rather than squeezing them. */
+@media (max-width: 640px) {
+  .deck-slide.is-scroll .deck-layout-two-cols-header {
+    grid-template-columns: 1fr;
+  }
+  .deck-slide.is-scroll .deck-layout-two-cols-header > .deck-slot-right {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .deck-slide.is-scroll .deck-layout-two-cols-header > .deck-slot-bottom {
+    grid-row: 4;
+  }
+}
+
+/* The layers (react/Layers.tsx). A layer covers the slide (or the stage) and lets the pointer
+   through, so a footer never steals a click from the slide — except on what is meant for it. */
+.deck-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.deck-layer :is(a, button, input, select, textarea, summary, label, [role="button"], [data-interactive]) {
+  pointer-events: auto;
+}
+/* On the stage a global layer is not inside a slide, so it takes the slide's type itself. */
+.deck-stage > .deck-layer {
+  font-size: var(--deck-base-size);
+  font-family: var(--deck-body-font);
+  line-height: 1.4;
+  color: var(--deck-fg);
+}
+.deck-stage > .deck-layer-global-bottom {
+  z-index: 0;
+}
+.deck-stage > .deck-layer-global-top {
+  z-index: 5;
+}
+.deck-slide > .deck-layer-global-bottom,
+.deck-slide > .deck-layer-slide-bottom {
+  z-index: 0;
+}
+.deck-slide > .deck-layer-slide-top,
+.deck-slide > .deck-layer-global-top {
+  z-index: 3;
+}
+
+/* The notice for a theme or addon this player does not have (react/ThemeNotice.tsx). */
+.deck-theme-notice {
+  position: fixed;
+  z-index: 95;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, #f59e0b 55%, var(--deck-border));
+  background: color-mix(in oklab, var(--deck-bg) 88%, #f59e0b);
+  color: var(--deck-fg);
+  font: 14px/1.45 var(--deck-body-font);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+.deck-theme-notice-text p {
+  margin: 0;
+}
+.deck-theme-notice-text p + p {
+  margin-top: 6px;
+}
+.deck-theme-notice-close {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.deck-theme-notice-close:hover,
+.deck-theme-notice-close:focus-visible {
+  border-color: var(--deck-border);
+  background: var(--deck-surface);
+}
+@media print {
+  .deck-theme-notice {
+    display: none;
+  }
+}

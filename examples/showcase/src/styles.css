@@ -2,6 +2,12 @@
 @source "../deck.mdx";
 @source "../slides";
 
+/* Slidev's `forward:` / `backward:` variants: style a click or a transition by the way the deck is
+   going — `class="transition forward:delay-300"` waits before revealing, and only going forward.
+   The runtime writes data-nav-direction on the deck root and the moving slides. */
+@custom-variant forward (&:where([data-nav-direction="forward"] *));
+@custom-variant backward (&:where([data-nav-direction="backward"] *));
+
 /*
  * The tour's own look, on top of whichever theme is worn. Everything reads the theme's tokens
  * (--deck-fg, --deck-accent, --deck-surface…), so the theme menu and the dark scheme restyle all
@@ -685,6 +691,22 @@
   color: var(--deck-muted);
   font-size: 0.8em;
 }
+/* The saved-drawings slide: three steps a drawing file travels through (marked by drawings/draw-files.svg). */
+.sc-flow {
+  display: grid;
+  gap: 1.4em;
+  justify-items: center;
+}
+.sc-flow span {
+  display: block;
+  min-width: 8em;
+  padding: 0.5em 1em;
+  border: 2px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  text-align: center;
+  font-family: var(--deck-mono-font, ui-monospace, monospace);
+  font-size: 0.8em;
+}
 .sc-views {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -826,4 +848,75 @@
 }
 .sc-bling .deck-shimmer {
   font-size: 1.1em;
+}
+
+/* ── presenting: direction and lifecycle demos ───────────────────────────── */
+.sc-direction {
+  display: inline-block;
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  font: 600 0.6em/1.4 var(--deck-mono-font);
+  background: color-mix(in oklab, var(--deck-accent) 16%, transparent);
+  color: var(--deck-accent);
+}
+.sc-direction.is-backward {
+  background: color-mix(in oklab, #f59e0b 18%, transparent);
+  color: #b45309;
+}
+.sc-lifecycle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6em;
+  padding: 0.8em;
+  border-radius: 0.6em;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+}
+.sc-lifecycle div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sc-lifecycle b {
+  font-size: 1.8em;
+  line-height: 1.1;
+}
+.sc-lifecycle span,
+.sc-lifecycle p {
+  color: var(--deck-muted);
+  font-size: 0.6em;
+}
+.sc-lifecycle p {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+}
+
+/* ── chapter 11: icons, marks, switch, drag ─────────────────────────────── */
+.deck-slide .sc-icon-row {
+  display: flex;
+  gap: 0.55em;
+  font-size: 1.6em;
+  margin: 0.2em 0 0.4em;
+}
+.deck-slide .sc-icons-big {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 2.4em;
+  margin: 0 0 0.25em;
+}
+.deck-slide .sc-switch {
+  margin-bottom: 1em;
+}
+.deck-slide .sc-drag-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  font-weight: 600;
+}
+.deck-slide .sc-drag-card .deck-icon {
+  font-size: 1.6em;
 }

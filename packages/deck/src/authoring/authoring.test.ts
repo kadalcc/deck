@@ -11,6 +11,7 @@ import {
   readDeck,
   readExtensions,
   removeSlide,
+  replaceCode,
   setNotes,
   updateHeadmatter,
   updateSlide,
@@ -229,6 +230,18 @@ describe("adding, removing, moving", () => {
     expect(() => updateSlide(f, 9, { content: "x" })).toThrow(/has 4/);
     expect(() => removeSlide(f, "nope")).toThrow(/No slide/);
   });
+
+  test("replaceCode swaps one fence's body and nothing else", () => {
+    const text =
+      "# A\n\n  ```ts {monaco-write}\n  const a = 1\n  ```\n\n---\n\n# B\n\n```ts\nconst a = 1\n```\n";
+    const f = files({ "/d/deck.mdx": text }, "/d/deck.mdx");
+    const r = replaceCode(f, 0, "const a = 1", "const a = 2\nconst b = 3");
+    expect(r.files["/d/deck.mdx"]).toBe(
+      "# A\n\n  ```ts {monaco-write}\n  const a = 2\n  const b = 3\n  ```\n\n---\n\n# B\n\n```ts\nconst a = 1\n```\n",
+    );
+    expect(() => replaceCode(f, 0, "not there", "x")).toThrow(/changed since/);
+    expect(() => replaceCode(f, 0, "const a = 1", "```\nboom")).toThrow(/close its fence/);
+  });
 });
 
 describe("lint", () => {
@@ -246,6 +259,23 @@ describe("lint", () => {
   test("a clean deck", async () => {
     const r = await lint(DECK);
     expect(r).toMatchObject({ ok: true, errors: 0, slides: 4 });
+  });
+
+  test("the drawing options lint clean; a wrong one is named", async () => {
+    const head = (d: string) => `---\ntitle: T\ndrawings:\n${d}---\n\n# One\n`;
+    expect(
+      await codes(head("  persist: files\n  perClick: true\n  enabled: dev\n  syncAll: false\n")),
+    ).toEqual([]);
+    expect((await codes(head("  persist: disk\n"))).length).toBeGreaterThan(0);
+  });
+
+  test("Slidev syntax that compiles but does nothing is a warning pointing at the importer", async () => {
+    const r = await lint(
+      '# A\n\n<div v-click>x</div>\n\n<v-clicks>\n\n- a\n\n</v-clicks>\n\n<img v-drag src="/a.png" />\n',
+    );
+    const slidev = r.diagnostics.filter((d) => d.code === "slidev-syntax");
+    expect(slidev.map((d) => `${d.severity}:${d.line}`)).toEqual(["warning:3", "warning:5"]);
+    expect(slidev[0]!.hint).toContain("kadal-deck import slidev");
   });
 
   test("slide settings with no closing --- are a warning at their line", async () => {
@@ -302,6 +332,59 @@ describe("lint", () => {
       '<Poll id="a" question="q" />\n\n---\n\n<Quiz id="a" question="q" options={["x"]} correct={0} />\n\n---\n\n```ts {7}{lines:true,wrap:true}\nx\n```\n',
     );
     expect(d).toEqual(["error:live-id-duplicate:5", "warning:code-meta:9", "warning:code-meta:9"]);
+  });
+
+  test("the code kit: snippets, code groups, notation, monaco, twoslash", async () => {
+    const deck = [
+      "# A", // 1
+      "",
+      "<<< @/snippets/a.ts#ask {1}{lines:true} [a.ts]", // 3
+      "<<< @/snippets/gone.ts", // 4
+      "<<< @/snippets/a.ts#nope", // 5
+      "",
+      "::code-group {clicks:true}", // 7
+      "",
+      "```sh [npm]",
+      "npm i",
+      "```",
+      "",
+      "::",
+      "",
+      "```ts {monaco-run}{autorun:false,showOutputAt:'+1',editorOptions:{wordWrap:'on'}}", // 15
+      "console.log(1) // [!code ++]",
+      "```",
+      "",
+      "```rust {monaco-run}", // 19
+      "fn main() {}",
+      "```",
+      "",
+      "```ts {monaco-diff}", // 23
+      "a",
+      "```",
+      "",
+      "```ts twoslash", // 27
+      "const a = 1",
+      "```",
+      "",
+      "```ts {1}{bogus:1}", // 31
+      "a",
+      "```",
+      "",
+      "````md",
+      "<<< @/shown/only.ts",
+      "````",
+      "",
+    ].join("\n");
+    const d = await codes(deck, {
+      "/d/snippets/a.ts": "// #region ask\nconst a = 1\n// #endregion ask\n",
+    });
+    expect(d).toEqual([
+      "warning:snippet-missing:4",
+      "warning:snippet-region:5",
+      "info:code-runner:19",
+      "warning:code-meta:23",
+      "warning:code-meta:31",
+    ]);
   });
 
   test("glossary problems and unknown terms", async () => {

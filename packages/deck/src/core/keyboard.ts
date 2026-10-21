@@ -1,7 +1,8 @@
 /**
  * Keyboard bindings: reveal.js's and Slidev's, merged. A deck may override any binding through
- * `keyboard: { "KeyX": "action" | null }` in its config; `null` unbinds. Actions are names the
- * runtime dispatches; the map is data so the help overlay can print it.
+ * `keyboard: { "KeyX": "action" | null }` in its config (`null` unbinds), or add its own, bound to
+ * any command or function, with `<Deck shortcuts>` / `deck.shortcuts.add` (core/shortcuts.ts).
+ * Actions are names the runtime dispatches; the map is data so the help overlay can print it.
  */
 export type KeyAction =
   | "next"
@@ -31,7 +32,10 @@ export type KeyAction =
   | "zoomOut"
   | "hints"
   | "themeMenu"
-  | "narrate";
+  | "narrate"
+  | "settings"
+  | "contextMenu"
+  | "camera";
 
 export interface KeyBinding {
   keys: string[];
@@ -143,6 +147,24 @@ export const KEY_BINDINGS: KeyBinding[] = [
     action: "narrate",
     label: "R",
     description: "Read the notes aloud and turn the pages (narration), or pause it",
+  },
+  {
+    keys: ["Comma"],
+    action: "settings",
+    label: ",",
+    description: "Display settings: brightness, contrast, colour for a projector",
+  },
+  {
+    keys: ["Shift+F10", "ContextMenu"],
+    action: "contextMenu",
+    label: "Shift F10",
+    description: "The context menu (or right-click a slide)",
+  },
+  {
+    keys: ["KeyV"],
+    action: "camera",
+    label: "V",
+    description: "Your camera in a bubble on the slide (drag to move, drag its corner to resize)",
   },
 ];
 

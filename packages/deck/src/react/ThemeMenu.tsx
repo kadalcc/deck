@@ -1,15 +1,16 @@
 import { useEffect, useRef } from "react";
 
 import { useDeck } from "./context.ts";
+import { DownloadButton } from "./Download.tsx";
 import { useActions, useUi } from "./hooks.ts";
 
 /**
- * The theme selector: every screen picks its own look — the themes a deck ships (its main.tsx
- * imports their CSS and `config.themes` lists them) plus light or dark — and keeps the choice
- * in the browser. `T` opens it; the palette button in the corner does the same.
+ * The theme selector: every screen picks its own look — the themes a deck ships (`theme` and
+ * `themes`: built-ins, packages the Vite plugin imported, or CSS main.tsx imports) plus light or
+ * dark — and keeps the choice in the browser. `T` opens it; the palette button does the same.
  */
-export function themeLabel(name: string): string {
-  return name.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+export function themeLabel(name: string, title?: string): string {
+  return title ?? name.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function ThemeMenu({ compact = false }: { compact?: boolean }) {
@@ -20,6 +21,9 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
   const actions = useActions();
   const root = useRef<HTMLDivElement>(null);
   const themes = deck.config.themes.length ? deck.config.themes : [deck.config.theme];
+  // A theme package's own display name ("Seriph"), when the manifest resolved one.
+  const title = (name: string) =>
+    deck.manifest.packages?.themes.find((t) => t.name === name && !t.builtin)?.meta.title;
 
   useEffect(() => {
     if (!open) return;
@@ -64,8 +68,9 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
           <circle cx="10.5" cy="7.5" r="1.2" fill="currentColor" stroke="none" />
           <circle cx="15" cy="7.5" r="1.2" fill="currentColor" stroke="none" />
         </svg>
-        {compact ? null : <span>{themeLabel(theme)}</span>}
+        {compact ? null : <span>{themeLabel(theme, title(theme))}</span>}
       </button>
+      <DownloadButton compact={compact} />
       {open ? (
         <div className="deck-theme-popover" role="menu">
           <div className="deck-theme-section">Theme</div>
@@ -79,7 +84,7 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
               onClick={() => actions.setTheme(name)}
             >
               <i className={`deck-theme-swatch theme-${name}`} />
-              {themeLabel(name)}
+              {themeLabel(name, title(name))}
             </button>
           ))}
           <div className="deck-theme-section">Scheme</div>
@@ -99,6 +104,17 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
               ☾ Dark
             </button>
           </div>
+          <button
+            type="button"
+            role="menuitem"
+            className="deck-theme-display"
+            onClick={() => {
+              actions.toggleThemeMenu(false);
+              void deck.commands.run("view.settings", { on: true }, "ui");
+            }}
+          >
+            Display settings… <kbd>,</kbd>
+          </button>
           <div className="deck-theme-hint">Yours only — every screen keeps its own choice.</div>
         </div>
       ) : null}

@@ -1,0 +1,289 @@
+/*
+ * The Slidev-parity components: <Mark>'s hand-drawn strokes, <Switch>, <Drag>/<DragArrow> and
+ * their editing handles, Iconify icons, <BlueSky>. Every colour is a theme token, so they follow
+ * the theme and its dark scheme; motion stops under prefers-reduced-motion.
+ */
+
+/* ── <Mark> ──────────────────────────────────────────────────────────────── */
+.deck-mark {
+  position: relative;
+  display: inline;
+  /* Its own stacking context: a highlight drawn behind the text stays above the slide. */
+  isolation: isolate;
+}
+.deck-mark-svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100px;
+  height: 100px;
+  overflow: visible;
+  pointer-events: none;
+}
+.deck-mark-svg.is-behind {
+  z-index: -1;
+}
+.deck-mark-svg path.is-drawing {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-name: deck-mark-draw;
+  animation-timing-function: cubic-bezier(0.45, 0.05, 0.4, 1);
+  animation-fill-mode: both;
+}
+@keyframes deck-mark-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── <Switch> ────────────────────────────────────────────────────────────── */
+.deck-switch {
+  display: grid;
+}
+.deck-switch > .deck-switch-case {
+  grid-area: 1 / 1;
+  min-width: 0;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease,
+    visibility 0s linear 0s;
+}
+.deck-switch > .deck-switch-case.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease,
+    visibility 0s linear 0.35s;
+}
+.deck-switch.transition-slide-up > .deck-switch-case.is-hidden {
+  transform: translateY(0.75em);
+}
+.deck-switch.transition-slide-up > .deck-switch-case.is-hidden.is-past {
+  transform: translateY(-0.75em);
+}
+.deck-switch.transition-slide-left > .deck-switch-case.is-hidden {
+  transform: translateX(1.5em);
+}
+.deck-switch.transition-slide-left > .deck-switch-case.is-hidden.is-past {
+  transform: translateX(-1.5em);
+}
+.deck-switch.transition-scale > .deck-switch-case.is-hidden {
+  transform: scale(0.92);
+}
+.deck-switch.transition-none > .deck-switch-case {
+  transition: none;
+}
+
+/* ── <Drag> and <DragArrow> ──────────────────────────────────────────────── */
+/* Sizes in the controls are multiplied by --drag-k (1 / the stage's scale), so the handles are
+   the same size on screen however small the slide is drawn. */
+.deck-drag {
+  box-sizing: border-box;
+  transform-origin: center center;
+}
+.deck-drag.is-editable:hover {
+  outline: 1px dashed color-mix(in oklab, var(--deck-accent) 55%, transparent);
+  outline-offset: 2px;
+}
+.deck-drag.is-editing {
+  outline: calc(1.5px * var(--drag-k, 1)) solid var(--deck-accent);
+  outline-offset: 0;
+  z-index: 1000;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+.deck-drag-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.deck-drag-handle,
+.deck-drag-rotate {
+  position: absolute;
+  box-sizing: border-box;
+  width: calc(12px * var(--drag-k, 1));
+  height: calc(12px * var(--drag-k, 1));
+  margin: calc(-6px * var(--drag-k, 1));
+  background: var(--deck-bg);
+  border: calc(1.5px * var(--drag-k, 1)) solid var(--deck-accent);
+  border-radius: calc(2px * var(--drag-k, 1));
+  pointer-events: auto;
+  touch-action: none;
+}
+.deck-drag-handle.is-nw {
+  left: 0;
+  top: 0;
+}
+.deck-drag-handle.is-n {
+  left: 50%;
+  top: 0;
+}
+.deck-drag-handle.is-ne {
+  left: 100%;
+  top: 0;
+}
+.deck-drag-handle.is-e {
+  left: 100%;
+  top: 50%;
+}
+.deck-drag-handle.is-se {
+  left: 100%;
+  top: 100%;
+}
+.deck-drag-handle.is-s {
+  left: 50%;
+  top: 100%;
+}
+.deck-drag-handle.is-sw {
+  left: 0;
+  top: 100%;
+}
+.deck-drag-handle.is-w {
+  left: 0;
+  top: 50%;
+}
+.deck-drag-rotate {
+  left: 50%;
+  top: calc(-28px * var(--drag-k, 1));
+  border-radius: 50%;
+  cursor: grab;
+  background: var(--deck-accent);
+}
+.deck-drag-rotate::after {
+  /* The stalk from the box to the rotate handle. */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: calc(1.5px * var(--drag-k, 1));
+  height: calc(16px * var(--drag-k, 1));
+  background: var(--deck-accent);
+  transform: translateX(-50%);
+}
+.deck-drag-label {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: calc(10px * var(--drag-k, 1));
+  padding: calc(2px * var(--drag-k, 1)) calc(7px * var(--drag-k, 1));
+  font: 500 calc(12px * var(--drag-k, 1)) / 1.5 var(--deck-mono-font, ui-monospace, monospace);
+  white-space: nowrap;
+  color: var(--deck-bg);
+  background: var(--deck-accent);
+  border-radius: calc(4px * var(--drag-k, 1));
+  pointer-events: none;
+}
+.deck-drag-label.is-error {
+  background: #dc2626;
+  color: #fff;
+}
+.deck-drag-arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+.deck-drag-arrow.is-editing {
+  z-index: 1000;
+}
+.deck-drag-arrow-hit {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+.deck-drag-arrow-line {
+  stroke: transparent;
+  stroke-width: 18;
+  stroke-linecap: round;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.deck-drag-arrow.is-editing .deck-drag-arrow-line {
+  stroke: color-mix(in oklab, var(--deck-accent) 22%, transparent);
+  cursor: move;
+  touch-action: none;
+}
+.deck-drag-arrow-end {
+  fill: var(--deck-bg);
+  stroke: var(--deck-accent);
+  stroke-width: 2;
+  pointer-events: all;
+  cursor: grab;
+  touch-action: none;
+}
+.deck-drag-arrow .deck-drag-label {
+  top: auto;
+  margin: 0;
+  --drag-k: 1;
+}
+
+/* ── Iconify icons ───────────────────────────────────────────────────────── */
+.deck-iconify {
+  vertical-align: -0.125em;
+}
+.deck-iconify.is-loading {
+  visibility: hidden;
+}
+.deck-icon-missing:empty {
+  display: inline-block;
+  box-sizing: border-box;
+  vertical-align: -0.125em;
+  border: 1.5px dashed var(--deck-muted);
+  border-radius: 3px;
+  opacity: 0.7;
+}
+
+/* ── <BlueSky> ───────────────────────────────────────────────────────────── */
+.deck-bluesky {
+  width: 600px;
+  max-width: 100%;
+  height: 420px;
+}
+.deck-bluesky .deck-frame {
+  /* The embed draws its own card and border. */
+  border: 0;
+  box-shadow: none;
+  border-radius: 12px;
+}
+.deck-bluesky-pending,
+.deck-bluesky.is-invalid {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1.5px dashed var(--deck-border);
+  border-radius: 12px;
+  color: var(--deck-muted);
+  font-size: 0.6em;
+  text-align: center;
+  padding: 1em;
+}
+
+/* ── <RenderWhen context="visible"> keeps a box to watch, and nothing else ─ */
+.deck-render-when {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-mark-svg path.is-drawing {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .deck-switch > .deck-switch-case,
+  .deck-switch > .deck-switch-case.is-hidden {
+    transform: none;
+    transition: none;
+  }
+}
+@media print {
+  .deck-drag-controls,
+  .deck-drag-arrow-hit,
+  .deck-drag-label {
+    display: none;
+  }
+}

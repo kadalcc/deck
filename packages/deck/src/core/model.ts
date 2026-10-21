@@ -1,12 +1,17 @@
 import type { ComponentType } from "react";
 
 import type { Frontmatter } from "../compiler/split.ts";
+import { parseDuration, parseTimerMode } from "./timer.ts";
+import type { DrawingSource } from "../draw/source.ts";
 import {
   DEFAULT_GLOSSARY,
   type GlossaryEntry,
   type GlossaryOptions,
   glossaryOptions,
 } from "../glossary/model.ts";
+import type { TransitionDefinition } from "./transitions.ts";
+import type { ManifestPackages } from "../theming/contract.ts";
+import type { FontsInput } from "../theming/fonts.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -66,6 +71,12 @@ export interface DeckManifest {
   /** The deck's `glossary.yaml`, parsed at build time; absent in a deck without one. */
   glossary?: GlossaryEntry[];
   /**
+   * Every slide's `<style>` blocks as one stylesheet, each scoped to its slide
+   * (`.deck-slide[data-index="N"]`) unless written `<style global>`; `<Deck>` renders it once.
+   * Absent or "" when no slide has one (compiler/slide-style.ts).
+   */
+  styles?: string;
+  /**
    * The in-browser Kokoro voice, when the deck has `kokoro-js` installed: a lazy import of the
    * module that starts its Web Worker. Null (or absent) without it — the narrator then uses the
    * browser's own voice and baked clips. The Vite plugin decides, so a deck without the package
@@ -78,6 +89,56 @@ export interface DeckManifest {
    * in a build). See src/remote/relay.ts.
    */
   relay?: DevRelay | null;
+
+  /**
+   * The deck's theme, the themes its menu offers, its addons and its own layer files, resolved
+   * (theming/contract.ts): by the Vite plugin from the deck's folder, or by the runtime compiler
+   * from the packages its page bundled. Absent in manifests built before 0.4: the headmatter's
+   * `theme` then names a stylesheet main.tsx imported, as it always did.
+   */
+  packages?: ManifestPackages;
+
+  /**
+   * Monaco for `{monaco…}` blocks: a lazy import of the deck's `virtual:deck/monaco`, which the
+   * Vite plugin generates only when some slide has one. Null or absent elsewhere; a page that
+   * compiles decks in the browser registers its own (`registerMonacoLoader`). See monaco/loader.ts.
+   */
+  monaco?: (() => Promise<import("../monaco/loader.ts").MonacoHost>) | null;
+
+  /**
+   * The deck's `setup/code-runners.ts`, when it has one: runners for `{monaco-run}` blocks,
+   * loaded before the first run. See monaco/runners.ts.
+   */
+  codeRunners?: (() => Promise<unknown>) | null;
+
+  /**
+   * The dev server's notes endpoint (`kadal-deck dev` only), through which the presenter, the
+   * overview and the notes pages save speaker notes into deck.mdx. Null or absent in a build,
+   * where those views are read-only (unless `<Deck notesEditor>` supplies a save path).
+   */
+  notesApi?: string | null;
+  /**
+   * The dev server's drag endpoint (`kadal-deck dev` only): where `<Drag>` and `<DragArrow>` save
+   * a position after a double-click edit (vite/drag-dev.ts). Null or absent elsewhere, where
+   * they are static.
+   */
+  dragApi?: string | null;
+  /** Served by `kadal-deck dev` (true) rather than built (false or absent). */
+  dev?: boolean;
+
+  /**
+   * The deck's saved drawings, `drawings/*.svg` (src/draw/source.ts): read from the dev server,
+   * bundled into a build, or taken from the runtime compiler's files. Null or absent without any.
+   */
+  drawings?: DrawingSource | null;
+
+  /**
+   * The dev server's slide-source endpoint (`kadal-deck dev` only, vite/source-dev.ts): the side
+   * editor (react/SideEditor.tsx) loads and saves a slide's whole source through it.
+   */
+  sourceApi?: string | null;
+  /** The side editor's CodeMirror module, a lazy import under `kadal-deck dev`; null in a build. */
+  sideEditor?: (() => Promise<import("./side-editor.ts").SideEditorModule>) | null;
 }
 
 /** A line to the dev server: Vite's HMR socket, event "kadal:remote". */
@@ -86,6 +147,31 @@ export interface DevRelay {
   on(listener: (message: unknown) => void): () => void;
   /** Hears the connection to the dev server come back (true) or drop (false). */
   onStatus(listener: (open: boolean) => void): () => void;
+}
+
+/**
+ * `drawings`: the pen, the shapes and where strokes are kept (src/draw/). Slidev's keys, plus
+ * `persist: "files"` and `perClick`.
+ */
+export interface DrawingsConfig {
+  /** The pen and its toolbar; `"dev"`: only on the dev server. */
+  enabled: boolean | "dev";
+  /**
+   * Where pinned strokes are kept. `true` (the default): this browser's storage. `"files"`:
+   * `drawings/<slide>.svg` beside deck.mdx, written by the dev server, bundled into a build and
+   * so into the hosted copy and every export (browser storage where files cannot be written).
+   * `false`: nowhere — a reload starts clean. Files in `drawings/` are shown whatever this says.
+   */
+  persist: boolean | "files";
+  /** Only the presenter draws; the audience sees. */
+  presenterOnly: boolean;
+  /** Every window that draws is synced, not only the presenter's. */
+  syncAll: boolean;
+  /**
+   * Strokes belong to the click step they were drawn on, and show from that step on (in the
+   * print view too, a page per step). Off: a slide has one drawing, whatever its step.
+   */
+  perClick: boolean;
 }
 
 /** `narration`: the autoplay rehearsal — notes read aloud, the deck turning its own pages. */
@@ -205,7 +291,10 @@ export interface DeckConfig {
    */
   scrollActivationWidth: number;
   theme: string;
-  /** Themes this deck ships (their CSS is imported by main.tsx); the theme menu lists them. */
+  /**
+   * The themes the theme menu offers, besides `theme`: built-ins, packages or folders, resolved
+   * like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines.
+   */
   themes: string[];
   colorScheme: ColorScheme;
   pdfSeparateFragments: boolean;
@@ -231,7 +320,7 @@ export interface DeckConfig {
     turnstile: string | null;
     verify?: string | null;
   };
-  drawings: { enabled: boolean; persist: boolean; presenterOnly: boolean; syncAll: boolean };
+  drawings: DrawingsConfig;
   // Described in catalog/reference.ts (DECK_KEY_DOCS), where the long form fits.
   narration: NarrationConfig;
   /**
@@ -253,9 +342,89 @@ export interface DeckConfig {
    * and core/ads.ts). Only the play view shows them.
    */
   ads: boolean;
-  /** Google Fonts families to load, e.g. ["Inter:wght@400;600"]. */
-  fonts: string[];
+  /**
+   * A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build
+   * --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there
+   * is none; a URL links that file instead. A host may switch it off, or on, for the decks it
+   * serves (`window.__KADAL_DECK__.download`). See core/download.ts.
+   */
+  download: boolean | string;
+  /**
+   * Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or Slidev's object —
+   * `{ sans, heading, serif, mono, weights, italic, provider: google|bunny|none, local, fallbacks }`
+   * — which also points the theme's font tokens at them (theming/fonts.ts).
+   */
+  fonts: FontsInput;
+  /**
+   * The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage`
+   * (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`,
+   * `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any
+   * other key as a meta tag of its own. Written into the built index.html.
+   */
   seoMeta: Record<string, string>;
+  /** The page's language: `<html lang>` and og:locale. Empty leaves index.html's. */
+  lang: string;
+  /** The tab icon: a file in public/ (`/logo.svg`) or a URL. The PWA's icon, when it is local. */
+  favicon: string;
+  /**
+   * `kadal-deck build` makes the deck an installable web app that presents offline: a web
+   * manifest, icons, and a service worker that precaches the build (vite/pwa.ts). Never in dev;
+   * `kadal-deck publish` leaves it out unless `--pwa`. An object sets { name, shortName,
+   * themeColor, backgroundColor, display }.
+   */
+  pwa: boolean | Record<string, string>;
+  /**
+   * At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS
+   * `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it
+   * presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache.
+   */
+  bundleRemoteAssets: boolean;
+  /**
+   * Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g.
+   * `{ layout: center, transition: fade }`. A theme's defaults sit beneath it.
+   */
+  defaults: Frontmatter;
+  /** The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. */
+  plantUmlServer: string;
+  /** Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. */
+  notesAutoRuby: Record<string, string>;
+  /** KaTeX options for every formula, e.g. `{ macros: { "\\RR": "\\mathbb{R}" } }`. */
+  katex: { macros?: Record<string, string>; [option: string]: unknown };
+  /** Mermaid configuration for every diagram (theme, themeVariables, look, flowchart…). */
+  mermaid: Record<string, unknown>;
+  /**
+   * Named custom transitions: `{ flip: { in: "flip-in", out: "flip-out", back: {…} } }`, the
+   * keyframes defined in the theme's CSS or a `<style global>` (core/transitions.ts).
+   */
+  transitions: Record<string, TransitionDefinition>;
+  /** Addon packages: `@kadal/addon-<name>`, `kadal-addon-<name>`, a package name or a folder. */
+  addons: string[];
+  /**
+   * The theme's knobs: each key becomes a `--theme-<kebab-key>` custom property on the deck root
+   * (`primary: "#0f766e"` → `--theme-primary`), over the theme's own defaults.
+   */
+  themeConfig: Record<string, unknown>;
+  /** Where the global and slide layers draw besides the deck, print and export. */
+  layers: { presenter: boolean; overview: boolean };
+  /**
+   * The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration` (Slidev's
+   * `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and
+   * go into overtime past it; the pacing badge (ahead/behind) works with either.
+   */
+  timer: "stopwatch" | "countdown";
+  /**
+   * How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number
+   * of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it;
+   * pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is
+   * `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes.
+   */
+  duration: number | null;
+  /**
+   * The right-click menu on the slides: true (always), false (never), "dev" (only under
+   * `kadal-deck dev`) or "build" (only in a built deck). Shift + right-click always gives the
+   * browser's own menu.
+   */
+  contextMenu: boolean | "dev" | "build";
 }
 
 export const DEFAULT_CONFIG: DeckConfig = {
@@ -327,7 +496,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   autoFit: true,
   magicMoveDuration: 800,
   live: { api: "/api", room: null, turnstile: null },
-  drawings: { enabled: true, persist: true, presenterOnly: false, syncAll: true },
+  drawings: { enabled: true, persist: true, presenterOnly: false, syncAll: true, perClick: false },
   narration: DEFAULT_NARRATION,
   glossary: DEFAULT_GLOSSARY,
   reactions: true,
@@ -337,15 +506,33 @@ export const DEFAULT_CONFIG: DeckConfig = {
   slug: "",
   badge: false,
   ads: false,
+  download: false,
   fonts: [],
   seoMeta: {},
+  lang: "",
+  favicon: "",
+  pwa: false,
+  bundleRemoteAssets: false,
+  defaults: {},
+  plantUmlServer: "https://www.plantuml.com/plantuml",
+  notesAutoRuby: {},
+  katex: {},
+  mermaid: {},
+  transitions: {},
+  addons: [],
+  themeConfig: {},
+  layers: { presenter: true, overview: false },
+  timer: "stopwatch",
+  duration: null,
+  contextMenu: true,
 };
 
 /** Headmatter and deck.config.ts both layer over the defaults; nested objects merge one level. */
 /** What a deck.config.ts or headmatter may set: any option, with the nested groups partial too. */
 export type DeckConfigInput = Partial<
-  Omit<DeckConfig, "live" | "drawings" | "seoMeta" | "glossary" | "narration">
+  Omit<DeckConfig, "live" | "drawings" | "seoMeta" | "glossary" | "narration" | "layers">
 > & {
+  layers?: Partial<DeckConfig["layers"]>;
   glossary?: Partial<GlossaryOptions> | string | false;
   live?: Partial<DeckConfig["live"]>;
   drawings?: Partial<DeckConfig["drawings"]>;
@@ -361,6 +548,8 @@ export function resolveConfig(
     live: { ...DEFAULT_CONFIG.live },
     drawings: { ...DEFAULT_CONFIG.drawings },
     narration: { ...DEFAULT_CONFIG.narration },
+    layers: { ...DEFAULT_CONFIG.layers },
+    themeConfig: {},
   };
   for (const layer of layers) {
     if (!layer) continue;
@@ -371,7 +560,14 @@ export function resolveConfig(
       else if (key === "narration" && typeof value === "boolean")
         out.narration = { ...out.narration, enabled: value };
       else if (
-        (key === "live" || key === "drawings" || key === "seoMeta" || key === "narration") &&
+        (key === "live" ||
+          key === "drawings" ||
+          key === "seoMeta" ||
+          key === "narration" ||
+          key === "transitions" ||
+          key === "mermaid" ||
+          key === "layers" ||
+          key === "themeConfig") &&
         value &&
         typeof value === "object"
       ) {
@@ -382,6 +578,11 @@ export function resolveConfig(
       } else (out as unknown as Record<string, unknown>)[key] = value;
     }
   }
+  // Slidev's timer keys: `duration: 30min`, `timer: countdown` (core/timer.ts).
+  out.duration = parseDuration(out.duration);
+  out.timer = parseTimerMode(out.timer);
+  if (!["dev", "build"].includes(out.contextMenu as string))
+    out.contextMenu = out.contextMenu !== false;
   // Slidev's aspectRatio + canvasWidth spelling.
   const fm = Object.assign({}, ...layers.filter(Boolean)) as Frontmatter;
   if (typeof fm.aspectRatio === "number" && typeof fm.canvasWidth === "number") {
@@ -740,6 +941,11 @@ export interface HostOverride {
   ads?: boolean;
   /** The host's viewer-verification page (a same-site path), see `DeckConfig.live.verify`. */
   verify?: string;
+  /**
+   * The Download button: `false` hides it whatever the deck says (a free plan), `true` allows
+   * the deck's own, a URL (https, or a same-site path) points a deck's button at the host's copy.
+   */
+  download?: boolean | string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -753,6 +959,9 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (typeof o.badge === "boolean") out.badge = o.badge;
   if (typeof o.ads === "boolean") out.ads = o.ads;
   if (typeof o.verify === "string" && /^\/(?!\/)[\w./-]*$/.test(o.verify)) out.verify = o.verify;
+  if (typeof o.download === "boolean") out.download = o.download;
+  else if (typeof o.download === "string" && /^(https:\/\/|\/(?!\/))\S+$/.test(o.download))
+    out.download = o.download;
   return out;
 }
 
@@ -764,7 +973,8 @@ export function withHostOverride(config: DeckConfig, override: HostOverride | nu
       !override.api &&
       !override.verify &&
       override.badge === undefined &&
-      override.ads === undefined)
+      override.ads === undefined &&
+      override.download === undefined)
   )
     return config;
   return {
@@ -777,6 +987,13 @@ export function withHostOverride(config: DeckConfig, override: HostOverride | nu
     },
     ...(override.badge !== undefined ? { badge: override.badge } : {}),
     ...(override.ads !== undefined ? { ads: override.ads } : {}),
+    // `false` hides the button; a URL points it at the host's copy; `true` (allowed) lets the
+    // deck's own choice stand, so a deck that never asked for a button doesn't get one.
+    ...(override.download === false
+      ? { download: false }
+      : typeof override.download === "string" && config.download !== false
+        ? { download: override.download }
+        : {}),
   };
 }
 

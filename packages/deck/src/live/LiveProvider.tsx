@@ -87,6 +87,8 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
     return (
       <>
         {children}
+        {/* A shared window draws nothing itself, but shows the drawing (the window bus brings it). */}
+        {deck.mode === "play" && deck.projector ? <DrawingLayer /> : null}
         {deck.mode === "play" && !deck.projector ? (
           <>
             <DrawingLayer />

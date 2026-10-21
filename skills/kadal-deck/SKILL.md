@@ -20,6 +20,8 @@ and `slide_render` (pictures of slides).
 
 1. **Start.** New deck: `npx @kadal/deck new <dir> --title "Talk title" --yes` (MCP:
    `deck_create`). Existing deck: read the outline first (`deck_outline`, or skim `deck.mdx`).
+   A Slidev deck (slides.md): `npx kadal-deck import slidev <folder>` converts it into a new
+   folder; then work through its `IMPORT-REPORT.md` (errors first) and check as below.
 2. **Plan the arc** before writing: title → hook → 3–5 sections, one idea per slide → close with
    the one thing to remember. Roughly one slide per minute. Read
    [references/design-guide.md](references/design-guide.md) once per task.
@@ -29,18 +31,29 @@ and `slide_render` (pictures of slides).
    `deck_reference`. With MCP, edit through `slide_update` / `slide_add` / `notes_set` (they
    touch only that slide and lint it); otherwise edit `deck.mdx` directly.
 4. **Check.** `npx kadal-deck check` (MCP `deck_check`). Fix every error; read the warnings.
-   Exit code 1 means errors remain.
+   Exit code 1 means errors remain. `npx kadal-deck format` tidies the file (separators,
+   frontmatter YAML, each slide's Markdown; code, notes and sugar stay as written); `--check`
+   only reports.
 5. **Look.** `npx kadal-deck screenshot --slide all` writes `screenshots/slide-NNN.png` (MCP
    `slide_render` returns the images). Open and inspect every picture: text overflowing or
    clipped, crowding, tiny type, low contrast, empty halves, broken images or components. Fix and
    look again. Try `--scheme dark` if the deck allows dark mode.
-6. **Ship** when the user asks: `npx kadal-deck build` (static `dist/`), `npx kadal-deck export
-   --png --pptx` (PDF/PNG/PPTX in `export/`), or `npx kadal-deck publish` (a URL with a live room
-   on deck.kadal.cc). Publishing needs the user to have run `npx kadal-deck login` once — never
+6. **Ship** when the user asks: `npx kadal-deck build` (static `dist/`; `--base /path/` for a
+   sub-path, `pwa: true` to present offline, `bundleRemoteAssets: true` for no network at all,
+   `seoMeta.ogImage: auto` for a link-preview picture; `npx kadal-deck ci github-pages` — or
+   netlify, vercel, cloudflare, docker — writes the host's deploy files), `npx kadal-deck export
+   --png --pptx` (PDF/PNG/PPTX in `export/`; `--format pptx-editable` for a PowerPoint file with
+   native, editable text, `--format md` for Markdown with the notes, `--range 1,3-5`, `--dark`),
+   or `npx kadal-deck publish` (a URL with a live room on deck.kadal.cc). `download: true` in the
+   headmatter adds a Download button and makes `build` write `dist/deck.pdf` for it; any deck
+   also exports from the browser at `/<deck>/export`. Publishing needs the user to have run `npx kadal-deck login` once — never
    try to sign in yourself; if `kadal-deck whoami` exits 3, ask them to.
 
 `npx kadal-deck dev` serves the deck with live reload for the user (MCP `deck_preview` returns
-the URL). `?` in the browser lists keys; `S` opens the presenter view; `R` narrates — reads each
+the URL); `--tunnel` gives it a public https address (Cloudflare Quick Tunnel, needs `cloudflared`;
+the presenter is password-guarded), `--remote <password>` puts it on the network with the
+presenter behind a password. `?` in the browser lists keys; `E` opens the side editor (the
+slide's source beside it, Cmd/Ctrl+S saves into the file); `S` opens the presenter view; `R` narrates — reads each
 `[click]` part of the notes aloud and turns the pages, for rehearsal. `npx kadal-deck narrate`
 bakes that speech into `public/narration/` (it needs `kokoro-js`: run it with `--setup` first,
 which installs a few hundred MB — only when the user wants recorded narration).
