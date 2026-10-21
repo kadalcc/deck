@@ -104,6 +104,17 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
               ☾ Dark
             </button>
           </div>
+          <button
+            type="button"
+            role="menuitem"
+            className="deck-theme-display"
+            onClick={() => {
+              actions.toggleThemeMenu(false);
+              void deck.commands.run("view.settings", { on: true }, "ui");
+            }}
+          >
+            Display settings… <kbd>,</kbd>
+          </button>
           <div className="deck-theme-hint">Yours only — every screen keeps its own choice.</div>
         </div>
       ) : null}

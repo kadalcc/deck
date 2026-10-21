@@ -165,3 +165,55 @@ export {
 } from "./theming/fonts.ts";
 export { deckFontsReady, extendSetupApi } from "./theming/react.tsx";
 export { useLayer } from "./react/Layers.tsx";
+
+// Presenting: slide lifecycle, direction, shortcuts, the context menu, notes editing, the timer.
+export {
+  onSlideEnter,
+  onSlideLeave,
+  useIsSlideActive,
+  useNavDirection,
+  useSlideEnter,
+  useSlideLeave,
+  type SlideLifecycleEvent,
+} from "./react/lifecycle.ts";
+export { navDirection, type NavDirection } from "./core/direction.ts";
+export {
+  createShortcutRegistry,
+  defaultShortcuts,
+  defineShortcuts,
+  keyLabel,
+  resolveShortcuts,
+  type ResolvedShortcut,
+  type Shortcut,
+  type ShortcutConflict,
+  type ShortcutRegistry,
+  type ShortcutsInput,
+} from "./core/shortcuts.ts";
+export {
+  createMenuRegistry,
+  defaultMenuItems,
+  type MenuInput,
+  type MenuItem,
+  type MenuRegistry,
+} from "./react/menu.ts";
+export {
+  devNotesEditor,
+  useNotesEditor,
+  useSlideNotes,
+  type NotesDraft,
+  type NotesEditor,
+  type NotesSaveResult,
+} from "./react/notes.ts";
+export { NotesView, type NotesViewProps } from "./react/NotesView.tsx";
+export { CLICK_MARKER, notesForClick, splitNotes, type NotesPart } from "./core/notes-markers.ts";
+export {
+  formatClock,
+  parseDuration,
+  readTimer,
+  type TimerMode,
+  type TimerReading,
+  type TimerState,
+} from "./core/timer.ts";
+export { plannedLength, presenterTimer } from "./react/pacing.ts";
+export { DEFAULT_FILTERS, filterCss, type DisplayFilters } from "./core/filters.ts";
+export { filtersStore, setFilters } from "./react/DisplaySettings.tsx";

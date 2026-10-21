@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 
 import type { Frontmatter } from "../compiler/split.ts";
+import { parseDuration, parseTimerMode } from "./timer.ts";
 import {
   DEFAULT_GLOSSARY,
   type GlossaryEntry,
@@ -108,6 +109,15 @@ export interface DeckManifest {
    * loaded before the first run. See monaco/runners.ts.
    */
   codeRunners?: (() => Promise<unknown>) | null;
+
+  /**
+   * The dev server's notes endpoint (`kadal-deck dev` only), through which the presenter, the
+   * overview and the notes pages save speaker notes into deck.mdx. Null or absent in a build,
+   * where those views are read-only (unless `<Deck notesEditor>` supplies a save path).
+   */
+  notesApi?: string | null;
+  /** Served by `kadal-deck dev` (true) rather than built (false or absent). */
+  dev?: boolean;
 }
 
 /** A line to the dev server: Vite's HMR socket, event "kadal:remote". */
@@ -327,6 +337,25 @@ export interface DeckConfig {
   themeConfig: Record<string, unknown>;
   /** Where the global and slide layers draw besides the deck, print and export. */
   layers: { presenter: boolean; overview: boolean };
+  /**
+   * The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration` (Slidev's
+   * `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and
+   * go into overtime past it; the pacing badge (ahead/behind) works with either.
+   */
+  timer: "stopwatch" | "countdown";
+  /**
+   * How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number
+   * of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it;
+   * pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is
+   * `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes.
+   */
+  duration: number | null;
+  /**
+   * The right-click menu on the slides: true (always), false (never), "dev" (only under
+   * `kadal-deck dev`) or "build" (only in a built deck). Shift + right-click always gives the
+   * browser's own menu.
+   */
+  contextMenu: boolean | "dev" | "build";
 }
 
 export const DEFAULT_CONFIG: DeckConfig = {
@@ -420,6 +449,9 @@ export const DEFAULT_CONFIG: DeckConfig = {
   addons: [],
   themeConfig: {},
   layers: { presenter: true, overview: false },
+  timer: "stopwatch",
+  duration: null,
+  contextMenu: true,
 };
 
 /** Headmatter and deck.config.ts both layer over the defaults; nested objects merge one level. */
@@ -473,6 +505,11 @@ export function resolveConfig(
       } else (out as unknown as Record<string, unknown>)[key] = value;
     }
   }
+  // Slidev's timer keys: `duration: 30min`, `timer: countdown` (core/timer.ts).
+  out.duration = parseDuration(out.duration);
+  out.timer = parseTimerMode(out.timer);
+  if (!["dev", "build"].includes(out.contextMenu as string))
+    out.contextMenu = out.contextMenu !== false;
   // Slidev's aspectRatio + canvasWidth spelling.
   const fm = Object.assign({}, ...layers.filter(Boolean)) as Frontmatter;
   if (typeof fm.aspectRatio === "number" && typeof fm.canvasWidth === "number") {

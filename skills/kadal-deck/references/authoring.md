@@ -68,6 +68,28 @@
   notes as sentences meant to be heard. `say: "…"` in a slide's frontmatter replaces what is read;
   `narration: false` keeps the slide quiet. `kadal-deck narrate` bakes the speech into
   `public/narration/` (Kokoro; `--setup` installs `kokoro-js` first).
+- `[click:3]` starts the part for step 3 exactly (Slidev's spelling). In the presenter, /notes and
+  /overview the current part is lit and every marker is a button to its step. Under
+  `kadal-deck dev` notes are editable there and on `/notes-edit` (saved into deck.mdx, in place) —
+  when the user asks to change notes, editing the file is still the right move for an agent.
+- Direction-aware styles: the deck root carries `data-nav-direction="forward|backward"`; the
+  starter's Tailwind has `forward:` / `backward:` variants (`class="forward:delay-300"`), and
+  without Tailwind `deck-instant-back` (snap back when stepping backward), `deck-delay-forward`,
+  `deck-forward-only` / `deck-backward-only`, and `--deck-nav-sign` (1 or -1) for your own CSS.
+
+## Presenting
+
+- Headmatter `timer: stopwatch | countdown` and `duration: 30min` (`1h`, `90s`, `25:00`, or minutes)
+  set the presenter's timer; it pauses, resets, shows progress and overtime, and the pacing badge
+  compares with `totalTime`/`duration` or each slide's `timing` (default `defaultTiming`).
+- `contextMenu: true | false | "dev" | "build"`: the right-click menu on slides.
+- Pages: `/presenter`, `/notes`, `/notes-edit` (batch notes editor, dev), `/overview` (every slide
+  with a step slider and its notes), `/remote`. `,` opens display settings (brightness, contrast,
+  saturation, sepia, hue, invert for a projector).
+- In main.tsx, `<Deck shortcuts={[{ keys: ["KeyQ"], command: "view.overview", description: "…" }]}>`
+  adds keys (a function gets the defaults and returns the whole list: `defineShortcuts`);
+  `contextMenu={(items) => [...items, { id, label, command }]}` adds menu items;
+  `keyboard: { KeyD: null }` in the headmatter unbinds a single key.
 
 ## Layouts and slots
 
@@ -162,5 +184,8 @@ export const components: Record<string, ComponentType<any>> = { Stat };
 ```
 
 Then `<Stat value="93%" label="coverage" />` in any slide. Hooks from `@kadal/deck`
-(`useSlide`, `useClick`, `useConfig`) give a component its slide, click step and settings.
+(`useSlide`, `useClick`, `useConfig`) give a component its slide, click step and settings;
+`useSlideEnter(fn)` / `useSlideLeave(fn)` (alias `onSlideEnter` / `onSlideLeave`) run when the
+slide becomes / stops being the current one — not on mount, never in previews, the overview or
+print; an enter may return a cleanup. `useNavDirection()` says "forward" or "backward".
 Components from other frameworks (Vue, Svelte, Solid…) go in as islands via `@kadal/deck-*`.

@@ -1,0 +1,755 @@
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * PRESENTING  —  direction variants, display filters, the context menu, the display settings,
+ * the presenter's timer, notes by step and in the editor, /overview, /notes-edit
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Everything reads the theme's tokens, so light, dark and every theme restyle it.
+ */
+
+/* ── navigation direction (core/direction.ts) ─────────────────────────────────
+   The deck root, the stage and the slides taking part in a move carry
+   data-nav-direction="forward|backward"; the root also sets --deck-nav-sign: 1 | -1.
+
+   With Tailwind v4, the starter's styles.css declares the variants:
+     @custom-variant forward (&:where([data-nav-direction="forward"] *));
+     @custom-variant backward (&:where([data-nav-direction="backward"] *));
+   so `class="transition forward:delay-300"` delays a click's reveal going forward only.
+
+   Without Tailwind, these classes cover the common cases: */
+
+/* Snap back with no animation when the deck goes backward (a step un-revealed instantly). */
+[data-nav-direction="backward"] .deck-instant-back,
+[data-nav-direction="backward"] .deck-instant-back * {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+/* And the other way round. */
+[data-nav-direction="forward"] .deck-instant-forward,
+[data-nav-direction="forward"] .deck-instant-forward * {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+/* Wait before revealing going forward only (--deck-forward-delay, 300ms by default). */
+[data-nav-direction="forward"] .deck-delay-forward {
+  transition-delay: var(--deck-forward-delay, 300ms);
+}
+[data-nav-direction="backward"] .deck-delay-backward {
+  transition-delay: var(--deck-backward-delay, 300ms);
+}
+/* Shown only while the deck moves that way (a "previously…" or "next up" cue). */
+[data-nav-direction="backward"] .deck-forward-only,
+[data-nav-direction="forward"] .deck-backward-only {
+  display: none !important;
+}
+
+/* ── display filters (core/filters.ts) — the deck page's slides only ───────── */
+.deck-root.mode-play[data-filtered] :is(.deck-zoom, .deck-backgrounds, .deck-scroll) {
+  filter: var(--deck-slide-filter, none);
+}
+
+/* ── the context menu (react/ContextMenu.tsx) ─────────────────────────────── */
+.deck-context-menu {
+  position: fixed;
+  z-index: 120;
+  min-width: 232px;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  font: 13px/1.3 var(--deck-body-font);
+  user-select: none;
+}
+.deck-context-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.deck-context-item:hover,
+.deck-context-item:focus-visible {
+  background: color-mix(in oklab, var(--deck-accent) 14%, transparent);
+  outline: none;
+}
+.deck-context-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--deck-accent);
+}
+.deck-context-item[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+.deck-context-icon {
+  width: 16px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--deck-muted);
+}
+.deck-context-item[aria-checked="true"] .deck-context-icon {
+  color: var(--deck-accent);
+}
+.deck-context-label {
+  flex: 1;
+}
+.deck-context-keys {
+  font: 11px var(--deck-mono-font);
+  color: var(--deck-muted);
+  border: 1px solid var(--deck-border);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.deck-context-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--deck-border);
+}
+
+/* ── the display settings (react/DisplaySettings.tsx) ─────────────────────── */
+.deck-settings {
+  position: fixed;
+  z-index: 115;
+  top: 16px;
+  right: 16px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+  font: 13px/1.4 var(--deck-body-font);
+}
+.deck-settings-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.deck-settings-scope {
+  flex: 1;
+  color: var(--deck-muted);
+  font-size: 11px;
+}
+.deck-settings-head button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.deck-settings-row {
+  display: grid;
+  grid-template-columns: 84px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+}
+.deck-settings-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--deck-accent);
+}
+.deck-settings-row output {
+  font: 11px var(--deck-mono-font);
+  color: var(--deck-muted);
+  text-align: right;
+}
+.deck-settings-check input {
+  justify-self: start;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--deck-accent);
+}
+.deck-settings-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--deck-border);
+}
+.deck-settings-hint {
+  flex: 1;
+  color: var(--deck-muted);
+  font-size: 11px;
+}
+.deck-settings-foot button {
+  font: 12px var(--deck-body-font);
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  cursor: pointer;
+}
+.deck-settings-foot button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── the presenter's timer (presenter/Timer.tsx) ──────────────────────────── */
+.deck-presenter-bar {
+  position: relative;
+}
+.deck-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.deck-timer-play,
+.deck-timer-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  cursor: pointer;
+}
+.deck-timer.is-paused .deck-timer-play {
+  background: var(--deck-accent);
+  border-color: var(--deck-accent);
+  color: var(--deck-bg);
+}
+.deck-timer-time {
+  font-variant-numeric: tabular-nums;
+}
+.deck-timer.is-paused .deck-timer-time {
+  opacity: 0.55;
+}
+.deck-timer.is-overtime .deck-timer-time {
+  color: #ef4444;
+}
+.deck-timer-flag {
+  font: 600 10px var(--deck-body-font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--deck-surface);
+  color: var(--deck-muted);
+}
+.deck-timer-flag.is-over {
+  background: #ef4444;
+  color: #fff;
+}
+.deck-timer-menu-wrap {
+  position: relative;
+}
+.deck-timer-settings {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 260px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+  display: grid;
+  gap: 8px;
+}
+.deck-timer-segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--deck-surface);
+}
+.deck-timer-segment button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: 12px var(--deck-body-font);
+  cursor: pointer;
+}
+.deck-timer-segment button.is-on {
+  background: var(--deck-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.deck-timer-length {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.deck-timer-length input {
+  font: 13px var(--deck-mono-font);
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: inherit;
+}
+.deck-timer-length input[aria-invalid="true"] {
+  border-color: #ef4444;
+}
+.deck-timer-hint {
+  margin: 0;
+  color: var(--deck-muted);
+  font-size: 11px;
+}
+/* The progress bar is the top bar's bottom edge; the tick is where this slide should be. */
+.deck-timer-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  background: color-mix(in oklab, var(--deck-border) 60%, transparent);
+  pointer-events: none;
+}
+.deck-timer-progress i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--deck-accent);
+  transition: width 0.5s linear;
+}
+.deck-timer.is-overtime .deck-timer-progress i {
+  background: #ef4444;
+}
+.deck-timer-progress b {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 9px;
+  margin-left: -1px;
+  background: var(--deck-fg);
+  opacity: 0.6;
+}
+/* The schedule beside the audience's pace votes (presenter/Sidebar.tsx). */
+.deck-side-schedule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--deck-border);
+  font-size: 12px;
+}
+.deck-side-schedule span {
+  flex: 1;
+}
+.deck-side-schedule small {
+  font: 11px var(--deck-mono-font);
+  color: var(--deck-muted);
+}
+.deck-side-schedule.is-behind span {
+  color: #ef4444;
+}
+.deck-side-schedule.is-ahead span {
+  color: #3b82f6;
+}
+.deck-side-schedule.is-ok span {
+  color: #16a34a;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-timer-progress i {
+    transition: none;
+  }
+}
+
+/* ── notes by step, and in the editor (react/NotesView.tsx) ───────────────── */
+.deck-notes-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.deck-notes-panel .deck-notes-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px;
+  line-height: 1.5;
+}
+.deck-notes-rendered p {
+  margin: 0 0 0.6em;
+}
+.deck-notes-tools {
+  align-items: center;
+}
+.deck-notes-edit-tools {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.deck-notes-edit-tools button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 11px var(--deck-body-font);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--deck-border);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.deck-notes-status {
+  font: 11px var(--deck-body-font);
+  color: var(--deck-muted);
+  padding: 0 4px;
+}
+.deck-notes-status.is-saved {
+  color: #16a34a;
+}
+.deck-notes-status.is-error {
+  color: #ef4444;
+}
+.deck-notes-source textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 7em;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  font: 14px/1.55 var(--deck-mono-font);
+  tab-size: 2;
+}
+.deck-notes-source textarea:focus {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+}
+.deck-notes-conflict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #f59e0b;
+  background: color-mix(in oklab, #f59e0b 12%, var(--deck-bg));
+  font-size: 13px;
+}
+.deck-notes-conflict p {
+  flex: 1 0 100%;
+  margin: 0;
+}
+.deck-notes-conflict button {
+  font: 12px var(--deck-body-font);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: inherit;
+  cursor: pointer;
+}
+/* Parts by step: past dimmed, current marked, future plain. */
+.deck-notes-segment.is-future {
+  opacity: 1;
+}
+button.deck-click-marker {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--deck-body-font);
+}
+button.deck-click-marker:hover,
+button.deck-click-marker:focus-visible {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.45);
+  outline: none;
+}
+.deck-click-marker.is-past {
+  background: #64748b;
+}
+.deck-click-marker.is-future {
+  background: transparent;
+  color: #2563eb;
+  box-shadow: inset 0 0 0 1.5px #2563eb;
+}
+[data-color-scheme="dark"] .deck-click-marker.is-future {
+  color: #93c5fd;
+  box-shadow: inset 0 0 0 1.5px #93c5fd;
+}
+
+/* ── /notes and /notes-edit ───────────────────────────────────────────────── */
+.deck-notes-page-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+.deck-notes-page-head h1 {
+  margin: 0 !important;
+}
+.deck-notes-page-head nav {
+  display: flex;
+  gap: 14px;
+  font-size: 14px;
+}
+.deck-notes-page-head nav a {
+  color: var(--deck-accent);
+}
+.deck-notes-entry.is-current {
+  border-top-color: var(--deck-accent);
+  box-shadow: inset 3px 0 0 var(--deck-accent);
+  padding-left: 14px;
+}
+.deck-notes-entry .deck-notes-tools {
+  display: flex;
+  gap: 4px;
+  min-height: 0;
+}
+.deck-notes-edit-hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+/* ── /overview (react/OverviewPage.tsx) ───────────────────────────────────── */
+.deck-ov-page {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  background: color-mix(in oklab, var(--deck-bg) 94%, var(--deck-fg));
+  color: var(--deck-fg);
+  font: 14px/1.5 var(--deck-body-font);
+}
+.deck-ov-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px clamp(16px, 4vw, 40px);
+  background: var(--deck-bg);
+  border-bottom: 1px solid var(--deck-border);
+}
+.deck-ov-head h1 {
+  margin: 0;
+  font-size: 18px;
+}
+.deck-ov-spacer {
+  flex: 1;
+}
+.deck-ov-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--deck-muted);
+}
+.deck-ov-head nav {
+  display: flex;
+  gap: 12px;
+}
+.deck-ov-head nav a {
+  color: var(--deck-accent);
+}
+.deck-ov-list {
+  list-style: none;
+  margin: 0;
+  padding: 16px clamp(16px, 4vw, 40px) 64px;
+  display: grid;
+  gap: 14px;
+}
+.deck-ov-row {
+  display: grid;
+  grid-template-columns: 44px auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  /* A row off screen is not laid out until it is near. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+.deck-ov-row.is-current {
+  border-color: var(--deck-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--deck-accent) 40%, transparent);
+}
+.deck-ov-num {
+  font: 600 18px var(--deck-mono-font);
+  color: var(--deck-muted);
+  text-align: right;
+  padding-top: 4px;
+}
+.deck-ov-slide {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  width: min(480px, 100%);
+}
+.deck-ov-thumb {
+  position: relative;
+  display: block;
+  width: min(480px, 100%);
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+}
+.deck-ov-open {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.deck-ov-open:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+.deck-ov-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.deck-ov-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.deck-ov-steps input[type="range"] {
+  flex: 1;
+  accent-color: var(--deck-accent);
+}
+.deck-ov-step-label {
+  font: 12px var(--deck-mono-font);
+  color: var(--deck-muted);
+  min-width: 3.5em;
+  text-align: right;
+}
+.deck-ov-go {
+  font: 12px var(--deck-body-font);
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: inherit;
+  cursor: pointer;
+}
+.deck-ov-notes {
+  min-width: 0;
+}
+.deck-ov-notes h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.deck-ov-notes .deck-notes-tools {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.deck-ov-notes .deck-notes-rendered {
+  font-size: 15px;
+  line-height: 1.55;
+}
+@media (max-width: 900px) {
+  .deck-ov-row {
+    grid-template-columns: 1fr;
+  }
+  .deck-ov-num {
+    text-align: left;
+  }
+  .deck-ov-row {
+    padding: 10px;
+    gap: 10px;
+  }
+}
+
+/* ── the help sheet: what this deck added ─────────────────────────────────── */
+.deck-help-custom {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: color-mix(in oklab, var(--deck-accent) 16%, transparent);
+  color: var(--deck-accent);
+}
+
+/* ── the phone remote: its timer and its notes by step (remote/index.tsx) ──── */
+button.deck-remote-timer {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 2px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+button.deck-remote-timer:disabled {
+  cursor: default;
+}
+.deck-remote-timer.is-paused {
+  opacity: 0.6;
+}
+.deck-remote-timer.is-overtime {
+  color: var(--r-bad, #ef4444);
+}
+.deck-remote-notes-parts {
+  display: grid;
+  gap: 2px;
+}
+.deck-remote-note-part {
+  margin: 4px 0 0 !important;
+  padding: 4px 6px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+.deck-remote-note-part[role="button"] {
+  cursor: pointer;
+}
+.deck-remote-note-part b {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4em;
+  height: 1.4em;
+  margin-right: 0.4em;
+  border-radius: 999px;
+  background: var(--r-accent, #2563eb);
+  color: #fff;
+  font-size: 0.65em;
+  vertical-align: 0.15em;
+}
+.deck-remote-note-part.is-past {
+  opacity: 0.45;
+}
+.deck-remote-note-part.is-current {
+  background: color-mix(in oklab, var(--r-accent, #2563eb) 22%, transparent);
+}
+.deck-theme-display kbd {
+  margin-left: auto;
+  font: 11px var(--deck-mono-font);
+  color: var(--deck-muted);
+}

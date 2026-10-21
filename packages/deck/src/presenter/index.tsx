@@ -1,4 +1,4 @@
-import { type ComponentType, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
@@ -22,16 +22,11 @@ import { ThemeMenu } from "../react/ThemeMenu.tsx";
 import { loadSlide, SlideFrame } from "../react/SlideFrame.tsx";
 import { Stage } from "../react/Stage.tsx";
 import { useFit } from "../react/fit.ts";
-import {
-  expectedElapsed,
-  formatElapsed,
-  formatPace,
-  paceTone,
-  presenterClock,
-} from "../react/pacing.ts";
+import { NotesView } from "../react/NotesView.tsx";
 import { RemoteHost } from "../remote/host.tsx";
 import { useNarrationOn } from "../react/NarrationGate.tsx";
 import { PresenterSidebar } from "./Sidebar.tsx";
+import { PresenterTimer } from "./Timer.tsx";
 
 /** The narration bar is its own chunk, fetched when the presenter view opens on a deck with notes. */
 const Narration = lazy(() => import("../narrate/Narration.tsx"));
@@ -390,160 +385,58 @@ function NextPreview() {
   );
 }
 
-/** Notes, with `[click]` markers splitting them into the segments the clicks reveal. */
+/**
+ * Notes, with `[click]` markers splitting them into the parts the clicks reveal: the current part
+ * marked, a marker's button jumps to its step, and in `kadal-deck dev` (or with a host's
+ * `notesEditor`) Edit turns them into their Markdown, saved back into deck.mdx (react/NotesView.tsx).
+ */
 export function NotesPanel() {
-  const { meta } = useCurrentSlide();
+  const { meta, h, v } = useCurrentSlide();
   const click = useNav((s) => s.click);
-  const [Notes, setNotes] = useState<ComponentType | null>(null);
-  const root = useRef<HTMLDivElement>(null);
+  const actions = useActions();
   const [fontSize, setFontSize] = useState(() => {
     const saved = Number(readItem("deck.notes.size") ?? 20);
     return Number.isFinite(saved) && saved > 0 ? saved : 20;
   });
   useEffect(() => {
-    let alive = true;
-    setNotes(null);
-    if (!meta?.loadNotes) return;
-    void loadSlide(meta);
-    meta.loadNotes().then((m) => alive && setNotes(() => m.default as ComponentType));
-    return () => {
-      alive = false;
-    };
+    if (meta) void loadSlide(meta);
   }, [meta]);
-  // Split the rendered notes at "[click]" markers and highlight the current segment.
-  useEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    const nodes: Text[] = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode as Text);
-    let segment = 0;
-    for (const node of nodes) {
-      if (!node.data.includes("[click]")) {
-        wrap(node, segment);
-        continue;
-      }
-      const parts = node.data.split("[click]");
-      const frag = document.createDocumentFragment();
-      parts.forEach((p, i) => {
-        if (i > 0) {
-          segment++;
-          const marker = document.createElement("span");
-          marker.className = "deck-click-marker";
-          marker.dataset.segment = String(segment);
-          marker.textContent = String(segment);
-          frag.appendChild(marker);
-        }
-        if (p) {
-          const span = document.createElement("span");
-          span.className = "deck-notes-segment";
-          span.dataset.segment = String(segment);
-          span.textContent = p;
-          frag.appendChild(span);
-        }
-      });
-      node.replaceWith(frag);
-    }
-    function wrap(n: Text, seg: number) {
-      if (!n.data.trim() || n.parentElement?.classList.contains("deck-notes-segment")) return;
-      const span = document.createElement("span");
-      span.className = "deck-notes-segment";
-      span.dataset.segment = String(seg);
-      n.replaceWith(span);
-      span.appendChild(n);
-    }
-  }, [Notes]);
-  useEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    for (const s of el.querySelectorAll<HTMLElement>("[data-segment]")) {
-      const seg = Number(s.dataset.segment);
-      s.classList.toggle("is-current", seg === click);
-      s.classList.toggle("is-past", seg < click);
-    }
-    el.querySelector<HTMLElement>(`.deck-notes-segment.is-current`)?.scrollIntoView({
-      block: "nearest",
-      behavior: "smooth",
-    });
-  }, [click, Notes]);
   useEffect(() => {
     writeItem("deck.notes.size", String(fontSize));
   }, [fontSize]);
+  if (!meta) return <div className="deck-notes-panel" />;
   return (
     <div className="deck-notes-panel">
-      <div className="deck-notes-tools">
-        <button
-          type="button"
-          onClick={() => setFontSize((s) => Math.max(12, s - 2))}
-          aria-label="Smaller notes"
-        >
-          A−
-        </button>
-        <button
-          type="button"
-          onClick={() => setFontSize((s) => Math.min(48, s + 2))}
-          aria-label="Larger notes"
-        >
-          A+
-        </button>
-      </div>
-      <div ref={root} className="deck-notes-body" style={{ fontSize }}>
-        {Notes ? <Notes /> : <p className="deck-muted">No notes for this slide.</p>}
-      </div>
+      <NotesView
+        meta={meta}
+        click={click}
+        onJump={(step) => actions.goto(h, v, step)}
+        fontSize={fontSize}
+        tools={
+          <>
+            <button
+              type="button"
+              onClick={() => setFontSize((s) => Math.max(12, s - 2))}
+              aria-label="Smaller notes"
+            >
+              A−
+            </button>
+            <button
+              type="button"
+              onClick={() => setFontSize((s) => Math.min(48, s + 2))}
+              aria-label="Larger notes"
+            >
+              A+
+            </button>
+          </>
+        }
+      />
     </div>
   );
 }
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
-}
-
-/** Elapsed time since the view opened, with pacing against `defaultTiming` or `totalTime`. */
-function PresenterTimer() {
-  const deck = useDeck();
-  /**
-   * Kept for the life of this TAB, not this page load, so reloading — to pick up a new build, or
-   * to get past a slide that would not load — does not quietly set the talk back to zero. A new
-   * window is a new talk and starts again, which is what sessionStorage already means.
-   */
-  const startKey = `deck.presenter.start.${deck.config.slug || "deck"}`;
-  const [start, setStart] = useState(() => {
-    // Where storage is blocked (a private window, a sandboxed deck) it is per page load, as before.
-    const saved = Number(readItem(startKey, "session"));
-    if (saved > 0) return saved;
-    writeItem(startKey, String(Date.now()), "session");
-    return Date.now();
-  });
-  /** Reset writes through, or a reload would bring the old start back. */
-  const restart = (at: number) => {
-    writeItem(startKey, String(at), "session");
-    setStart(at);
-  };
-  // The phone remote shows the same clock.
-  useEffect(() => {
-    presenterClock.set(start);
-    return () => presenterClock.set(null);
-  }, [start]);
-  const [now, setNow] = useState(Date.now());
-  const nav = useNav((s) => ({ h: s.h, v: s.v }));
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(t);
-  }, []);
-  const elapsed = Math.floor((now - start) / 1000);
-  const expected = expectedElapsed(deck, nav);
-  const pace = expected === null ? null : elapsed - expected;
-  return (
-    <button
-      type="button"
-      className={["deck-presenter-timer", paceTone(pace)].join(" ")}
-      onClick={() => restart(Date.now())}
-      title="Click to reset"
-    >
-      {formatElapsed(elapsed)}
-      {pace !== null ? <small>{formatPace(pace)}</small> : null}
-    </button>
-  );
 }
 
 function Clock() {
@@ -855,51 +748,53 @@ function ReactionTotals({ totals }: { totals: Record<string, number> }) {
 
 /* ── /notes: every note on one page ─────────────────────────────────────── */
 
+/**
+ * Every slide's notes, one after another: a page to read from on a second device, or to review
+ * the talk. It follows the presenter (in this browser, or the room): the slide being presented is
+ * marked, its current part highlighted and kept in view, and its markers jump to their step. In
+ * `kadal-deck dev` each entry has Edit (or double-click), and "Edit all" opens /notes-edit.
+ */
 export function NotesPage() {
   const deck = useDeck();
+  const editor = deck.notesEditor;
+  const at = useNav((s) => ({ h: s.h, v: s.v, click: s.click }));
+  const actions = useActions();
   return (
     <div className="deck-notes-page">
-      <h1>{deck.config.title} — notes</h1>
+      <header className="deck-notes-page-head">
+        <h1>{deck.config.title} — notes</h1>
+        <nav>
+          <a href={`${deck.base}overview`}>Overview</a>
+          {editor ? <a href={`${deck.base}notes-edit`}>Edit all</a> : null}
+        </nav>
+      </header>
       {deck.columns.flatMap((c) =>
-        c.slides.map((meta, v) => (
-          <NotesEntry
-            key={`${c.h},${v}`}
-            meta={meta}
-            label={`${c.h + 1}${v ? `.${v + 1}` : ""}`}
-            href={`${deck.base}#/${c.h}${v ? `/${v}` : ""}`}
-          />
-        )),
+        c.slides.map((meta, v) => {
+          const current = at.h === c.h && at.v === v;
+          return (
+            <section
+              key={`${c.h},${v}`}
+              className={["deck-notes-entry", current ? "is-current" : ""].join(" ")}
+              aria-current={current ? "step" : undefined}
+            >
+              <h2>
+                <a href={`${deck.base}#/${c.h}${v ? `/${v}` : ""}`}>
+                  {c.h + 1}
+                  {v ? `.${v + 1}` : ""} {meta.title ?? ""}
+                </a>
+              </h2>
+              <NotesView
+                meta={meta}
+                click={current ? at.click : null}
+                onJump={(step) => actions.goto(c.h, v, step)}
+                scroll="page"
+                empty="—"
+              />
+            </section>
+          );
+        }),
       )}
     </div>
-  );
-}
-
-function NotesEntry({
-  meta,
-  label,
-  href,
-}: {
-  meta: { title: string | null; loadNotes: (() => Promise<{ default: ComponentType }>) | null };
-  label: string;
-  href: string;
-}) {
-  const [Notes, setNotes] = useState<ComponentType | null>(null);
-  useEffect(() => {
-    let alive = true;
-    meta.loadNotes?.().then((m) => alive && setNotes(() => m.default));
-    return () => {
-      alive = false;
-    };
-  }, [meta]);
-  return (
-    <section className="deck-notes-entry">
-      <h2>
-        <a href={href}>
-          {label} {meta.title ?? ""}
-        </a>
-      </h2>
-      {Notes ? <Notes /> : <p className="deck-muted">—</p>}
-    </section>
   );
 }
 

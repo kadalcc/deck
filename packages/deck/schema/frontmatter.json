@@ -1339,6 +1339,45 @@
           },
           "description": "Where the global and slide layers draw besides the deck, print and export."
         },
+        "timer": {
+          "type": "string",
+          "enum": [
+            "stopwatch",
+            "countdown"
+          ],
+          "description": "The presenter's timer: \"stopwatch\" counts up, \"countdown\" counts down from `duration` (Slidev's `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either.",
+          "default": "stopwatch"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes."
+        },
+        "contextMenu": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "dev",
+                "build"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "description": "The right-click menu on the slides: true (always), false (never), \"dev\" (only under `kadal-deck dev`) or \"build\" (only in a built deck). Shift + right-click always gives the browser's own menu.",
+          "default": true
+        },
         "aspectRatio": {
           "type": "number",
           "description": "Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…)."

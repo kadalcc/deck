@@ -29,6 +29,9 @@ declare const __KADAL_DECK_VERSION__: string | undefined;
 const VERSION = typeof __KADAL_DECK_VERSION__ === "string" ? __KADAL_DECK_VERSION__ : "dev";
 
 const MODE_SEGMENTS = new Set(["presenter", "join", "audience", "notes", "stats", "remote", "export"]);
+// The engine's own pages (react/OverviewPage.tsx, react/NotesEditPage.tsx).
+MODE_SEGMENTS.add("overview");
+MODE_SEGMENTS.add("notes-edit");
 
 /** The deck's root path, from the host's word or the address: the last mode segment comes off. */
 export function shellBase(pathname: string, injected?: unknown): string {

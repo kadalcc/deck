@@ -14,6 +14,7 @@
 @import "./theming.css";
 @import "./export.css";
 @import "./code.css";
+@import "./presenting.css";
 
 :root {
   --deck-bg: #ffffff;
@@ -612,12 +613,17 @@ body {
 }
 
 /* ── clicks (fragments) ──────────────────────────────────────────────────── */
-.deck-click {
-  transition:
-    opacity 0.4s ease,
-    transform 0.4s ease,
-    color 0.4s ease,
-    filter 0.4s ease;
+/* The timing sits in a layer of its own: a layer always yields to rules outside it and to layers
+   declared after it — Tailwind's utilities among them — so `delay-300`, `duration-0` and the
+   direction variants (`forward:delay-300`, themes/presenting.css) can change a click's timing. */
+@layer deck-clicks {
+  .deck-click {
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease,
+      color 0.4s ease,
+      filter 0.4s ease;
+  }
 }
 .deck-click.is-hidden {
   opacity: 0;

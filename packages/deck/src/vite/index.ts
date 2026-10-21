@@ -43,6 +43,7 @@ import {
 import { monacoInstalled, monacoLangs, monacoModule, setupFile } from "./monaco.ts";
 import { monacoWriteDev } from "./monaco-dev.ts";
 import { loadTwoslash } from "./twoslash.ts";
+import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } from "./notes-dev.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -286,6 +287,22 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     return manifest;
   };
 
+  /** Rebuild; when the change touched notes only, push them over HMR and say so (notes-dev.ts). */
+  const hotNotes = (): boolean => {
+    const before = manifest!;
+    let after: ReturnType<typeof build>;
+    try {
+      after = build();
+    } catch {
+      return false;
+    }
+    const changes = notesOnlyChanges(before, after);
+    if (!changes || !server) return false;
+    manifest = after;
+    if (changes.length) pushNotes(server, base, after, changes, plainText);
+    return true;
+  };
+
   const invalidate = (quiet = false) => {
     manifest = null;
     if (!server) return;
@@ -438,11 +455,22 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           quietWrites.delete(file);
           if (existsSync(file) && readFileSync(file, "utf8") === quiet) return invalidate(true);
         }
+        // Only notes changed (a save from the presenter, say): push those, keep every view as it is.
+        if (manifest && file !== glossaryFile && hotNotes()) return;
         invalidate();
       };
+      notesEndpoint(s, { entry: () => entryPath, base: () => base });
       s.watcher.on("change", changed);
       s.watcher.on("add", changed);
       s.watcher.on("unlink", changed);
+    },
+    // Tailwind full-reloads the page when a file it scans changes (deck.mdx is one). A change that
+    // touched only notes is handled here first (hotNotes: pushed over HMR) and answered with no
+    // modules, which leaves Tailwind nothing to reload; any other change goes on as before.
+    hotUpdate({ file, type }) {
+      if (this.environment && this.environment.name !== "client") return;
+      if (type !== "update" || !(file === entryPath || included.has(file))) return;
+      if (manifest && hotNotes()) return [];
     },
     writeBundle() {
       if (!building) return;
@@ -525,12 +553,18 @@ ${building ? "export const relay = null;" : DEV_RELAY}
 export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
 export const monaco = ${hasMonaco ? `() => import("${VIRTUAL}/monaco").then((m) => m.default())` : "null"};
 export const codeRunners = ${runnersFile && existsSync(runnersFile) ? `() => import(${JSON.stringify(runnersFile)})` : "null"};
-export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners };
+export const dev = ${building ? "false" : "true"};
+export const notesApi = ${building ? "null" : JSON.stringify(`${base}${NOTES_PATH}`)};
+${building ? "" : DEV_NOTES}
+export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi };
 `;
       }
 
       if (!id.startsWith("\0virtual:deck/")) return null;
-      const slide = /^(slide|notes|magic)\/(\d+)$/.exec(id.slice("\0virtual:deck/".length));
+      // A hot notes update asks for `notes/N?t=…`: the query only busts the browser's cache.
+      const slide = /^(slide|notes|magic)\/(\d+)(?:\?.*)?$/.exec(
+        id.slice("\0virtual:deck/".length),
+      );
       if (!slide) return null;
       const kind = slide[1]!;
       const s = m.slides[Number(slide[2])];

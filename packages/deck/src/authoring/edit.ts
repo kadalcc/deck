@@ -648,3 +648,135 @@ export function moveSlide(
   const same: Expect["same"] = order.map((old, now) => [old, now, old !== 0 && now !== 0]);
   return doc.result(target, notes, { count: n, same });
 }
+
+/* ── notes, edited where they are written ─────────────────────────────────── */
+
+/**
+ * How a slide's notes are written: a `<Notes>` block, a trailing HTML comment (Slidev's form,
+ * where the compiler reads one), or not at all.
+ */
+export type NotesForm = "notes" | "comment" | "none";
+
+export interface NotesSource {
+  /** The slide's index in the deck (what `SlideRef` numbers mean). */
+  index: number;
+  /** The notes as written — Markdown/MDX, `[click]` markers and all; "" when there are none. */
+  text: string;
+  form: NotesForm;
+  /** A short fingerprint of `text`: hand it back to `writeNotes` to refuse a stale write. */
+  version: string;
+}
+
+/** The notes were changed by someone else since they were read; nothing was written. */
+export class NotesConflict extends EditError {
+  override name = "NotesConflict";
+  constructor(readonly current: NotesSource) {
+    super(`Slide ${current.index}'s notes changed since they were read.`);
+  }
+}
+
+/** FNV-1a over the text: a version for a conflict check, not a security token. */
+export function notesVersion(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${h.toString(36)}.${text.length.toString(36)}`;
+}
+
+/**
+ * Where a slide's notes are, in its raw body: the first notes block's inner span, its form, and
+ * every block (compiler/split.ts `notesBlocks`: the `<Notes>` tags and the trailing HTML comments
+ * the compiler reads as notes, so an editor sees exactly what the presenter shows).
+ */
+function locateNotes(body: string) {
+  const blocks = notesBlocks(body);
+  const b = blocks[0];
+  if (!b) return null;
+  if (b.kind === "comment")
+    return { form: "comment" as const, blocks, innerStart: b.start + 4, innerEnd: b.end - 3 };
+  const innerStart = body.indexOf(">", b.start) + 1;
+  return { form: "notes" as const, blocks, innerStart, innerEnd: b.end - "</Notes>".length };
+}
+
+/** A slide's notes as written, for an editor to start from. */
+export function readNotes(files: DeckFiles, ref: SlideRef): NotesSource {
+  const doc = new Doc(files);
+  const s = require(doc.before.slides, ref);
+  const body = rawBody(doc, s);
+  const at = locateNotes(body);
+  // Several notes blocks compile as one, joined by a blank line; an editor sees that whole.
+  const text =
+    at && at.blocks.length > 1
+      ? at.blocks.map((b) => b.inner.trim()).join("\n\n")
+      : at
+        ? trimBlock(body.slice(at.innerStart, at.innerEnd))
+        : "";
+  return { index: s.index, text, form: at?.form ?? "none", version: notesVersion(text) };
+}
+
+/** Inner text without the line breaks that sit just inside the tags. */
+const trimBlock = (inner: string) =>
+  inner
+    .replace(/^[ \t]*\r?\n/, "")
+    .replace(/\r?\n[ \t]*$/, "")
+    .trim();
+
+/**
+ * Replace a slide's notes IN PLACE, in whatever form they are written: the inside of its
+ * `<Notes>` block (a second and later block fold into the first), or of the trailing comment the
+ * compiler reads as notes. A slide without notes gets a `<Notes>` block at its end. Empty `notes`
+ * removes them. Every other byte of the file stays as it was.
+ *
+ * `expected` is the `version` from `readNotes`: when the notes on disk no longer match it, a
+ * `NotesConflict` carrying what is there now is thrown instead of overwriting someone's edit.
+ */
+export function writeNotes(
+  files: DeckFiles,
+  ref: SlideRef,
+  notes: string | null,
+  options: { expected?: string } = {},
+): EditResult {
+  const before = readNotes(files, ref);
+  if (options.expected !== undefined && options.expected !== before.version)
+    throw new NotesConflict(before);
+  const text = (notes ?? "").replace(/\r\n/g, "\n").trim();
+  if (text === before.text) return { files: {}, index: before.index, notes: ["Unchanged."] };
+  if (before.form === "none") return setNotes(files, ref, text || null);
+  // Emptied: every notes block goes (with the blank lines before it), whatever its spelling.
+  if (!text) return setNotes(files, ref, null);
+
+  const doc = new Doc(files);
+  const s = require(doc.before.slides, ref);
+  const body = rawBody(doc, s);
+  const at = locateNotes(body)!;
+  if (at.form === "notes") assertNotes(text);
+  else {
+    if (text.includes("-->"))
+      throw new EditError("Notes kept in an HTML comment cannot contain `-->`.");
+    assertBody(text, "The notes'");
+  }
+  const inner = body.slice(at.innerStart, at.innerEnd);
+  // Keep the block's shape: on lines of their own when it was written that way, or the new text
+  // has lines; inline when it was inline and still fits on one line.
+  const multiline = /\n/.test(inner) || text.includes("\n");
+  const pad = at.form === "comment" && !multiline ? " " : "";
+  const replacement = !text ? "" : multiline ? `\n${text}\n` : `${pad}${text}${pad}`;
+  let next = body.slice(0, at.innerStart) + replacement + body.slice(at.innerEnd);
+  if (at.blocks.length > 1) {
+    // Fold the later blocks into the first: cut them, last first so the offsets hold.
+    const shift = replacement.length - (at.innerEnd - at.innerStart);
+    for (const b of at.blocks.slice(1).reverse()) {
+      const start = b.start + shift;
+      const end = b.end + shift;
+      const rest = next.slice(end);
+      // A block that ended the body takes the blank lines before it along.
+      next = next.slice(0, start).replace(rest.trim() ? /[ \t]*$/ : /\s+$/, "") + rest;
+    }
+    next = next.replace(/\n{3,}/g, "\n\n");
+  }
+  doc.splice(s.range.file, s.range.body, s.range.end - s.range.body, next.split("\n"));
+  const n = doc.before.slides.length;
+  return doc.result(s.index, [], { count: n, same: untouched(n, s.index) });
+}

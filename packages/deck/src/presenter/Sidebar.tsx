@@ -10,6 +10,7 @@ import { useJoinUrl } from "../live/components.tsx";
 import { useLiveOptional, useRoomStatus } from "../live/context.ts";
 import type { RoomState } from "../live/protocol.ts";
 import { useDeck } from "../react/context.ts";
+import { ScheduleLine } from "./Timer.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -262,6 +263,8 @@ function RoomTab({ state, status }: { state: RoomState | null; status: Status })
           </small>
         </header>
         <PaceGauge {...pace} />
+        {/* The other half of pacing: the presenter's own schedule, from the timer. */}
+        <ScheduleLine />
       </section>
 
       {reactions.length ? (

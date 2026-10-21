@@ -138,6 +138,12 @@ function deckFrontmatter(): FrontmatterKey[] {
     if (f.name === "theme") type = withSuggest(type, SUGGEST.theme);
     if (f.name === "transition" || f.name === "backgroundTransition")
       type = withSuggest(type, GENERATED.transitions);
+    // `duration: 30min` — read into seconds by core/timer.ts, written as a string or minutes.
+    if (f.name === "duration")
+      type = {
+        text: 'string | number | null ("30min", "1h", "90s", "25:00", or minutes)',
+        variants: [{ type: "string" }, { type: "number" }, { type: "null" }],
+      };
     if (f.name === "keyboard")
       type = {
         text: "boolean | Record<string, KeyAction | null>",

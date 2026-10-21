@@ -3,6 +3,12 @@
 @import "tailwindcss";
 @source "../deck.mdx";
 
+/* Slidev's `forward:` / `backward:` variants: style a click or a transition by the way the deck is
+   going — `class="transition forward:delay-300"` waits before revealing, and only going forward.
+   The runtime writes data-nav-direction on the deck root and the moving slides. */
+@custom-variant forward (&:where([data-nav-direction="forward"] *));
+@custom-variant backward (&:where([data-nav-direction="backward"] *));
+
 /* Example: a slide with `class: hero` in its frontmatter. */
 .deck-slide.hero h1 {
   letter-spacing: -0.04em;

@@ -3,6 +3,8 @@
  * a point on the slide, smoothing the jitter out of it, and sending no more than the wire needs.
  */
 
+import { notesForClick } from "../core/notes-markers.ts";
+
 /** An angle folded into (-180, 180], so 359° → -1° and a turn across north is a small turn. */
 export function wrapDegrees(d: number): number {
   if (!Number.isFinite(d)) return 0;
@@ -154,10 +156,11 @@ export function createCoalescer<T>(
   };
 }
 
-/** The notes for one click step: `[click]` markers split them, segment 0 shows before any click. */
+/**
+ * The notes for one click step: `[click]` (and `[click:N]`) markers split them, the part before
+ * the first shows before any click. The same reading as every other notes view
+ * (core/notes-markers.ts).
+ */
 export function notesSegment(notes: string | null | undefined, click: number): string | null {
-  if (!notes) return null;
-  const parts = notes.split("[click]").map((p) => p.trim());
-  const part = parts[Math.min(Math.max(0, click), parts.length - 1)] ?? "";
-  return part || null;
+  return notesForClick(notes, click);
 }

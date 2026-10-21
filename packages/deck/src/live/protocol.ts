@@ -234,6 +234,18 @@ export interface RemoteState {
   theme: string;
   /** When the presenter's timer started, epoch ms; null when it is not running. */
   startedAt: number | null;
+  /**
+   * The presenter's timer itself (core/timer.ts `RemoteTimer`): its mode, the talk's length in
+   * seconds, the milliseconds counted when this was sent, and whether it is running. The phone
+   * counts on from when it RECEIVED this, so its own clock never matters. Absent from an older
+   * presenter, which sent only `startedAt`.
+   */
+  timer?: {
+    mode: "stopwatch" | "countdown";
+    duration: number | null;
+    elapsedMs: number;
+    running: boolean;
+  } | null;
 }
 
 /** A command id: dotted words, "nav.next", "present.laserAt". */
@@ -296,6 +308,12 @@ export function parseRemoteState(m: unknown): RemoteState | null {
   for (const k of ["blackout", "overview", "pointer", "spotlight", "drawing", "hints", "zoomed"])
     if (typeof s[k] !== "boolean") return null;
   if (s.startedAt !== null && typeof s.startedAt !== "number") return null;
+  if (s.timer !== undefined && s.timer !== null) {
+    const t = s.timer;
+    if (!isRecord(t) || (t.mode !== "stopwatch" && t.mode !== "countdown")) return null;
+    if (typeof t.elapsedMs !== "number" || typeof t.running !== "boolean") return null;
+    if (t.duration !== null && typeof t.duration !== "number") return null;
+  }
   if (jsonSize(s) > MAX_COMMAND_PARAMS) return null;
   return s as unknown as RemoteState;
 }

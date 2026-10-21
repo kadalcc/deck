@@ -8,6 +8,7 @@ import { transitionMs } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
 import { useLayout, useNav } from "./hooks.ts";
 import { StageLayer } from "./Layers.tsx";
+import { useNavDirection } from "./lifecycle.ts";
 import { SlideFrame } from "./SlideFrame.tsx";
 
 /**
@@ -29,6 +30,8 @@ export function Stage() {
     overview: s.overview,
   }));
   const stageRef = useRef<HTMLDivElement>(null);
+  // Forward or backward, for `forward:` / `backward:` styles (core/direction.ts).
+  const navDir = useNavDirection();
   // The slide just left keeps the click it was showing while it animates out — rendering it at
   // its total (or at zero) would flash every hidden fragment for the length of the transition.
   const [leaving, setLeaving] = useState<{
@@ -174,6 +177,7 @@ export function Stage() {
       data-transition-out={autoAnimating || seq === 0 ? "none" : transitionOut}
       data-speed={speed}
       data-direction={direction}
+      data-nav-direction={navDir}
       data-overview={overview || undefined}
     >
       <StageLayer name="global-bottom" />
@@ -203,6 +207,7 @@ export function Stage() {
             active={isPresent}
             click={frameClick}
             prefetch={prefetch}
+            navDirection={isPresent || f.role === "leaving" ? navDir : undefined}
             className={`is-${f.role}`}
           />
         );
