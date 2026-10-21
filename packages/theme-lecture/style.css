@@ -1,0 +1,642 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Lecture — an academic theme for lectures, seminars and defences. The Source family (Serif 4
+   for headings, Sans 3 for text, Code Pro for code), navy for structure and crimson for results,
+   numbered sections, a footer on every slide with the course, the author, the section and the
+   page, definition / theorem / proof blocks set the way a textbook sets them, citations and a
+   references layout. Made to print: white pages, hairlines that survive a laser printer, no
+   shadows, the footer on every page.
+
+   Scoped under .theme-lecture; dark is .theme-lecture[data-color-scheme="dark"].
+   themeConfig (read by index.tsx): `course`, `author`, `institution`, `footer: false`,
+   `sectionNumbers: false`. Colours: `accent` (--theme-accent) recolours the structure.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.theme-lecture {
+  --deck-bg: #fdfcf9;
+  --deck-fg: #1b1e24;
+  --deck-muted: #545b69;
+  --deck-accent: var(--theme-accent, #1f4e8c);
+  --deck-accent-2: #a23b2a;
+  --deck-surface: #f2f1ec;
+  --deck-border: #d6d4cc;
+  --deck-live: var(--deck-accent);
+  --deck-controls-color: var(--deck-accent);
+  --lecture-result: #a23b2a;
+  --lecture-good: #2f6b3a;
+  --lecture-warn: #8a5a00;
+  --deck-heading-font: "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
+  --deck-body-font: "Source Sans 3", "Source Sans Pro", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --deck-mono-font: "Source Code Pro", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --deck-serif-font: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+  --deck-base-size: 34px;
+  --deck-code-bg: #f4f3ee;
+  --deck-code-fg: #24292f;
+  --deck-code-active: rgba(31, 78, 140, 0.09);
+  --deck-radius: 6px;
+  --deck-pad: 84px;
+  --deck-transition: 400ms;
+}
+.theme-lecture[data-color-scheme="dark"] {
+  --lecture-accent-lifted: color-mix(in oklab, var(--theme-accent) 55%, white);
+  --deck-bg: #15181e;
+  --deck-fg: #e6e8ec;
+  --deck-muted: #a3a9b5;
+  --deck-accent: var(--lecture-accent-lifted, #86aef0);
+  --deck-accent-2: #ef9a87;
+  --deck-surface: #1d2129;
+  --deck-border: #313845;
+  --lecture-result: #ef9a87;
+  --lecture-good: #8fcf9b;
+  --lecture-warn: #e3b55e;
+  --deck-code-bg: #1c2128;
+  --deck-code-fg: #adbac7;
+  --deck-code-active: rgba(134, 174, 240, 0.12);
+  color-scheme: dark;
+}
+/* a printed page is white, whatever the screen's paper */
+.theme-lecture:not([data-color-scheme="dark"]) .deck-print-page {
+  --deck-bg: #ffffff;
+  --deck-surface: #f4f4f1;
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+.theme-lecture .deck-slide {
+  line-height: 1.42;
+}
+.theme-lecture .deck-slide :is(h1, h2, h3) {
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.12;
+}
+.theme-lecture .deck-slide h1 {
+  font-size: 2.6em;
+}
+.theme-lecture .deck-slide h2 {
+  font-size: 1.75em;
+  margin-bottom: 0.55em;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid var(--deck-border);
+}
+.theme-lecture .deck-slide h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+  color: var(--deck-accent);
+}
+.theme-lecture .deck-slide h4 {
+  font-family: var(--deck-body-font);
+  font-size: 0.66em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-slide :is(p, li) {
+  text-wrap: pretty;
+  hyphens: auto;
+}
+.theme-lecture .deck-slide ul > li::marker {
+  color: var(--deck-accent);
+}
+.theme-lecture .deck-slide ul ul > li::marker {
+  content: "\2013  ";
+}
+.theme-lecture .deck-slide ol > li::marker {
+  color: var(--deck-accent);
+  font-weight: 600;
+}
+.theme-lecture .deck-slide ol ol {
+  list-style: lower-alpha;
+}
+.theme-lecture .deck-slide em {
+  font-style: italic;
+}
+.theme-lecture .deck-slide strong {
+  font-weight: 700;
+}
+.theme-lecture .deck-slide a {
+  color: var(--deck-accent);
+  text-decoration-thickness: 0.05em;
+  text-underline-offset: 0.15em;
+}
+.theme-lecture .deck-slide blockquote {
+  margin: 0.5em 0;
+  padding: 0.1em 0 0.1em 1em;
+  border: 0;
+  border-inline-start: 2px solid var(--deck-border);
+  border-radius: 0;
+  background: none;
+  font-family: var(--deck-serif-font);
+  font-style: italic;
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-slide blockquote p:last-child {
+  margin-bottom: 0;
+}
+.theme-lecture .deck-slide hr {
+  border-top: 1px solid var(--deck-border);
+}
+/* tables as a paper sets them: three rules, a caption above */
+.theme-lecture .deck-slide table {
+  font-size: 0.72em;
+  border-top: 1.5px solid var(--deck-fg);
+  border-bottom: 1.5px solid var(--deck-fg);
+  font-variant-numeric: tabular-nums;
+}
+.theme-lecture .deck-slide th {
+  font-family: var(--deck-body-font);
+  text-transform: none;
+  font-size: 0.95em;
+  letter-spacing: 0;
+  font-weight: 700;
+  color: var(--deck-fg);
+  border-bottom: 1px solid var(--deck-fg);
+}
+.theme-lecture .deck-slide td {
+  border-bottom: 0;
+}
+.theme-lecture .deck-slide :is(th, td) {
+  padding: 0.38em 0.9em 0.38em 0;
+}
+.theme-lecture .deck-slide caption {
+  caption-side: top;
+  text-align: start;
+  padding-bottom: 0.4em;
+  font-size: 0.92em;
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-slide :not(pre) > code {
+  font-size: 0.82em;
+  padding: 0.06em 0.3em;
+  border-radius: 3px;
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+}
+.theme-lecture .deck-kbd {
+  border-radius: 4px;
+}
+.theme-lecture .deck-slide .katex {
+  font-size: 1.08em;
+}
+.theme-lecture .deck-slide .katex-display {
+  margin: 0.5em 0;
+}
+.theme-lecture .deck-slide figure figcaption {
+  margin-top: 0.4em;
+  font-size: 0.7em;
+  color: var(--deck-muted);
+}
+/* footnote references and the notes themselves */
+.theme-lecture .deck-slide sup {
+  font-size: 0.62em;
+  line-height: 0;
+}
+.theme-lecture .deck-slide sup a {
+  text-decoration: none;
+}
+.theme-lecture .deck-slide :is(.footnotes, section[data-footnotes]) {
+  margin-top: auto;
+  padding-top: 0.4em;
+  border-top: 1px solid var(--deck-border);
+  font-size: 0.56em;
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-slide :is(.footnotes, section[data-footnotes]) h2 {
+  display: none;
+}
+
+/* ── code ──────────────────────────────────────────────────────────────── */
+.theme-lecture .deck-code-block {
+  border-radius: var(--deck-radius);
+  border: 1px solid var(--deck-border);
+}
+.theme-lecture .deck-code-title {
+  font: 600 0.48em var(--deck-mono-font);
+  color: var(--deck-muted);
+  padding: 0.55em 1.1em;
+}
+.theme-lecture .deck-code-title-dot {
+  border-radius: 1px;
+  background: var(--deck-accent);
+}
+.theme-lecture pre.deck-code,
+.theme-lecture .shiki-magic-move-wrap {
+  font-size: 0.58em;
+  line-height: 1.6;
+}
+.theme-lecture pre.deck-code .line.is-active {
+  box-shadow: inset 3px 0 0 var(--deck-accent);
+}
+.theme-lecture pre.deck-code .line.is-dim {
+  opacity: 0.38;
+}
+
+/* ── components ────────────────────────────────────────────────────────── */
+.theme-lecture .deck-callout {
+  padding: 0.55em 0.9em;
+  border: 1px solid var(--deck-border);
+  border-inline-start: 4px solid var(--lecture-kind);
+  border-radius: 4px;
+  background: var(--deck-surface);
+  font-size: 0.82em;
+  --lecture-kind: var(--deck-accent);
+}
+.theme-lecture .deck-callout.kind-tip {
+  --lecture-kind: var(--lecture-good);
+}
+.theme-lecture .deck-callout.kind-warn {
+  --lecture-kind: var(--lecture-warn);
+}
+.theme-lecture .deck-callout.kind-danger {
+  --lecture-kind: var(--lecture-result);
+}
+.theme-lecture .deck-callout.kind-note {
+  --lecture-kind: var(--deck-muted);
+}
+.theme-lecture .deck-callout-title {
+  font-weight: 700;
+  color: var(--lecture-kind);
+}
+.theme-lecture .deck-callout > div > :last-child {
+  margin-bottom: 0;
+}
+.theme-lecture .deck-badge {
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+}
+.theme-lecture .deck-toc {
+  counter-reset: lecture-toc;
+}
+.theme-lecture .deck-toc li {
+  margin: 0.2em 0;
+}
+.theme-lecture .deck-toc li.level-1 {
+  counter-increment: lecture-toc;
+  font-family: var(--deck-heading-font);
+  font-weight: 600;
+}
+.theme-lecture .deck-toc li.level-1 > a::before {
+  content: counter(lecture-toc) "\2002";
+  display: inline-block;
+  min-width: 1.4em;
+  color: var(--deck-accent);
+}
+.theme-lecture .deck-toc li:is(.level-2, .level-3) {
+  padding-inline-start: 1.6em;
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-toc li.is-current > a {
+  color: var(--deck-accent);
+}
+.theme-lecture .deck-mark {
+  --mark-color: var(--lecture-result);
+}
+
+/* ── chrome ────────────────────────────────────────────────────────────── */
+.theme-lecture .deck-progress {
+  height: 3px;
+  background: transparent;
+}
+.theme-lecture .deck-progress span {
+  background: var(--deck-accent);
+}
+.theme-lecture .deck-slide-number {
+  font: 600 13px var(--deck-body-font);
+  color: var(--deck-muted);
+  background: none;
+}
+
+/* ── the footer (index.tsx's slide-bottom layer) ───────────────────────── */
+.theme-lecture .lecture-footer {
+  position: absolute;
+  left: var(--deck-pad);
+  right: var(--deck-pad);
+  bottom: calc(var(--deck-pad) * 0.32);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1em;
+  align-items: baseline;
+  padding-top: 0.4em;
+  border-top: 1px solid var(--deck-border);
+  font: 0.46em/1.2 var(--deck-body-font);
+  letter-spacing: 0.02em;
+  color: var(--deck-muted);
+}
+.theme-lecture .lecture-footer > :first-child {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.theme-lecture .lecture-footer b {
+  font-weight: 600;
+  color: var(--deck-fg);
+}
+.theme-lecture .lecture-footer-section {
+  text-align: center;
+  font-style: italic;
+}
+.theme-lecture .lecture-footer-page {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+.theme-lecture .deck-layout-cover {
+  justify-content: center;
+  align-items: flex-start;
+}
+.theme-lecture .deck-layout-cover h1 {
+  font-size: 3em;
+  max-width: 20ch;
+  margin-bottom: 0.3em;
+}
+.theme-lecture .deck-layout-cover h1 + p {
+  font-family: var(--deck-serif-font);
+  font-size: 1.2em;
+  font-style: italic;
+  color: var(--deck-muted);
+  max-width: 34em;
+  padding-bottom: 0.9em;
+  margin-bottom: 0.9em;
+  border-bottom: 2px solid var(--deck-accent);
+}
+.theme-lecture .deck-layout-cover > p:not(h1 + p) {
+  margin-bottom: 0.15em;
+  font-size: 0.85em;
+}
+.theme-lecture .deck-layout-intro {
+  align-items: flex-start;
+}
+.theme-lecture .deck-layout-intro h1 {
+  font-size: 2.6em;
+}
+.theme-lecture .deck-layout-intro > p {
+  max-width: 34em;
+}
+/* the built-in section (index.tsx numbers it): the number, then the title */
+.theme-lecture .deck-layout-section {
+  align-items: flex-start;
+}
+.theme-lecture .lecture-section-number {
+  font-family: var(--deck-heading-font);
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--deck-accent);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3em;
+}
+.theme-lecture .lecture-section-number b {
+  font-size: 2.6em;
+  line-height: 1;
+  font-weight: 600;
+  margin-inline-start: 0.1em;
+}
+.theme-lecture .deck-layout-section :is(h1, h2) {
+  font-size: 2.8em;
+  max-width: 20ch;
+  border: 0;
+  padding: 0;
+}
+.theme-lecture .deck-layout-section > p,
+.theme-lecture .deck-layout-section .lecture-section-body > p {
+  max-width: 34em;
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-layout-end :is(h1, h2) {
+  font-size: 2.8em;
+}
+.theme-lecture .deck-layout-end > p {
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
+  font-family: var(--deck-heading-font);
+  font-size: 4.6em;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--deck-accent);
+  margin-bottom: 0.2em;
+}
+.theme-lecture .deck-layout-fact > :not(:first-child) {
+  font-size: 1.05em;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--deck-muted);
+  max-width: 30em;
+}
+.theme-lecture .deck-layout-quote {
+  padding-inline: 12%;
+  font-size: 1.15em;
+}
+.theme-lecture .deck-layout-quote blockquote {
+  border: 0;
+  padding: 0;
+  font-size: 1.15em;
+  color: var(--deck-fg);
+}
+.theme-lecture .deck-layout-quote > p {
+  margin-top: 0.6em;
+  font-size: 0.7em;
+  font-style: normal;
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-layout-quote > p::before {
+  content: "\2014\2002";
+}
+.theme-lecture .deck-layout-statement :is(h1, h2) {
+  font-size: 2.6em;
+  max-width: 22ch;
+  margin-inline: auto;
+  border: 0;
+}
+.theme-lecture .deck-layout-center :is(h1, h2) {
+  border: 0;
+}
+.theme-lecture .deck-layout-full {
+  padding: 0;
+}
+.theme-lecture .deck-layout-two-cols {
+  column-gap: 2.4em;
+}
+.theme-lecture .deck-layout-two-cols > :is(.deck-slot-default, .deck-slot-right) > :first-child {
+  margin-top: 0;
+}
+.theme-lecture .deck-layout-two-cols-header {
+  column-gap: 2.4em;
+}
+.theme-lecture .deck-layout-two-cols-header > .deck-slot-default h2 {
+  margin-bottom: 0.3em;
+}
+.theme-lecture .deck-layout-two-cols-header > .deck-slot-default > p {
+  color: var(--deck-muted);
+}
+.theme-lecture .deck-layout-image .deck-layout-image-content {
+  background: linear-gradient(180deg, transparent, rgba(10, 14, 24, 0.78));
+}
+.theme-lecture .deck-layout-image .deck-layout-image-content h2 {
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+.theme-lecture :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
+  padding: calc(var(--deck-pad) * 0.9);
+}
+.theme-lecture .deck-layout-image-pane {
+  background-color: var(--deck-surface);
+}
+.theme-lecture :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) .deck-frame.deck-layout-iframe-pane {
+  border-radius: 4px;
+  border: 1px solid var(--deck-border);
+  box-shadow: none;
+}
+.theme-lecture :is(.deck-layout-iframe-left, .deck-layout-iframe-right) .deck-layout-iframe-content {
+  padding-inline: calc(var(--deck-pad) * 0.4);
+}
+
+/* ── definition, theorem, proof (index.tsx) ─────────────────────────────── */
+.theme-lecture .lecture-block {
+  margin: 0.5em 0;
+  font-size: 0.9em;
+  --lecture-kind: var(--deck-accent);
+}
+.theme-lecture .lecture-block > :last-child,
+.theme-lecture .lecture-block-body > :last-child {
+  margin-bottom: 0;
+}
+.theme-lecture .lecture-label {
+  font-family: var(--deck-heading-font);
+  font-style: normal;
+  font-weight: 700;
+  color: var(--lecture-kind);
+}
+.theme-lecture .lecture-label i {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--deck-fg);
+}
+/* a definition: a tinted box, ruled on the left */
+.theme-lecture .lecture-block.is-definition {
+  padding: 0.6em 0.9em;
+  background: color-mix(in oklab, var(--deck-accent) 7%, transparent);
+  border-inline-start: 4px solid var(--deck-accent);
+  border-radius: 0 4px 4px 0;
+}
+/* theorems, lemmas, corollaries, propositions: framed, the statement in italics */
+.theme-lecture .lecture-block:is(.is-theorem, .is-lemma, .is-corollary, .is-proposition) {
+  --lecture-kind: var(--lecture-result);
+  padding: 0.6em 0.9em;
+  border: 1.5px solid var(--lecture-result);
+  border-radius: 4px;
+}
+.theme-lecture .lecture-block:is(.is-theorem, .is-lemma, .is-corollary, .is-proposition) .lecture-block-body {
+  font-family: var(--deck-serif-font);
+  font-style: italic;
+}
+.theme-lecture .lecture-block:is(.is-lemma, .is-corollary, .is-proposition) {
+  border-style: solid;
+  border-width: 1px;
+}
+/* a proof: no box, an italic label, the tombstone at the end */
+.theme-lecture .lecture-block.is-proof {
+  --lecture-kind: var(--deck-fg);
+  padding-inline-start: 0.9em;
+  border-inline-start: 1px solid var(--deck-border);
+}
+.theme-lecture .lecture-block.is-proof .lecture-label {
+  font-family: var(--deck-serif-font);
+  font-style: italic;
+  font-weight: 600;
+}
+.theme-lecture .lecture-block.is-proof .lecture-block-body > :last-child::after {
+  content: "\220E";
+  float: right;
+  margin-inline-start: 0.6em;
+  color: var(--deck-fg);
+}
+.theme-lecture .lecture-block.is-example {
+  --lecture-kind: var(--lecture-good);
+  padding-inline-start: 0.9em;
+  border-inline-start: 3px solid var(--lecture-good);
+}
+.theme-lecture .lecture-block.is-remark {
+  --lecture-kind: var(--deck-muted);
+  color: var(--deck-muted);
+}
+.theme-lecture .lecture-block.is-remark .lecture-label {
+  font-style: italic;
+  font-weight: 600;
+}
+/* the label runs in with the first paragraph */
+.theme-lecture .lecture-label + p {
+  display: inline;
+}
+.theme-lecture .lecture-label + p + * {
+  margin-top: 0.5em;
+}
+/* the slide-sized versions: `layout: definition` and `layout: theorem` */
+.theme-lecture :is(.deck-layout-definition, .deck-layout-theorem) {
+  justify-content: center;
+}
+.theme-lecture :is(.deck-layout-definition, .deck-layout-theorem) > .lecture-block {
+  font-size: 1.2em;
+  max-width: 34em;
+}
+.theme-lecture :is(.deck-layout-definition, .deck-layout-theorem) .lecture-label {
+  display: block;
+  margin-bottom: 0.35em;
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+}
+.theme-lecture :is(.deck-layout-definition, .deck-layout-theorem) .lecture-label + p {
+  display: block;
+}
+/* citations and the references slide */
+.theme-lecture .lecture-cite {
+  color: var(--deck-accent);
+  font-size: 0.92em;
+  white-space: nowrap;
+}
+.theme-lecture .deck-layout-references :is(ol, ul) {
+  list-style: none;
+  padding: 0;
+  counter-reset: lecture-ref;
+  font-size: 0.72em;
+  line-height: 1.38;
+}
+.theme-lecture .deck-layout-references li {
+  position: relative;
+  counter-increment: lecture-ref;
+  padding-inline-start: 2.4em;
+  margin: 0 0 0.55em;
+}
+.theme-lecture .deck-layout-references li::before {
+  content: "[" counter(lecture-ref) "]";
+  position: absolute;
+  left: 0;
+  font-weight: 600;
+  color: var(--deck-accent);
+  font-variant-numeric: tabular-nums;
+}
+.theme-lecture .deck-layout-references li em {
+  font-style: italic;
+}
+.theme-lecture .deck-layout-references:has(li:nth-child(7)) :is(ol, ul) {
+  columns: 2;
+  column-gap: 2em;
+}
+.theme-lecture .deck-layout-references li {
+  break-inside: avoid;
+}
+
+/* ── still copies ──────────────────────────────────────────────────────── */
+@media print {
+  .theme-lecture .deck-slide a {
+    color: inherit;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-lecture .deck-progress span {
+    transition: none;
+  }
+}
+
+/* default: content from the top, the heading ruled (above) */
+.theme-lecture .deck-layout-default > :is(h1, h2):first-child {
+  margin-top: 0;
+}
