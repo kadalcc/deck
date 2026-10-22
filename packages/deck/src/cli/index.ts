@@ -9,6 +9,8 @@
  *   kadal-deck build [a.mdx b.mdx…]       dist/ for any static host (vite build); --without-notes,
  *                                         --base, --out, several decks into folders (cli/build.ts)
  *   kadal-deck serve [dist]               the build, served as a static host would (cli/serve.ts)
+ *   kadal-deck relay [--tunnel]           the phone remote's relay for a build on a static host
+ *                                         (cli/relay.ts)
  *   kadal-deck ci <host>                  the files a host needs: github-pages, netlify, vercel,
  *                                         cloudflare, docker (cli/hosting.ts)
  *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
@@ -73,6 +75,11 @@ export const HELP = `kadal-deck <command> [options]
               (\`download: true\` in the deck does the same; --no-download skips it)
   serve       serve a built deck as a static host would   [folder, default dist]
               --port <n> (4173)  --host <addr> (127.0.0.1; 0.0.0.0 for a container)  --base <path>
+  relay       the phone remote for a build on a static host: a WebSocket relay its presenter view
+              and phone meet at (\`remote: { relay: "wss://…" }\` in the deck, or ?relay= on the
+              presenter view's address); pairing by the presenter's QR, hosting by password
+              --port <n> (4174)  --host <addr> (0.0.0.0)  --password <p> (else one made up)
+              --tunnel  on the internet through a Cloudflare Quick Tunnel (wss://, for https decks)
   ci          write a host's deploy files: ci <github-pages|netlify|vercel|cloudflare|docker>[,…]
               --force  replace files that are there
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
@@ -132,6 +139,12 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     ci: { kind: "string" },
   },
   serve: { port: { kind: "number" }, host: { kind: "string" }, base: { kind: "string" } },
+  relay: {
+    port: { kind: "number" },
+    host: { kind: "string" },
+    password: { kind: "string" },
+    tunnel: { kind: "boolean" },
+  },
   ci: { force: { kind: "boolean" } },
   check: { compile: { kind: "boolean" } },
   format: { check: { kind: "boolean" } },
@@ -445,6 +458,18 @@ async function run(
         const stop = () => server.close(() => done());
         process.once("SIGINT", stop);
         process.once("SIGTERM", stop);
+      });
+      return EXIT.ok;
+    }
+    case "relay": {
+      const { relayCommand } = await import("./relay.ts");
+      await relayCommand({
+        port: num(flags.port),
+        host: str(flags.host),
+        password: str(flags.password),
+        tunnel: flags.tunnel === true,
+        say,
+        ...(json ? { emit } : {}),
       });
       return EXIT.ok;
     }

@@ -610,7 +610,7 @@ export const ROUTES: RouteInfo[] = [
   {
     path: "/<slug>/remote",
     summary:
-      "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev`. One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
+      "The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev` or a `kadal-deck relay` (plus `&relay=…` when the presenter view was pointed at the relay by its address). One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.",
   },
   {
     path: "/<slug>/notes",
@@ -740,7 +740,7 @@ export const LIVE: LiveFeature[] = [
   {
     name: "Phone remote",
     summary:
-      "The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). One phone at a time: the QR's code works once and changes every 30 seconds, the newest phone to scan takes over, and a paired phone reconnects with its lease. With a room the room pairs it; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors).",
+      "The presenter view's Phone remote button shows a QR; the phone that scans it runs commands in that window (the same ones the keyboard runs). One phone at a time: the QR's code works once and changes every 30 seconds, the newest phone to scan takes over, and a paired phone reconnects with its lease. With a room the room pairs it; on `kadal-deck dev` the dev server relays it (`--host` for the network, `--https` for the air pointer's motion sensors). A build on a static host (GitHub Pages, Netlify, S3, `python3 -m http.server`) pairs through `kadal-deck relay`: name it with `remote: { relay: \"wss://…\" }` in the deck or `?relay=wss://…` on the presenter view's address, and the presenter's window gives the relay's password once.",
     components: [],
   },
   {
@@ -795,6 +795,13 @@ export const CLI: CliCommand[] = [
     usage: "kadal-deck serve [folder] [--port n] [--host addr] [--base /path/] [--json]",
     summary:
       "Serve a built deck (dist/ by default) as a static host would: at the base it was built for (read from the build, or --base), every route answered by the deck's page, Range requests for video, a CDN's cache headers. For checking a build, the PWA offline, or a container (--host 0.0.0.0). Ctrl+C stops it.",
+    json: true,
+  },
+  {
+    name: "relay",
+    usage: "kadal-deck relay [--port n] [--host addr] [--password p] [--tunnel] [--json]",
+    summary:
+      "The phone remote for a build on a static host, which has no room and no dev server: the dev server's relay (the same rotating one-time QR code, lease and one phone at a time) on a plain WebSocket, for a small box or behind a tunnel. A build reaches it with `remote: { relay: \"wss://…\" }` in the deck or `?relay=wss://…` on the presenter view's address (kept for the tab; the QR carries it to the phone). Becoming the presenting window takes the relay's password (`--password`, else KADAL_DECK_RELAY_PASSWORD, else one made up and printed), asked once in the Phone remote dialog; wrong ones are limited to 10 a minute per address. It serves no files and no editing endpoints: it carries the remote's messages and nothing else. Port 4174, on the network (0.0.0.0) unless --host says. `--tunnel` puts it on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`) and prints the wss:// address, which a deck served over https needs. Ctrl+C stops it.",
     json: true,
   },
   {

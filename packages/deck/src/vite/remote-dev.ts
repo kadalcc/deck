@@ -327,7 +327,8 @@ export function remoteGate(
           publicUrl = null;
           log(`\n  tunnel  closed${why ? ` (${why})` : ""}\n`);
         },
-        server,
+        // A restart closes the server: the tunnel goes with it.
+        onClose: (stop) => server.httpServer?.once("close", stop),
       });
     };
     if (server.httpServer?.listening) open();
@@ -337,15 +338,18 @@ export function remoteGate(
   return { publicUrl: () => publicUrl };
 }
 
-/** Start cloudflared's quick tunnel; it stops with the dev server (and with this process). */
-function startTunnel(
+/**
+ * Start cloudflared's quick tunnel to `origin`; it stops when `onClose` says (the dev server
+ * closing, the relay closing) and with this process. Shared with `kadal-deck relay` (cli/relay.ts).
+ */
+export function startTunnel(
   bin: string,
   origin: string,
   selfSigned: boolean,
   hooks: {
     onUrl: (url: string) => void;
     onExit: (why: string | null) => void;
-    server: ViteDevServer;
+    onClose: (stop: () => void) => void;
   },
 ) {
   const args = [
@@ -382,7 +386,7 @@ function startTunnel(
   };
   // Ctrl+C reaches cloudflared with the rest of the terminal's process group; these cover the
   // server closing (a restart) and this process ending any other way.
-  hooks.server.httpServer?.once("close", stop);
+  hooks.onClose(stop);
   process.once("exit", stop);
 }
 

@@ -631,6 +631,33 @@
   border-radius: 10px;
   background: var(--deck-surface);
 }
+/* the password a `kadal-deck relay` asks the presenting window for */
+.deck-remote-auth {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.deck-remote-auth label {
+  font-size: 13px;
+}
+.deck-remote-auth input {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: transparent;
+  color: inherit;
+}
+.deck-remote-auth input:focus-visible {
+  outline: 2px solid var(--deck-accent, currentColor);
+  outline-offset: 2px;
+}
+.deck-remote-auth button {
+  align-self: flex-start;
+}
+.deck-remote-relay code {
+  word-break: break-all;
+}
 .deck-remote-dialog-panel footer .deck-remote-count {
   flex: 1;
   display: inline-flex;

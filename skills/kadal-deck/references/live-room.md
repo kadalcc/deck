@@ -72,6 +72,11 @@ remote can do what the keyboard can and nothing else.
   `kadal-deck dev --host` so the phone can reach the computer on the same Wi-Fi. Add `--https`
   (a self-signed certificate) for the air pointer, because motion sensors need a secure page. On
   plain http the phone points by touch instead.
+- A build on a static host (GitHub Pages, Netlify, S3): run `kadal-deck relay` somewhere the
+  presenter's computer and the phone can both reach, and set `remote: { relay: "wss://…" }` in
+  the deck (or open the presenter view with `?relay=wss://…`). The QR is `remote?pair=CODE`,
+  paired exactly as on `kadal-deck dev`; the presenter view asks once for the relay's password.
+  A deck on https needs a `wss://` relay: `kadal-deck relay --tunnel` gives one.
 - On an iPhone the air pointer first asks for one tap to allow motion (iOS only asks from a tap);
   after that the button is a hold.
 - Zoom (the phone's Zoom, or Alt+click on the presenter view) travels through the room like the

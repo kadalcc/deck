@@ -405,7 +405,10 @@ const NOT_PRESENTER =
 
 // ── the dev server ──────────────────────────────────────────────────────────
 
-/** A phone paired through `kadal-deck dev`'s relay: the code from the QR, then the lease it is given. */
+/**
+ * A phone paired through `kadal-deck dev`'s relay (or a `kadal-deck relay`): the code from the QR,
+ * then the lease it is given.
+ */
 export function devRemote(relay: DevRelay, code: string | null, where = "dev"): RemoteLink {
   const status = createStore<RemoteStatus>("connecting");
   const state = createStore<RemoteState | null>(null);
@@ -489,8 +492,9 @@ export function devRemote(relay: DevRelay, code: string | null, where = "dev"): 
 }
 
 /**
- * The presenting window's end on the dev relay. Its place (an id) is kept for the tab, so a reload
- * keeps its phone; while the QR is on screen it asks the relay to `rotate` the code.
+ * The presenting window's end on the dev relay (or a `kadal-deck relay`, remote/socket.ts). Its
+ * place (an id) is kept for the tab, so a reload keeps its phone; while the QR is on screen it asks
+ * the relay to `rotate` the code.
  */
 export function devHost(
   relay: DevRelay,
@@ -499,6 +503,10 @@ export function devHost(
     path: string;
     /** Where the window's place is kept for this tab (sessionStorage). */
     remember: { get(): string | null; set(id: string): void };
+    /** More of the QR's query after the code, e.g. `&relay=…` (remote/socket.ts). */
+    search?: string;
+    /** What to say when this page is on localhost and the relay knows no address a phone can reach. */
+    unreachable?: string;
   },
 ): HostLink {
   const remotes = createStore(0);
@@ -526,10 +534,11 @@ export function devHost(
     const network = last.urls.find((u) => /^https?:\/\//.test(u));
     let origin = here?.origin ?? "";
     if (local && network) origin = new URL(network).origin;
-    url.set(`${origin}${options.path}?pair=${last.code}`);
+    url.set(`${origin}${options.path}?pair=${last.code}${options.search ?? ""}`);
     problem.set(
       local && !network
-        ? "The dev server only listens on this computer, so a phone cannot reach it. Restart it with `kadal-deck dev --host` (same Wi-Fi), then scan."
+        ? (options.unreachable ??
+            "The dev server only listens on this computer, so a phone cannot reach it. Restart it with `kadal-deck dev --host` (same Wi-Fi), then scan.")
         : null,
     );
   };

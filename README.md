@@ -223,7 +223,8 @@ in the deck: `npm i -D playwright && npx playwright install chromium`.
 any editor running Prettier), the side editor in `kadal-deck dev` (press E), and the
 [VS Code extension](packages/vscode) — outline with drag-to-reorder, a preview that follows the
 cursor, frontmatter IntelliSense, `check` as problems. `kadal-deck dev --tunnel` shares the dev
-server through a Cloudflare Quick Tunnel; `--remote <password>` guards the presenter.
+server through a Cloudflare Quick Tunnel; `--remote <password>` guards the presenter. A build on a
+static host gets the phone remote through `kadal-deck relay` (`remote: { relay: "wss://…" }`).
 
 **The CLI, for scripts and agents**: `kadal-deck check` (lint, exit 1 on errors),
 `kadal-deck screenshot` (PNGs), `kadal-deck info [topic]` (the reference), `kadal-deck new <dir>`
