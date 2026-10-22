@@ -2,7 +2,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 
 // The bus is made only in a page: give this test one (Bun has BroadcastChannel and message events).
 const g = globalThis as { window?: unknown };
-const hadWindow = "window" in g;
+// A value, not just the name: another test file may have left `window` defined as undefined.
+const hadWindow = g.window !== undefined;
 if (!hadWindow) g.window = globalThis;
 afterAll(() => {
   if (!hadWindow) delete g.window;
