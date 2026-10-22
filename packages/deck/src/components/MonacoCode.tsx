@@ -11,9 +11,11 @@ import {
   useState,
 } from "react";
 
+import { codeThemeFor } from "../compiler/code-themes.ts";
 import type { MonacoHost } from "../monaco/loader.ts";
 import { monacoLoaderFor } from "../monaco/loader.ts";
 import { type CodeOutput, loadCodeRunnerSetup, runCode } from "../monaco/runners.ts";
+import { monacoTypesOptions, runImportResolver } from "../monaco/types-config.ts";
 import { useDeck, useSlide } from "../react/context.ts";
 import { useClick, useUi } from "../react/hooks.ts";
 import type { CodeProps } from "./Code.tsx";
@@ -117,6 +119,13 @@ export function MonacoCode(props: CodeProps) {
   const deck = useDeck();
   const slide = useSlide();
   const scheme = useUi((s) => s.colorScheme);
+  const uiTheme = useUi((s) => s.theme);
+  // The editor wears what the static code wears: the theme on show's Shiki theme for the scheme.
+  const shikiTheme = codeThemeFor(deck.manifest.codeThemes, uiTheme, scheme);
+  const typing = useMemo(
+    () => monacoTypesOptions(deck.config as unknown as Record<string, unknown>),
+    [deck.config],
+  );
   const inGroup = useContext(CodeGroupContext);
   const loader = monacoLoaderFor(deck.manifest);
   const printing = deck.mode === "print";
@@ -177,6 +186,8 @@ export function MonacoCode(props: CodeProps) {
       await runCode(source, lang, {
         options: runnerOptions,
         timeout,
+        // Bare imports through the deck's CDN, at the versions its editors' types use.
+        resolveImport: runImportResolver(deck.config.monacoRunImports, typing.versions),
         signal: ac.signal,
         onOutput: (o) => {
           chain = chain.then(async () => {
@@ -195,7 +206,7 @@ export function MonacoCode(props: CodeProps) {
     },
     // runnerOptions/timeout come from the block's fixed options.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lang, optionsAttr, deck.manifest],
+    [lang, optionsAttr, deck.manifest, deck.config.monacoRunImports, typing],
   );
 
   // Autorun: when the block is on stage (or printed), and again after each edit.
@@ -396,6 +407,8 @@ export function MonacoCode(props: CodeProps) {
                 code={code.current}
                 original={original}
                 scheme={scheme}
+                shikiTheme={shikiTheme}
+                types={typing}
                 readOnly={readOnly}
                 lines={lines}
                 height={editorHeight}

@@ -21,7 +21,7 @@ import type { DeckRuntime, ViewMode } from "../react/context.ts";
  *     "exports": { "./style.css": "./style.css",          the stylesheet (a theme must have one)
  *                  ".": "./index.tsx" }                    optional: the module below
  *
- *   index.tsx — export default { layouts?, components?, layers?, setup? }
+ *   index.tsx — export default { layouts?, components?, layers?, routes?, setup? }
  *
  * A deck names them in its headmatter: `theme: seriph`, `themes: [seriph, minimal]`,
  * `addons: [qr]`. A bare name is a built-in theme, then `@kadal/theme-<name>`, then
@@ -36,8 +36,17 @@ import type { DeckRuntime, ViewMode } from "../react/context.ts";
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-/** The four layers a deck, a theme or an addon can put on every slide (Slidev's names). */
-export const LAYER_NAMES = ["global-bottom", "slide-bottom", "slide-top", "global-top"] as const;
+/**
+ * The layers a deck, a theme or an addon can draw (Slidev's names), lowest first: four on every
+ * slide, and `custom-nav-controls` — extra buttons in the deck's controls (play and presenter).
+ */
+export const LAYER_NAMES = [
+  "global-bottom",
+  "slide-bottom",
+  "slide-top",
+  "global-top",
+  "custom-nav-controls",
+] as const;
 export type LayerName = (typeof LAYER_NAMES)[number];
 
 /** What a layer knows: the slide it is drawn over, where the deck is, and which view it is in. */
@@ -138,9 +147,38 @@ export interface SetupApi {
    * typing in a field, never in a projector window. Returns its own remover too.
    */
   shortcut: (combo: string, run: (e: KeyboardEvent) => void) => () => void;
+  /**
+   * A page of the package's own at `<base><path>` (react/routes.tsx), for as long as the deck
+   * runs; returns its remover too.
+   */
+  addRoute: (route: DeckRoute | DeckRoute[]) => () => void;
   /** Whatever else the engine registered through `extendSetupApi`. */
   [extension: string]: unknown;
 }
+
+/** What a route's page gets: the path it was opened at, its `:params`, the route itself. */
+export interface RoutePageProps {
+  /** The path under the deck's base, without slashes at the ends (`q/7`). */
+  path: string;
+  /** `:name` segments by name; a trailing `*` as `"*"`. */
+  params: Record<string, string>;
+  route: DeckRoute;
+}
+
+/** A page of the deck's own (Slidev's `setup/routes.ts`): see react/routes.tsx. */
+export interface DeckRoute {
+  /** Under the deck's base: `handout`, `tools/timer`, `q/:id`, `docs/*`. */
+  path: string;
+  /** The page. */
+  component?: ComponentType<RoutePageProps>;
+  /** Or a loader for it, a chunk of its own: `() => import("./pages/Handout.tsx")`. */
+  load?: () => Promise<{ default: ComponentType<RoutePageProps> } | ComponentType<RoutePageProps>>;
+  /** The document title while it is open. */
+  title?: string;
+}
+
+/** Routes as a list, or as a function of the routes so far (Slidev's `defineRoutesSetup`). */
+export type RoutesSetup = DeckRoute[] | ((routes: DeckRoute[]) => DeckRoute[]);
 
 /** A setup's cleanup, when it registered something that should go with the deck. */
 export type SetupResult = void | (() => void) | Promise<void | (() => void)>;
@@ -150,6 +188,8 @@ export interface PackageModule {
   layouts?: Record<string, ComponentType<any>>;
   components?: Record<string, ComponentType<any>>;
   layers?: DeckLayers;
+  /** Pages of the package's own (react/routes.tsx). */
+  routes?: RoutesSetup;
   setup?: (api: SetupApi) => SetupResult;
 }
 
@@ -180,6 +220,8 @@ export interface ManifestPackages {
   addons: PackageRef[];
   /** The deck's own layer files (`global-top.tsx` beside deck.mdx), found by the Vite plugin. */
   layers: DeckLayers;
+  /** The deck's routes file (`routes.tsx` beside deck.mdx), found by the Vite plugin. */
+  routes?: RoutesSetup | null;
   /** Problems worth showing the person presenting: a theme this player does not have, say. */
   warnings: string[];
 }
@@ -284,7 +326,7 @@ export function normalizeModule(mod: unknown): PackageModule | null {
   const src = (
     d &&
     typeof d === "object" &&
-    ("layouts" in d || "components" in d || "layers" in d || "setup" in d)
+    ("layouts" in d || "components" in d || "layers" in d || "setup" in d || "routes" in d)
       ? d
       : m
   ) as Record<string, unknown>;
@@ -295,6 +337,8 @@ export function normalizeModule(mod: unknown): PackageModule | null {
   if (rec(src.components)) out.components = rec(src.components);
   if (rec(src.layers)) out.layers = src.layers as DeckLayers;
   if (typeof src.setup === "function") out.setup = src.setup as PackageModule["setup"];
+  if (Array.isArray(src.routes) || typeof src.routes === "function")
+    out.routes = src.routes as RoutesSetup;
   return out;
 }
 

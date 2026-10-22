@@ -134,7 +134,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   MagicMove: {
     category: "code",
     summary:
-      "Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step.",
+      "Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step; an inner fence's highlight steps (`{*|2|4-5}`) are clicks too, in order with the morphs. Outer options: at, lines, duration; `[file.ts]` adds a title bar. Follows the colour scheme and the theme menu.",
     example: "````md magic-move\n```ts\nlet n = 1\n```\n```ts\nconst n = 1\n```\n````",
     mapping: true,
   },
@@ -697,6 +697,19 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     category: "content",
     summary: "How many slides the deck has (hidden ones left out).",
     example: `<SlidesTotal /> slides`,
+  },
+  ClickCount: {
+    category: "steps",
+    summary:
+      "The click step this slide is at (Slidev's `$clicks`), or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.",
+    example: `Step <ClickCount offset={1} /> of <ClickCount total />\n\n<ClickCount when={(c) => c >= 3}>\n\n**Done.**\n\n</ClickCount>`,
+    props: {
+      total: "Show the slide's number of clicks instead of the current one.",
+      offset: "Added to the number shown (`offset={1}` counts from 1).",
+      when: '`(click, total) => boolean`: render the children only while it is true (Slidev\'s `v-if="$clicks > 2"`).',
+      children:
+        "With `when`, what to show; otherwise a function `(click, total) => …` rendered instead of the number.",
+    },
   },
   TitleRenderer: {
     category: "content",

@@ -325,14 +325,14 @@ describe("magic move line numbers", () => {
       "````",
     ].join("\n");
     const numbered = magicMoveData(findMagicMoves(text).blocks, highlighter, themes)[0]!;
-    expect(
-      numbered.steps.every((s) => (s.tokens.light as { lineNumbers?: boolean }).lineNumbers),
-    ).toBe(true);
+    expect(numbered.steps.every((s) => (s.tokens as { lineNumbers?: boolean }).lineNumbers)).toBe(
+      true,
+    );
     const plain = magicMoveData(
       findMagicMoves(text.replace(" {lines: true}", "")).blocks,
       highlighter,
       themes,
     )[0]!;
-    expect((plain.steps[0]!.tokens.light as { lineNumbers?: boolean }).lineNumbers).toBe(false);
+    expect((plain.steps[0]!.tokens as { lineNumbers?: boolean }).lineNumbers).toBe(false);
   });
 });

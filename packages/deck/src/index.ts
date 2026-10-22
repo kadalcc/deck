@@ -136,6 +136,7 @@ export {
   normalizeModule as normalizePackageModule,
   type AddonMeta,
   type DeckLayers,
+  type DeckRoute,
   type LayerComponent,
   type LayerName,
   type LayerProps,
@@ -144,6 +145,8 @@ export {
   type PackageModule,
   type PackageRef,
   type ResolvedLayers,
+  type RoutePageProps,
+  type RoutesSetup,
   type SetupApi,
   type SetupResult,
   type ThemeMeta,
@@ -165,6 +168,8 @@ export {
 } from "./theming/fonts.ts";
 export { deckFontsReady, extendSetupApi } from "./theming/react.tsx";
 export { useLayer } from "./react/Layers.tsx";
+export { useClicks, type ClickCountProps, type ClicksInfo } from "./components/ClickCount.tsx";
+export { defineRoutes, matchRoute, type RouteRegistry } from "./react/routes.tsx";
 
 // Presenting: slide lifecycle, direction, shortcuts, the context menu, notes editing, the timer.
 export {

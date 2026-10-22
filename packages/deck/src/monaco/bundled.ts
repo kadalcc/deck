@@ -43,8 +43,9 @@ export function bundledGrammar(lang: string): { id: string; load: () => Promise<
   };
 }
 
-export function bundledThemes(light: string, dark: string) {
-  const theme = (name: string) => ({
+/** Any Shiki theme by name, loaded when an editor first wears it (the theme menu's themes). */
+export function bundledTheme(name: string) {
+  return {
     name,
     load: async () => {
       const { bundledThemes: all } = await import("shiki/themes");
@@ -52,6 +53,9 @@ export function bundledThemes(light: string, dark: string) {
       if (!load) throw new Error(`no Shiki theme ${name}`);
       return load();
     },
-  });
-  return { light: theme(light), dark: theme(dark) };
+  };
+}
+
+export function bundledThemes(light: string, dark: string) {
+  return { light: bundledTheme(light), dark: bundledTheme(dark) };
 }

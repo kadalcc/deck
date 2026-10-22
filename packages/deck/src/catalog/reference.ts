@@ -587,8 +587,9 @@ export const CODE_META: CodeMetaOption[] = [
   {
     syntax: "````md magic-move",
     summary:
-      "A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.",
-    example: "````md magic-move\n```ts\nlet x = 1\n```\n```ts\nconst x = 1\n```\n````",
+      "A 4-backtick md fence holding one code fence per step: the code morphs between them on each click. An inner fence's highlight steps (`{*|1|2-5}`) are clicks of their own, before the next morph; `{lines: true}` (outer, or one step's) numbers lines; `{at:N}`, `{duration:ms}`.",
+    example:
+      "````md magic-move {lines: true}\n```ts {*|1}\nlet x = 1\nlet y = 2\n```\n```ts\nconst x = 1\n```\n````",
   },
 ];
 
@@ -632,6 +633,11 @@ export const ROUTES: RouteInfo[] = [
       "The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.",
   },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
+  {
+    path: "/<slug>/<your-path>",
+    summary:
+      'A page of the deck\'s own (Slidev\'s `setup/routes.ts`): `routes.tsx` beside deck.mdx (or src/routes.tsx, setup/routes.ts) exporting `defineRoutes([{ path: "handout", component: Handout }, { path: "q/:id", load: () => import("./Q.tsx"), title }])`, `<Deck routes>`, or a theme\'s or addon\'s `routes` / `api.addRoute()`. Drawn inside the deck\'s providers with `{ path, params, route }`; the engine\'s pages win a clash; the build copies index.html to each plain path for static hosts.',
+  },
   {
     path: "/<slug>/__kadal/drawings",
     summary:
@@ -969,6 +975,13 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   selectable: "Text can be selected.",
   lineNumbers: "Line numbers on every code block.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
+  monacoTypes:
+    'Types for the packages `{monaco}` editors import, so hovers and errors are real: "auto" (the deck\'s installed declarations, bundled into the build; anything else from jsDelivr), "local", "cdn" or "none". Fetched types are cached in the browser; offline with nothing cached the editor works as before. Slidev\'s `monacoTypesSource` (local · cdn/ata · none) is read too.',
+  monacoPackages:
+    'Packages the editors know, with versions: types acquired up front and `{monaco-run}` imports pinned to them. A list (`["zod", "lodash-es@4"]`) or a map (`{ zod: "^3.23" }`). Slidev\'s `monacoTypesAdditionalPackages` is read too.',
+  monacoTypesIgnore: "Packages never to fetch types for (Slidev: monacoTypesIgnorePackages).",
+  monacoRunImports:
+    'Where `{monaco-run}` resolves a bare import: a CDN base (default "https://esm.sh": `zod` → https://esm.sh/zod@<monacoPackages version>), a template with {name}, {version} and {path} (e.g. "https://cdn.jsdelivr.net/npm/{name}@{version}{path}/+esm"), or false to keep bare imports an error. The code already runs in a sandboxed worker that may import any URL; this only spells the URL for you.',
   drawings:
     'Drawing: { enabled: true | false | "dev", persist: true (browser storage) | "files" (drawings/<slide>.svg beside deck.mdx, written on `kadal-deck dev`, bundled into the build, printed into every export) | false, presenterOnly, syncAll, perClick (a stroke shows from the click step it was drawn on) }. Files in drawings/ are always shown under the live strokes.',
   narration:
@@ -985,6 +998,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
     "Addon packages, in order (a later one wins a name clash): `qr` finds @kadal/addon-qr, then kadal-addon-qr, then a package of that name; `./my-addon` is a folder. Each brings components, layouts, layers, CSS and a setup.",
   themeConfig:
     'The theme\'s knobs, over its own defaults: each key becomes a CSS custom property `--theme-<kebab-key>` on the deck root (`primaryColor: "#0f766e"` → `--theme-primary-color`; nested keys join with dashes). What a theme reads is in its README.',
+  comark:
+    'Comark (formerly MDC) syntax: `:name[content]{prop=value .class #id}` inline components, `[text]{.class style="…"}` spans, `{…}` after `**bold**`, `` `code` ``, links and images, and `::name{props}` … `::` blocks (YAML props between `---` lines, `#slot` sections as props, nesting with more colons). Kadal\'s `::slot::` markers and `::code-group` keep their meaning.',
   layers:
     "Where the global and slide layers (global-top.tsx and friends, or a theme's or addon's) draw besides the deck, print and export: { presenter: true, overview: false }.",
 };
@@ -1001,6 +1016,12 @@ export const EXTRA_DECK_KEYS = [
     name: "canvasWidth",
     type: N(),
     description: "Slidev spelling: the stage width used with aspectRatio.",
+    scope: "deck" as const,
+  },
+  {
+    name: "mdc",
+    type: B(),
+    description: "Slidev's older spelling of `comark` (MDC is Comark's former name).",
     scope: "deck" as const,
   },
   {

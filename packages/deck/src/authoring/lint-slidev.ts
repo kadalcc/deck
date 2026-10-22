@@ -13,7 +13,7 @@ const DIRECTIVES: Record<string, string> = {
   "v-after": "<After>",
   "v-mark": "<Mark>",
   "v-motion": "<Motion>",
-  "v-if": "a <Click>, <RenderWhen> or <LightOrDark>",
+  "v-if": "a <Click>, <ClickCount when>, <RenderWhen> or <LightOrDark>",
   "v-else": "a <Click>, <RenderWhen> or <LightOrDark>",
   "v-show": "a <Click>",
   "v-for": "the items written out",

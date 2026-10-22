@@ -133,13 +133,13 @@ id: magic-move
 ```ts
 const highWater = "06:12";
 ```
-```ts
+```ts {*|2-4}
 const highWater = "06:12";
 function ask(q: string) {
   return `${q}? ${highWater}`;
 }
 ```
-```ts
+```ts {*|5}
 const highWater = "06:12";
 export function ask(q: string): string {
   return `${q}? ${highWater}`;
@@ -151,7 +151,7 @@ ask("When is high water");
 </Col>
 <Col>
 
-Each press morphs the code to the next version: unchanged tokens glide to their new places, new ones fade in.
+Each press morphs the code to the next version: unchanged tokens glide to their new places, new ones fade in. A step's own highlight steps light its lines first, a click each.
 
 <How>
 
@@ -160,8 +160,8 @@ Each press morphs the code to the next version: unchanged tokens glide to their 
 ```ts
 const highWater = "06:12";
 ```
-```ts
-…the next version
+```ts {*|2-4}
+…the next version, then its lines 2–4
 ```
 ````
 `````
@@ -174,7 +174,9 @@ const highWater = "06:12";
 <Notes>
 Slidev's magic move, compiled at build time. One fence of fences: each inner block is a step.
 [click] The function arrives around the constant.
+[click] Its three lines light up: the step's own highlight, one more click.
 [click] It is exported, typed and called — the tokens it shares with the step before slide into place.
+[click] And the call lights up.
 </Notes>
 
 ---
@@ -300,8 +302,9 @@ id: code-monaco
 <Col>
 
 ```ts {monaco} [harbour.ts]
-const harbours = ["Kadal", "Chennai", "Kochi"]
-export const loudest = harbours.map((h) => h.toUpperCase())
+import { z } from "zod"
+const Harbour = z.object({ name: z.string(), depth: z.number() })
+export const kochi = Harbour.parse({ name: "Kochi", depth: 14.5 })
 ```
 
 </Col>
@@ -318,10 +321,10 @@ const unit = "metres"
 </Col>
 </Cols>
 
-<p className="sc-small"><code>{"```ts {monaco}"}</code> edits in place (with TypeScript's hovers and errors); <code>{"{monaco-diff}"}</code> splits two versions at a line of <code>~~~</code>. <Kbd>Esc</Kbd> hands the keys back to the deck.</p>
+<p className="sc-small"><code>{"```ts {monaco}"}</code> edits in place, with TypeScript's hovers and errors — for imported packages too: their types come from the deck's node_modules or jsDelivr. <code>{"{monaco-diff}"}</code> splits two versions at a line of <code>~~~</code>. <Kbd>Esc</Kbd> hands the keys back to the deck.</p>
 
 <Notes>
-Monaco, the editor of VS Code, loaded only when a slide like this is on screen. On the left an editor with TypeScript behind it; on the right a diff of two versions. Printed, both are the highlighted code — the diff as a unified listing.
+Monaco, the editor of VS Code, loaded only when a slide like this is on screen. On the left an editor with TypeScript behind it — hover the zod calls and the types are zod's own, fetched as the editor opens; on the right a diff of two versions. Printed, both are the highlighted code — the diff as a unified listing.
 </Notes>
 
 ----

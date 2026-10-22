@@ -213,7 +213,7 @@ const apiExtensions = new Map<string, unknown>();
  * extension points call this from their module, so nothing here needs to know about them.
  */
 export function extendSetupApi(name: string, value: unknown): void {
-  if (["deck", "commands", "panels"].includes(name))
+  if (["deck", "commands", "panels", "addRoute"].includes(name))
     throw new Error(`extendSetupApi: "${name}" is reserved.`);
   apiExtensions.set(name, value);
 }
@@ -277,6 +277,12 @@ export function setupApi(deck: DeckRuntime | (() => DeckRuntime)): SetupApi & { 
       };
       window.addEventListener("keydown", onKey);
       const off = () => window.removeEventListener("keydown", onKey);
+      disposers.push(off);
+      return off;
+    },
+    /** A page of the package's own (react/routes.tsx); removed with the package. */
+    addRoute(route: Parameters<SetupApi["addRoute"]>[0]) {
+      const off = current().routes?.add(route) ?? (() => {});
       disposers.push(off);
       return off;
     },

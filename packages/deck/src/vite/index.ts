@@ -23,7 +23,15 @@ import {
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
 import {
+  codeThemeCss,
+  codeThemes,
+  codeThemesKey,
+  shikiThemeNames,
+  shikiThemeOption,
+} from "../compiler/code-themes.ts";
+import {
   type DeckSetup,
+  comarkEnabled,
   katexOptions,
   manifestHeadmatter,
   notesRuby,
@@ -42,6 +50,8 @@ import {
 } from "./packages.ts";
 import { monacoInstalled, monacoLangs, monacoModule, setupFile } from "./monaco.ts";
 import { monacoWriteDev } from "./monaco-dev.ts";
+import { localTypePackages, localTypes, monacoSources, typeRequests } from "./monaco-types.ts";
+import { monacoTypesOptions } from "../monaco/types.ts";
 import { loadTwoslash } from "./twoslash.ts";
 import { DEV_NOTES, NOTES_PATH, notesEndpoint, notesOnlyChanges, pushNotes } from "./notes-dev.ts";
 import { drawingsDev, drawingsDir, drawingsExport, drawingsModule } from "./drawings-dev.ts";
@@ -188,6 +198,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
   // The Shiki themes: the plugin's options, else the deck's theme package's, else GitHub's —
   // decided again at every manifest build, since the headmatter's theme can change.
   let themes = shikiThemes(options.shiki, null);
+  /** The pair above plus what the theme menu's other themes need (compiler/code-themes.ts). */
+  let code = codeThemes(options.shiki, null);
   let root = process.cwd();
   let entryPath = "";
   let base = "/";
@@ -226,15 +238,15 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
 
   let highlighterKey = "";
   const getHighlighter = async () => {
-    const key = `${themes.light}|${themes.dark}`;
+    const key = codeThemesKey(code);
     if (!highlighter || key !== highlighterKey) {
       highlighterKey = key;
       highlighter = await createHighlighter({
-        themes: [themes.light, themes.dark],
+        themes: shikiThemeNames(code),
         langs: options.shiki?.langs ?? DEFAULT_LANGS,
       }).catch((err: unknown) => {
         throw new Error(
-          `[deck] Shiki could not load the code themes "${themes.light}" / "${themes.dark}" (from the plugin options or the theme package's kadal.theme.shiki): ${err instanceof Error ? err.message : String(err)}`,
+          `[deck] Shiki could not load the code themes ${shikiThemeNames(code).join(", ")} (from the plugin options or the kadal.theme.shiki of the deck's theme packages): ${err instanceof Error ? err.message : String(err)}`,
         );
       });
     }
@@ -278,10 +290,12 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     }
     applySlideDefaults(slides, slideDefaultLayers(headmatter, packages.theme, packages.addons));
     themes = shikiThemes(options.shiki, packages.theme);
+    code = codeThemes(options.shiki, packages.theme, packages.themes);
     return {
       headmatter,
       slides,
-      styles,
+      // The theme menu's code colours ride with the slides' own styles (compiler/code-themes.ts).
+      styles: styles + codeThemeCss(code),
       katex,
       math: katexRenderer(katex),
       glossary: readGlossary(headmatter, katexRenderer(katex)),
@@ -357,13 +371,14 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         development: false,
         ...mdxPlugins({
           highlighter: await getHighlighter(),
-          themes,
+          themes: shikiThemeOption(code),
           glossary: m.glossary,
           terms,
           math: m.math,
           warn: (message) => console.warn(`[deck] ${file}: ${message}`),
           katex: m.katex,
           plantUmlServer: plantUmlServer(m.headmatter),
+          comark: comarkEnabled(m.headmatter),
           ruby: notes ? notesRuby(m.headmatter) : null,
           remarkPlugins: options.remarkPlugins,
           rehypePlugins: options.rehypePlugins,
@@ -567,13 +582,39 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       const m = ensure();
 
       if (id === `${RESOLVED}/monaco`) {
+        const typing = monacoTypesOptions(m.headmatter);
         return monacoModule({
           langs: monacoLangs(m.slides.map((s) => s.content)),
           themes,
+          allThemes: shikiThemeNames(code),
           deckDir: dirname(entryPath),
           writeEndpoint: building ? null : `${base}__kadal/monaco-write`,
           languages: bundledLanguagesInfo,
+          // `local` types (vite/monaco-types.ts): what the editors import that the deck installed.
+          typePackages:
+            typing.source === "auto" || typing.source === "local"
+              ? localTypePackages(
+                  monacoSources(m.slides.map((s) => s.content)),
+                  typing.packages,
+                  dirname(entryPath),
+                  typing.ignore,
+                )
+              : [],
+          typesModule: `${VIRTUAL}/monaco-types/`,
         });
+      }
+
+      if (id.startsWith(`${RESOLVED}/monaco-types/`)) {
+        const pkg = decodeURIComponent(id.slice(`${RESOLVED}/monaco-types/`.length));
+        const typing = monacoTypesOptions(m.headmatter);
+        const asks = typeRequests(monacoSources(m.slides.map((s) => s.content)), typing.packages);
+        const files = await localTypes(
+          pkg,
+          dirname(entryPath),
+          typing.ignore,
+          asks.get(pkg) ?? [""],
+        );
+        return `export default ${JSON.stringify(files ?? [])};`;
       }
 
       if (id === `${RESOLVED}/kokoro`) {
@@ -622,6 +663,7 @@ ${entries.join(",\n")}
 ];
 export const glossary = ${JSON.stringify(m.glossary.entries)};
 export const styles = ${JSON.stringify(m.styles)};
+export const codeThemes = ${JSON.stringify(code)};
 ${building ? "export const relay = null;" : DEV_RELAY}
 export const kokoro = ${hasKokoro ? `() => import("${VIRTUAL}/kokoro")` : "null"};
 export const monaco = ${hasMonaco ? `() => import("${VIRTUAL}/monaco").then((m) => m.default())` : "null"};
@@ -633,7 +675,7 @@ ${building ? "" : DEV_NOTES}
 ${drawingsExport({ building, base, dir: drawingsDir(entryPath) })}
 export const sourceApi = ${building ? "null" : JSON.stringify(`${base}${SOURCE_PATH}`)};
 export const sideEditor = ${sideEditorCode(building)};
-export default { headmatter, slides, glossary, styles, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, drawings, dragApi, sourceApi, sideEditor };
+export default { headmatter, slides, glossary, styles, codeThemes, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, drawings, dragApi, sourceApi, sideEditor };
 `;
       }
 
@@ -659,7 +701,7 @@ export default { headmatter, slides, glossary, styles, relay, kokoro, packages, 
         return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`, null, true);
 
       // magic: precompute keyed tokens for each step, plus that step's own line highlights.
-      const blocks = magicMoveData(s.magic, await getHighlighter(), themes);
+      const blocks = magicMoveData(s.magic, await getHighlighter(), shikiThemeOption(code));
       return `export default ${JSON.stringify(blocks)};`;
     },
   };

@@ -93,6 +93,11 @@ export function plantUmlServer(headmatter: Frontmatter): string {
     : DEFAULT_PLANTUML_SERVER;
 }
 
+/** Comark (formerly MDC) syntax on: `comark: true`, or Slidev's older spelling `mdc: true`. */
+export function comarkEnabled(headmatter: Frontmatter): boolean {
+  return headmatter.comark === true || headmatter.mdc === true;
+}
+
 /** `notesAutoRuby`, or null without one. */
 export function notesRuby(headmatter: Frontmatter): Record<string, string> | null {
   const r = headmatter.notesAutoRuby;

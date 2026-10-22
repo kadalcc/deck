@@ -177,3 +177,13 @@ project and ships no Slidev code. Three things in it come from elsewhere:
   53.0.0), the first part of the "Composable Vue" demo talk and `@slidev/theme-apple-basic`'s
   example deck, as Slidev wrote them (MIT, Copyright (c) 2020 Anthony Fu and Copyright (c) 2021
   Slidev.js Team). They are inputs to the tests, not part of the npm package.
+
+## Comark syntax (`comark: true`)
+
+The Comark (formerly MDC) reader in `src/compiler/comark-*.ts`, `remark-comark.ts` and
+`rehype-comark.ts` is Kadal's own code, written from the public syntax description
+(https://comark.dev/syntax/markdown); no Comark, `@comark/markdown-it` or `remark-mdc` code is
+copied or bundled. Its bracketed-label tokenizer follows the shape of the label factory in
+`micromark-extension-directive` (MIT, © Titus Wormer, https://github.com/micromark/micromark-extension-directive),
+as every micromark extension with a `[label]` does. Named slots are compiled with
+`hast-util-to-estree` (MIT, © Titus Wormer), an ordinary dependency MDX already uses.

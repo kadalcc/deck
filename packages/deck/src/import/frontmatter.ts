@@ -155,21 +155,10 @@ const DROPPED: Record<string, (v: unknown) => string | null> = {
     v === false
       ? "monaco: false has no Kadal setting; {monaco} blocks load the editor lazily."
       : null,
-  monacoTypesSource: () => null,
-  monacoTypesAdditionalPackages: () => null,
-  monacoTypesIgnorePackages: () => null,
   monacoRunAdditionalDeps: () => null,
   monacoRunUseStrict: () => null,
   preloadImages: () => null,
   shiki: () => "shiki — set Shiki options in vite.config.ts: deck({ shiki: { … } }).",
-  comark: (v) =>
-    v
-      ? "comark: Kadal is MDX; write components as JSX (<Badge>…</Badge>) rather than Comark's :name[…]{…}."
-      : null,
-  mdc: (v) =>
-    v
-      ? "mdc: Kadal is MDX; write components as JSX (<Badge>…</Badge>) rather than MDC's :name[…]{…}."
-      : null,
   titleTemplate: (v) =>
     v === "%s - Slidev" ? null : `titleTemplate: ${v} — Kadal's page title is the deck's title.`,
 };
@@ -214,6 +203,11 @@ export function mapHeadmatter(head: Record<string, unknown>, report: Reporter): 
         break;
       case "info":
         if (typeof value === "string") deck.info = value;
+        break;
+      // Comark (MDC before it was renamed) is read natively: compiler/remark-comark.ts.
+      case "comark":
+      case "mdc":
+        if (value === true) deck.comark = true;
         break;
       case "addons":
         for (const a of Array.isArray(value) ? value : []) {
@@ -294,6 +288,18 @@ export function mapHeadmatter(head: Record<string, unknown>, report: Reporter): 
       case "timer":
       case "magicMoveDuration":
         deck[key] = value;
+        break;
+      // Monaco's types: Slidev's `local` is the deck's installed packages, which Kadal's `auto`
+      // uses first (then the CDN, where the build has none); `ata`/`cdn` and `none` are the same.
+      case "monacoTypesSource":
+        deck.monacoTypes =
+          value === "cdn" || value === "ata" ? "cdn" : value === "none" ? "none" : "auto";
+        break;
+      case "monacoTypesAdditionalPackages":
+        if (Array.isArray(value)) deck.monacoPackages = value;
+        break;
+      case "monacoTypesIgnorePackages":
+        if (Array.isArray(value)) deck.monacoTypesIgnore = value;
         break;
       default:
         if (key in DROPPED) {

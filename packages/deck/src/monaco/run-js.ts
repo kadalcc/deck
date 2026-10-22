@@ -1,4 +1,5 @@
 import type { CodeOutput, CodeRunner, CodeRunnerContext } from "./runners.ts";
+import { packageOf } from "./types-config.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -208,17 +209,51 @@ const workerSource = () => {
   return workerUrl;
 };
 
-/** Bare imports cannot resolve in a worker: say so before the browser's less helpful error. */
-function bareImport(code: string): string | null {
-  for (const m of code.matchAll(/(?:^|[;\n])\s*import\s+(?:[^'"]*?\s+from\s+)?["']([^"']+)["']/g)) {
-    const spec = m[1]!;
-    if (!/^(https?:|data:|blob:|\.{0,2}\/)/.test(spec)) return spec;
-  }
-  for (const m of code.matchAll(/\bimport\(\s*["']([^"']+)["']\s*\)/g)) {
-    const spec = m[1]!;
-    if (!/^(https?:|data:|blob:|\.{0,2}\/)/.test(spec)) return spec;
-  }
+const isBare = (spec: string) => !/^(https?:|data:|blob:|\.{0,2}\/)/.test(spec);
+
+/** Static imports and re-exports (`import … from "x"`, `import "x"`, `export … from "x"`). */
+const STATIC_IMPORT =
+  /((?:^|[;\n])\s*(?:import|export)\s+(?:[^'";]*?\s+from\s+)?)(["'])([^"'\n]+)\2/g;
+const DYNAMIC_IMPORT = /(\bimport\(\s*)(["'])([^"'\n]+)\2(\s*\))/g;
+
+/** The first bare import, which cannot resolve in a worker: said before the browser's less helpful error. */
+export function bareImport(code: string): string | null {
+  for (const m of code.matchAll(STATIC_IMPORT)) if (isBare(m[3]!)) return m[3]!;
+  for (const m of code.matchAll(DYNAMIC_IMPORT)) if (isBare(m[3]!)) return m[3]!;
   return null;
+}
+
+/**
+ * Bare imports made URLs (`zod` → `https://esm.sh/zod`), by the deck's `monacoRunImports`
+ * (monaco/types-config.ts). Why this is safe to do by default: the code already runs in a module
+ * Worker of its own — no DOM, none of the deck's state, stopped by a timeout — and could already
+ * import any URL; the rewrite only writes the URL an author would have typed, over HTTPS, at the
+ * version the editors' types use. A specifier the resolver refuses (Node's `fs`) is left bare,
+ * and reported. Strings inside template literals or comments that look like imports are rare in
+ * a slide's snippet; the same patterns are what the check above has always read.
+ */
+export function resolveBareImports(
+  code: string,
+  resolve: (specifier: string) => string | null,
+): { code: string; unresolved: string | null } {
+  let unresolved: string | null = null;
+  const swap = (spec: string) => {
+    if (!isBare(spec)) return spec;
+    const url = resolve(spec);
+    if (!url) unresolved ??= spec;
+    return url ?? spec;
+  };
+  const out = code
+    .replace(
+      STATIC_IMPORT,
+      (_, head: string, q: string, spec: string) => `${head}${q}${swap(spec)}${q}`,
+    )
+    .replace(
+      DYNAMIC_IMPORT,
+      (_, head: string, q: string, spec: string, tail: string) =>
+        `${head}${q}${swap(spec)}${q}${tail}`,
+    );
+  return { code: out, unresolved };
 }
 
 async function toJavaScript(code: string, typescript: boolean): Promise<string | CodeOutput> {
@@ -240,12 +275,27 @@ function run(code: string, ctx: CodeRunnerContext, typescript: boolean): Promise
       ctx.write(js);
       return;
     }
-    const bare = bareImport(js);
-    if (bare) {
-      ctx.write({
-        error: `Cannot import "${bare}" here: the runner has no node_modules. Import it from a URL instead, e.g. import … from "https://esm.sh/${bare}".`,
-      });
-      return;
+    let source = js;
+    if (ctx.resolveImport) {
+      const r = resolveBareImports(js, ctx.resolveImport);
+      if (r.unresolved) {
+        ctx.write({
+          error:
+            packageOf(r.unresolved) === "@types/node"
+              ? `Cannot import "${r.unresolved}" here: it is one of Node's own modules, and the runner is a browser worker.`
+              : `Cannot import "${r.unresolved}" here: it does not name an npm package.`,
+        });
+        return;
+      }
+      source = r.code;
+    } else {
+      const bare = bareImport(js);
+      if (bare) {
+        ctx.write({
+          error: `Cannot import "${bare}" here: the runner has no node_modules. Import it from a URL instead, e.g. import … from "https://esm.sh/${bare}" (or let the deck do it: monacoRunImports).`,
+        });
+        return;
+      }
     }
     if (ctx.signal.aborted) return;
     const worker = new Worker(workerSource(), { type: "module", name: "kadal-deck-runner" });
@@ -279,7 +329,7 @@ function run(code: string, ctx: CodeRunnerContext, typescript: boolean): Promise
         ctx.write({ error: e.message || "The runner's worker failed." });
         finish();
       };
-      worker.postMessage({ code: js });
+      worker.postMessage({ code: source });
     });
   })();
 }

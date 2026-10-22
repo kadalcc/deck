@@ -12,8 +12,8 @@ import { convertCss } from "./style.ts";
  *
  *   components/Counter.vue      → src/components/Counter.tsx    (registered in src/components.tsx)
  *   layouts/my-layout.vue       → src/layouts/my-layout.tsx     (`layout:my-layout`)
- *   global-top.vue, global-bottom.vue, slide-top.vue, slide-bottom.vue → src/<name>.tsx, Kadal's
- *                                 layer files (the Vite plugin finds them there)
+ *   global-top.vue, global-bottom.vue, slide-top.vue, slide-bottom.vue, custom-nav-controls.vue
+ *                              → src/<name>.tsx, Kadal's layer files (the Vite plugin finds them)
  *
  * The template goes through the same converter as a slide (markup.ts, in its "tsx" mode), so
  * directives, attributify, icons and Slidev's components convert the same way. The script is read,
@@ -324,6 +324,8 @@ export function convertVueFile(source: string, o: VueFileOptions): VueFileResult
       if (/^(\$slidev\.nav\.total|\$nav\.total)$/.test(path)) return "props.total";
       if (/^(\$clicks|\$slidev\.nav\.clicks|\$nav\.clicks)$/.test(path)) return "props.click";
       if (/^(\$slidev\.nav\.currentLayout|\$nav\.currentLayout)$/.test(path)) return "props.layout";
+      if (/^(\$slidev\.nav\.isPresenter|\$nav\.isPresenter)$/.test(path))
+        return '(props.view === "presenter")';
       if (path === "$frontmatter") return "(props.slide?.frontmatter ?? {})";
       const fm = /^\$frontmatter\.([\w$]+)$/.exec(path);
       if (fm) return `props.slide?.frontmatter?.${fm[1]}`;

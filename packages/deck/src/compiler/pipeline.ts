@@ -16,6 +16,7 @@ import {
 } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
 import { applyCodeGroups } from "./code-groups.ts";
+import type { ShikiThemeOption } from "./code-themes.ts";
 import { parseCodeMeta, serialiseSteps } from "./code-meta.ts";
 import { type MagicMoveBlock, findMagicMoves } from "./magic-move.ts";
 import { rehypeDeckCode } from "./rehype-code.ts";
@@ -23,6 +24,8 @@ import { rehypeGlossary } from "./rehype-glossary.ts";
 import { remarkDeckFences } from "./remark-fences.ts";
 import { type RemarkIconsOptions, remarkIcons } from "./remark-icons.ts";
 import { remarkDrag } from "./remark-drag.ts";
+import { type RemarkComarkOptions, remarkComark } from "./remark-comark.ts";
+import { rehypeComarkSlots } from "./rehype-comark.ts";
 import { rehypeAutoRuby } from "./rehype-ruby.ts";
 import {
   type KatexOptions,
@@ -146,7 +149,8 @@ export function deckGlossary(
 
 export interface MdxPipelineOptions {
   highlighter: Highlighter;
-  themes: { light: string; dark: string };
+  /** The deck's Shiki pair and the menu's further themes: `shikiThemeOption(codeThemes(…))`. */
+  themes: ShikiThemeOption;
   glossary: DeckGlossary;
   /** The slide's own `terms` frontmatter; null compiles without the glossary (notes). */
   terms: unknown;
@@ -170,6 +174,8 @@ export interface MdxPipelineOptions {
   onTwoslashMissing?: () => void;
   /** Iconify icons the slide names (`<mdi-x />`, `<Icon name="set:x">`): `onIcon` hears each. */
   icons?: RemarkIconsOptions;
+  /** Comark syntax (`comark: true` / `mdc: true` in the headmatter): remark-comark.ts. */
+  comark?: boolean;
 }
 
 /** The remark and rehype passes every slide (and every note) compiles with. */
@@ -206,6 +212,14 @@ export function mdxPlugins(
     remarkPlugins: [
       remarkGfm,
       remarkMath,
+      ...(o.comark
+        ? [
+            [
+              remarkComark,
+              { warn: (m: string, line?: number) => o.warn(line ? `line ${line}: ${m}` : m) },
+            ] as [typeof remarkComark, RemarkComarkOptions],
+          ]
+        : []),
       ...(o.remarkPlugins ?? []),
       [remarkIcons, o.icons ?? {}] as [typeof remarkIcons, RemarkIconsOptions],
       remarkDrag,
@@ -239,6 +253,8 @@ export function mdxPlugins(
           ]
         : []),
       ...(o.rehypePlugins ?? []),
+      // Last: named slots carry their content compiled by everything above (rehype-comark.ts).
+      ...(o.comark ? [rehypeComarkSlots] : []),
     ],
   };
 }
@@ -247,11 +263,16 @@ export function mdxPlugins(
 const numbered = (block: MagicMoveBlock, own: boolean) =>
   own || block.options.lines === "true" || block.options.lines === "1";
 
-/** A slide's magic-move steps with their keyed tokens, precomputed for both themes. */
+/**
+ * A slide's magic-move steps with their keyed tokens. One token set per step, highlighted with
+ * every theme at once (`themes`: the deck's pair and any the theme menu adds, see
+ * compiler/code-themes.ts): each token's colours are Shiki's CSS variables, so the colour scheme
+ * and the theme menu recolour a block the way they recolour plain code, without a second set.
+ */
 export function magicMoveData(
   blocks: MagicMoveBlock[],
   hl: Highlighter,
-  themes: { light: string; dark: string },
+  themes: ShikiThemeOption,
 ): MagicMoveData[] {
   return blocks.map((block) => ({
     options: block.options,
@@ -265,20 +286,12 @@ export function magicMoveData(
         highlight: meta.steps ? serialiseSteps(meta.steps) : null,
         // Line numbers are part of the keyed tokens (shiki-magic-move numbers them when it
         // tokenises), so `{lines: true}` must reach here, not only the renderer's options.
-        tokens: {
-          light: codeToKeyedTokens(
-            hl,
-            step.code,
-            { lang: lang as never, theme: themes.light },
-            numbered(block, meta.lines),
-          ),
-          dark: codeToKeyedTokens(
-            hl,
-            step.code,
-            { lang: lang as never, theme: themes.dark },
-            numbered(block, meta.lines),
-          ),
-        },
+        tokens: codeToKeyedTokens(
+          hl,
+          step.code,
+          { lang: lang as never, themes, defaultColor: false } as never,
+          numbered(block, meta.lines),
+        ),
       };
     }),
   }));

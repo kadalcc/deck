@@ -76,6 +76,8 @@ import { devNotesEditor, type NotesEditor } from "./notes.ts";
 import { PresentingLayer, usePresentingRoot } from "./Presenting.tsx";
 import { SideEditor } from "./SideEditor.tsx";
 import { useDocumentHead } from "./head.ts";
+import type { RoutesSetup } from "../theming/contract.ts";
+import { RoutePage, useDeckRoutes, usePackageRoutes } from "./routes.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -108,7 +110,12 @@ export interface DeckProps {
    * Route → page component, for the presenter/audience/notes/stats/remote pages. A deck with a
    * presenter and no remote still gets the phone remote (the engine's, loaded on /remote only).
    */
-  pages?: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>;
+  pages?: Partial<Record<Exclude<ViewMode, "play" | "print" | "page">, ComponentType>>;
+  /**
+   * Pages of the deck's own at `<base><path>` (react/routes.tsx): `[{ path: "handout", component:
+   * Handout }]`, or a function of the routes so far. A `routes.tsx` beside deck.mdx adds its own.
+   */
+  routes?: RoutesSetup;
   /** Wraps the runtime (the live provider, a theme provider). */
   children?: ReactNode;
   /**
@@ -118,8 +125,9 @@ export interface DeckProps {
   base?: string;
   /**
    * Layers on every slide (react/Layers.tsx): `global-top`, `global-bottom`, `slide-top`,
-   * `slide-bottom`. They draw with the theme's and the addons' (and a `global-top.tsx` beside
-   * deck.mdx); `false` for one hides that layer from all of them.
+   * `slide-bottom`, and `custom-nav-controls` (buttons beside the controls). They draw with the
+   * theme's and the addons' (and a `global-top.tsx` beside deck.mdx); `false` for one hides that
+   * layer from all of them.
    */
   layers?: DeckLayers;
   /**
@@ -170,9 +178,9 @@ const FallbackExport = lazy(() =>
 /** The page for a route: the deck's own, else the remote the presenter needs, else none. */
 export function pageFor(
   mode: ViewMode,
-  pages: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>,
+  pages: Partial<Record<Exclude<ViewMode, "play" | "print" | "page">, ComponentType>>,
 ): ComponentType | null {
-  if (mode === "play" || mode === "print") return null;
+  if (mode === "play" || mode === "print" || mode === "page") return null;
   if (pages[mode]) return pages[mode]!;
   if (mode === "export") return FallbackExport;
   if (mode === "overview") return FallbackOverview;
@@ -208,6 +216,7 @@ export function Deck({
   shortcuts: shortcutsIn,
   contextMenu: menuIn,
   notesEditor: notesEditorIn,
+  routes: routesIn,
 }: DeckProps) {
   const base = useMemo(
     () => (baseIn ? (baseIn.endsWith("/") ? baseIn : `${baseIn}/`) : baseOf()),
@@ -239,7 +248,13 @@ export function Deck({
     return map;
   }, [columns, config]);
 
-  const mode = useMemo(() => modeFromLocation(base), [base]);
+  // The deck's own pages (react/routes.tsx): an address one of them names is that page.
+  const deckRoutes = useDeckRoutes(base, { deck: manifest.packages?.routes, prop: routesIn });
+  const routeMatch = deckRoutes.match;
+  const mode = useMemo<ViewMode>(() => {
+    const m = modeFromLocation(base);
+    return m === "play" && routeMatch ? "page" : m;
+  }, [base, routeMatch]);
   const flags = useMemo(
     () => parseFlags(typeof window === "undefined" ? "" : window.location.search),
     [],
@@ -563,6 +578,7 @@ export function Deck({
       shortcuts,
       menu,
       notesEditor,
+      routes: deckRoutes.registry,
     }),
     [
       manifest,
@@ -588,11 +604,13 @@ export function Deck({
       shortcuts,
       menu,
       notesEditor,
+      deckRoutes.registry,
     ],
   );
 
   useBuiltinCommands(runtime);
   usePackageSetup(runtime, merged.modules);
+  usePackageRoutes(deckRoutes.registry, merged.modules);
   useDeckEffects(runtime, flags, wantedAtLoad, related);
   useTermEffects(runtime);
   // A share window the viewer closed themselves: the button that opened it stops looking lit.
@@ -617,6 +635,10 @@ export function Deck({
   const view =
     mode === "print" ? (
       <PrintView />
+    ) : mode === "page" && routeMatch ? (
+      <Suspense fallback={null}>
+        <RoutePage match={routeMatch} />
+      </Suspense>
     ) : Page ? (
       <Suspense fallback={null}>
         <Page />

@@ -56,6 +56,11 @@
 - `<style>` in a slide styles that slide only (`html.dark h1 {…}` still means the dark scheme;
   `:scope {…}` is the slide itself); `<style global>` styles the whole deck.
 - Components are Capitalised. Unknown names fail the slide — check `kadal-deck info components`.
+- Prefer JSX. With `comark: true` in the headmatter (Slidev's `mdc: true` too) Comark also works:
+  `:badge[New]{tone="good"}`, `[text]{.class style="color: red"}`, `**x**{.accent}`,
+  `![](/a.png){width=480}`, and `::callout{kind="tip"}` ⏎ body ⏎ `#title` ⏎ named slot ⏎ `::`
+  (YAML props between `---` lines right after the opener; one more colon to nest). Kebab names
+  become PascalCase components; HTML names (`span`, `section`) stay elements.
 
 ## Clicks (steps)
 
@@ -63,6 +68,9 @@
   around a list reveals item by item. `at="+2"`, `at={3}`, `at={[2, 4]}`, `hide`,
   `effect="fade-up"` (see the click effects in references/components.md).
 - Code steps: ```` ```ts {1|2-3|all} ```` highlights those lines, one set per click.
+- The count itself (Slidev's `$clicks`): `<ClickCount />` (`total`, `offset={1}`),
+  `<ClickCount when={(c) => c >= 2}>…</ClickCount>` for `v-if="$clicks >= 2"`, `useClicks()` in a
+  component. Reading it adds no step.
 - `<Notes>` text (or a trailing `<!-- … -->`) with `[click]` markers: the presenter view shows the part for the current click,
   and the narrator (R, or the presenter's narration bar) reads that part aloud at that step. Write
   notes as sentences meant to be heard. `say: "…"` in a slide's frontmatter replaces what is read;
@@ -84,7 +92,12 @@
   compares with `totalTime`/`duration` or each slide's `timing` (default `defaultTiming`).
 - `contextMenu: true | false | "dev" | "build"`: the right-click menu on slides.
 - Pages: `/presenter`, `/notes`, `/notes-edit` (batch notes editor, dev), `/overview` (every slide
-  with a step slider and its notes), `/remote`. `,` opens display settings (brightness, contrast,
+  with a step slider and its notes), `/remote`. Pages of the deck's own: `routes.tsx` beside
+  deck.mdx, `export default defineRoutes([{ path: "handout", component: Handout }])` (Slidev's
+  `setup/routes.ts` works there too). Buttons of its own beside the controls:
+  `custom-nav-controls.tsx` (a layer: `export default (p: LayerProps) => <button …/>`).
+- `<Drag>` positions moved under `kadal-deck dev` are saved into deck.mdx and follow into every
+  other open window (presenter, second screen) at once. `,` opens display settings (brightness, contrast,
   saturation, sepia, hue, invert for a projector).
 - In main.tsx, `<Deck shortcuts={[{ keys: ["KeyQ"], command: "view.overview", description: "…" }]}>`
   adds keys (a function gets the defaults and returns the whole list: `defineShortcuts`);
@@ -102,7 +115,9 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
 
 - Fenced code is highlighted at build time (Shiki). Meta: `{lines:true}`, `[file.ts]` title,
   `{2|4-6}` steps, `{maxHeight:'400px'}`. A ````md magic-move fence morphs between the code fences
-  it contains, one per click.
+  it contains, one per click; an inner fence's own steps (```` ```ts {*|2|4-5} ````) light its
+  lines first, a click each. Code follows the theme menu: a theme with its own Shiki pair
+  recolours every block (and editor) when picked.
 - Marks at a line's end: `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`,
   `[!code error]`, `[!code word:name]` (any comment style; the comment is removed).
 - Tabs: `::code-group` … `::` around fences titled `[npm]`, `[bun]`… (`{clicks:true}` turns them
@@ -113,6 +128,10 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
   {monaco-run} (Run button, output below; JS/TS/Python built in; `{autorun:false}`,
   `{showOutputAt:'+1'}`), `<<< ./x.ts {monaco-write}` (saves to the file in dev). Esc hands the
   keys back to the deck. Keep editors to a few lines: they are for showing, not writing apps.
+  Imported npm packages get their types (installed ones bundled, others from jsDelivr):
+  `monacoTypes: auto|local|cdn|none`, `monacoPackages: { zod: ^3.23 }` pins versions. In
+  {monaco-run}, `import { z } from "zod"` loads from esm.sh at that version
+  (`monacoRunImports: false` to forbid, or another CDN).
 - Maths: `$inline$` and `$$display$$` (KaTeX at build time). `$$ {1|3|all}` on the opening line
   lights those lines of an `aligned`/`array` one step per click (`{at: 2}`, `{finally: 'all'}`
   in a second group). `katex: { macros: { "\\RR": "\\mathbb{R}" } }` in the headmatter.

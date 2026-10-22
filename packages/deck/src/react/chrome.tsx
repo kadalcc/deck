@@ -4,6 +4,7 @@ import { keyLabel } from "../core/shortcuts.ts";
 import { availableRoutes, formatSlideNumber, progressOf } from "../core/navigation.ts";
 import { useDeck } from "./context.ts";
 import { HintLayer } from "./Hints.tsx";
+import { NavControlsLayer } from "./Layers.tsx";
 import { ConfettiLayer } from "./ConfettiLayer.tsx";
 import { ThemeMenu } from "./ThemeMenu.tsx";
 import { useActions, useCurrentSlide, useNav, useUi } from "./hooks.ts";
@@ -20,6 +21,7 @@ export function Chrome() {
   return (
     <>
       {deck.config.controls === true ? <Controls /> : null}
+      <NavControlsLayer />
       {deck.config.progress ? <Progress /> : null}
       {deck.config.slideNumber &&
       (deck.config.showSlideNumber === "all" ||

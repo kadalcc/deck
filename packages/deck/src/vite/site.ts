@@ -271,7 +271,9 @@ export function deckSite(ctx: SiteContext) {
       // 4. Routes, 404.html and _redirects for static hosts.
       if (s.staticHost) {
         const { writeStaticHostFiles } = await import("./static-host.ts");
-        writeStaticHostFiles(outDir, base, ctx.publicDir());
+        const { routePaths, routesFile } = await import("./packages.ts");
+        const own = routePaths(routesFile(dirname(ctx.entry())));
+        writeStaticHostFiles(outDir, base, ctx.publicDir(), own);
       }
 
       // 5. Last: the worker, whose list is every file above.

@@ -36,7 +36,11 @@ class FakeSocket {
   }
 }
 
-const saved = { window: globalThis.window, WebSocket: globalThis.WebSocket };
+const saved = {
+  hadWindow: "window" in globalThis,
+  window: globalThis.window,
+  WebSocket: globalThis.WebSocket,
+};
 beforeAll(() => {
   (globalThis as { window?: unknown }).window = {
     location: { protocol: "https:", host: "deck.test" },
@@ -44,7 +48,9 @@ beforeAll(() => {
   (globalThis as { WebSocket?: unknown }).WebSocket = FakeSocket;
 });
 afterAll(() => {
-  (globalThis as { window?: unknown }).window = saved.window;
+  // Put back exactly what was there: a `window` left defined as undefined still answers `in`.
+  if (saved.hadWindow) (globalThis as { window?: unknown }).window = saved.window;
+  else delete (globalThis as { window?: unknown }).window;
   (globalThis as { WebSocket?: unknown }).WebSocket = saved.WebSocket;
 });
 

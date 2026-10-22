@@ -280,6 +280,27 @@ One click step (Slidev's v-click, reveal.js's fragment): shows its children from
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
 | `children` | `ReactNode` |  | What is revealed. |
 
+#### `<ClickCount>`
+
+The click step this slide is at (Slidev's `$clicks`), or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.
+
+```mdx
+Step <ClickCount offset={1} /> of <ClickCount total />
+
+<ClickCount when={(c) => c >= 3}>
+
+**Done.**
+
+</ClickCount>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `total` | `boolean` | `false` | Show the slide's number of clicks rather than the current one. |
+| `offset` | `number` | `0` | Add this to the number shown: `offset={1}` counts from 1 ("step 1" before any click). |
+| `when` | `((click: number, total: number) => unknown)` |  | Render the children only while this is true of the count: `when={(c) => c >= 2}`. |
+| `children` | `ReactNode \| ((click: number, total: number) => ReactNode)` |  | With `when`: what to show. Otherwise a function of the count, for anything that depends on it: `{(c, total) => …}`. Without either, the number is shown in a `<span>`. |
+
 #### `<Clicks>`
 
 Wraps a Markdown list (or any children) so each item is its own click step. Leave blank lines around the list inside it.
@@ -412,7 +433,7 @@ One idea per slide.
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `kind` | `"warn" \| "info" \| "tip" \| "danger" \| "note"` | `"info"` | info · tip · note · warn · danger. |
-| `title` | `string` |  | Bold first line. |
+| `title` | `ReactNode` |  | A string, or any content (Comark's `#title` slot arrives as content). |
 | `children` | `ReactNode` |  |  |
 
 #### `<Confetti>`
@@ -1020,7 +1041,7 @@ bun add @kadal/deck
 
 #### `<MagicMove>`
 
-Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step.
+Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step; an inner fence's highlight steps (`{*|2|4-5}`) are clicks too, in order with the morphs. Outer options: at, lines, duration; `[file.ts]` adds a title bar. Follows the colour scheme and the theme menu.
 
 `````mdx
 ````md magic-move
@@ -1427,12 +1448,13 @@ console.log([1, 2, 3].map((n) => n * 2))
 <<< @/snippets/tide.ts#ask {monaco-write}
 ```
 
-- `` ````md magic-move `` — A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.
+- `` ````md magic-move `` — A 4-backtick md fence holding one code fence per step: the code morphs between them on each click. An inner fence's highlight steps (`{*|1|2-5}`) are clicks of their own, before the next morph; `{lines: true}` (outer, or one step's) numbers lines; `{at:N}`, `{duration:ms}`.
 
 `````mdx
-````md magic-move
-```ts
+````md magic-move {lines: true}
+```ts {*|1}
 let x = 1
+let y = 2
 ```
 ```ts
 const x = 1

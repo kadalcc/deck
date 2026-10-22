@@ -147,7 +147,13 @@ export function convertSlidev(text: string, options: SlidevImportOptions = {}): 
         components.add(name.replace(/(^|-)(\w)/g, (_, __, c: string) => c.toUpperCase()));
       else layouts.add(name);
     }
-  for (const layer of ["global-top", "global-bottom", "slide-top", "slide-bottom"]) {
+  for (const layer of [
+    "global-top",
+    "global-bottom",
+    "slide-top",
+    "slide-bottom",
+    "custom-nav-controls",
+  ]) {
     const source = read(`${layer}.vue`);
     if (source !== null) sfcs.push({ path: `${layer}.vue`, name: layer, kind: "layer", source });
   }

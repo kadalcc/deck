@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { type MonacoHost, type MonacoLoader, loadMonaco } from "./loader.ts";
+import type { MonacoTypesOptions } from "./types.ts";
 
 /**
  * The Monaco editor itself: the lazy half of a `{monaco…}` block (components/MonacoCode.tsx is
@@ -9,7 +10,10 @@ import { type MonacoHost, type MonacoLoader, loadMonaco } from "./loader.ts";
  *
  * It sizes itself from the static block it replaces — the same font, size and line height — so
  * nothing jumps when the editor takes over; `height` in the block's options overrides that
- * (`'auto'` grows with the content). The theme follows the deck's colour scheme live.
+ * (`'auto'` grows with the content). The theme follows the deck's colour scheme live, and the
+ * theme menu: a theme with its own Shiki pair recolours the editor as it does the static code.
+ * The packages the code imports get their types (monaco/types.ts) as the editor opens and again
+ * as imports are typed, so their hovers and errors are TypeScript's own.
  *
  * Keys: the editor owns every key while it has focus (the deck's own handler skips
  * `[data-deck-own-keys]`); Escape hands focus back to the slide, so the arrows move slides
@@ -23,6 +27,10 @@ export interface EditorProps {
   /** The left side of a diff. */
   original?: string;
   scheme: "light" | "dark";
+  /** The Shiki theme the static code wears now (compiler/code-themes.ts); null: the scheme's. */
+  shikiTheme?: string | null;
+  /** Where the imported packages' types come from (`monacoTypes`, `monacoPackages`…). */
+  types?: MonacoTypesOptions;
   readOnly: boolean;
   lines: boolean;
   /** CSS height, or "auto" to grow with the content; null sizes to the first content. */
@@ -49,7 +57,7 @@ export default function Editor(props: EditorProps) {
   const el = useRef<HTMLDivElement>(null);
   const latest = useRef(props);
   latest.current = props;
-  const api = useRef<{ setTheme(s: "light" | "dark"): void } | null>(null);
+  const api = useRef<{ setTheme(s: "light" | "dark", shiki: string | null): void } | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -98,6 +106,22 @@ export default function Editor(props: EditorProps) {
         const uri = (name: string) => monaco.Uri.parse(`file:///kadal-deck/${name}-${id}.${ext}`);
         const modified = monaco.editor.createModel(p.code, language, uri("block"));
         cleanups.push(() => modified.dispose());
+        // Types for what the code imports: now, and again a moment after an edit settles.
+        const typed = language === "typescript" || language === "javascript";
+        const acquire = (code: string) => {
+          if (typed) void host.acquireTypes?.(code, latest.current.types).catch(() => {});
+        };
+        acquire(p.code);
+        if (p.mode === "diff") acquire(p.original ?? "");
+        let typesTimer: ReturnType<typeof setTimeout> | undefined;
+        const typesSub = modified.onDidChangeContent(() => {
+          clearTimeout(typesTimer);
+          typesTimer = setTimeout(() => acquire(modified.getValue()), 700);
+        });
+        cleanups.push(() => {
+          clearTimeout(typesTimer);
+          typesSub.dispose();
+        });
         let codeEditor: {
           getContentHeight(): number;
           onDidContentSizeChange(f: () => void): { dispose(): void };
@@ -176,9 +200,24 @@ export default function Editor(props: EditorProps) {
         box.addEventListener("keydown", onKey);
         cleanups.push(() => box.removeEventListener("keydown", onKey));
 
-        api.current = { setTheme: (s) => monaco.editor.setTheme(host.theme(s)) };
-        // The scheme may have changed while Monaco loaded.
-        api.current.setTheme(latest.current.scheme);
+        // The theme on show: by its Shiki name when the host can load any (the theme menu's),
+        // else the deck's pair by scheme. The latest ask wins a race between two loads.
+        let asked = 0;
+        api.current = {
+          setTheme: (s, shiki) => {
+            const ask = ++asked;
+            if (!shiki || !host.themeNamed) {
+              monaco.editor.setTheme(host.theme(s));
+              return;
+            }
+            host.themeNamed(shiki).then(
+              (name) => ask === asked && !disposed && monaco.editor.setTheme(name),
+              () => ask === asked && !disposed && monaco.editor.setTheme(host.theme(s)),
+            );
+          },
+        };
+        // The scheme (or the theme) may have changed while Monaco loaded.
+        api.current.setTheme(latest.current.scheme, latest.current.shikiTheme ?? null);
         latest.current.onReady?.(host);
       })
       .catch((err: unknown) => {
@@ -194,8 +233,8 @@ export default function Editor(props: EditorProps) {
   }, []);
 
   useEffect(() => {
-    api.current?.setTheme(props.scheme);
-  }, [props.scheme]);
+    api.current?.setTheme(props.scheme, props.shikiTheme ?? null);
+  }, [props.scheme, props.shikiTheme]);
 
   return <div ref={el} className="deck-monaco-host" />;
 }

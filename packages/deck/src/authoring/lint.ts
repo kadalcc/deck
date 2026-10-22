@@ -12,6 +12,7 @@ import {
   unclosedSettingsMessage,
 } from "../compiler/split.ts";
 import { extractRegion, parseSnippetLine } from "../compiler/snippets.ts";
+import { comarkEnabled } from "../compiler/setup.ts";
 import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
@@ -39,6 +40,14 @@ import { type IconSetLoader, checkIcons } from "./lint-icons.ts";
  */
 
 export type Severity = "error" | "warning" | "info";
+
+/** Comark's forms in a slide written without `comark: true` (they then fail as MDX). */
+const COMARK_LIKE =
+  /(^|[\s(]):[A-Za-z][\w-]*(\[|\{)|\]\{[.#:A-Za-z]|^[ \t]*::[A-Za-z][\w-]*(\{.*\})?[ \t]*$/m;
+
+export function looksLikeComark(body: string): boolean {
+  return COMARK_LIKE.test(body.replace(/^([ \t]*)(`{3,}|~{3,})[\s\S]*?^\1\2[ \t]*$/gm, ""));
+}
 
 export interface Diagnostic {
   severity: Severity;
@@ -593,13 +602,18 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       { default: remarkMath },
       { rehypeGlossary },
       { remarkDeckFences },
+      { remarkComark },
     ] = await Promise.all([
       import("@mdx-js/mdx"),
       import("remark-gfm"),
       import("remark-math"),
       import("../compiler/rehype-glossary.ts"),
       import("../compiler/remark-fences.ts"),
+      import("../compiler/remark-comark.ts"),
     ]);
+    // Comark syntax (`comark: true`): compiled as the deck compiles it, so its components are
+    // checked like JSX ones and its mistakes reported with their lines.
+    const comark = comarkEnabled(deck.headmatter);
     const lineCache = new Map<string, string[]>();
     const linesOf = (file: string) => {
       let l = lineCache.get(file);
@@ -664,12 +678,24 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       const terms = s.frontmatter.terms;
       const termWarnings: string[] = [];
       const fenceWarnings: Array<{ message: string; line?: number }> = [];
+      const comarkWarnings: Array<{ message: string; line?: number }> = [];
       const processor = createProcessor({
         format: "mdx",
         jsx: false,
         remarkPlugins: [
           remarkGfm,
           remarkMath,
+          ...(comark
+            ? [
+                [
+                  remarkComark,
+                  {
+                    warn: (message: string, line?: number) =>
+                      comarkWarnings.push({ message, line }),
+                  },
+                ] as [typeof remarkComark, { warn: (m: string, l?: number) => void }],
+              ]
+            : []),
           collect,
           [
             remarkDeckFences,
@@ -717,10 +743,22 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
           line: offset + line,
           ...(column ? { column } : {}),
           slide: s.index,
-          hint: "MDX is strict: close every tag, wrap {braces} and <angles> meant as text in backticks, and leave blank lines around Markdown inside JSX.",
+          hint:
+            !comark && looksLikeComark(body)
+              ? "This slide uses Comark syntax (`:name[…]{…}`, `[text]{.class}`, `::name`): turn it on with `comark: true` in the headmatter."
+              : "MDX is strict: close every tag, wrap {braces} and <angles> meant as text in backticks, and leave blank lines around Markdown inside JSX.",
         });
         continue;
       }
+      for (const w of comarkWarnings)
+        add({
+          severity: "warning",
+          code: "comark",
+          message: w.message,
+          file,
+          line: offset + (w.line ?? 1),
+          slide: s.index,
+        });
       for (const w of fenceWarnings)
         add({
           severity: "warning",

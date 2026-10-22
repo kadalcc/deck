@@ -1067,6 +1067,47 @@
           "description": "Milliseconds per magic-move morph.",
           "default": 800
         },
+        "monacoTypes": {
+          "type": "string",
+          "enum": [
+            "none",
+            "local",
+            "auto",
+            "cdn"
+          ],
+          "description": "Where `{monaco}` editors get the types of the packages they import (monaco/types.ts): \"auto\" (the deck's installed ones in a build, else the CDN), \"local\", \"cdn\" or \"none\".",
+          "default": "auto"
+        },
+        "monacoPackages": {
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object"
+            }
+          ],
+          "description": "Packages the editors know: their types are acquired up front, and `{monaco-run}` imports them at these versions. A list (`[\"zod\", \"lodash-es@4\"]`) or a map (`{ zod: \"^3.23\" }`)."
+        },
+        "monacoTypesIgnore": {
+          "type": "array",
+          "description": "Packages never to fetch types for."
+        },
+        "monacoRunImports": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            }
+          ],
+          "description": "Where `{monaco-run}` resolves a bare import (`import { z } from \"zod\"`): a CDN base (`https://esm.sh`, the default) or a template with `{name}`, `{version}` and `{path}`; false keeps bare imports an error.",
+          "default": "https://esm.sh"
+        },
         "live": {
           "type": "object",
           "properties": {
@@ -1361,6 +1402,11 @@
           "description": "The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`.",
           "default": "https://www.plantuml.com/plantuml"
         },
+        "comark": {
+          "type": "boolean",
+          "description": "Comark (formerly MDC) syntax in the slides: `:badge[New]{tone=\"good\"}`, `[text]{.class}`, `::callout{type=\"warn\"}` … `::` blocks with `#slot` sections (compiler/remark-comark.ts).",
+          "default": false
+        },
         "notesAutoRuby": {
           "type": "object",
           "description": "Words in the speaker notes and their reading, shown as ruby: `{ 日本語: \"ni hon go\" }`."
@@ -1443,6 +1489,10 @@
         "canvasWidth": {
           "type": "number",
           "description": "Slidev spelling: the stage width used with aspectRatio."
+        },
+        "mdc": {
+          "type": "boolean",
+          "description": "Slidev's older spelling of `comark` (MDC is Comark's former name)."
         },
         "remoteAssets": {
           "anyOf": [

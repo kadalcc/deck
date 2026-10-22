@@ -2,10 +2,11 @@ import { type ReactNode, useContext, useEffect, useMemo, useRef, useState } from
 import { ShikiMagicMovePrecompiled } from "shiki-magic-move/react";
 
 import { deserialiseSteps, type LineSet } from "../compiler/code-meta.ts";
-import { useSlide } from "../react/context.ts";
-import { useClick, useUi } from "../react/hooks.ts";
+import { useDeck, useSlide } from "../react/context.ts";
+import { useClick } from "../react/hooks.ts";
 import { CodeGroupContext } from "./CodeGroup.tsx";
 import { CodeTitle } from "./file-icons.tsx";
+import { applyMagicHighlight, frameAt, magicFrames } from "./magic-frames.ts";
 import { MonacoCode } from "./MonacoCode.tsx";
 import { useTwoslashPopups } from "./twoslash.ts";
 
@@ -139,24 +140,50 @@ function PlainCode(props: CodeProps) {
   );
 }
 
-/** Shiki Magic Move: the precomputed steps from the plugin, morphing on each click. */
+const reducedMotion = () =>
+  typeof window !== "undefined" &&
+  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * Shiki Magic Move: the precomputed steps from the plugin, morphing on each click. An inner fence's
+ * highlight steps (`{*|2|4-5}`) are clicks too, in order with the morphs (components/magic-frames.ts):
+ * the lines outside the frame's set step back, in print and export as on screen. The tokens carry
+ * their colours as Shiki's CSS variables, so the colour scheme and the theme menu recolour them
+ * with the rest of the code, without a morph.
+ */
 export function MagicMove({ block }: { block: number }) {
   const slide = useSlide();
-  const scheme = useUi((s) => s.colorScheme);
+  const deck = useDeck();
   const data = slide.magic?.[block] ?? null;
-  const count = data ? Math.max(0, data.steps.length - 1) : 0;
+  const frames = useMemo(() => (data ? magicFrames(data.steps) : []), [data]);
+  const count = Math.max(0, frames.length - 1);
   const atOption = data?.options.at;
   const { range, click } = useClick(
     count > 0
       ? { span: count, at: atOption !== undefined ? Number(atOption) : undefined }
       : { at: 0 },
   );
+  const wrap = useRef<HTMLDivElement>(null);
+  const frame = frameAt(frames, count > 0 ? click - range.start + 1 : 0);
+  const step = frame?.step ?? 0;
+  const steps = useMemo(() => (data ? data.steps.map((s) => s.tokens) : []) as never[], [data]);
+  // The block's `{duration}`, else the deck's `magicMoveDuration`. Never undefined: the renderer
+  // writes it into `--smm-duration`, and "undefinedms" there switched every transition off.
+  const own = Number(data?.options.duration);
+  const duration =
+    own > 0 ? own : deck.config.magicMoveDuration > 0 ? deck.config.magicMoveDuration : 800;
+  // `{lines: true}` on the outer fence numbers every step; an inner fence can ask for itself.
+  const lineNumbers = data?.options.lines === "true" || !!data?.steps[step]?.lines;
+  // A stable object: the renderer re-syncs its tokens whenever `options` is a new one.
+  const options = useMemo(() => ({ duration, lineNumbers }), [duration, lineNumbers]);
+  // After the renderer has drawn the step (its effect runs before this one, being a child's).
+  useEffect(() => {
+    applyMagicHighlight(
+      wrap.current?.querySelector(".shiki-magic-move-container") ?? null,
+      frame?.lines ?? null,
+    );
+  });
   if (!data) return <pre className="deck-code">Magic move block missing</pre>;
-  const step = count > 0 ? Math.min(count, Math.max(0, click - range.start + 1)) : 0;
-  const steps = data.steps.map((s) =>
-    scheme === "dark" ? s.tokens.dark : s.tokens.light,
-  ) as never[];
-  const duration = data.options.duration ? Number(data.options.duration) : undefined;
   return (
     <div
       className={["deck-code-block", "is-magic", data.title ? "has-title" : ""]
@@ -164,16 +191,23 @@ export function MagicMove({ block }: { block: number }) {
         .join(" ")}
     >
       {data.title ? <CodeTitle title={data.title} lang={data.steps[0]?.lang} /> : null}
-      <div className="deck-code shiki-magic-move-wrap">
+      <div
+        ref={wrap}
+        className={[
+          "deck-code",
+          "shiki",
+          "shiki-magic-move-wrap",
+          frame?.lines ? "has-highlight" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <ShikiMagicMovePrecompiled
           steps={steps}
           step={step}
-          animate={slide.active}
-          // `{lines: true}` on the outer fence numbers every step; an inner fence can ask for itself.
-          options={{
-            duration,
-            lineNumbers: data.options.lines === "true" || !!data.steps[step]?.lines,
-          }}
+          // Off the stage (print, previews) and under prefers-reduced-motion: the step, at once.
+          animate={slide.active && !reducedMotion()}
+          options={options}
         />
       </div>
     </div>
