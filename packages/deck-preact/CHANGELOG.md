@@ -1,5 +1,12 @@
 # @kadal/deck-preact
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [78a0bc9]
+  - @kadal/deck@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes
