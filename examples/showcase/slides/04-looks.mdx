@@ -9,7 +9,7 @@ background:
 
 # Looks
 
-Three themes, light and dark, thirty-odd backgrounds, and the small things that make a slide feel finished.
+Sixteen themes, light and dark, thirty-odd backgrounds, and the small things that make a slide feel finished.
 
 <Notes>
 Chapter four: how a deck looks. The aurora behind this slide is `background: aurora`.
@@ -21,7 +21,7 @@ id: themes
 
 <p className="sc-eyebrow">Looks · themes</p>
 
-## Three themes, light and dark
+## Sixteen themes, light and dark
 
 <div className="sc-themes">
   <ThemeCard theme="minimal" scheme="light" />
@@ -32,9 +32,11 @@ id: themes
   <ThemeCard theme="stack" scheme="dark" />
 </div>
 
-<p className="sc-small">Press <Kbd>T</Kbd> to wear one, <Kbd>D</Kbd> to flip light and dark. Each screen remembers its own choice. A theme is a class of CSS tokens — colours, type, radius, padding — so writing your own is one stylesheet.</p>
+<p className="sc-small">These are the three built in. Thirteen more are packages: eight of Kadal's own and Slidev's five official themes, ported (all at <a href="https://deck.kadal.cc/themes">deck.kadal.cc/themes</a>). Press <Kbd>T</Kbd> to wear one, <Kbd>D</Kbd> to flip light and dark. Each screen remembers its own choice. A theme is a class of CSS tokens — colours, type, radius, padding — so writing your own is one stylesheet.</p>
 
 <Notes>
+Three built in, thirteen as packages: ocean, folio, swiss, terminal, lecture, brand, crayon and neon are Kadal's own; classic, seriph, crisp, bricks and shibainu are Slidev's official themes, ported. A package theme brings its own layouts and components.
+
 minimal is the default — black on white, one accent. rla is the dark, dot-matrix look with an accessible body face. stack is warm neutrals with an emerald accent. Each has a light and a dark scheme.
 
 These cards are the real themes: each wears the theme's class, so its tokens apply inside it. Press T for the menu — the choice is per screen and remembered per deck, so the projector and your laptop can differ.
