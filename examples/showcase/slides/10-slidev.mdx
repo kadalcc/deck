@@ -355,3 +355,112 @@ kadal-deck serve
 <!--
 What Slidev's build does, and a little more. The headmatter writes the page's head, so a link to the deck shows its title, its description and a picture of its first slide, taken at build time. With pwa on, the deck installs like an app and presents with no network at all; with bundleRemoteAssets, the pictures and fonts it borrows from the web come along in the build. Several decks build in one command, under any base path, and kadal-deck ci writes the files a host needs: GitHub Pages, Netlify, Vercel, Cloudflare, or a Docker image.
 -->
+
+----
+id: slidev-comark
+---
+
+<p className="sc-eyebrow">Slidev syntax · Comark (formerly MDC)</p>
+
+## Components without JSX
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<How>
+
+````md
+---
+comark: true
+---
+
+:badge[New]{tone="good"} :icon{name="sparkles"}
+[this phrase]{.sc-comark-hl}, **bold**{.sc-comark-accent}
+
+::callout{kind="tip"}
+The **default** slot is the body.
+#title
+A *named* slot is a prop
+::
+````
+
+</How>
+
+</Col>
+<Col>
+
+:badge[New]{tone="good"} :icon{name="sparkles"} [this phrase]{.sc-comark-hl}, **bold**{.sc-comark-accent}
+
+::callout{kind="tip"}
+The **default** slot is the body.
+#title
+A *named* slot is a prop
+::
+
+<p className="sc-small">With `comark: true` in the headmatter: `:name[…]{…}` inline, `[text]{…}` spans, `{…}` after an element, `::name` blocks with YAML props and `#slots`. `::right::` and `::code-group` keep their meaning.</p>
+
+</Col>
+</Cols>
+
+<style>
+.sc-comark-hl { background: color-mix(in oklab, var(--deck-accent) 22%, transparent); border-radius: 0.2em; padding: 0 0.15em; }
+.sc-comark-accent { color: var(--deck-accent); }
+</style>
+
+<!--
+Comark, which Slidev called MDC until it was renamed, is Markdown with components in it. Turn it on with comark true in the headmatter and a Slidev deck's colons and braces work as they are written: inline components, spans with a class or a style, attributes after a word, and blocks whose named slots arrive as props. Kadal's own colon syntax, the slot markers and code groups, still means what it did.
+-->
+
+----
+id: slidev-clicks-count
+---
+
+<p className="sc-eyebrow">Slidev syntax · `$clicks`</p>
+
+## The click count, as a number
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<How>
+
+```mdx
+Step <ClickCount offset={1} />
+of <ClickCount total offset={1} />
+
+<ClickCount when={(c) => c >= 2}>
+
+**Two clicks in:** this paragraph appears.
+
+</ClickCount>
+```
+
+</How>
+
+</Col>
+<Col>
+
+<p className="sc-clicks-count">Step <ClickCount offset={1} /> of <ClickCount total offset={1} /></p>
+
+<Click>One</Click>
+<Click>Two</Click>
+<Click>Three</Click>
+
+<ClickCount when={(c) => c >= 2}>
+
+**Two clicks in:** this paragraph appears.
+
+</ClickCount>
+
+<p className="sc-small">Slidev's `{{ $clicks }}` and `v-if="$clicks > 1"` import as these. Reading the count adds no step.</p>
+
+</Col>
+</Cols>
+
+<style>
+.sc-clicks-count { font-size: 1.6em; font-variant-numeric: tabular-nums; }
+</style>
+
+<!--
+Slidev's dollar clicks, the number of the step a slide is at, as a component: it shows the number, or shows what it holds only while a test on the number is true. A component of your own reads the same with the useClicks hook. None of it counts as a step itself.
+-->
