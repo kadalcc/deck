@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import {
   DECK_RENDERER,
@@ -21,6 +21,9 @@ const stub = (name: string, extra: Partial<DeckRenderer> = {}): DeckRenderer => 
   ...extra,
 });
 
+// Before as well as after: another test file may already have registered the built-in renderers
+// (anything that imports the deck does), and bun runs every file in one process.
+beforeEach(() => clearRenderers());
 afterEach(() => clearRenderers());
 
 describe("the registry", () => {
