@@ -38,14 +38,17 @@ const onNpm = (name, version) => {
 
 const exists = (name) => {
   try {
-    execFileSync("npm", ["view", name, "name"], { stdio: "ignore" });
+    execFileSync("npm", ["view", name, "name"], { stdio: ["ignore", "ignore", "pipe"] });
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    // Only a 404 means "never published"; any other failure must not pass for it.
+    if (/E404/.test(String(error.stderr))) return false;
+    throw error;
   }
 };
 
 const failed = [];
+const skipped = [];
 for (const dir of readdirSync(join(root, "packages")).sort()) {
   const pkgDir = join(root, "packages", dir);
   if (!existsSync(join(pkgDir, "package.json"))) continue;
@@ -61,6 +64,13 @@ for (const dir of readdirSync(join(root, "packages")).sort()) {
   }
   if (mode === "bootstrap" && exists(name)) {
     console.log(`${name} already exists on npm; nothing to bootstrap`);
+    continue;
+  }
+  // Trusted publishing can only publish to a package that already exists, so a package npm has
+  // never seen waits for a maintainer's first publish (bootstrap) instead of failing the release.
+  if (mode === "direct" && process.env.CI && !exists(name)) {
+    console.warn(`::warning::${name} isn't on npm yet; skipped (publish its first version by hand)`);
+    skipped.push(name);
     continue;
   }
   const argv = mode === "direct" ? ["publish"] : ["stage", "publish"];
@@ -80,6 +90,7 @@ for (const dir of readdirSync(join(root, "packages")).sort()) {
     failed.push(`${name}@${version}`);
   }
 }
+if (skipped.length) console.warn(`Skipped (not on npm yet): ${skipped.join(", ")}`);
 if (failed.length) {
   console.error(`Failed to ${mode === "direct" ? "publish" : "stage"}: ${failed.join(", ")}`);
   process.exit(1);
