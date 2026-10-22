@@ -20,6 +20,11 @@ on:
     branches: [main]
     paths: ["packages/vscode/package.json"]
   workflow_dispatch:
+    inputs:
+      identity:
+        description: "Only print the Entra app's Marketplace user ID (to add it as a publisher member)"
+        type: boolean
+        default: false
 
 concurrency: vscode-publish
 
@@ -28,8 +33,28 @@ permissions:
   id-token: write # Open VSX trusted publishing and the Entra ID login
 
 jobs:
+  # One-time setup: the Marketplace adds a publisher member by its Azure DevOps profile ID, which an
+  # Entra app only has once it has signed in. This signs in as the app (no secret: GitHub OIDC) and
+  # prints that ID; add it under the publisher's Members as Contributor.
+  identity:
+    if: github.repository == 'kadalcc/deck' && inputs.identity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: The app's Marketplace user ID
+        run: |
+          # 499b84ac-1321-427f-aa17-267ca6975798 is Azure DevOps (and the Marketplace) as a resource.
+          token=$(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
+          curl -fsS -H "Authorization: Bearer $token" \
+            "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const p=JSON.parse(s);console.log("Marketplace user ID:", p.id);console.log("::notice title=Marketplace user ID::"+p.id)})'
+
   publish:
-    if: github.repository == 'kadalcc/deck'
+    if: github.repository == 'kadalcc/deck' && !inputs.identity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
