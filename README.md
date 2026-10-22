@@ -255,10 +255,14 @@ slide appears; [`examples/showcase`](examples/showcase) runs all eleven on one s
 | [`@kadal/deck`](packages/deck) | [![npm](https://img.shields.io/npm/v/@kadal/deck?label=)](https://www.npmjs.com/package/@kadal/deck) | The engine: MDX compiler and Vite plugin, React runtime, components, themes, live client, export, and the `kadal-deck` CLI |
 | [`@kadal/create-deck`](packages/create-deck) | [![npm](https://img.shields.io/npm/v/@kadal/create-deck?label=)](https://www.npmjs.com/package/@kadal/create-deck) | `npm create @kadal/deck@latest`: a new deck from the starter |
 | `@kadal/deck-*` | [![npm](https://img.shields.io/npm/v/@kadal/deck-vue?label=)](https://www.npmjs.com/org/kadal) | The framework renderers above, released in lockstep with the engine |
+| `@kadal/theme-*` | [![npm](https://img.shields.io/npm/v/@kadal/theme-ocean?label=)](https://deck.kadal.cc/themes/) | Theme packages: eight of Kadal's own and Slidev's five official themes, ported ([gallery](https://deck.kadal.cc/themes/)) |
+| [`@kadal/prettier-plugin`](packages/prettier-plugin) | [![npm](https://img.shields.io/npm/v/@kadal/prettier-plugin?label=)](https://www.npmjs.com/package/@kadal/prettier-plugin) | Prettier for deck files, the same formatter as `kadal-deck format` |
+| [Kadal Deck for VS Code](packages/vscode) | [![Marketplace](https://img.shields.io/visual-studio-marketplace/v/kadal.kadal-deck?label=)](https://marketplace.visualstudio.com/items?itemName=kadal.kadal-deck) | Preview, slide outline, IntelliSense, checks and formatting; also on [Open VSX](https://open-vsx.org/extension/kadal/kadal-deck) |
 
-Every package is published from this repository's [release workflow](.github/workflows/release.yml)
+Every npm package is published from this repository's [release workflow](.github/workflows/release.yml)
 through npm trusted publishing, with [provenance](https://docs.npmjs.com/generating-provenance-statements)
-you can check on each npm page.
+you can check on each npm page. The VS Code extension is published to the Visual Studio Marketplace
+and Open VSX by its [own workflow](.github/workflows/vscode.yml) whenever its version changes.
 
 ## The live room: self-hosted or hosted
 
