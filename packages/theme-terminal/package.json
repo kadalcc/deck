@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-terminal",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Terminal, a theme for Kadal Deck (@kadal/deck). A developer theme for code-heavy talks: mono-forward type, superb code blocks, dark first with a good light variant, and the matching Ayu code colours.",
   "keywords": [
     "kadal-theme",
@@ -87,7 +87,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.4.0",
+    "@kadal/deck": "^0.4.1",
     "react": "^19.2.0"
   },
   "devDependencies": {
