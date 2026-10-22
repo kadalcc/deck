@@ -8,7 +8,8 @@ name: VS Code extension
 # No long-lived tokens:
 #   Open VSX     trusted publishing: ovsx trades this job's GitHub OIDC token for a short-lived one.
 #                Set up once on open-vsx.org → Settings → Trusted Publishers (kadalcc/deck,
-#                workflow vscode.yml).
+#                workflow vscode.yml); that needs the namespace verified. Until then an OVSX_PAT
+#                secret is used if present.
 #   Marketplace  Microsoft Entra ID through GitHub OIDC (azure/login, then `vsce --azure-credential`)
 #                when the repo variables AZURE_CLIENT_ID and AZURE_TENANT_ID are set; or a
 #                Marketplace token in the VSCE_PAT secret. With neither, that store is skipped
@@ -86,7 +87,11 @@ jobs:
 
       - name: Publish to Open VSX
         if: steps.need.outputs.openvsx == 'true'
-        # No token: ovsx uses trusted publishing when the job has an OIDC token and no PAT is given.
+        # Trusted publishing when no OVSX_PAT secret is set: ovsx trades the job's OIDC token for a
+        # short-lived one. Open VSX takes trusted publishers only on a verified namespace, so the
+        # secret bridges the time until then; delete it once the trusted publisher is in place.
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
         run: npx -y ovsx@1.3.0 publish --packagePath "$RUNNER_TEMP/kadal-deck.vsix" --skip-duplicate
 
       - name: Keep the .vsix
