@@ -25,10 +25,19 @@ import {
   readOrientation,
 } from "./air.ts";
 import { devRemote, hasLease, type RemoteLink, roomRemote } from "./link.ts";
+import { pageRelay } from "./socket.ts";
 
 export { RemoteHost, remoteState } from "./host.tsx";
 export { RemoteMirror, FORWARDED } from "./mirror.ts";
 export { createRelay, type Relay, type RelayIn, type RelayOut, type RelayPeer } from "./relay.ts";
+export {
+  createSocketRelay,
+  pageRelay,
+  relayAddress,
+  relayChoice,
+  RELAY_PARAM,
+  type SocketRelay,
+} from "./socket.ts";
 export {
   createCoalescer,
   createOneEuro,
@@ -53,7 +62,8 @@ export type { HostLink, RemoteLink, RemoteStatus } from "./link.ts";
  * It is the deck app itself, so the slide it shows is rendered by the deck's own components —
  * what the room sees, not a picture of it. Paired by the presenter view's "Phone remote" QR, which
  * holds a one-time code (`remote#pair=…` on a hosted deck — the fragment never reaches a server —
- * and `remote?pair=CODE` on `kadal-deck dev`); after that the lease the room gave it brings it
+ * and `remote?pair=CODE` on `kadal-deck dev` or a `kadal-deck relay`, with `&relay=…` when the
+ * presenter view was pointed at one by its address); after that the lease the room gave it brings it
  * back, so a reload or a dropped connection needs no new scan. One phone at a time: a newer phone
  * scanning takes over, and this one says so.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -73,7 +83,8 @@ export function RemotePage() {
   }, []);
   const ticket = useStore(presenterTicket);
   const api = deck.config.live.api;
-  const relay = deck.manifest.relay ?? null;
+  // The dev server's relay, or a `kadal-deck relay` the address or the deck names (socket.ts).
+  const [relay] = useState(() => pageRelay(deck.manifest.relay, deck.config)?.relay ?? null);
   const room = roomIdOf(deck.config);
   const devPlace = `dev.${room}`;
   const pairable =
@@ -150,8 +161,9 @@ function Instructions({
       <h2>Phone remote</h2>
       {pair && !dev ? (
         <p>
-          This pairing code is for a deck running on <code>kadal-deck dev</code>, and this page is a
-          built copy. Open the QR on the presenter view of the dev server instead.
+          This pairing code is for a deck running on <code>kadal-deck dev</code> or a{" "}
+          <code>kadal-deck relay</code>, and this page knows neither. Scan the QR on the presenter
+          view again.
         </p>
       ) : (
         <>
@@ -172,7 +184,8 @@ function Instructions({
           {!hosted && !dev ? (
             <p className="deck-remote-muted">
               This deck has no room, so a phone can reach it only while it runs on{" "}
-              <code>kadal-deck dev --host</code>.
+              <code>kadal-deck dev --host</code>, or through a <code>kadal-deck relay</code> the
+              deck names (<code>remote.relay</code>).
             </p>
           ) : null}
         </>

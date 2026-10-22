@@ -1154,6 +1154,22 @@
           },
           "description": "Live room: the backend base (same origin `/api` on the host), or null for an offline deck. `verify` is a host page that checks a viewer (Turnstile) and sends them back with a pass — how a host that serves decks sandboxed keeps the check, since Turnstile can't run in an opaque origin. Set by the host (`window.__KADAL_DECK__.verify`), never by a deck."
         },
+        "remote": {
+          "type": "object",
+          "properties": {
+            "relay": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "description": "The phone remote without a room or a dev server: `relay` is the WebSocket address of a `kadal-deck relay` (`wss://…`), where a build's presenter view and phone page meet — a deck on GitHub Pages, Netlify, S3 or any static host. `?relay=wss://…` on the presenter view's address does the same for that tab. Null (the default): no relay. A deck with a room pairs through the room; `kadal-deck dev` through the dev server."
+        },
         "drawings": {
           "type": "object",
           "properties": {

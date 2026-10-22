@@ -12,7 +12,9 @@ import {
  *
  * `kadal-deck dev` has no room, and a phone is another device, so the dev server carries the
  * remote's messages itself, over the channel its pages already hold open (Vite's HMR socket,
- * event "kadal:remote" — see vite/index.ts). This is the pairing and routing, with no I/O.
+ * event "kadal:remote" — see vite/index.ts). This is the pairing and routing, with no I/O. The
+ * same relay, over a plain WebSocket, is `kadal-deck relay` (cli/relay.ts): the phone remote for
+ * a build on a static host (remote/socket.ts is the pages' end).
  *
  * The rules are the room's (live/protocol.ts, PAIRING). A deck window HOSTs and is given an id (to
  * get its place back after a reload) and a short CODE for its QR. A code works once, for CODE_TTL;
@@ -31,7 +33,8 @@ import {
  */
 
 export type RelayIn =
-  | { op: "host"; id?: string }
+  /** `key`: the relay's password, which `kadal-deck relay` asks of a host (cli/relay.ts). */
+  | { op: "host"; id?: string; key?: string }
   | { op: "rotate" }
   | { op: "join"; code?: string; lease?: string; device?: string }
   | { op: "msg"; data: unknown }
@@ -57,7 +60,8 @@ export type RelayOut =
   | { op: "remotes"; count: number }
   /** To a phone: paired. `host` says whether the presenting window is there right now. */
   | { op: "joined"; host: boolean; lease: string }
-  | { op: "denied"; reason: string }
+  /** `auth`: refused for the relay's password (`kadal-deck relay`), not for a code. */
+  | { op: "denied"; reason: string; auth?: boolean }
   /** To the phone: the presenting window came or went. */
   | { op: "host"; online: boolean }
   | { op: "msg"; data: ServerMessage }

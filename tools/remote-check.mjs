@@ -8,6 +8,10 @@
  *                                               the same, through a deck host's room (a local
  *                                               deck-worker, proxied at /api as the starter's
  *                                               vite.config does) instead of the dev server's relay
+ *   node tools/remote-check.mjs --static        the same, for a BUILD on a plain static file server
+ *                                               (no rewrites, as GitHub Pages or S3) through
+ *                                               `kadal-deck relay`: the presenter gives the relay's
+ *                                               password, the QR carries `&relay=`
  *   TRACE=1 node tools/remote-check.mjs …       also print every socket and pairing message
  *   node tools/remote-check.mjs --out <dir>     where the phone's screenshots go
  *                                               (default <deck>/check-output, gitignored)
@@ -24,9 +28,10 @@
  *
  * Needs the engine built (`bun run build`) and Playwright's Chromium.
  */
-import { spawn } from "node:child_process";
-import { mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { spawn, spawnSync } from "node:child_process";
+import { createReadStream, mkdirSync, statSync } from "node:fs";
+import { createServer } from "node:http";
+import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
@@ -40,6 +45,8 @@ const out = resolve(val("--out", join(deckDir, "check-output")));
 mkdirSync(out, { recursive: true });
 const port = Number(val("--port", 5391));
 const roomApi = val("--room", null);
+const staticHost = argv.includes("--static");
+const RELAY_PASSWORD = "remote-check-relay";
 // The host's word (window.__KADAL_DECK__), as a deck host writes it into the page it serves.
 const roomName = `remote-check-${Date.now().toString(36)}`;
 const hostWord = (ctx) =>
@@ -87,9 +94,43 @@ async function until(fn, ms = 5000, every = 50) {
 }
 const near = (a, b, tol = 0.03) => Math.abs(a - b) <= tol;
 
-// ── the dev server ─────────────────────────────────────────────────────────
+// ── the dev server (or, with --static, a build, a dumb file server and the relay) ──
 const bin = join(root, "packages/deck/dist/cli/bin.js");
-const server = spawn(process.execPath, [bin, "dev", "--port", String(port), "--strictPort", "--host", "127.0.0.1"], {
+let relayUrl = null;
+if (staticHost) {
+  const dist = join(out, "static-dist");
+  const built = spawnSync(process.execPath, [bin, "build", "--out", dist], { cwd: deckDir, encoding: "utf8" });
+  if (built.status !== 0) {
+    console.error(`kadal-deck build failed:\n${(built.stdout + built.stderr).slice(-2000)}`);
+    process.exit(1);
+  }
+  // Files and folders' index.html, nothing else — no single-page rewrites, as GitHub Pages.
+  const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".wasm": "application/wasm" };
+  const files = createServer((req, res) => {
+    const [path, query] = (req.url ?? "/").split("?");
+    const file = normalize(join(dist, decodeURIComponent(path)));
+    if (!file.startsWith(dist + sep) && file !== dist) return res.writeHead(403).end();
+    let st = null;
+    try {
+      st = statSync(file);
+    } catch {}
+    if (st?.isDirectory() && !path.endsWith("/"))
+      return res.writeHead(301, { location: `${path}/${query ? `?${query}` : ""}` }).end();
+    const target = st?.isDirectory() ? join(file, "index.html") : file;
+    try {
+      statSync(target);
+    } catch {
+      return res.writeHead(404, { "content-type": "text/html" }).end("Not found");
+    }
+    res.writeHead(200, { "content-type": types[extname(target)] ?? "application/octet-stream" });
+    createReadStream(target).pipe(res);
+  });
+  await new Promise((done) => files.listen(port, "127.0.0.1", done));
+  process.on("exit", () => files.close());
+}
+const server = spawn(process.execPath, staticHost
+  ? [bin, "relay", "--port", String(port + 1), "--host", "127.0.0.1", "--password", RELAY_PASSWORD]
+  : [bin, "dev", "--port", String(port), "--strictPort", "--host", "127.0.0.1"], {
   cwd: deckDir,
   stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, KADAL_DECK_API: roomApi ?? "" },
@@ -115,14 +156,29 @@ process.on("SIGTERM", () => process.exit(143));
 
 const base = await until(() => {
   // eslint-disable-next-line no-control-regex
-  const m = /Local:\s+(http:\/\/127\.0\.0\.1:\d+\/\S*)/.exec(log.replace(/\x1b\[[0-9;]*m/g, ""));
+  const plain = log.replace(/\x1b\[[0-9;]*m/g, "");
+  if (staticHost) {
+    const r = /relay\s+(ws:\/\/\S+)/.exec(plain);
+    if (!r) return null;
+    relayUrl = r[1];
+    return `http://127.0.0.1:${port}/`;
+  }
+  const m = /Local:\s+(http:\/\/127\.0\.0\.1:\d+\/\S*)/.exec(plain);
   return m ? m[1].replace(/\/?$/, "/") : null;
 }, 60_000, 200);
 if (!base) {
   console.error(`the dev server did not start:\n${log.slice(-2000)}`);
   process.exit(1);
 }
-console.log(`serve  ${base}`);
+console.log(`serve  ${base}${relayUrl ? `   relay ${relayUrl}` : ""}`);
+// --static: every page of these browsers is pointed at the relay, as `?relay=` on the presenter
+// view's address does (and keeps for the tab); the QR carries it to the phones.
+const relayWord = (ctx) =>
+  relayUrl
+    ? ctx.addInitScript((url) => {
+        if (!sessionStorage.getItem("deck.remote.relay")) sessionStorage.setItem("deck.remote.relay", url);
+      }, relayUrl)
+    : null;
 
 // ── browsers ───────────────────────────────────────────────────────────────
 const browser = await chromium.launch();
@@ -135,6 +191,8 @@ const phoneCtx = await browser.newContext({
 });
 await hostWord(desk);
 await hostWord(phoneCtx);
+await relayWord(desk);
+await relayWord(phoneCtx);
 const errors = [];
 const watch = (page, name) => {
   page.on("console", (m) => {
@@ -170,6 +228,7 @@ await iosCtx.addInitScript(() => {
   };
 });
 await hostWord(iosCtx);
+await relayWord(iosCtx);
 const ios = await iosCtx.newPage();
 watch(ios, "iphone");
 const tap = (name, page) =>
@@ -235,9 +294,22 @@ await step("a remote without a code explains itself", async () => {
 
 await step("the Phone remote dialog shows a QR and a pairing URL", async () => {
   await presenter.getByRole("button", { name: /Phone remote/ }).click();
+  if (staticHost) {
+    // `kadal-deck relay` asks the presenting window for its password, once; a wrong one is refused.
+    await presenter.waitForSelector("#deck-remote-password", { timeout: 10_000 });
+    await presenter.fill("#deck-remote-password", "not-the-password");
+    await presenter.locator(".deck-remote-auth button[type=submit]").click();
+    await presenter.waitForSelector(".deck-remote-auth [role=alert]:has-text('not the relay')", { timeout: 5000 });
+    await presenter.fill("#deck-remote-password", RELAY_PASSWORD);
+    await presenter.locator(".deck-remote-auth button[type=submit]").click();
+  }
   await presenter.waitForSelector(".deck-remote-dialog img.deck-qr", { timeout: 10_000 });
   pairUrl = await until(() => presenter.locator("[data-remote-url]").getAttribute("data-remote-url"));
-  const shape = roomApi ? /\/remote#pair=[A-Z2-9]{20}$/ : /\/remote\?pair=[A-Z2-9]{6}$/;
+  const shape = roomApi
+    ? /\/remote#pair=[A-Z2-9]{20}$/
+    : staticHost
+      ? /\/remote\?pair=[A-Z2-9]{6}&relay=ws%3A%2F%2F127\.0\.0\.1%3A\d+%2F$/
+      : /\/remote\?pair=[A-Z2-9]{6}$/;
   expect(pairUrl && shape.test(pairUrl), `pair url: ${pairUrl}`);
 });
 

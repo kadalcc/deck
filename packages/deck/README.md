@@ -33,6 +33,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | `kadal-deck dev [--https] [--tunnel] [--remote [password]]` | Vite dev server for the deck in this folder, with the [side editor](#editors) (E). `--tunnel`: on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`), with a QR in the terminal and the phone remote pairing through it; `--remote [password]`: on the network, the presenter and editing behind the password (a tunnel always has one) |
 | `kadal-deck build [deck files…] [--base /path/] [--out dir] [--without-notes] [--download] [--pwa] [--bundle-remote-assets]` | `dist/` for any static host; several deck files build into folders; `--without-notes` leaves the speaker notes out; `--download` (or `download: true`) also prints `dist/deck.pdf` for the deck's Download button. See [Build and host](#build-and-host) |
 | `kadal-deck serve [folder] [--port n] [--host addr] [--base /path/]` | serve a build as a static host would (routes, Range, cache headers), for checking it or a container |
+| `kadal-deck relay [--port n] [--host addr] [--password p] [--tunnel]` | the phone remote for a build on a static host: a WebSocket relay its presenter view and phone meet at. See [Build and host](#build-and-host) |
 | `kadal-deck ci <github-pages\|netlify\|vercel\|cloudflare\|docker>` | write that host's deploy files for this deck (`--force` to replace) |
 | `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
 | `kadal-deck format [files] [--check]` | format `deck.mdx` and its includes (or the files named) with [@kadal/prettier-plugin](../prettier-plugin): separators, frontmatter YAML (comments kept), each slide's Markdown; code, notes, magic-move, `<style>`, maths and `::slot::` sugar byte for byte; every slide checked to mean the same. `--check` exits 1 when a file would change |
@@ -375,6 +376,17 @@ room runs without a server.
   `.kadal-deck/cache` between builds. One that fails stays remote; the build lists it.
 - **Check it.** `npx kadal-deck serve` serves `dist/` at its base like a host (`--host 0.0.0.0`
   in a container).
+- **The phone remote, with no server.** A static host has no room and no dev server, so run
+  `npx kadal-deck relay` on any small box (or your laptop) and point the build at it:
+  `remote: { relay: "wss://relay.example.com" }` in the deck, or `?relay=wss://…` on the
+  presenter view's address for one tab. The presenter view's **Phone remote** asks once for the
+  relay's password (`--password`, else `KADAL_DECK_RELAY_PASSWORD`, else one it makes up and
+  prints), then shows the same QR as `kadal-deck dev`: a one-time code that changes every 30
+  seconds, one phone at a time, the lease bringing a dropped phone back. Wrong passwords and
+  codes are rate-limited. The relay serves no files and no editing endpoints; it only carries the
+  remote's commands, which run in the presenter's window. A deck on https may only open `wss://`,
+  so use `--tunnel` (a Cloudflare Quick Tunnel, needs `cloudflared`) or put it behind TLS; a deck
+  on plain http (a laptop on the venue Wi-Fi) can use the `ws://` address it prints.
 
 `npx kadal-deck ci <host>` writes the files a host needs, for the deck's package manager and its
 folder in the repository:

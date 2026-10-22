@@ -141,7 +141,7 @@ const DROPPED: Record<string, (v: unknown) => string | null> = {
   record: () => null,
   remote: (v) =>
     v
-      ? "remote — Kadal's phone remote pairs from the presenter view (a room, or `kadal-deck dev --host`)."
+      ? "remote — Kadal's phone remote pairs from the presenter view (a room, `kadal-deck dev --host`, or a static build with `remote: { relay }` and `kadal-deck relay`)."
       : null,
   presenter: (v) =>
     v === false

@@ -17,6 +17,7 @@ import { createCoalescer } from "./air.ts";
 import { devHost, type HostLink, roomHost } from "./link.ts";
 import { ROTATE_MS } from "./relay.ts";
 import { FORWARDED, remoteBus } from "./mirror.ts";
+import { pageRelay } from "./socket.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -27,7 +28,8 @@ import { FORWARDED, remoteBus } from "./mirror.ts";
  * the part that matters — every command a paired phone sends runs HERE, through the same command
  * registry the keyboard uses (origin "remote"), and its answer goes back to that phone. While a
  * phone is connected, what it shows (slide, step, blackout, laser, the timer) is pushed to it as
- * it changes. With a room the wire is the room; on `kadal-deck dev` it is the dev server's relay.
+ * it changes. With a room the wire is the room; on `kadal-deck dev` it is the dev server's relay;
+ * a build on a static host uses a `kadal-deck relay` (`remote.relay`, or `?relay=`; socket.ts).
  *
  * One phone at a time. The QR holds a code that works once and changes every 30 seconds while the
  * dialog is open (link.ts); the newest phone to scan becomes the remote and any other is let go.
@@ -71,7 +73,10 @@ const placeKey = (rt: DeckRuntime) => `deck.remote.place.${rt.config.slug || "de
 export function RemoteHost() {
   const deck = useDeck();
   const live = useLiveOptional();
-  const relay = deck.manifest.relay ?? null;
+  // The dev server's relay, or a `kadal-deck relay` the address or the deck names (socket.ts).
+  const [chosen] = useState(() => pageRelay(deck.manifest.relay, deck.config));
+  const relay = chosen?.relay ?? null;
+  const socket = chosen?.socket ?? null;
   const [open, setOpen] = useState(false);
   // On the dev relay a place is only asked for once someone wants one — or a reload had one.
   const [wanted, setWanted] = useState(() => !!readItem(placeKey(deck), "session"));
@@ -93,18 +98,22 @@ export function RemoteHost() {
           get: () => readItem(placeKey(deck), "session"),
           set: (id) => writeItem(placeKey(deck), id, "session"),
         },
+        search: chosen?.search ?? "",
+        ...(socket ? { unreachable: UNREACHABLE } : {}),
       });
     setLink(made);
     return () => {
       made?.close();
       setLink(null);
     };
-  }, [live, relay, wanted, deck]);
+  }, [live, relay, socket, chosen, wanted, deck]);
 
   const remotes = useStore(link?.remotes ?? zero);
   const url = useStore(link?.url ?? none);
   const expires = useStore(link?.expires ?? never);
   const problem = useStore(link?.problem ?? none);
+  const auth = useStore(socket && !live ? socket.auth : none);
+  const relayProblem = useStore(socket && !live ? socket.problem : none);
 
   // A code is asked for only while the QR is on screen, and kept fresh until it is closed.
   useEffect(() => {
@@ -235,10 +244,14 @@ export function RemoteHost() {
               expires={expires}
               problem={
                 problem ??
+                relayProblem ??
                 (!live && !relay
-                  ? "A phone remote needs the room (a hosted deck) or the dev server (`kadal-deck dev`). This build has neither."
+                  ? "A phone remote needs the room (a hosted deck), the dev server (`kadal-deck dev`) or a relay (`kadal-deck relay`, named by the deck's `remote.relay` or `?relay=` on this page's address). This build has none."
                   : null)
               }
+              auth={url ? null : auth}
+              onAuth={(password) => socket?.give(password)}
+              relay={socket && !live ? socket.url : null}
               remotes={remotes}
               kind={link?.kind ?? null}
               onKick={() => link?.kick()}
@@ -251,12 +264,18 @@ export function RemoteHost() {
   );
 }
 
+const UNREACHABLE =
+  "This page is open on localhost, so a phone cannot open the QR's address. Open the deck at an address the phone can reach (where it is hosted, or this computer's network address), then scan.";
+
 function RemoteDialog({
   url,
   expires,
   problem,
   remotes,
   kind,
+  auth,
+  relay,
+  onAuth,
   onKick,
   onClose,
 }: {
@@ -265,11 +284,17 @@ function RemoteDialog({
   problem: string | null;
   remotes: number;
   kind: "room" | "dev" | null;
+  /** The relay asks for its password (why), or null. */
+  auth: string | null;
+  /** The `kadal-deck relay` in use, shown so it is plain which one this window trusts. */
+  relay: string | null;
+  onAuth: (password: string) => void;
   onKick: () => void;
   onClose: () => void;
 }) {
   const deck = useDeck();
   const [copied, setCopied] = useState(false);
+  const [password, setPassword] = useState("");
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Escape") return;
@@ -313,9 +338,41 @@ function RemoteDialog({
             </p>
             {expires ? <Countdown until={expires} /> : null}
           </>
+        ) : auth ? (
+          <form
+            className="deck-remote-auth"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (password) onAuth(password);
+              setPassword("");
+            }}
+          >
+            <p className="deck-remote-problem" role="alert">
+              {auth}
+            </p>
+            <label htmlFor="deck-remote-password">
+              The relay's password (printed where <code>kadal-deck relay</code> runs)
+            </label>
+            <input
+              id="deck-remote-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoFocus
+              required
+            />
+            <button type="submit">Connect</button>
+          </form>
         ) : (
           <p className="deck-remote-problem">{problem ?? "Getting a pairing code…"}</p>
         )}
+        {relay ? (
+          <p className="deck-muted deck-remote-relay">
+            Relay: <code>{relay}</code>
+          </p>
+        ) : null}
         <footer>
           <span className="deck-remote-count" data-remotes={remotes}>
             <i className={remotes ? "is-on" : ""} />

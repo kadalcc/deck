@@ -153,7 +153,10 @@ export interface DeckManifest {
   sideEditor?: (() => Promise<import("./side-editor.ts").SideEditorModule>) | null;
 }
 
-/** A line to the dev server: Vite's HMR socket, event "kadal:remote". */
+/**
+ * A line to a phone-remote relay: the dev server's (Vite's HMR socket, event "kadal:remote"), or
+ * a `kadal-deck relay` over a WebSocket (remote/socket.ts).
+ */
 export interface DevRelay {
   send(message: unknown): void;
   on(listener: (message: unknown) => void): () => void;
@@ -350,6 +353,14 @@ export interface DeckConfig {
     turnstile: string | null;
     verify?: string | null;
   };
+  /**
+   * The phone remote without a room or a dev server: `relay` is the WebSocket address of a
+   * `kadal-deck relay` (`wss://…`), where a build's presenter view and phone page meet — a deck on
+   * GitHub Pages, Netlify, S3 or any static host. `?relay=wss://…` on the presenter view's
+   * address does the same for that tab. Null (the default): no relay. A deck with a room pairs
+   * through the room; `kadal-deck dev` through the dev server.
+   */
+  remote: { relay: string | null };
   drawings: DrawingsConfig;
   // Described in catalog/reference.ts (DECK_KEY_DOCS), where the long form fits.
   narration: NarrationConfig;
@@ -535,6 +546,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   monacoTypesIgnore: [],
   monacoRunImports: "https://esm.sh",
   live: { api: "/api", room: null, turnstile: null },
+  remote: { relay: null },
   drawings: { enabled: true, persist: true, presenterOnly: false, syncAll: true, perClick: false },
   narration: DEFAULT_NARRATION,
   glossary: DEFAULT_GLOSSARY,
@@ -570,9 +582,10 @@ export const DEFAULT_CONFIG: DeckConfig = {
 /** Headmatter and deck.config.ts both layer over the defaults; nested objects merge one level. */
 /** What a deck.config.ts or headmatter may set: any option, with the nested groups partial too. */
 export type DeckConfigInput = Partial<
-  Omit<DeckConfig, "live" | "drawings" | "seoMeta" | "glossary" | "narration" | "layers">
+  Omit<DeckConfig, "live" | "remote" | "drawings" | "seoMeta" | "glossary" | "narration" | "layers">
 > & {
   layers?: Partial<DeckConfig["layers"]>;
+  remote?: Partial<DeckConfig["remote"]>;
   glossary?: Partial<GlossaryOptions> | string | false;
   live?: Partial<DeckConfig["live"]>;
   drawings?: Partial<DeckConfig["drawings"]>;
@@ -586,6 +599,7 @@ export function resolveConfig(
   const out: DeckConfig = {
     ...DEFAULT_CONFIG,
     live: { ...DEFAULT_CONFIG.live },
+    remote: { ...DEFAULT_CONFIG.remote },
     drawings: { ...DEFAULT_CONFIG.drawings },
     narration: { ...DEFAULT_CONFIG.narration },
     layers: { ...DEFAULT_CONFIG.layers },
@@ -601,6 +615,7 @@ export function resolveConfig(
         out.narration = { ...out.narration, enabled: value };
       else if (
         (key === "live" ||
+          key === "remote" ||
           key === "drawings" ||
           key === "seoMeta" ||
           key === "narration" ||
