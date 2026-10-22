@@ -162,14 +162,6 @@ const DROPPED: Record<string, (v: unknown) => string | null> = {
   monacoRunUseStrict: () => null,
   preloadImages: () => null,
   shiki: () => "shiki — set Shiki options in vite.config.ts: deck({ shiki: { … } }).",
-  comark: (v) =>
-    v
-      ? "comark: Kadal is MDX; write components as JSX (<Badge>…</Badge>) rather than Comark's :name[…]{…}."
-      : null,
-  mdc: (v) =>
-    v
-      ? "mdc: Kadal is MDX; write components as JSX (<Badge>…</Badge>) rather than MDC's :name[…]{…}."
-      : null,
   titleTemplate: (v) =>
     v === "%s - Slidev" ? null : `titleTemplate: ${v} — Kadal's page title is the deck's title.`,
 };
@@ -214,6 +206,11 @@ export function mapHeadmatter(head: Record<string, unknown>, report: Reporter): 
         break;
       case "info":
         if (typeof value === "string") deck.info = value;
+        break;
+      // Comark (MDC before it was renamed) is read natively: compiler/remark-comark.ts.
+      case "comark":
+      case "mdc":
+        if (value === true) deck.comark = true;
         break;
       case "addons":
         for (const a of Array.isArray(value) ? value : []) {

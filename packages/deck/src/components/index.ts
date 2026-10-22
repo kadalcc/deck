@@ -49,6 +49,7 @@ export {
   SlidesTotal,
   TitleRenderer,
 } from "./Contextual.tsx";
+export { ClickCount } from "./ClickCount.tsx";
 export { Motion } from "./Motion.tsx";
 export { Term, TermReadout, Terms, type TermProps } from "./Term.tsx";
 export { Sketch, type SketchProps, type SketchStep } from "./Sketch.tsx";

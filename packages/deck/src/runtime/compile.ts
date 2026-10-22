@@ -23,6 +23,7 @@ import {
 import { plainText } from "../compiler/plain-text.ts";
 import {
   type DeckSetup,
+  comarkEnabled,
   katexOptions,
   manifestHeadmatter,
   notesRuby,
@@ -312,6 +313,7 @@ export async function compileDeck(
           warn,
           katex,
           plantUmlServer: server,
+          comark: comarkEnabled(prepared.headmatter),
           ruby: notes ? ruby : null,
           remarkPlugins: options.remarkPlugins,
           rehypePlugins: options.rehypePlugins,

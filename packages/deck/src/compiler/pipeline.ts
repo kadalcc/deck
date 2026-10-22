@@ -23,6 +23,8 @@ import { rehypeGlossary } from "./rehype-glossary.ts";
 import { remarkDeckFences } from "./remark-fences.ts";
 import { type RemarkIconsOptions, remarkIcons } from "./remark-icons.ts";
 import { remarkDrag } from "./remark-drag.ts";
+import { type RemarkComarkOptions, remarkComark } from "./remark-comark.ts";
+import { rehypeComarkSlots } from "./rehype-comark.ts";
 import { rehypeAutoRuby } from "./rehype-ruby.ts";
 import {
   type KatexOptions,
@@ -170,6 +172,8 @@ export interface MdxPipelineOptions {
   onTwoslashMissing?: () => void;
   /** Iconify icons the slide names (`<mdi-x />`, `<Icon name="set:x">`): `onIcon` hears each. */
   icons?: RemarkIconsOptions;
+  /** Comark syntax (`comark: true` / `mdc: true` in the headmatter): remark-comark.ts. */
+  comark?: boolean;
 }
 
 /** The remark and rehype passes every slide (and every note) compiles with. */
@@ -206,6 +210,14 @@ export function mdxPlugins(
     remarkPlugins: [
       remarkGfm,
       remarkMath,
+      ...(o.comark
+        ? [
+            [
+              remarkComark,
+              { warn: (m: string, line?: number) => o.warn(line ? `line ${line}: ${m}` : m) },
+            ] as [typeof remarkComark, RemarkComarkOptions],
+          ]
+        : []),
       ...(o.remarkPlugins ?? []),
       [remarkIcons, o.icons ?? {}] as [typeof remarkIcons, RemarkIconsOptions],
       remarkDrag,
@@ -239,6 +251,8 @@ export function mdxPlugins(
           ]
         : []),
       ...(o.rehypePlugins ?? []),
+      // Last: named slots carry their content compiled by everything above (rehype-comark.ts).
+      ...(o.comark ? [rehypeComarkSlots] : []),
     ],
   };
 }

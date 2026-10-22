@@ -113,7 +113,28 @@ describe("headmatter", () => {
     );
     expect(lines).toContain("warning: The Slidev addon slidev-addon-mystery is Vue code");
     expect(lines).toContain("info: highlighter: prism — Kadal always highlights with Shiki.");
-    expect(lines).toContain("info: comark: Kadal is MDX");
+    expect(lines).not.toContain("comark");
+  });
+
+  test("custom-nav-controls.vue becomes the custom-nav-controls layer ($nav.isPresenter too)", () => {
+    const files: Record<string, string> = {
+      "custom-nav-controls.vue":
+        '<template>\n  <button v-if="!$nav.isPresenter" title="Next" @click="$nav.next">Next</button>\n</template>\n',
+    };
+    const r = convertSlidev("# A\n", { readFile: (p) => files[p] ?? null, list: () => [] });
+    const tsx = r.files["src/custom-nav-controls.tsx"]!;
+    expect(tsx).toContain("export default function CustomNavControls(props: LayerProps)");
+    expect(tsx).toContain('(!(props.view === "presenter"))');
+    expect(tsx).toContain('<SlidevOn as="button" click="next" title="Next">');
+  });
+
+  test("comark: true (and the older mdc: true) is carried: Kadal reads Comark natively", () => {
+    for (const key of ["comark", "mdc"]) {
+      const r = convert(`---\n${key}: true\n---\n\nThis is [red]{style="color:red"} :badge[New]\n`);
+      expect(slides(r.mdx)[0]!.fm.comark).toBe(true);
+      expect(what(r).join()).not.toContain(key);
+    }
+    expect(slides(convert("---\ncomark: false\n---\n# A").mdx)[0]!.fm.comark).toBeUndefined();
   });
 });
 
@@ -225,6 +246,16 @@ describe("click directives and components", () => {
       one("<v-switch>\n  <template #1>one</template>\n  <template #2-4>two</template>\n</v-switch>")
         .body,
     ).toBe('<Switch>\n<Case at={1}>one</Case>\n<Case at="2-4">two</Case>\n</Switch>');
+    // v-slot:N, Markdown inside a slot, Slidev's <VSwitch> spelling
+    expect(
+      one(
+        "<VSwitch>\n  <template v-slot:1>one</template>\n  <template #2>\n\n**two**\n\n</template>\n</VSwitch>",
+      ).body,
+    ).toBe("<Switch>\n<Case at={1}>one</Case>\n<Case at={2}>\n\n**two**\n\n</Case>\n</Switch>");
+    // a name that is not a step is the next case, with a warning
+    const r = one("<v-switch>\n  <template #intro>a</template>\n</v-switch>");
+    expect(r.body).toBe("<Switch>\n<Case>a</Case>\n</Switch>");
+    expect(what(r.r).join()).toContain("not a click number");
   });
 
   test("v-mark: type, colour, options and step", () => {
@@ -343,9 +374,30 @@ describe("components, icons and Vue's template syntax", () => {
     );
     expect(one("By {{ $frontmatter.who }}", "who: Kadal\n").body).toBe("By Kadal");
     expect(one("Deck {{ $slidev.configs.title }}").body).toBe("Deck T");
-    const r = one("Clicks: {{ $clicks }}");
-    expect(r.body).toBe("Clicks: {/* slidev: {{ $clicks }} */}");
-    expect(what(r.r).join()).toContain("needs Vue to run (it reads $clicks)");
+    const r = one("Clicks: {{ $clicks }} of {{ $clicksContext.total }}");
+    expect(r.body).toBe("Clicks: <ClickCount /> of <ClickCount total />");
+    expect(what(r.r).join()).not.toContain("needs Vue");
+    expect(one("{{ $clicksContext.current }} {{ $slidev.nav.clicks }}").body).toBe(
+      "<ClickCount /> <ClickCount />",
+    );
+  });
+
+  test("v-if on the click count: <ClickCount when>, v-else-if / v-else chains too", () => {
+    const r = one(
+      '<p v-if="$clicks > 3">late</p>\n<p v-else-if="$clicks == 2">two</p>\n<p v-else>else</p>',
+    );
+    expect(r.body).toBe(
+      [
+        "<ClickCount when={($clicks) => ($clicks > 3)}><p>late</p></ClickCount>",
+        "<ClickCount when={($clicks) => !($clicks > 3) && ($clicks === 2)}><p>two</p></ClickCount>",
+        "<ClickCount when={($clicks) => !($clicks > 3) && !($clicks === 2)}><p>else</p></ClickCount>",
+      ].join("\n"),
+    );
+    expect(what(r.r).join()).not.toContain("decides while the deck runs");
+    // Anything but the count and numbers is not translated: it still needs Vue.
+    const other = one('<p v-if="$clicks > count">A</p>');
+    expect(other.body).toBe("<p>A</p>");
+    expect(what(other.r).join()).toContain("decides while the deck runs");
   });
 
   test("v-for over what is known is unrolled; v-if decided now when it can be", () => {
@@ -358,7 +410,7 @@ describe("components, icons and Vue's template syntax", () => {
     expect(one('<p v-if="$frontmatter.show">A</p><p v-else>B</p>', "show: false\n").body).toBe(
       "<p>B</p>",
     );
-    const r = one('<p v-if="$clicks > 1">A</p>');
+    const r = one('<p v-if="$nav.isPresenter">A</p>');
     expect(r.body).toBe("<p>A</p>");
     expect(what(r.r).join()).toContain("decides while the deck runs");
   });

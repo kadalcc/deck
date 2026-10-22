@@ -15,8 +15,9 @@ import { packageFiles, type ResolvedPackage, resolvePackage } from "../theming/r
  *
  *   `deckPackageSet` + `packagesCode`   for the deck plugin (vite/index.ts): the headmatter's
  *       theme, themes and addons resolved from the deck's folder (theming/resolve.ts), and the
- *       deck's own layer files (`global-top.tsx`… beside deck.mdx, or in src/), turned into the
- *       imports and the `packages` export of `virtual:deck`. Every stylesheet is imported
+ *       deck's own layer files (`global-top.tsx`… beside deck.mdx, or in src/) and routes file
+ *       (`routes.tsx`, react/routes.tsx), turned into the imports and the `packages` export of
+ *       `virtual:deck`. Every stylesheet is imported
  *       eagerly (the theme menu's swatches need them); the active theme's module and every
  *       addon's are eager too, so the first paint has their layouts; the other themes' modules
  *       are lazy chunks, loaded when the menu picks one.
@@ -46,10 +47,41 @@ export function layerFiles(deckDir: string): Partial<Record<LayerName, string>> 
 /** Is this path one a layer file could have (so its creation or removal rebuilds the manifest)? */
 export function isLayerCandidate(file: string, deckDir: string): boolean {
   const dir = dirname(file);
+  const name = file.slice(dir.length + 1);
+  if (dir === join(deckDir, "setup") || dir === deckDir || dir === join(deckDir, "src"))
+    if (LAYER_EXTS.some((e) => name === `routes${e}`)) return true;
   if (dir !== deckDir && dir !== join(deckDir, "src")) return false;
   return LAYER_NAMES.some((n) =>
     LAYER_EXTS.some((e) => file.endsWith(`/${n}${e}`) || file.endsWith(`\\${n}${e}`)),
   );
+}
+
+/**
+ * The deck's routes file (react/routes.tsx): `routes.tsx` beside deck.mdx, in src/, or where
+ * Slidev keeps it, `setup/routes.ts`. Null without one.
+ */
+export function routesFile(deckDir: string): string | null {
+  for (const dir of [deckDir, join(deckDir, "src"), join(deckDir, "setup")])
+    for (const ext of LAYER_EXTS) {
+      const file = join(dir, `routes${ext}`);
+      if (existsSync(file)) return file;
+    }
+  return null;
+}
+
+/**
+ * The plain paths a routes file spells out (`path: "handout"`), for the static host's copies of
+ * index.html; a path with a `:param` or a `*` is left to 404.html.
+ */
+export function routePaths(file: string | null): string[] {
+  if (!file || !existsSync(file)) return [];
+  const text = readFileSync(file, "utf8");
+  const out = new Set<string>();
+  for (const m of text.matchAll(/\bpath\s*:\s*(["'`])([^"'`]+)\1/g)) {
+    const p = m[2]!.replace(/^\/+|\/+$/g, "");
+    if (p && /^[\w.~-]+(\/[\w.~-]+)*$/.test(p) && !p.split("/").includes("..")) out.add(p);
+  }
+  return [...out];
 }
 
 export interface DeckPackageSet {
@@ -58,6 +90,8 @@ export interface DeckPackageSet {
   themes: ResolvedPackage[];
   addons: ResolvedPackage[];
   layers: Partial<Record<LayerName, string>>;
+  /** The deck's routes file, or null. */
+  routes?: string | null;
   /** package.json files to watch. */
   watch: string[];
 }
@@ -80,6 +114,7 @@ export function deckPackageSet(
     themes,
     addons,
     layers: layerFiles(deckDir),
+    routes: routesFile(deckDir),
     watch: [...themes, ...addons].flatMap((p) => p.watch),
   };
 }
@@ -132,6 +167,7 @@ export function packagesCode(set: DeckPackageSet): { imports: string; value: str
     const id = eagerId(file!);
     return `${JSON.stringify(name)}: ${id}.default ?? ${id}[${JSON.stringify(camel(name))}]`;
   });
+  const routes = set.routes ? eagerId(set.routes) : null;
   return {
     imports: imports.join("\n"),
     value: `(() => {
@@ -141,6 +177,7 @@ export function packagesCode(set: DeckPackageSet): { imports: string; value: str
     themes: [${themes.join(", ")}],
     addons: [${addons.join(", ")}],
     layers: { ${layers.join(", ")} },
+    routes: ${routes ? `${routes}.default ?? ${routes}.routes ?? null` : "null"},
     warnings: [],
   };
 })()`,

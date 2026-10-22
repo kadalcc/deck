@@ -386,6 +386,11 @@ export interface DeckConfig {
   defaults: Frontmatter;
   /** The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. */
   plantUmlServer: string;
+  /**
+   * Comark (formerly MDC) syntax in the slides: `:badge[New]{tone="good"}`, `[text]{.class}`,
+   * `::callout{type="warn"}` … `::` blocks with `#slot` sections (compiler/remark-comark.ts).
+   */
+  comark: boolean;
   /** Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. */
   notesAutoRuby: Record<string, string>;
   /** KaTeX options for every formula, e.g. `{ macros: { "\\RR": "\\mathbb{R}" } }`. */
@@ -515,6 +520,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   bundleRemoteAssets: false,
   defaults: {},
   plantUmlServer: "https://www.plantuml.com/plantuml",
+  comark: false,
   notesAutoRuby: {},
   katex: {},
   mermaid: {},

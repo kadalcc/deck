@@ -20,6 +20,7 @@ import { Toast } from "../react/chrome.tsx";
 import { Icon } from "../components/bling.tsx";
 import { ConfettiLayer } from "../react/ConfettiLayer.tsx";
 import { HintLayer } from "../react/Hints.tsx";
+import { NavControlsLayer } from "../react/Layers.tsx";
 import { ThemeMenu } from "../react/ThemeMenu.tsx";
 import { loadSlide, SlideFrame } from "../react/SlideFrame.tsx";
 import { Stage } from "../react/Stage.tsx";
@@ -607,6 +608,7 @@ function PresenterTools({
       >
         <Icon name="chart-column" /> Stats
       </a>
+      <NavControlsLayer placement="toolbar" />
     </div>
   );
 }

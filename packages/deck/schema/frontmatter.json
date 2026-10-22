@@ -1361,6 +1361,11 @@
           "description": "The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`.",
           "default": "https://www.plantuml.com/plantuml"
         },
+        "comark": {
+          "type": "boolean",
+          "description": "Comark (formerly MDC) syntax in the slides: `:badge[New]{tone=\"good\"}`, `[text]{.class}`, `::callout{type=\"warn\"}` … `::` blocks with `#slot` sections (compiler/remark-comark.ts).",
+          "default": false
+        },
         "notesAutoRuby": {
           "type": "object",
           "description": "Words in the speaker notes and their reading, shown as ruby: `{ 日本語: \"ni hon go\" }`."
@@ -1443,6 +1448,10 @@
         "canvasWidth": {
           "type": "number",
           "description": "Slidev spelling: the stage width used with aspectRatio."
+        },
+        "mdc": {
+          "type": "boolean",
+          "description": "Slidev's older spelling of `comark` (MDC is Comark's former name)."
         },
         "remoteAssets": {
           "anyOf": [

@@ -280,6 +280,27 @@ One click step (Slidev's v-click, reveal.js's fragment): shows its children from
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
 | `children` | `ReactNode` |  | What is revealed. |
 
+#### `<ClickCount>`
+
+The click step this slide is at (Slidev's `$clicks`), or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.
+
+```mdx
+Step <ClickCount offset={1} /> of <ClickCount total />
+
+<ClickCount when={(c) => c >= 3}>
+
+**Done.**
+
+</ClickCount>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `total` | `boolean` | `false` | Show the slide's number of clicks rather than the current one. |
+| `offset` | `number` | `0` | Add this to the number shown: `offset={1}` counts from 1 ("step 1" before any click). |
+| `when` | `((click: number, total: number) => unknown)` |  | Render the children only while this is true of the count: `when={(c) => c >= 2}`. |
+| `children` | `ReactNode \| ((click: number, total: number) => ReactNode)` |  | With `when`: what to show. Otherwise a function of the count, for anything that depends on it: `{(c, total) => …}`. Without either, the number is shown in a `<span>`. |
+
 #### `<Clicks>`
 
 Wraps a Markdown list (or any children) so each item is its own click step. Leave blank lines around the list inside it.
@@ -412,7 +433,7 @@ One idea per slide.
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `kind` | `"warn" \| "info" \| "tip" \| "danger" \| "note"` | `"info"` | info · tip · note · warn · danger. |
-| `title` | `string` |  | Bold first line. |
+| `title` | `ReactNode` |  | A string, or any content (Comark's `#title` slot arrives as content). |
 | `children` | `ReactNode` |  |  |
 
 #### `<Confetti>`

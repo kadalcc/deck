@@ -56,6 +56,11 @@
 - `<style>` in a slide styles that slide only (`html.dark h1 {…}` still means the dark scheme;
   `:scope {…}` is the slide itself); `<style global>` styles the whole deck.
 - Components are Capitalised. Unknown names fail the slide — check `kadal-deck info components`.
+- Prefer JSX. With `comark: true` in the headmatter (Slidev's `mdc: true` too) Comark also works:
+  `:badge[New]{tone="good"}`, `[text]{.class style="color: red"}`, `**x**{.accent}`,
+  `![](/a.png){width=480}`, and `::callout{kind="tip"}` ⏎ body ⏎ `#title` ⏎ named slot ⏎ `::`
+  (YAML props between `---` lines right after the opener; one more colon to nest). Kebab names
+  become PascalCase components; HTML names (`span`, `section`) stay elements.
 
 ## Clicks (steps)
 
@@ -63,6 +68,9 @@
   around a list reveals item by item. `at="+2"`, `at={3}`, `at={[2, 4]}`, `hide`,
   `effect="fade-up"` (see the click effects in references/components.md).
 - Code steps: ```` ```ts {1|2-3|all} ```` highlights those lines, one set per click.
+- The count itself (Slidev's `$clicks`): `<ClickCount />` (`total`, `offset={1}`),
+  `<ClickCount when={(c) => c >= 2}>…</ClickCount>` for `v-if="$clicks >= 2"`, `useClicks()` in a
+  component. Reading it adds no step.
 - `<Notes>` text (or a trailing `<!-- … -->`) with `[click]` markers: the presenter view shows the part for the current click,
   and the narrator (R, or the presenter's narration bar) reads that part aloud at that step. Write
   notes as sentences meant to be heard. `say: "…"` in a slide's frontmatter replaces what is read;
@@ -84,7 +92,12 @@
   compares with `totalTime`/`duration` or each slide's `timing` (default `defaultTiming`).
 - `contextMenu: true | false | "dev" | "build"`: the right-click menu on slides.
 - Pages: `/presenter`, `/notes`, `/notes-edit` (batch notes editor, dev), `/overview` (every slide
-  with a step slider and its notes), `/remote`. `,` opens display settings (brightness, contrast,
+  with a step slider and its notes), `/remote`. Pages of the deck's own: `routes.tsx` beside
+  deck.mdx, `export default defineRoutes([{ path: "handout", component: Handout }])` (Slidev's
+  `setup/routes.ts` works there too). Buttons of its own beside the controls:
+  `custom-nav-controls.tsx` (a layer: `export default (p: LayerProps) => <button …/>`).
+- `<Drag>` positions moved under `kadal-deck dev` are saved into deck.mdx and follow into every
+  other open window (presenter, second screen) at once. `,` opens display settings (brightness, contrast,
   saturation, sepia, hue, invert for a projector).
 - In main.tsx, `<Deck shortcuts={[{ keys: ["KeyQ"], command: "view.overview", description: "…" }]}>`
   adds keys (a function gets the defaults and returns the whole list: `defineShortcuts`);

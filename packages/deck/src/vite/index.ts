@@ -24,6 +24,7 @@ import {
 import { plainText } from "../compiler/plain-text.ts";
 import {
   type DeckSetup,
+  comarkEnabled,
   katexOptions,
   manifestHeadmatter,
   notesRuby,
@@ -364,6 +365,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           warn: (message) => console.warn(`[deck] ${file}: ${message}`),
           katex: m.katex,
           plantUmlServer: plantUmlServer(m.headmatter),
+          comark: comarkEnabled(m.headmatter),
           ruby: notes ? notesRuby(m.headmatter) : null,
           remarkPlugins: options.remarkPlugins,
           rehypePlugins: options.rehypePlugins,

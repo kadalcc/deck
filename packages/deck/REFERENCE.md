@@ -306,6 +306,27 @@ One click step (Slidev's v-click, reveal.js's fragment): shows its children from
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
 | `children` | `ReactNode` |  | What is revealed. |
 
+#### `<ClickCount>`
+
+The click step this slide is at (Slidev's `$clicks`), or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.
+
+```mdx
+Step <ClickCount offset={1} /> of <ClickCount total />
+
+<ClickCount when={(c) => c >= 3}>
+
+**Done.**
+
+</ClickCount>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `total` | `boolean` | `false` | Show the slide's number of clicks rather than the current one. |
+| `offset` | `number` | `0` | Add this to the number shown: `offset={1}` counts from 1 ("step 1" before any click). |
+| `when` | `((click: number, total: number) => unknown)` |  | Render the children only while this is true of the count: `when={(c) => c >= 2}`. |
+| `children` | `ReactNode \| ((click: number, total: number) => ReactNode)` |  | With `when`: what to show. Otherwise a function of the count, for anything that depends on it: `{(c, total) => …}`. Without either, the number is shown in a `<span>`. |
+
 #### `<Clicks>`
 
 Wraps a Markdown list (or any children) so each item is its own click step. Leave blank lines around the list inside it.
@@ -438,7 +459,7 @@ One idea per slide.
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `kind` | `"warn" \| "info" \| "tip" \| "danger" \| "note"` | `"info"` | info · tip · note · warn · danger. |
-| `title` | `string` |  | Bold first line. |
+| `title` | `ReactNode` |  | A string, or any content (Comark's `#title` slot arrives as content). |
 | `children` | `ReactNode` |  |  |
 
 #### `<Confetti>`
@@ -1660,6 +1681,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `bundleRemoteAssets` | `boolean` | `false` | At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache. |
 | `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
 | `plantUmlServer` | `string` | `"https://www.plantuml.com/plantuml"` | The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. |
+| `comark` | `boolean` | `false` | Comark (formerly MDC) syntax in the slides: `:badge[New]{tone="good"}`, `[text]{.class}`, `::callout{type="warn"}` … `::` blocks with `#slot` sections (compiler/remark-comark.ts). |
 | `notesAutoRuby` | `Record<string, string>` | `{}` | Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. |
 | `katex` | `{ [option: string]: unknown; macros?: Record<string, string>; }` | `{}` | KaTeX options for every formula, e.g. `{ macros: { "\\RR": "\\mathbb{R}" } }`. |
 | `mermaid` | `Record<string, unknown>` | `{}` | Mermaid configuration for every diagram (theme, themeVariables, look, flowchart…). |
@@ -1672,6 +1694,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `contextMenu` | `boolean \| "dev" \| "build"` | `true` | The right-click menu on the slides: true (always), false (never), "dev" (only under `kadal-deck dev`) or "build" (only in a built deck). Shift + right-click always gives the browser's own menu. Values: `dev` `build` |
 | `aspectRatio` | `number` |  | Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…). |
 | `canvasWidth` | `number` |  | Slidev spelling: the stage width used with aspectRatio. |
+| `mdc` | `boolean` |  | Slidev's older spelling of `comark` (MDC is Comark's former name). |
 | `remoteAssets` | `boolean \| "build"` |  | Slidev spelling of bundleRemoteAssets (true or "build"; "dev" does nothing). |
 
 ## Slide frontmatter
@@ -1772,6 +1795,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `/<slug>/overview` — Every slide in order with a slider through its click steps and its notes beside it (editable under `kadal-deck dev`); a thumbnail opens the deck at that step.
 - `/<slug>/export` — The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.
 - `/<slug>/stats` — Views, dwell per slide, sessions, questions, reactions.
+- `/<slug>/<your-path>` — A page of the deck's own (Slidev's `setup/routes.ts`): `routes.tsx` beside deck.mdx (or src/routes.tsx, setup/routes.ts) exporting `defineRoutes([{ path: "handout", component: Handout }, { path: "q/:id", load: () => import("./Q.tsx"), title }])`, `<Deck routes>`, or a theme's or addon's `routes` / `api.addRoute()`. Drawn inside the deck's providers with `{ path, params, route }`; the engine's pages win a clash; the build copies index.html to each plain path for static hosts.
 - `/<slug>/__kadal/drawings` — `kadal-deck dev` only: GET every `drawings/*.svg`; PUT `{ file, svg }` writes one (same origin, JSON; the SVG is re-serialised, never written as sent) and tells every open page. Used by `drawings.persist: "files"`.
 
 ## Query parameters
