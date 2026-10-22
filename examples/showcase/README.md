@@ -13,7 +13,7 @@ carries speaker notes.
 | `slides/01-writing.mdx` | the format, slots, a custom layout, all nineteen layouts, the glossary |
 | `slides/02-clicks.mdx` | `<Clicks>`, every click effect, `at` / ranges / `hide` / `clicks:`, marks and moving words |
 | `slides/03-code.mdx` | stepped code, every fence option, magic move, maths, Mermaid, sketches |
-| `slides/04-looks.mdx` | three themes × light and dark, every background (and colour, gradient, image, video, page, wash), bling, building blocks |
+| `slides/04-looks.mdx` | the three built-in themes × light and dark (and the thirteen packages), every background (and colour, gradient, image, video, page, wash), bling, building blocks |
 | `slides/05-motion.mdx` | every transition, `-in`/`-out`, speed, auto-animate, `<Motion>`, `autoSlide` |
 | `slides/06-media.mdx` | image layouts, the lightbox, video, audio, embeds, YouTube and X, QR |
 | `slides/07-islands.mdx` | eleven runtimes on one slide, and how a renderer is written |
