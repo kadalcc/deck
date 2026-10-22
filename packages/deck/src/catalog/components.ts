@@ -134,7 +134,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   MagicMove: {
     category: "code",
     summary:
-      "Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step.",
+      "Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step; an inner fence's highlight steps (`{*|2|4-5}`) are clicks too, in order with the morphs. Outer options: at, lines, duration; `[file.ts]` adds a title bar. Follows the colour scheme and the theme menu.",
     example: "````md magic-move\n```ts\nlet n = 1\n```\n```ts\nconst n = 1\n```\n````",
     mapping: true,
   },

@@ -59,6 +59,12 @@ export interface CodeRunnerContext {
   write(output: CodeOutput): void;
   /** Run code in another language with its runner (a runner can delegate). */
   run(code: string, lang: string): Promise<CodeOutput[]>;
+  /**
+   * The URL a bare import (`zod`, `lodash-es/debounce`) is fetched from — the deck's
+   * `monacoRunImports` CDN, at the version `monacoPackages` pins — or null when bare imports are
+   * not resolved here. Absent when the caller gives none (the built-in JS runner then refuses them).
+   */
+  resolveImport?: ((specifier: string) => string | null) | null;
 }
 
 export type CodeRunner = (
@@ -168,6 +174,8 @@ export interface RunOptions {
   signal?: AbortSignal;
   /** Every output as it arrives (streamed or returned). */
   onOutput?: (output: CodeOutput) => void;
+  /** Where bare imports come from (`CodeRunnerContext.resolveImport`). */
+  resolveImport?: ((specifier: string) => string | null) | null;
 }
 
 /** Run code with its language's runner; resolves to every output, in order. Never throws. */
@@ -197,6 +205,7 @@ export async function runCode(
     signal,
     write: push,
     run: (c, l) => runCode(c, l, { ...opts, onOutput: undefined }),
+    resolveImport: opts.resolveImport ?? null,
   };
   try {
     const result = await runner(code, context);

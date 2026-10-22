@@ -1020,7 +1020,7 @@ bun add @kadal/deck
 
 #### `<MagicMove>`
 
-Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step.
+Shiki Magic Move: code that morphs between versions, one per click. Written as a ````md magic-move fence holding one code fence per step; an inner fence's highlight steps (`{*|2|4-5}`) are clicks too, in order with the morphs. Outer options: at, lines, duration; `[file.ts]` adds a title bar. Follows the colour scheme and the theme menu.
 
 `````mdx
 ````md magic-move
@@ -1427,12 +1427,13 @@ console.log([1, 2, 3].map((n) => n * 2))
 <<< @/snippets/tide.ts#ask {monaco-write}
 ```
 
-- `` ````md magic-move `` — A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.
+- `` ````md magic-move `` — A 4-backtick md fence holding one code fence per step: the code morphs between them on each click. An inner fence's highlight steps (`{*|1|2-5}`) are clicks of their own, before the next morph; `{lines: true}` (outer, or one step's) numbers lines; `{at:N}`, `{duration:ms}`.
 
 `````mdx
-````md magic-move
-```ts
+````md magic-move {lines: true}
+```ts {*|1}
 let x = 1
+let y = 2
 ```
 ```ts
 const x = 1

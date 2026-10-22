@@ -3,13 +3,15 @@ import type { Highlighter, ShikiTransformer } from "shiki";
 import { visit } from "unist-util-visit";
 
 import { type CodeMeta, parseCodeMeta, serialiseSteps } from "./code-meta.ts";
+import type { ShikiThemeOption } from "./code-themes.ts";
 import { diffLines, splitDiffSource } from "./diff-lines.ts";
 
 /**
  * Turn every fenced code block into highlighted HTML at build time, and carry the fence meta over
  * as data attributes the runtime `<Code>` reads: which lines light up on which click, whether to
  * number lines, the title, the max height. Highlighting is Shiki with a light and a dark theme at
- * once; the CSS picks by the deck's colour scheme.
+ * once — and every further theme the theme menu needs (compiler/code-themes.ts) — each colour a
+ * CSS variable on the token; the CSS picks by the deck's colour scheme and the theme on show.
  *
  * Every block also runs the deck's Shiki transformers — the notation ones (`// [!code ++]`, see
  * compiler/transformers.ts) and whatever `deck({ shiki: { transformers } })` adds — and a
@@ -19,7 +21,8 @@ import { diffLines, splitDiffSource } from "./diff-lines.ts";
  */
 export interface RehypeCodeOptions {
   highlighter: Highlighter;
-  themes: { light: string; dark: string };
+  /** The deck's pair, and the further keys the theme menu needs (compiler/code-themes.ts). */
+  themes: ShikiThemeOption;
   /** Run on every block, in order: the notation transformers, then the deck's own. */
   transformers?: ShikiTransformer[];
   /** The TwoSlash transformer; null or absent renders `twoslash` blocks as plain highlighted code. */

@@ -112,6 +112,32 @@ describe("lint knows Slidev's syntax", () => {
     expect(r.slides).toBe(5);
   });
 
+  test("magic-move highlight steps and the Monaco type keys: no false warnings", async () => {
+    const deck = [
+      "---",
+      "monacoTypes: cdn",
+      "monacoPackages:",
+      "  zod: ^3.23",
+      "monacoTypesIgnore: [left-pad]",
+      "monacoRunImports: https://esm.sh",
+      "---",
+      "",
+      "````md magic-move {at:1, lines: true}",
+      "```js {*|1|2-5}",
+      "let count = 1",
+      "```",
+      "```js {*}{lines: false}",
+      "let count = 2",
+      "```",
+      "````",
+      "",
+      "```ts {monaco}",
+      'import { z } from "zod"',
+      "```",
+    ].join("\n");
+    expect((await lint(deck)).diagnostics).toEqual([]);
+  });
+
   test("helpful warnings for the mistakes", async () => {
     const bad = `---
 defaults:

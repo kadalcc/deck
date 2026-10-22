@@ -16,6 +16,7 @@ import {
 } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
 import { applyCodeGroups } from "./code-groups.ts";
+import type { ShikiThemeOption } from "./code-themes.ts";
 import { parseCodeMeta, serialiseSteps } from "./code-meta.ts";
 import { type MagicMoveBlock, findMagicMoves } from "./magic-move.ts";
 import { rehypeDeckCode } from "./rehype-code.ts";
@@ -146,7 +147,8 @@ export function deckGlossary(
 
 export interface MdxPipelineOptions {
   highlighter: Highlighter;
-  themes: { light: string; dark: string };
+  /** The deck's Shiki pair and the menu's further themes: `shikiThemeOption(codeThemes(…))`. */
+  themes: ShikiThemeOption;
   glossary: DeckGlossary;
   /** The slide's own `terms` frontmatter; null compiles without the glossary (notes). */
   terms: unknown;
@@ -247,11 +249,16 @@ export function mdxPlugins(
 const numbered = (block: MagicMoveBlock, own: boolean) =>
   own || block.options.lines === "true" || block.options.lines === "1";
 
-/** A slide's magic-move steps with their keyed tokens, precomputed for both themes. */
+/**
+ * A slide's magic-move steps with their keyed tokens. One token set per step, highlighted with
+ * every theme at once (`themes`: the deck's pair and any the theme menu adds, see
+ * compiler/code-themes.ts): each token's colours are Shiki's CSS variables, so the colour scheme
+ * and the theme menu recolour a block the way they recolour plain code, without a second set.
+ */
 export function magicMoveData(
   blocks: MagicMoveBlock[],
   hl: Highlighter,
-  themes: { light: string; dark: string },
+  themes: ShikiThemeOption,
 ): MagicMoveData[] {
   return blocks.map((block) => ({
     options: block.options,
@@ -265,20 +272,12 @@ export function magicMoveData(
         highlight: meta.steps ? serialiseSteps(meta.steps) : null,
         // Line numbers are part of the keyed tokens (shiki-magic-move numbers them when it
         // tokenises), so `{lines: true}` must reach here, not only the renderer's options.
-        tokens: {
-          light: codeToKeyedTokens(
-            hl,
-            step.code,
-            { lang: lang as never, theme: themes.light },
-            numbered(block, meta.lines),
-          ),
-          dark: codeToKeyedTokens(
-            hl,
-            step.code,
-            { lang: lang as never, theme: themes.dark },
-            numbered(block, meta.lines),
-          ),
-        },
+        tokens: codeToKeyedTokens(
+          hl,
+          step.code,
+          { lang: lang as never, themes, defaultColor: false } as never,
+          numbered(block, meta.lines),
+        ),
       };
     }),
   }));

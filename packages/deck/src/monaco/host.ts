@@ -3,6 +3,7 @@ import { createHighlighterCore, type HighlighterCore } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 
 import type { MonacoHost, MonacoNamespace } from "./loader.ts";
+import { type TypeFile, createTypeAcquirer } from "./types.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -17,10 +18,12 @@ import type { MonacoHost, MonacoNamespace } from "./loader.ts";
  *   - colours: the deck's own Shiki grammars and themes drive the editor (@shikijs/monaco), so an
  *     editor and the static block it replaces are coloured token for token alike. The theme's
  *     background is made transparent, so the code block's own surface (theme tokens) shows
- *     through and the editor sits in the slide like any other code;
+ *     through and the editor sits in the slide like any other code. A theme picked from the
+ *     menu brings its own Shiki pair (compiler/code-themes.ts): `themeNamed` loads it on demand;
  *   - TypeScript: every model is its own module (`moduleDetection: force`), so two editors on a
  *     deck that both say `const x` do not collide, and "cannot find module" is not reported for
- *     imports the browser cannot see;
+ *     imports the browser cannot see; the packages an editor imports get their declarations
+ *     (monaco/types.ts: from the deck's build, or a CDN), so their hovers and errors are real;
  *   - the deck's `setup/monaco.ts`, when it has one: called with the namespace, may return
  *     `{ editorOptions }` for every editor.
  *
@@ -37,6 +40,10 @@ export interface MonacoHostInput {
   /** A Shiki grammar's loader by language id or alias (`ts` → typescript), or null. */
   grammar: (lang: string) => { id: string; load: Loader } | null;
   themes: { light: { name: string; load: Loader }; dark: { name: string; load: Loader } };
+  /** Any other Shiki theme by name, for the theme menu's themes; null when it is not to be had. */
+  theme?: ((name: string) => { name: string; load: Loader } | null) | null;
+  /** The deck's bundled declarations by package (`local` types, vite/monaco-types.ts). */
+  localTypes?: ((pkg: string) => (() => Promise<TypeFile[]>) | null) | null;
   /** The deck's `setup/monaco.ts`. */
   setup?: (() => Promise<unknown>) | null;
   writeEndpoint?: string | null;
@@ -73,6 +80,13 @@ export async function createMonacoHost(input: MonacoHostInput): Promise<MonacoHo
   };
 
   // TypeScript: modules, not scripts; the module and target the browser runs.
+  type Defaults = {
+    setCompilerOptions(o: object): void;
+    setDiagnosticsOptions(o: object): void;
+    setEagerModelSync?(on: boolean): void;
+    addExtraLib?(content: string, filePath?: string): unknown;
+  };
+  const libs: Defaults[] = [];
   const ts =
     (monaco as unknown as { typescript?: Record<string, unknown> }).typescript ??
     (monaco.languages as unknown as { typescript?: Record<string, unknown> }).typescript;
@@ -94,18 +108,20 @@ export async function createMonacoHost(input: MonacoHostInput): Promise<MonacoHo
       diagnosticCodesToIgnore: [2307, 2792, 1375, 1378],
     };
     for (const key of ["typescriptDefaults", "javascriptDefaults"]) {
-      const defaults = ts[key] as
-        | {
-            setCompilerOptions(o: object): void;
-            setDiagnosticsOptions(o: object): void;
-            setEagerModelSync?(on: boolean): void;
-          }
-        | undefined;
+      const defaults = ts[key] as Defaults | undefined;
       defaults?.setCompilerOptions(compilerOptions);
       defaults?.setDiagnosticsOptions(diagnostics);
       defaults?.setEagerModelSync?.(true);
+      if (defaults) libs.push(defaults);
     }
   }
+  // Declarations for what the editors import: registered once, where module resolution looks.
+  const types = createTypeAcquirer({
+    add: (f) => {
+      for (const d of libs) d.addExtraLib?.(f.text, `file://${f.path}`);
+    },
+    local: input.localTypes ?? null,
+  });
 
   // Colours: the deck's Shiki themes, with the editor background taken out.
   const [light, dark] = await Promise.all([
@@ -133,6 +149,10 @@ export async function createMonacoHost(input: MonacoHostInput): Promise<MonacoHo
       },
     };
   };
+  const loadedThemes = new Map<string, Promise<string>>([
+    [input.themes.light.name, Promise.resolve(input.themes.light.name)],
+    [input.themes.dark.name, Promise.resolve(input.themes.dark.name)],
+  ]);
   const highlighter: HighlighterCore = await createHighlighterCore({
     themes: [
       clear(light, input.themes.light.name) as never,
@@ -191,10 +211,28 @@ export async function createMonacoHost(input: MonacoHostInput): Promise<MonacoHo
     return p;
   };
 
+  /** A Shiki theme by name, loaded into the editor's highlighter the first time it is asked for. */
+  const themeNamed = (name: string): Promise<string> => {
+    let p = loadedThemes.get(name);
+    if (p) return p;
+    const found = input.theme?.(name);
+    if (!found) return Promise.reject(new Error(`no Shiki theme ${name}`));
+    p = (chain = chain.then(async () => {
+      await highlighter.loadTheme(clear(unwrap(await found.load()), name) as never);
+      register();
+      return name;
+    })) as Promise<string>;
+    p.catch(() => loadedThemes.delete(name));
+    loadedThemes.set(name, p);
+    return p;
+  };
+
   return {
     monaco,
     language,
     theme: (scheme) => (scheme === "dark" ? input.themes.dark.name : input.themes.light.name),
+    themeNamed,
+    acquireTypes: (code, options) => types.acquire(code, options),
     editorOptions: setupOptions,
     writeEndpoint: input.writeEndpoint ?? null,
   };

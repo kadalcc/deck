@@ -22,6 +22,14 @@ import {
 } from "../compiler/pipeline.ts";
 import { plainText } from "../compiler/plain-text.ts";
 import {
+  type CodeThemes,
+  codeThemeCss,
+  codeThemes,
+  codeThemesKey,
+  shikiThemeNames,
+  shikiThemeOption,
+} from "../compiler/code-themes.ts";
+import {
   type DeckSetup,
   katexOptions,
   manifestHeadmatter,
@@ -31,7 +39,7 @@ import {
 import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
 import { sourceFromFiles } from "../draw/source.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
-import { applySlideDefaults, shikiThemes, slideDefaultLayers } from "../theming/merge.ts";
+import { applySlideDefaults, slideDefaultLayers } from "../theming/merge.ts";
 import {
   type PackageRegistry,
   packageRegistry,
@@ -104,9 +112,13 @@ export interface CompiledDeck {
 let highlighter: Promise<Highlighter> | null = null;
 let highlighterKey = "";
 
-/** One Shiki per page, with the JavaScript regex engine: no WebAssembly to fetch. */
-async function getHighlighter(themes: { light: string; dark: string }, langs: string[]) {
-  const key = `${themes.light}|${themes.dark}|${langs.join(",")}`;
+/**
+ * One Shiki per page, with the JavaScript regex engine: no WebAssembly to fetch. Its themes are
+ * the deck's pair and whatever the theme menu adds (compiler/code-themes.ts); each is a lazy
+ * chunk of Shiki's, fetched only by a deck that names it.
+ */
+async function getHighlighter(themes: CodeThemes, langs: string[]) {
+  const key = `${codeThemesKey(themes)}|${langs.join(",")}`;
   if (!highlighter || key !== highlighterKey) {
     highlighterKey = key;
     highlighter = (async () => {
@@ -115,7 +127,7 @@ async function getHighlighter(themes: { light: string; dark: string }, langs: st
         import("shiki/engine/javascript"),
       ]);
       return createHighlighter({
-        themes: [themes.light, themes.dark],
+        themes: shikiThemeNames(themes),
         langs,
         engine: createJavaScriptRegexEngine({ forgiving: true }),
       });
@@ -211,7 +223,7 @@ export async function compileDeck(
   const push = (d: Omit<Diagnostic, "severity"> & { severity?: Diagnostic["severity"] }) =>
     diagnostics.push({ severity: "error", ...d });
 
-  let themes = shikiThemes(options.shiki, null);
+  let themes = codeThemes(options.shiki, null);
 
   let prepared: { headmatter: Record<string, unknown>; slides: PreparedSlide[]; styles: string };
   try {
@@ -271,7 +283,11 @@ export async function compileDeck(
         runtimePackages.packages.addons,
       ),
     );
-    themes = shikiThemes(options.shiki, runtimePackages.packages.theme);
+    themes = codeThemes(
+      options.shiki,
+      runtimePackages.packages.theme,
+      runtimePackages.packages.themes,
+    );
   }
 
   const glossary: DeckGlossary = deckGlossary(
@@ -305,7 +321,7 @@ export async function compileDeck(
       const build = async (source: string, terms: unknown, notes = false): Promise<SlideModule> => {
         const plugins = mdxPlugins({
           highlighter: hl,
-          themes,
+          themes: shikiThemeOption(themes),
           glossary,
           terms,
           math: renderMath,
@@ -348,7 +364,7 @@ export async function compileDeck(
       let magic: ReturnType<typeof magicMoveData> | null = null;
       if (s.magic.length) {
         try {
-          magic = magicMoveData(s.magic, hl, themes);
+          magic = magicMoveData(s.magic, hl, shikiThemeOption(themes));
         } catch (err) {
           push({
             message: `magic move: ${err instanceof Error ? err.message : String(err)}`,
@@ -382,7 +398,9 @@ export async function compileDeck(
       headmatter: manifestHeadmatter(prepared.headmatter, options),
       slides,
       glossary: glossary.entries,
-      styles: prepared.styles,
+      // The theme menu's code colours ride with the slides' own styles (compiler/code-themes.ts).
+      styles: prepared.styles + codeThemeCss(themes),
+      codeThemes: themes,
       ...(runtimePackages ? { packages: runtimePackages.packages } : {}),
       // Saved drawings among the files (`drawings/<slide>.svg`): shown under the live strokes.
       drawings: sourceFromFiles(files),

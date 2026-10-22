@@ -3,7 +3,9 @@
  * and Shiki's grammars and themes on demand. A lazy chunk — main.tsx registers a loader that
  * imports this module the first time an editor is on the slide being presented — so the shell's
  * eager bundle does not grow by a byte of Monaco, and a deck without an editor never fetches it.
- * Bundled here (not fetched from a CDN), so a hosted deck's editors work wherever the shell does.
+ * Bundled here (not fetched from a CDN), so a hosted deck's editors work wherever the shell does;
+ * only the types of the npm packages an editor imports are fetched (jsDelivr, cached), there
+ * being no node_modules here to bundle them from.
  */
 import * as monaco from "monaco-editor";
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
@@ -11,7 +13,7 @@ import CssWorker from "monaco-editor/language/css/css.worker.js?worker";
 import HtmlWorker from "monaco-editor/language/html/html.worker.js?worker";
 import JsonWorker from "monaco-editor/language/json/json.worker.js?worker";
 import TsWorker from "monaco-editor/language/typescript/ts.worker.js?worker";
-import { bundledGrammar, bundledThemes, createMonacoHost } from "@kadal/deck/monaco";
+import { bundledGrammar, bundledTheme, bundledThemes, createMonacoHost } from "@kadal/deck/monaco";
 
 export default function loadMonaco() {
   return createMonacoHost({
@@ -24,8 +26,10 @@ export default function loadMonaco() {
       html: () => new HtmlWorker({ name: "monaco-html" }),
     },
     grammar: bundledGrammar,
-    // The runtime compiler's default Shiki themes (runtime/compile.ts).
+    // The runtime compiler's default Shiki themes (runtime/compile.ts); an editor asks for the
+    // theme the deck's code actually wears (its theme's, or the menu's) by name, and gets it.
     themes: bundledThemes("github-light", "github-dark"),
+    theme: bundledTheme,
     // A hosted deck has no dev server to save to: `{monaco-write}` editors are read-only here.
     writeEndpoint: null,
   });

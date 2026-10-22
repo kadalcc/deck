@@ -32,8 +32,13 @@ export interface SlideModule {
 export interface MagicMoveStepData {
   lang: string;
   lines: boolean;
+  /** The step's highlight frames, serialised (`*|2|4,5`); null lights every line. */
   highlight: string | null;
-  tokens: { light: unknown; dark: unknown };
+  /**
+   * The keyed tokens, their colours as Shiki's CSS variables for every theme the deck can show
+   * (compiler/code-themes.ts). Before 0.4.1 a `{ light, dark }` pair of token sets.
+   */
+  tokens: unknown;
 }
 
 export interface MagicMoveData {
@@ -76,6 +81,13 @@ export interface DeckManifest {
    * Absent or "" when no slide has one (compiler/slide-style.ts).
    */
   styles?: string;
+  /**
+   * The Shiki themes the deck's code is highlighted with: its own pair and the further ones its
+   * theme menu needs, by variable key (compiler/code-themes.ts). The stylesheet above already
+   * recolours static code; Monaco editors read this to follow the theme on show. Absent in
+   * manifests built before 0.4.1.
+   */
+  codeThemes?: import("../compiler/code-themes.ts").CodeThemes;
   /**
    * The in-browser Kokoro voice, when the deck has `kokoro-js` installed: a lazy import of the
    * module that starts its Web Worker. Null (or absent) without it — the narrator then uses the
@@ -309,6 +321,24 @@ export interface DeckConfig {
   autoFit: boolean;
   magicMoveDuration: number;
   /**
+   * Where `{monaco}` editors get the types of the packages they import (monaco/types.ts):
+   * "auto" (the deck's installed ones in a build, else the CDN), "local", "cdn" or "none".
+   */
+  monacoTypes: "auto" | "local" | "cdn" | "none";
+  /**
+   * Packages the editors know: their types are acquired up front, and `{monaco-run}` imports
+   * them at these versions. A list (`["zod", "lodash-es@4"]`) or a map (`{ zod: "^3.23" }`).
+   */
+  monacoPackages: string[] | Record<string, string>;
+  /** Packages never to fetch types for. */
+  monacoTypesIgnore: string[];
+  /**
+   * Where `{monaco-run}` resolves a bare import (`import { z } from "zod"`): a CDN base
+   * (`https://esm.sh`, the default) or a template with `{name}`, `{version}` and `{path}`;
+   * false keeps bare imports an error.
+   */
+  monacoRunImports: string | false;
+  /**
    * Live room: the backend base (same origin `/api` on the host), or null for an offline deck.
    * `verify` is a host page that checks a viewer (Turnstile) and sends them back with a pass —
    * how a host that serves decks sandboxed keeps the check, since Turnstile can't run in an
@@ -495,6 +525,10 @@ export const DEFAULT_CONFIG: DeckConfig = {
   lineNumbers: false,
   autoFit: true,
   magicMoveDuration: 800,
+  monacoTypes: "auto",
+  monacoPackages: [],
+  monacoTypesIgnore: [],
+  monacoRunImports: "https://esm.sh",
   live: { api: "/api", room: null, turnstile: null },
   drawings: { enabled: true, persist: true, presenterOnly: false, syncAll: true, perClick: false },
   narration: DEFAULT_NARRATION,

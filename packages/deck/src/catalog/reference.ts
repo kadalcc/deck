@@ -587,8 +587,9 @@ export const CODE_META: CodeMetaOption[] = [
   {
     syntax: "````md magic-move",
     summary:
-      "A 4-backtick md fence holding one code fence per step: the code morphs between them on each click.",
-    example: "````md magic-move\n```ts\nlet x = 1\n```\n```ts\nconst x = 1\n```\n````",
+      "A 4-backtick md fence holding one code fence per step: the code morphs between them on each click. An inner fence's highlight steps (`{*|1|2-5}`) are clicks of their own, before the next morph; `{lines: true}` (outer, or one step's) numbers lines; `{at:N}`, `{duration:ms}`.",
+    example:
+      "````md magic-move {lines: true}\n```ts {*|1}\nlet x = 1\nlet y = 2\n```\n```ts\nconst x = 1\n```\n````",
   },
 ];
 
@@ -969,6 +970,13 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   selectable: "Text can be selected.",
   lineNumbers: "Line numbers on every code block.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
+  monacoTypes:
+    'Types for the packages `{monaco}` editors import, so hovers and errors are real: "auto" (the deck\'s installed declarations, bundled into the build; anything else from jsDelivr), "local", "cdn" or "none". Fetched types are cached in the browser; offline with nothing cached the editor works as before. Slidev\'s `monacoTypesSource` (local · cdn/ata · none) is read too.',
+  monacoPackages:
+    'Packages the editors know, with versions: types acquired up front and `{monaco-run}` imports pinned to them. A list (`["zod", "lodash-es@4"]`) or a map (`{ zod: "^3.23" }`). Slidev\'s `monacoTypesAdditionalPackages` is read too.',
+  monacoTypesIgnore: "Packages never to fetch types for (Slidev: monacoTypesIgnorePackages).",
+  monacoRunImports:
+    'Where `{monaco-run}` resolves a bare import: a CDN base (default "https://esm.sh": `zod` → https://esm.sh/zod@<monacoPackages version>), a template with {name}, {version} and {path} (e.g. "https://cdn.jsdelivr.net/npm/{name}@{version}{path}/+esm"), or false to keep bare imports an error. The code already runs in a sandboxed worker that may import any URL; this only spells the URL for you.',
   drawings:
     'Drawing: { enabled: true | false | "dev", persist: true (browser storage) | "files" (drawings/<slide>.svg beside deck.mdx, written on `kadal-deck dev`, bundled into the build, printed into every export) | false, presenterOnly, syncAll, perClick (a stroke shows from the click step it was drawn on) }. Files in drawings/ are always shown under the live strokes.',
   narration:

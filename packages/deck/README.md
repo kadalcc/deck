@@ -95,7 +95,7 @@ Slidev project is run. The converter itself is a pure function, `convertSlidev` 
   `removeSlide` / `moveSlide` / `setNotes` / `updateHeadmatter` over a `{ entry, read }` file
   interface; edits return new file text and never touch bytes outside the slide.
 - `@kadal/deck/schema/frontmatter.json` — JSON Schema (`$defs.headmatter`, `$defs.slide`).
-- `@kadal/deck/monaco` — `createMonacoHost`, `bundledGrammar`, `bundledThemes`, `registerMonacoLoader`:
+- `@kadal/deck/monaco` — `createMonacoHost`, `bundledGrammar`, `bundledTheme(s)`, `registerMonacoLoader`:
   for a page that bundles Monaco itself and compiles decks in the browser (the prebuilt shell does).
   A deck built with the Vite plugin needs none of it.
 
@@ -123,12 +123,12 @@ Markdown, with these on top:
 | --- | --- |
 | Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` |
 | Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ```` |
-| Magic move | ````` ````md magic-move ````` holding one fence per step |
+| Magic move | ````` ````md magic-move ````` holding one fence per step; an inner fence's highlight steps (```` ```ts {*\|2\|4-5} ````) are clicks too, before the next morph |
 | Code marks | `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`, `[!code error]` / `warning`, `[!code word:x]` at a line's end (Shiki's notation transformers); add your own with `deck({ shiki: { transformers } })` |
 | Code groups | `::code-group` … `::` around titled fences (```` ```sh [npm] ````): tabs with file badges, ←/→ between them; `{clicks:true}`, `{print:'all'}`; or `<CodeGroup>` |
 | Snippets | `<<< @/snippets/x.ts#region {2\|4} [x.ts]` — a file (or one `#region` of it, any comment style) as a fence; `@` is the deck folder; watched in dev |
 | TwoSlash | ```` ```ts twoslash ```` — type hovers (also on Tab), compiler errors, `// ^?`, rendered at build time (needs `typescript`) |
-| Monaco | ```` ```ts {monaco} ```` an editor; `{monaco-diff}` (original `~~~` modified); `{monaco-run}` runs JS/TS (Web Worker) and Python (Pyodide) with the output below, `{autorun:false,showOutputAt:'+1',outputHeight:'200px'}`; `{monaco-write}` saves edits back to the file in `kadal-deck dev`. Lazy: never in the main bundle. More runners: `registerCodeRunner(lang, fn)` or `setup/code-runners.ts` |
+| Monaco | ```` ```ts {monaco} ```` an editor; `{monaco-diff}` (original `~~~` modified); `{monaco-run}` runs JS/TS (Web Worker) and Python (Pyodide) with the output below, `{autorun:false,showOutputAt:'+1',outputHeight:'200px'}`; `{monaco-write}` saves edits back to the file in `kadal-deck dev`. Lazy: never in the main bundle. More runners: `registerCodeRunner(lang, fn)` or `setup/code-runners.ts`. Imported packages get real types — the deck's installed declarations bundled into the build, anything else from jsDelivr, cached (`monacoTypes: auto · local · cdn · none`, `monacoPackages` pins versions, `monacoTypesIgnore`) — and a `{monaco-run}` bare import loads from esm.sh at the same version (`monacoRunImports`) |
 | Math | `$inline$`, `$$ display $$`, `<Tex tex="…" />`; `$$ {1\|3\|all}` lights lines one click at a time; `katex: { macros }` in the headmatter |
 | Diagrams | ```` ```mermaid {scale: 0.8} ```` or `<Mermaid>{`flowchart LR …`}</Mermaid>` (`mermaid:` headmatter for all); ```` ```plantuml ```` (on `plantUmlServer`); hand-drawn: `<Sketch scene={…} steps={[…]} />`, `<Sketch src="x.excalidraw" />`, `<Sketch>{`flowchart …`}</Sketch>` |
 | Notes | `<Notes>… [click] …</Notes>`, or Slidev's `<!-- … -->` at the end of the slide — the presenter view splits them at `[click]`; `notesAutoRuby: { 日本語: ni hon go }` annotates words |
@@ -171,7 +171,7 @@ compiler (`compileDeck` in `@kadal/deck/runtime`) takes the same options.
 
 ## Themes and looks
 
-`T` (or the palette button) opens the theme menu on every view — play, presenter, audience: the themes the deck ships (`theme` and `themes`) and light or dark. Each screen keeps its own choice per deck in the browser.
+`T` (or the palette button) opens the theme menu on every view — play, presenter, audience: the themes the deck ships (`theme` and `themes`) and light or dark. Each screen keeps its own choice per deck in the browser. Code follows the pick: each theme's own Shiki pair (`kadal.theme.shiki`) colours every block, magic move and Monaco editor while it is shown — the build highlights with each distinct pair the menu needs, as CSS variables, so a deck whose menu shares one pair (the default) pays nothing.
 
 **Theme and addon packages.** `theme: seriph` in the headmatter finds a built-in theme (minimal, rla, stack), then `@kadal/theme-seriph`, then `kadal-theme-seriph`, then the package `seriph`; `theme: ./theme` is a folder beside deck.mdx. `addons: [qr]` finds `@kadal/addon-qr` / `kadal-addon-qr` the same way. The Vite plugin resolves them from the deck's folder and imports their CSS and modules for you — no line in main.tsx — and a package that is not installed fails the build with what it tried and the command that installs it. Their layouts, components and layers merge in under the deck's own; `themeConfig: { primary: "#0f766e" }` becomes `--theme-primary` on the deck root; a theme's `shiki` themes colour the code. `kadal-deck info themes` lists the installed ones; `kadal-deck new --theme <name>` (or `--addon`, or `npm create @kadal/deck -- --theme <name>`) scaffolds one ready to publish; `kadal-deck theme eject` copies the deck's theme — built-ins too — into `./theme` and points the headmatter at it. The prebuilt shell bundles every first-party theme package and falls back to minimal, with a notice, for one it lacks. The contract, the tokens and every class a theme styles: [THEMES.md](./THEMES.md).
 

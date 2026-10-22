@@ -32,6 +32,16 @@ export interface MonacoHost {
   language(lang: string): Promise<string>;
   /** The Monaco theme for a colour scheme: the deck's Shiki theme, with a see-through background. */
   theme(scheme: "light" | "dark"): string;
+  /**
+   * Any Shiki theme the deck's code can wear (the theme menu's, compiler/code-themes.ts), made a
+   * Monaco theme on first use; resolves to its Monaco name. Absent on hosts built before 0.4.1.
+   */
+  themeNamed?(shikiTheme: string): Promise<string>;
+  /**
+   * Give TypeScript the declarations of the packages `code` imports (monaco/types.ts). Resolves
+   * to the packages that now have types. Absent on hosts built before 0.4.1.
+   */
+  acquireTypes?(code: string, options?: import("./types.ts").MonacoTypesOptions): Promise<string[]>;
   /** Editor options every editor gets: the deck's `setup/monaco.ts` may add some. */
   editorOptions: Record<string, unknown>;
   /** `kadal-deck dev`'s save endpoint for `{monaco-write}`; null in a build (the editor is then read-only). */

@@ -888,6 +888,14 @@ pre.deck-code.has-lines .line::before {
 [data-color-scheme="dark"] .shiki span {
   color: var(--shiki-dark, inherit);
 }
+/* A slide that forces a scheme (react/SlideFrame.tsx) wins over the deck's: a light slide in a
+   dark deck matched both rules above, and the later, dark one won. */
+.deck-slide[data-color-scheme="light"] :is(.shiki, .shiki span) {
+  color: var(--shiki-light, inherit);
+}
+.deck-slide[data-color-scheme="dark"] :is(.shiki, .shiki span) {
+  color: var(--shiki-dark, inherit);
+}
 .deck-code-copy {
   position: absolute;
   top: 0.4em;
@@ -917,6 +925,13 @@ pre.deck-code.has-lines .line::before {
 }
 .shiki-magic-move-container {
   font: inherit;
+  /* The wrap pads it; a slide's `pre` margin on top of that left a blank line above the code. */
+  margin: 0;
+}
+/* A step's highlight frame (`{*|2|4-5}` on an inner fence): the lines outside it step back, as a
+   plain block's do. Opacity alone — the renderer's own transitions own every other property. */
+.shiki-magic-move-container .shiki-magic-move-item.is-dim {
+  opacity: 0.35;
 }
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */

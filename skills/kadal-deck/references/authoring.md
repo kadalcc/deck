@@ -102,7 +102,9 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
 
 - Fenced code is highlighted at build time (Shiki). Meta: `{lines:true}`, `[file.ts]` title,
   `{2|4-6}` steps, `{maxHeight:'400px'}`. A ````md magic-move fence morphs between the code fences
-  it contains, one per click.
+  it contains, one per click; an inner fence's own steps (```` ```ts {*|2|4-5} ````) light its
+  lines first, a click each. Code follows the theme menu: a theme with its own Shiki pair
+  recolours every block (and editor) when picked.
 - Marks at a line's end: `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`,
   `[!code error]`, `[!code word:name]` (any comment style; the comment is removed).
 - Tabs: `::code-group` … `::` around fences titled `[npm]`, `[bun]`… (`{clicks:true}` turns them
@@ -113,6 +115,10 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
   {monaco-run} (Run button, output below; JS/TS/Python built in; `{autorun:false}`,
   `{showOutputAt:'+1'}`), `<<< ./x.ts {monaco-write}` (saves to the file in dev). Esc hands the
   keys back to the deck. Keep editors to a few lines: they are for showing, not writing apps.
+  Imported npm packages get their types (installed ones bundled, others from jsDelivr):
+  `monacoTypes: auto|local|cdn|none`, `monacoPackages: { zod: ^3.23 }` pins versions. In
+  {monaco-run}, `import { z } from "zod"` loads from esm.sh at that version
+  (`monacoRunImports: false` to forbid, or another CDN).
 - Maths: `$inline$` and `$$display$$` (KaTeX at build time). `$$ {1|3|all}` on the opening line
   lights those lines of an `aligned`/`array` one step per click (`{at: 2}`, `{finally: 'all'}`
   in a second group). `katex: { macros: { "\\RR": "\\mathbb{R}" } }` in the headmatter.

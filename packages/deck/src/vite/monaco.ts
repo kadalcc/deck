@@ -111,6 +111,15 @@ const WORKER_FILE = {
 export interface MonacoModuleOptions {
   langs: Set<string>;
   themes: { light: string; dark: string };
+  /**
+   * Every Shiki theme the deck's code can wear (the deck's pair and the theme menu's, see
+   * compiler/code-themes.ts): the editor follows the theme on show, so each is a lazy import.
+   */
+  allThemes?: string[];
+  /** Packages whose declarations the deck has installed (vite/monaco-types.ts), for `local` types. */
+  typePackages?: string[];
+  /** The id prefix of the per-package types module: `virtual:deck/monaco-types/`. */
+  typesModule?: string;
   /** The deck's folder, where `setup/monaco.ts` would be. */
   deckDir: string;
   /** `base + "__kadal/monaco-write"` in dev; null in a build. */
@@ -159,6 +168,8 @@ export function monacoModule(o: MonacoModuleOptions): string {
     return `{ name: ${s(name)}, load: () => ${existsSync(file) ? `import(${s(file)})` : `Promise.reject(new Error(${s(`no Shiki theme ${name}`)}))`} }`;
   };
   const setup = setupFile(o.deckDir, "monaco");
+  const named = [...new Set([o.themes.light, o.themes.dark, ...(o.allThemes ?? [])])];
+  const types = o.typesModule ? (o.typePackages ?? []) : [];
   const lines = [
     `import * as monaco from ${s(join(monaco, "esm/vs/editor/editor.main.js"))};`,
     `import EditorWorker from ${s(`${join(monaco, "esm/vs/editor/editor.worker.js")}?worker`)};`,
@@ -171,6 +182,15 @@ export function monacoModule(o: MonacoModuleOptions): string {
     ...[...grammars].map(([id, file]) => `  ${s(id)}: () => import(${s(file)}),`),
     `};`,
     `const aliases = ${s(aliases)};`,
+    `const themes = {`,
+    ...named.map((n) => `  ${s(n)}: ${theme(n)},`),
+    `};`,
+    `const localTypes = {`,
+    ...types.map(
+      (p) =>
+        `  ${s(p)}: () => import(${s(`${o.typesModule}${encodeURIComponent(p)}`)}).then((m) => m.default),`,
+    ),
+    `};`,
     `export default function loadMonaco() {`,
     `  return createMonacoHost({`,
     `    monaco,`,
@@ -179,7 +199,9 @@ export function monacoModule(o: MonacoModuleOptions): string {
     ...[...workers].map((w) => `      ${w}: () => new Worker_${w}({ name: "monaco-${w}" }),`),
     `    },`,
     `    grammar: (lang) => { const id = aliases[lang] ?? lang; return grammars[id] ? { id, load: grammars[id] } : null; },`,
-    `    themes: { light: ${theme(o.themes.light)}, dark: ${theme(o.themes.dark)} },`,
+    `    themes: { light: themes[${s(o.themes.light)}], dark: themes[${s(o.themes.dark)}] },`,
+    `    theme: (name) => themes[name] ?? null,`,
+    `    localTypes: (pkg) => localTypes[pkg] ?? null,`,
     `    setup: ${setup ? `() => import(${s(setup)})` : "null"},`,
     `    writeEndpoint: ${s(o.writeEndpoint)},`,
     `  });`,

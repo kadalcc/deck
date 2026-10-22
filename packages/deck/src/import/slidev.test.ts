@@ -97,6 +97,19 @@ describe("headmatter", () => {
     expect(r.report).toEqual([]);
   });
 
+  test("Monaco's type settings carry over to Kadal's keys", () => {
+    const r = convert(
+      "---\nmonacoTypesSource: ata\nmonacoTypesAdditionalPackages: [lodash-es]\nmonacoTypesIgnorePackages: [left-pad]\n---\n# A",
+    );
+    const fm = slides(r.mdx)[0]!.fm;
+    expect(fm.monacoTypes).toBe("cdn");
+    expect(fm.monacoPackages).toEqual(["lodash-es"]);
+    expect(fm.monacoTypesIgnore).toEqual(["left-pad"]);
+    expect(slides(convert("---\nmonacoTypesSource: local\n---\n# A").mdx)[0]!.fm.monacoTypes).toBe(
+      "auto",
+    );
+  });
+
   test("canvasWidth sets the scale every length is multiplied by", () => {
     expect(convert("---\ncanvasWidth: 1280\n---\n# A").info.canvas.scale).toBe(1.5);
     const { body } = one('<Arrow x1="10" y1="20" x2="100" y2="200" />', "canvasWidth: 960\n");

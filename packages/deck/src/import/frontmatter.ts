@@ -155,9 +155,6 @@ const DROPPED: Record<string, (v: unknown) => string | null> = {
     v === false
       ? "monaco: false has no Kadal setting; {monaco} blocks load the editor lazily."
       : null,
-  monacoTypesSource: () => null,
-  monacoTypesAdditionalPackages: () => null,
-  monacoTypesIgnorePackages: () => null,
   monacoRunAdditionalDeps: () => null,
   monacoRunUseStrict: () => null,
   preloadImages: () => null,
@@ -294,6 +291,18 @@ export function mapHeadmatter(head: Record<string, unknown>, report: Reporter): 
       case "timer":
       case "magicMoveDuration":
         deck[key] = value;
+        break;
+      // Monaco's types: Slidev's `local` is the deck's installed packages, which Kadal's `auto`
+      // uses first (then the CDN, where the build has none); `ata`/`cdn` and `none` are the same.
+      case "monacoTypesSource":
+        deck.monacoTypes =
+          value === "cdn" || value === "ata" ? "cdn" : value === "none" ? "none" : "auto";
+        break;
+      case "monacoTypesAdditionalPackages":
+        if (Array.isArray(value)) deck.monacoPackages = value;
+        break;
+      case "monacoTypesIgnorePackages":
+        if (Array.isArray(value)) deck.monacoTypesIgnore = value;
         break;
       default:
         if (key in DROPPED) {
