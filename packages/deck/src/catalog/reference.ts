@@ -634,6 +634,11 @@ export const ROUTES: RouteInfo[] = [
   },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
   {
+    path: "/<slug>/<your-path>",
+    summary:
+      'A page of the deck\'s own (Slidev\'s `setup/routes.ts`): `routes.tsx` beside deck.mdx (or src/routes.tsx, setup/routes.ts) exporting `defineRoutes([{ path: "handout", component: Handout }, { path: "q/:id", load: () => import("./Q.tsx"), title }])`, `<Deck routes>`, or a theme\'s or addon\'s `routes` / `api.addRoute()`. Drawn inside the deck\'s providers with `{ path, params, route }`; the engine\'s pages win a clash; the build copies index.html to each plain path for static hosts.',
+  },
+  {
     path: "/<slug>/__kadal/drawings",
     summary:
       '`kadal-deck dev` only: GET every `drawings/*.svg`; PUT `{ file, svg }` writes one (same origin, JSON; the SVG is re-serialised, never written as sent) and tells every open page. Used by `drawings.persist: "files"`.',
@@ -993,6 +998,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
     "Addon packages, in order (a later one wins a name clash): `qr` finds @kadal/addon-qr, then kadal-addon-qr, then a package of that name; `./my-addon` is a folder. Each brings components, layouts, layers, CSS and a setup.",
   themeConfig:
     'The theme\'s knobs, over its own defaults: each key becomes a CSS custom property `--theme-<kebab-key>` on the deck root (`primaryColor: "#0f766e"` → `--theme-primary-color`; nested keys join with dashes). What a theme reads is in its README.',
+  comark:
+    'Comark (formerly MDC) syntax: `:name[content]{prop=value .class #id}` inline components, `[text]{.class style="…"}` spans, `{…}` after `**bold**`, `` `code` ``, links and images, and `::name{props}` … `::` blocks (YAML props between `---` lines, `#slot` sections as props, nesting with more colons). Kadal\'s `::slot::` markers and `::code-group` keep their meaning.',
   layers:
     "Where the global and slide layers (global-top.tsx and friends, or a theme's or addon's) draw besides the deck, print and export: { presenter: true, overview: false }.",
 };
@@ -1009,6 +1016,12 @@ export const EXTRA_DECK_KEYS = [
     name: "canvasWidth",
     type: N(),
     description: "Slidev spelling: the stage width used with aspectRatio.",
+    scope: "deck" as const,
+  },
+  {
+    name: "mdc",
+    type: B(),
+    description: "Slidev's older spelling of `comark` (MDC is Comark's former name).",
     scope: "deck" as const,
   },
   {

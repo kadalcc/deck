@@ -2123,3 +2123,83 @@ pre.deck-code.has-lines .line::before {
   background: #fff;
   padding: 0.4em;
 }
+
+/* ── the custom-nav-controls layer (react/Layers.tsx `NavControlsLayer`) ─────────────────────
+   A deck's (or theme's, or addon's) own buttons beside the controls: a row at the bottom-left,
+   just above the theme button, faint until the pointer or the keyboard reaches it — the arrows'
+   manners. In the presenter view it is part of the toolbar, which styles its buttons itself.
+   `:where` keeps the button look at zero specificity, so a layer's own classes win. */
+.deck-nav-custom.is-stage {
+  position: absolute;
+  z-index: 60;
+  left: 18px;
+  bottom: 58px;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.deck-nav-custom.is-stage:hover,
+.deck-nav-custom.is-stage:focus-within {
+  opacity: 1;
+}
+/* The layer wrapper is a slide overlay elsewhere (theming.css); here it is the row itself. */
+.deck-nav-custom > .deck-layer {
+  position: static;
+  inset: auto;
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.deck-nav-custom.is-toolbar,
+.deck-nav-custom.is-toolbar > .deck-layer {
+  display: contents;
+}
+:where(.deck-nav-custom.is-stage) :where(button, a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: color-mix(in oklab, var(--deck-bg) 85%, transparent);
+  backdrop-filter: blur(10px);
+  color: var(--deck-fg);
+  font: 13px var(--deck-body-font);
+  text-decoration: none;
+  cursor: pointer;
+}
+:where(.deck-nav-custom.is-stage) :where(button, a):focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-nav-custom.is-stage {
+    transition: none;
+  }
+}
+@media print {
+  .deck-nav-custom {
+    display: none !important;
+  }
+}
+
+/* ── a page of the deck's own (react/routes.tsx) ───────────────────────────────────────────
+   The whole window, scrolling as a document does, in the theme's colours. */
+.deck-route-page {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  -webkit-overflow-scrolling: touch;
+}
+@media print {
+  .deck-route-page {
+    position: static;
+    overflow: visible;
+  }
+}

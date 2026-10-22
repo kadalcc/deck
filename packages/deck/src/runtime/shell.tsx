@@ -49,7 +49,7 @@ export interface ShellOptions {
   root: HTMLElement;
   config?: DeckConfigInput;
   components?: Record<string, ComponentType<Record<string, unknown>>>;
-  pages?: Partial<Record<Exclude<ViewMode, "play" | "print">, ComponentType>>;
+  pages?: Partial<Record<Exclude<ViewMode, "play" | "print" | "page">, ComponentType>>;
   /** Wraps the deck: `<LiveProvider />`. */
   providers?: ComponentType<{ children?: React.ReactNode }>;
 }

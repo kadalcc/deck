@@ -59,6 +59,8 @@ export default {
   layouts: { hero: Hero },                 // `layout: hero`; a built-in name replaces it
   components: { Badge },                   // usable in any slide by name
   layers: { "slide-bottom": Footer },      // global-top · global-bottom · slide-top · slide-bottom
+                                           //   · custom-nav-controls (buttons beside the controls)
+  routes: [{ path: "handout", component: Handout }],  // pages of its own at <base>handout
   setup(api: SetupApi) {                   // optional; may return a cleanup
     api.shortcut("shift+k", () => api.deck.actions.toast("hi"));
   },
@@ -79,7 +81,8 @@ slide breaks.
 
 **`setup(api)`** gets `deck` (the live runtime), `commands` (register commands), `panels`
 (presenter sidebar tabs), `registerRenderer`/`registerLazyRenderer` (islands),
-`registerBackground`, `shortcut(combo, fn)`, and whatever other engine modules added with
+`registerBackground`, `shortcut(combo, fn)`, `addRoute(route)` (a page at `<base><path>`, gone
+with the package; react/routes.tsx), and whatever other engine modules added with
 `extendSetupApi(name, value)`. It runs once per deck mount (and again for a theme picked from the
 menu); a returned function is called when the package goes.
 
@@ -89,6 +92,26 @@ menu); a returned function is called when the package goes.
 next-slide box). Global layers draw once on the stage and once per page in print; read
 `props.slide`, not the navigation. A layer covers the slide with `pointer-events: none`; links,
 buttons and `[data-interactive]` inside it take the pointer back.
+
+**`custom-nav-controls`** (Slidev's name) is not drawn on the slide: its components are extra
+buttons in the deck's controls — a row at the bottom-left of the play view, faint until hovered
+or focused, and the end of the presenter view's toolbar (`view` says which). Never printed,
+never on a projector. Act with `useActions()` (`next`, `prev`, `toggleOverview`…) and read with
+`useNav()`; plain `<button>`s and `<a>`s get the deck's pill look, a class of your own wins.
+
+```tsx
+// custom-nav-controls.tsx beside deck.mdx, or a package's layers["custom-nav-controls"]
+import { type LayerProps, useActions } from "@kadal/deck";
+export default function Extra({ view }: LayerProps) {
+  const { next } = useActions();
+  return view === "presenter" ? null : <button aria-label="Next" onClick={next}>→</button>;
+}
+```
+
+**Routes.** `routes` (a list, or a function of the routes so far, Slidev's `defineRoutesSetup`)
+adds pages at `<base><path>`, drawn inside the deck's providers: `{ path: "q/:id", load: () =>
+import("./Question.tsx"), title: "Question" }` — the page gets `{ path, params, route }`. The
+engine's own pages always win a clash. A package's routes appear once its module has loaded.
 
 ## 3. The stylesheet
 

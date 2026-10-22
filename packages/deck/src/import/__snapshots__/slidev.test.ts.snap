@@ -11,6 +11,7 @@ info: |
   Learn more at [Sli.dev](https://sli.dev)
 drawings:
   persist: false
+comark: true
 duration: 35min
 background: https://cover.sli.dev
 class: text-center
@@ -642,7 +643,7 @@ exports[`golden: real Slidev decks starter: converts, compiles in the runtime co
 Converted from \`starter/slides.md\` by \`kadal-deck import slidev\`.
 
 - Slides: 16 — 15 (94%) converted with no warning or error.
-- Report lines: 0 errors, 1 warnings, 4 notes.
+- Report lines: 0 errors, 1 warnings, 3 notes.
 - Theme: Slidev \`seriph\` → Kadal \`seriph\` (@kadal/theme-seriph).
 - Stage: 1920×1080; lengths and positions scaled ×1.959 from Slidev's canvas.
 - Icon sets: \`@iconify-json/carbon\`.
@@ -653,7 +654,6 @@ in Kadal's spelling, or dropped because Kadal does it another way.
 
 ## The deck
 
-- **note** (slides.md) comark: Kadal is MDX; write components as JSX (<Badge>…</Badge>) rather than Comark's :name[…]{…}.
 - **note** (slides.md) vue is added to devDependencies: a twoslash block imports it, and TwoSlash reads its types from node_modules.
 
 ## Slide 1 — Welcome to Slidev

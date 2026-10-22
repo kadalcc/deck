@@ -39,6 +39,39 @@ import { PALETTE, SHADES } from "./uno-palette.ts";
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+/** Slidev's names for the click count of the slide, and for its total. */
+const CLICK_NOW =
+  /^(\$clicks|\$clicksContext\.current|\$slidev\.nav\.clicks|\$nav\.clicks|\$slidev\.nav\.clicksContext\.current)$/;
+const CLICK_TOTAL =
+  /^(\$clicksContext\.total|\$slidev\.nav\.clicksTotal|\$nav\.clicksTotal|\$slidev\.nav\.clicksContext\.total)$/;
+
+/**
+ * A `v-if` on the click count as JavaScript of `$clicks` (`$clicks > 3 && $clicks < 6`), or null
+ * when it reads anything else. Only the count, numbers, comparisons, arithmetic and parentheses
+ * pass, so what is written into the deck is exactly what the Vue expression meant.
+ */
+export function clicksJs(expr: string): string | null {
+  const src = expr.trim();
+  if (!src) return null;
+  const token =
+    /\s+|\$slidev\.nav\.clicksContext\.current|\$clicksContext\.current|\$slidev\.nav\.clicks|\$nav\.clicks|\$clicks(?![\w$.])|\d+(?:\.\d+)?|===|!==|==|!=|>=|<=|&&|\|\||[<>!()+\-*%]/y;
+  let out = "";
+  let reads = false;
+  let i = 0;
+  while (i < src.length) {
+    token.lastIndex = i;
+    const m = token.exec(src);
+    if (!m) return null;
+    const t = m[0];
+    if (t.startsWith("$")) {
+      out += "$clicks";
+      reads = true;
+    } else out += t === "==" ? "===" : t === "!=" ? "!==" : t;
+    i += t.length;
+  }
+  return reads ? out.trim() : null;
+}
+
 export interface MarkupContext {
   report: Reporter;
   /** Source line (1-based) for an offset into the text being converted. */
@@ -457,6 +490,8 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
       )
         return "<SlideCurrentNo />";
       if (/^(\$slidev\.nav\.total|\$nav\.total)$/.test(p)) return "<SlidesTotal />";
+      if (CLICK_NOW.test(p)) return "<ClickCount />";
+      if (CLICK_TOTAL.test(p)) return "<ClickCount total />";
       if (
         /^\$slidev\.nav\.currentSlideRoute\.meta\.slide\.title$|^\$slidev\.nav\.currentTitle$/.test(
           p,
@@ -482,6 +517,8 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
     let at = el.openEnd;
     let chain: "none" | "taken" | "open" = "none";
     let chainJs: string[] = [];
+    // A `v-if` chain on the click count: each test so far, for the next `v-else(-if)`.
+    let clickChain: string[] = [];
     for (const child of el.children) {
       out += emitText(at, child.start);
       const d = child.attrs.map((a) => directiveOf(a.name, a.value));
@@ -490,7 +527,10 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
       const vElse = d.find((x) => x?.name === "else");
       let keep = true;
       let guard: string | null = null;
-      if (vIf) chainJs = [];
+      if (vIf) {
+        chainJs = [];
+        clickChain = [];
+      }
       if ((vElseIf || vElse) && chainJs.length) {
         // tsx: the chain is decided at run time
         const before = chainJs.map((c) => `!(${c})`).join(" && ");
@@ -520,6 +560,15 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
             at = child.end;
             continue;
           }
+          const cj = r.kind === "static" ? null : clicksJs(String((vIf ?? vElseIf)!.value));
+          if (cj !== null && (vIf || clickChain.length)) {
+            // `$clicks > 3`: decided as the clicks move, by <ClickCount when> (ClickCount.tsx)
+            const test = [...clickChain.map((c) => `!(${c})`), `(${cj})`].join(" && ");
+            clickChain.push(cj);
+            out += `<ClickCount when={($clicks) => ${test}}>${emitElement(child)}</ClickCount>`;
+            at = child.end;
+            continue;
+          }
           if (r.kind === "static") {
             keep = !!r.value;
             chain = keep ? "taken" : "open";
@@ -534,12 +583,19 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
             });
           }
         }
+      } else if (vElse && clickChain.length) {
+        const test = clickChain.map((c) => `!(${c})`).join(" && ");
+        clickChain = [];
+        out += `<ClickCount when={($clicks) => ${test}}>${emitElement(child)}</ClickCount>`;
+        at = child.end;
+        continue;
       } else if (vElse) {
         keep = chain !== "taken";
         chain = "none";
       } else {
         chain = "none";
         chainJs = [];
+        clickChain = [];
       }
       if (keep) out += emitElement(child);
       at = child.end;

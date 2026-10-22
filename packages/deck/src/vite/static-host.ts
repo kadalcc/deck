@@ -12,7 +12,8 @@ import { join } from "node:path";
  * build leaves, beside index.html:
  *
  *   <route>/index.html   a copy of index.html for each route — every asset URL in it is absolute
- *                        (the base), so the copy works from the folder; `/presenter` → 200
+ *                        (the base), so the copy works from the folder; `/presenter` → 200 —
+ *                        and for each plain path the deck's routes file names (`handout`)
  *   404.html             another copy: GitHub Pages serves it for any other path, and the deck
  *                        draws its own "no such slide" from there
  *   _redirects           `<base>*  <base>index.html  200` for Netlify (and Cloudflare Pages)
@@ -41,6 +42,8 @@ export function writeStaticHostFiles(
   outDir: string,
   base: string,
   publicDir: string | null,
+  /** The deck's own routes (react/routes.tsx) a copy is made for too: `handout`, `tools/timer`. */
+  extraRoutes: string[] = [],
 ): string[] {
   const index = join(outDir, "index.html");
   if (!existsSync(index)) return [];
@@ -50,7 +53,7 @@ export function writeStaticHostFiles(
   const written: string[] = [];
   const absolute = base.startsWith("/");
   if (absolute)
-    for (const route of DECK_ROUTES) {
+    for (const route of [...DECK_ROUTES, ...extraRoutes]) {
       if (own(`${route}/index.html`)) continue;
       mkdirSync(join(outDir, route), { recursive: true });
       copyFileSync(index, join(outDir, route, "index.html"));

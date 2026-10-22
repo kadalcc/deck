@@ -707,7 +707,8 @@ export function Callout({
   className,
 }: {
   kind?: "info" | "tip" | "warn" | "danger" | "note";
-  title?: string;
+  /** A string, or any content (Comark's `#title` slot arrives as content). */
+  title?: ReactNode;
   children?: ReactNode;
   className?: string;
 }) {

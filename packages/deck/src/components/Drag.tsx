@@ -14,6 +14,7 @@ import { useDeck, useSlideOptional } from "../react/context.ts";
 import { useRenderContext } from "../react/render-context.ts";
 import { Arrow } from "./content.tsx";
 import { useClickPoints } from "./click-points.ts";
+import { onDragPosition, postDragPosition } from "./drag-sync.ts";
 import {
   type ArrowPos,
   type DragBox,
@@ -42,7 +43,9 @@ import {
  * arrow keys (Shift: 10 px). Esc, Enter or a click elsewhere ends it. Each change is saved into
  * deck.mdx a moment later through `/__kadal/drag` (vite/drag-dev.ts → authoring/edit.ts): the
  * frontmatter entry for a named one, the tag's own `pos` otherwise — nothing else in the file
- * moves, and the page is not reloaded. Everywhere else — a built deck, the hosted shell, print,
+ * moves, and the page is not reloaded. The deck's other windows — the presenter view, a second
+ * play window, the projector — follow over the window bus as it moves (drag-sync.ts), so no
+ * window needs a reload either. Everywhere else — a built deck, the hosted shell, print,
  * thumbnails — it is simply placed.
  *
  * With `at` (and `hide`, `effect`) it is also a click step, as `<Click>` is.
@@ -94,23 +97,52 @@ function useCanEdit(source: DragSource): boolean {
   );
 }
 
-/** Save a position, a moment after the last change (and only the last). */
-function useSaver(source: DragSource) {
+/**
+ * Save a position, a moment after the last change (and only the last), and keep the deck's other
+ * windows in step: `preview` shows them a gesture as it happens, `save` the result; `onRemote`
+ * hears theirs.
+ */
+function useSaver(source: DragSource, onRemote: (pos: string) => void) {
   const deck = useDeck();
   const slide = useSlideOptional();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // What the source says now, as far as this page knows: the "expected" of the next save.
   const last = useRef((saved.get(source.key) ?? source.written ?? "").trim());
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const slug = deck.config.slug || "deck";
+  const live = !!deck.manifest.dragApi;
+  const remote = useRef(onRemote);
+  remote.current = onRemote;
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
     },
     [],
   );
+  // Another window moved this element: show it here too; once written, it is what the source says.
+  useEffect(() => {
+    if (!live) return;
+    return onDragPosition(slug, source.key, (pos, written) => {
+      saved.set(source.key, pos);
+      if (written) last.current = pos.trim();
+      remote.current(pos);
+    });
+  }, [live, slug, source.key]);
+  const sent = useRef(0);
+  const preview = useCallback(
+    (pos: string) => {
+      if (!live) return;
+      const now = Date.now();
+      if (now - sent.current < 32) return; // about a frame: enough to follow, not a flood
+      sent.current = now;
+      postDragPosition(slug, source.key, pos, false);
+    },
+    [live, slug, source.key],
+  );
   const save = useCallback(
     (pos: string) => {
       saved.set(source.key, pos);
+      postDragPosition(slug, source.key, pos, false);
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(async () => {
         const api = deck.manifest.dragApi;
@@ -129,6 +161,7 @@ function useSaver(source: DragSource) {
           const j = (await r.json().catch(() => ({}))) as { error?: string };
           if (!r.ok) throw new Error(j.error ?? `The dev server answered ${r.status}.`);
           last.current = pos;
+          postDragPosition(slug, source.key, pos, true);
           setStatus("saved");
         } catch (e) {
           setStatus("error");
@@ -136,9 +169,9 @@ function useSaver(source: DragSource) {
         }
       }, 350);
     },
-    [deck, slide, source.key, JSON.stringify(source.target)],
+    [deck, slide, slug, source.key, JSON.stringify(source.target)],
   );
-  return { save, status };
+  return { save, preview, status };
 }
 
 /** Stage coordinates (the element's containing block, unscaled) from client coordinates. */
@@ -234,10 +267,10 @@ export function Drag({
   const slide = useSlideOptional();
   const source = useDragSource(pos, rest["data-drag-index"]);
   const canEdit = useCanEdit(source);
-  const { save, status } = useSaver(source);
   const [box, setBox] = useState<DragBox | null>(() =>
     parseDragPos(saved.get(source.key) ?? source.written),
   );
+  const { save, preview, status } = useSaver(source, (pos) => setBox(parseDragPos(pos)));
   // A recompiled deck (a reload, a hot update) with a new position written: show that one.
   useEffect(() => {
     if (!saved.has(source.key)) setBox(parseDragPos(source.written));
@@ -311,6 +344,7 @@ export function Drag({
         const next = apply(start, map.at(ev.clientX, ev.clientY), ev, from);
         last = auto && next.h === start.h ? { ...next, h: null } : next;
         setBox(last);
+        preview(formatDragPos(last));
       };
       const up = (ev: PointerEvent) => {
         ev.stopPropagation();
@@ -432,9 +466,9 @@ export function DragArrow({
   const slide = useSlideOptional();
   const source = useDragSource(pos, rest["data-drag-index"]);
   const canEdit = useCanEdit(source);
-  const { save, status } = useSaver(source);
   const parse = (t: string | undefined) => parseArrowPos(t) ?? parseArrowPos(DEFAULT_ARROW)!;
   const [a, setA] = useState<ArrowPos>(() => parse(saved.get(source.key) ?? source.written));
+  const { save, preview, status } = useSaver(source, (pos) => setA(parse(pos)));
   useEffect(() => {
     if (!saved.has(source.key)) setA(parse(source.written));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -482,6 +516,7 @@ export function DragArrow({
         y2: which === "start" ? start.y2 : start.y2 + dy,
       };
       setA(last);
+      preview(formatArrowPos(last));
     };
     const up = (ev: PointerEvent) => {
       ev.stopPropagation();

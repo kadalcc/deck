@@ -920,3 +920,37 @@
 .deck-slide .sc-drag-card .deck-icon {
   font-size: 1.6em;
 }
+
+/* The deck's own /handout page (routes.tsx). */
+.sc-handout {
+  max-width: 64ch;
+  margin: 0 auto;
+  padding: 48px 16px 64px;
+  font: 18px/1.6 var(--deck-body-font);
+}
+.sc-handout h1 {
+  font: 700 2.2em/1.15 var(--deck-heading-font);
+  margin: 0 0 0.3em;
+}
+.sc-handout p {
+  color: var(--deck-muted);
+  margin: 0 0 1.4em;
+}
+.sc-handout ol {
+  list-style: decimal;
+  padding-left: 1.6em;
+  margin: 0;
+}
+.sc-handout li::marker {
+  color: var(--deck-muted);
+  font-variant-numeric: tabular-nums;
+}
+.sc-handout a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+  text-underline-offset: 0.2em;
+}
+.sc-handout a:hover {
+  text-decoration-color: currentColor;
+}

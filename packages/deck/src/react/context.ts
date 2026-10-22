@@ -33,7 +33,9 @@ export type ViewMode =
   /** Every slide in a list with a step slider and its notes (react/OverviewPage.tsx). */
   | "overview"
   /** Every slide's notes, editable on one scrolling page (react/NotesEditPage.tsx). */
-  | "notes-edit";
+  | "notes-edit"
+  /** A page of the deck's own, at a path its routes name (react/routes.tsx). */
+  | "page";
 
 /** What the lightbox can show; "sketch" is an Excalidraw canvas keyed by its sketch. */
 export type LightboxKind = "image" | "video" | "iframe" | "sketch";
@@ -197,6 +199,8 @@ export interface DeckRuntime {
   menu: MenuRegistry;
   /** Where edited speaker notes are saved, or null where they are read-only (react/notes.ts). */
   notesEditor: NotesEditor | null;
+  /** The deck's own pages (react/routes.tsx): `api.addRoute` adds to it. */
+  routes?: import("./routes.tsx").RouteRegistry;
 }
 
 export interface StageInset {
