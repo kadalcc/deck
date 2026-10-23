@@ -2,8 +2,8 @@
 /**
  * The packages as a stranger gets them: `npm pack` every package, scaffold a deck with the packed
  * @kadal/create-deck in a temp folder outside the repo, point its dependencies at the tarballs,
- * `npm install`, `npx kadal-deck build`, then `check`, `info` and the MCP server over stdio. Prints
- * the folder so a browser check can follow.
+ * `npm install`, `npx kadal-deck build`, `npm run typecheck`, then `check`, `info` and the MCP
+ * server over stdio. Prints the folder so a browser check can follow.
  *
  *   node tools/smoke.mjs [--keep] [--out <dir>]
  */
@@ -56,6 +56,7 @@ sh("npm", ["install", "--no-audit", "--no-fund", "--loglevel=error"], app);
 sh("npx", ["kadal-deck", "--version"], app);
 sh("npx", ["kadal-deck", "build"], app);
 if (!existsSync(join(app, "dist", "index.html"))) throw new Error("kadal-deck build produced no dist/index.html");
+sh("npm", ["run", "typecheck"], app);
 
 // 5 · the agent surface, as an agent gets it: lint with --json, the reference, and the MCP
 // server over stdio (its SDK must arrive as a real dependency of @kadal/deck).
