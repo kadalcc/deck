@@ -3,7 +3,8 @@ name: VS Code extension
 # Publishes packages/vscode (kadal.kadal-deck) to the Visual Studio Marketplace and Open VSX
 # whenever main carries a version neither store has yet. The version comes from
 # packages/vscode/package.json, bumped by a changeset that names "kadal-deck" (the extension's
-# package name), so a release is: add the changeset, merge the Version PR, and this runs.
+# package name; .changeset/config.json versions private packages, and tools/publish.mjs skips
+# them on npm), so a release is: add the changeset, merge the Version PR, and this runs.
 #
 # No long-lived tokens:
 #   Open VSX     trusted publishing: ovsx trades this job's GitHub OIDC token for a short-lived one.

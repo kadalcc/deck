@@ -7,5 +7,6 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["kadal-deck-starter", "kadal-deck-showcase", "kadal-deck-themes"]
+  "ignore": ["kadal-deck-starter", "kadal-deck-showcase", "kadal-deck-themes"],
+  "privatePackages": { "version": true, "tag": false }
 }

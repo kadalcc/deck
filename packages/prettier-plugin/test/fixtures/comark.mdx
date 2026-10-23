@@ -1,0 +1,39 @@
+---
+title: Comark blocks
+comark: true
+---
+
+# One
+
+::card
+---
+title: Deep dive
+tags: [mdx, slides]
+---
+The card's body.
+
+:::note
+---
+tone: quiet
+---
+Inner.
+:::
+::
+
+---
+
+# Two
+
+::callout{kind="warn"}
+Never closed, so the next `---` still starts a slide.
+
+---
+
+# Three
+
+```md
+::card
+---
+title: in code, not a block
+---
+```

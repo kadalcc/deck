@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { runnerLang } from "./runner-langs.ts";
+
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * CODE RUNNERS: what `{monaco-run}` does with the code
@@ -76,21 +78,7 @@ export type CodeRunners = Record<string, CodeRunner>;
 
 const registry = new Map<string, CodeRunner>();
 
-const ALIASES: Record<string, string> = {
-  js: "javascript",
-  mjs: "javascript",
-  cjs: "javascript",
-  ts: "typescript",
-  mts: "typescript",
-  cts: "typescript",
-  py: "python",
-  python3: "python",
-};
-
-const canonical = (lang: string) => {
-  const l = lang.toLowerCase();
-  return ALIASES[l] ?? l;
-};
+const canonical = runnerLang;
 
 /**
  * Register a runner for one language or several (aliases included: `ts` and `typescript` are

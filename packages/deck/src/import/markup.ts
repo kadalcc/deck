@@ -1,3 +1,4 @@
+import { closingBrace, parseComarkAttributes } from "../compiler/comark-attributes.ts";
 import { iconFromTag } from "../icons/data.ts";
 import { GENERATED } from "../catalog/generated.ts";
 import { convertFence, fenceClicks } from "./code.ts";
@@ -98,6 +99,8 @@ export interface MarkupContext {
   dragNames: Set<string>;
   /** True inside speaker notes: no click machinery, only markup. */
   notes?: boolean;
+  /** The deck turns Comark on (`mdc: true` / `comark: true`): its `{…}` attribute lists stay. */
+  comark?: boolean;
   /**
    * "tsx" converts a Vue file's template (vue.ts): HTML, not Markdown, so text is escaped for JSX,
    * and expressions the script defines are written through as JavaScript by `dynamic`.
@@ -224,6 +227,27 @@ function jsxAttr(name: string, value: Value | { js: string }): string {
 /** Text that MDX would read as an expression or a tag, escaped. */
 export function escapeText(text: string): string {
   return text.replace(/[{}]/g, (c) => `\\${c}`).replace(/<(?![A-Za-z/!])/g, "\\<");
+}
+
+/**
+ * escapeText for a deck with Comark on: an attribute list where Comark reads one — straight after
+ * `]`, `)`, `**`, `_`, a code span or a `:name` (compiler/comark-syntax.ts) — is kept as written,
+ * since the compiler takes it before MDX does. `before` is the text that precedes `text`.
+ */
+export function escapeComarkText(text: string, before: string): string {
+  let out = "";
+  let from = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "{") continue;
+    const prev = i > 0 ? text.slice(0, i) : before;
+    if (!/(?:[\])*_`]|:[A-Za-z][\w-]*)$/.test(prev)) continue;
+    const close = closingBrace(text, i);
+    if (close < 0 || !parseComarkAttributes(text.slice(i + 1, close))) continue;
+    out += escapeText(text.slice(from, i)) + text.slice(i, close + 1);
+    from = close + 1;
+    i = close;
+  }
+  return out + escapeText(text.slice(from));
 }
 
 /** Text for a JSX file: the characters JSX reads as code, as string expressions. */
@@ -470,7 +494,10 @@ export function convertMarkup(body: string, ctx: MarkupContext): string {
     text
       .split(/(\{\{[\s\S]*?\}\})/)
       .map((part, k) => {
-        if (k % 2 === 0) return esc(part);
+        if (k % 2 === 0)
+          return ctx.comark && !tsx
+            ? escapeComarkText(part, body.slice(0, offset + text.indexOf(part)))
+            : esc(part);
         return mustache(part.slice(2, -2), offset + text.indexOf(part));
       })
       .join("");

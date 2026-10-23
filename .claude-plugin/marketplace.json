@@ -3,7 +3,7 @@
   "name": "kadal-deck",
   "owner": {
     "name": "Kadal",
-    "email": "pmithunish@gmail.com",
+    "email": "hello@kadal.cc",
     "url": "https://kadal.cc"
   },
   "metadata": {
@@ -20,7 +20,7 @@
       "homepage": "https://deck.kadal.cc",
       "repository": "https://github.com/kadalcc/deck",
       "license": "AGPL-3.0-or-later",
-      "author": { "name": "Mithunish Prabhakaran", "url": "https://github.com/pmithunish" },
+      "author": { "name": "Kadal", "email": "hello@kadal.cc", "url": "https://kadal.cc" },
       "strict": false,
       "skills": ["./skills/kadal-deck"],
       "mcpServers": {

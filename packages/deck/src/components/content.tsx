@@ -62,7 +62,7 @@ export function Mermaid({
   /** Mermaid configuration for this diagram (themeVariables, look, flowchart…). */
   config?: Record<string, unknown>;
   className?: string;
-  /** What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. */
+  /** What the diagram shows, for screen readers (a fence's `alt`); default its first line. */
   alt?: string;
 }) {
   const source =

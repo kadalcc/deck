@@ -50,7 +50,7 @@
         },
         "routeAlias": {
           "type": "string",
-          "description": "Slidev's spelling of `id` for links."
+          "description": "Another spelling of `id` for links."
         },
         "title": {
           "type": "string",
@@ -140,7 +140,7 @@
         },
         "autoslide": {
           "type": "number",
-          "description": "reveal.js spelling of autoSlide."
+          "description": "Another spelling of autoSlide."
         },
         "clicks": {
           "type": "number",
@@ -195,15 +195,15 @@
         },
         "backgroundColor": {
           "type": "string",
-          "description": "reveal.js: flat background colour."
+          "description": "A flat background colour."
         },
         "backgroundGradient": {
           "type": "string",
-          "description": "reveal.js: a CSS gradient."
+          "description": "A CSS gradient behind the slide."
         },
         "backgroundImage": {
           "type": "string",
-          "description": "reveal.js: an image URL."
+          "description": "An image URL behind the slide."
         },
         "backgroundSize": {
           "type": "string",
@@ -223,11 +223,11 @@
         },
         "backgroundVideo": {
           "type": "string",
-          "description": "reveal.js: a video URL."
+          "description": "A video URL behind the slide."
         },
         "backgroundVideoLoop": {
           "type": "boolean",
-          "description": "Loop the background video."
+          "description": "Loop the background video (the default); false plays it once."
         },
         "backgroundVideoMuted": {
           "type": "boolean",
@@ -235,7 +235,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "reveal.js: a page behind the slide."
+          "description": "A page (iframe URL) behind the slide."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -286,7 +286,7 @@
         },
         "dragPos": {
           "type": "object",
-          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">` (Slidev's v-drag): \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
+          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">`: \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
         }
       },
       "additionalProperties": true
@@ -336,7 +336,7 @@
         },
         "routeAlias": {
           "type": "string",
-          "description": "Slidev's spelling of `id` for links."
+          "description": "Another spelling of `id` for links."
         },
         "title": {
           "type": "string",
@@ -443,7 +443,7 @@
         },
         "autoslide": {
           "type": "number",
-          "description": "reveal.js spelling of autoSlide."
+          "description": "Another spelling of autoSlide."
         },
         "clicks": {
           "type": "number",
@@ -501,15 +501,15 @@
         },
         "backgroundColor": {
           "type": "string",
-          "description": "reveal.js: flat background colour."
+          "description": "A flat background colour."
         },
         "backgroundGradient": {
           "type": "string",
-          "description": "reveal.js: a CSS gradient."
+          "description": "A CSS gradient behind the slide."
         },
         "backgroundImage": {
           "type": "string",
-          "description": "reveal.js: an image URL."
+          "description": "An image URL behind the slide."
         },
         "backgroundSize": {
           "type": "string",
@@ -529,11 +529,11 @@
         },
         "backgroundVideo": {
           "type": "string",
-          "description": "reveal.js: a video URL."
+          "description": "A video URL behind the slide."
         },
         "backgroundVideoLoop": {
           "type": "boolean",
-          "description": "Loop the background video."
+          "description": "Loop the background video (the default); false plays it once."
         },
         "backgroundVideoMuted": {
           "type": "boolean",
@@ -541,7 +541,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "reveal.js: a page behind the slide."
+          "description": "A page (iframe URL) behind the slide."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -661,7 +661,7 @@
         },
         "dragPos": {
           "type": "object",
-          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">` (Slidev's v-drag): \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
+          "description": "Named positions for `<Drag pos=\"name\">` / `<DragArrow pos=\"name\">`: \"x,y,w,h[,rotation]\" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged."
         },
         "author": {
           "type": "string",
@@ -1376,11 +1376,11 @@
               }
             }
           ],
-          "description": "Web fonts: Google Fonts families as written (`[\"Inter:wght@400;600\"]`), or Slidev's object — `{ sans, heading, serif, mono, weights, italic, provider: google|bunny|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts)."
+          "description": "Web fonts: Google Fonts families as written (`[\"Inter:wght@400;600\"]`), or an object — `{ sans, heading, serif, mono, weights, italic, provider: google|bunny|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts)."
         },
         "seoMeta": {
           "type": "object",
-          "description": "The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html."
+          "description": "The link preview and search tags (core/head.ts), by unhead's names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html."
         },
         "lang": {
           "type": "string",
@@ -1411,7 +1411,7 @@
         },
         "defaults": {
           "type": "object",
-          "description": "Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it."
+          "description": "Frontmatter every slide gets unless it sets the key itself, e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it."
         },
         "plantUmlServer": {
           "type": "string",
@@ -1465,7 +1465,7 @@
             "stopwatch",
             "countdown"
           ],
-          "description": "The presenter's timer: \"stopwatch\" counts up, \"countdown\" counts down from `duration` (Slidev's `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either.",
+          "description": "The presenter's timer: \"stopwatch\" counts up, \"countdown\" counts down from `duration`. Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either.",
           "default": "stopwatch"
         },
         "duration": {
@@ -1480,7 +1480,7 @@
               "type": "null"
             }
           ],
-          "description": "How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes."
+          "description": "How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes. The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes."
         },
         "contextMenu": {
           "anyOf": [
@@ -1500,15 +1500,15 @@
         },
         "aspectRatio": {
           "type": "number",
-          "description": "Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…)."
+          "description": "With canvasWidth, sets width and height (16/9 = 1.777…)."
         },
         "canvasWidth": {
           "type": "number",
-          "description": "Slidev spelling: the stage width used with aspectRatio."
+          "description": "The stage width used with aspectRatio."
         },
         "mdc": {
           "type": "boolean",
-          "description": "Slidev's older spelling of `comark` (MDC is Comark's former name)."
+          "description": "The older spelling of `comark` (MDC is Comark's former name)."
         },
         "remoteAssets": {
           "anyOf": [
@@ -1519,7 +1519,7 @@
               "type": "string"
             }
           ],
-          "description": "Slidev spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing)."
+          "description": "Another spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing)."
         }
       },
       "additionalProperties": true

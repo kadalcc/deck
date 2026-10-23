@@ -662,7 +662,7 @@ in Kadal's spelling, or dropped because Kadal does it another way.
 
 ## Slide 15 — Monaco Editor
 
-- **warning** (slides.md:644) This {monaco-run} block imports \`vue\`, \`./external\`; Kadal runs the code in a worker without module resolution, so the import fails when it runs. Inline what it imports, or register a runner for it (registerCodeRunner).
+- **warning** (slides.md:644) This {monaco-run} block imports \`./external\`; Kadal runs the code in a browser worker that can fetch packages but not the deck's files or Node's modules, so that import fails when it runs. Inline what it imports, or register a runner for it (registerCodeRunner).
 
 ## Slide 16 — Learn More
 

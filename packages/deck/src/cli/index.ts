@@ -91,9 +91,10 @@ export const HELP = `kadal-deck <command> [options]
               deck|slide|keys|routes|live|cli|exit] [name]   --search <words>   --markdown
   screenshot  PNGs of slides into screenshots/   --slide <N|all> --out <dir> --theme <t>
               --scheme <light|dark> --width <px> --url <deck url> --dev
+              --slide 1,3-5 or an id: slides count from 1, as in --range (slide-001.png is the first)
   export      PDF (and --png, --pptx) into export/   --out <dir> --scale <n> --url <deck url> --no-pdf
               --format pdf,png,pptx,pptx-editable,md   or the switches --pptx-editable --md
-              --range 1,3-5   --dark / --scheme light|dark   --with-clicks / --no-with-clicks
+              --range 1,3-5 (slides count from 1)   --dark / --scheme light|dark   --with-clicks / --no-with-clicks
               --omit-background (transparent)   --no-with-toc (no PDF bookmarks)   --per-slide
               --output <name>   --timeout <ms> --wait <ms> --wait-until networkidle|load|domcontentloaded|none
               --executable-path <chrome>   --port <n> (the local preview server)
@@ -792,12 +793,26 @@ async function screenshot(
   const wanted = (flags.slide as string[] | undefined) ?? ["all"];
   let slides: number[] | undefined;
   if (!wanted.includes("all")) {
+    // Slide numbers count from 1, as `export --range` and the deck's own counter do; an id works
+    // too. 0 meant the first slide before 0.4.3, so it still does, with a note.
+    const total = outline.slides.length;
     slides = wanted
       .flatMap((w) => w.split(","))
-      .map((w) => {
-        const s = outline.slides.find((x) => String(x.index) === w.trim() || x.id === w.trim());
-        if (!s) throw new UsageError(`No slide "${w}" (0–${outline.slides.length - 1}, or an id)`);
-        return s.index;
+      .flatMap((w) => {
+        const t = w.trim();
+        const byId = outline.slides.find((x) => x.id === t);
+        if (byId) return [byId.index];
+        const m = /^(\d+)(?:-(\d+))?$/.exec(t);
+        let from = m ? Number(m[1]) : NaN;
+        let to = m?.[2] ? Number(m[2]) : from;
+        if (from === 0) {
+          console.error("[deck] --slide counts from 1, as --range does: 0 is read as 1, the first slide.");
+          from = 1;
+          to = Math.max(to, 1);
+        }
+        if (!m || from > to || to > total)
+          throw new UsageError(`No slide "${t}" (1–${total}, a range like 2-4, or an id)`);
+        return Array.from({ length: to - from + 1 }, (_, k) => from - 1 + k);
       });
   }
   const out = resolve(dir, str(flags.out) ?? "screenshots");
@@ -818,9 +833,9 @@ async function screenshot(
     await mkdir(out, { recursive: true });
     const files: Array<{ slide: number; path: string; width: number; height: number }> = [];
     for (const s of result.shots) {
-      const path = join(out, `slide-${String(s.index).padStart(3, "0")}.png`);
+      const path = join(out, `slide-${String(s.index + 1).padStart(3, "0")}.png`);
       await writeFile(path, s.png);
-      files.push({ slide: s.index, path, width: s.width, height: s.height });
+      files.push({ slide: s.index + 1, path, width: s.width, height: s.height });
       if (!json) say(`png    ${path}`);
     }
     if (json)

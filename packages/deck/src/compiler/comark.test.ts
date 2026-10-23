@@ -280,6 +280,20 @@ describe("blocks: ::name … ::", () => {
 });
 
 describe("collisions with Kadal's syntax and MDX", () => {
+  test("a block's --- props in a deck are not a slide separator", async () => {
+    const deck = (body: string) => prepareDeck(`---\ncomark: true\n---\n\n${body}\n`, {}).slides;
+    const props =
+      "::card\n---\ntitle: Deep dive\n---\nBody\n:::note\n---\na: 1\n---\nInner\n:::\n::";
+    const slides = deck(`${props}\n\n---\n\n# Two`);
+    expect(slides.length).toBe(2);
+    const { html, warnings } = await render(slides[0]!.content);
+    expect(warnings).toEqual([]);
+    expect(html).toContain('data-c="Card" data-props="{&quot;title&quot;:&quot;Deep dive&quot;}"');
+    expect(html).toContain('data-c="Note" data-props="{&quot;a&quot;:1}"');
+    // A block never closed before the next opener of its depth ends at the separator, as before.
+    expect(deck("::note\nOpen\n\n---\n\n::note\nTwo\n::").length).toBe(2);
+  });
+
   test("::right:: slot markers keep splitting the slide, blocks inside them work", async () => {
     const { html } = await renderSlide("Left\n\n::right::\n\n::note\nIn the right slot\n::");
     expect(html).toContain(

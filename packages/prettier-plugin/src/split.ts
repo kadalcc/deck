@@ -19,6 +19,8 @@
 export const HORIZONTAL = /^---\s*$/;
 export const VERTICAL = /^----+\s*$/;
 const FRONTMATTER_LINE = /^\s*[A-Za-z_][\w.-]*\s*:(\s|$)/;
+const COMARK_OPEN = /^\s*(:{2,})[A-Za-z][\w-]*(?:[[{].*)?\s*$/;
+const COMARK_CLOSE = /^\s*(:{2,})\s*$/;
 
 /** True when every non-empty line could be a YAML mapping line or a continuation (split.ts). */
 export function looksLikeYaml(lines: string[]): boolean {
@@ -91,6 +93,22 @@ export function cutDeck(text: string): Piece[] {
     return { yaml: block.join("\n"), next: close + 1 };
   };
 
+  // A `---` inside a closed Comark block is its props or content (the engine's comarkCloseOf).
+  const comarkCloseOf = (at: number, colons: number): number => {
+    let code = "";
+    for (let k = at + 1; k < lines.length; k++) {
+      const l = lines[k]!;
+      const f = /^\s*(`{3,}|~{3,})/.exec(l)?.[1];
+      if (f && !code) code = f;
+      else if (f && f[0] === code[0] && f.length >= code.length) code = "";
+      if (code) continue;
+      if (COMARK_CLOSE.exec(l)?.[1]!.length === colons) return k;
+      if (COMARK_OPEN.exec(l)?.[1]!.length === colons) return -1;
+    }
+    return -1;
+  };
+  let comarkUntil = -1;
+
   let i = 0;
   let firstContent = 0;
   while (firstContent < lines.length && !lines[firstContent]!.trim()) firstContent++;
@@ -118,7 +136,11 @@ export function cutDeck(text: string): Piece[] {
         inFence = false;
       }
     }
-    if (!inFence && (HORIZONTAL.test(line) || VERTICAL.test(line))) {
+    if (!inFence && i > comarkUntil) {
+      const open = COMARK_OPEN.exec(line);
+      if (open) comarkUntil = comarkCloseOf(i, open[1]!.length);
+    }
+    if (!inFence && i > comarkUntil && (HORIZONTAL.test(line) || VERTICAL.test(line))) {
       const vertical = VERTICAL.test(line);
       const fm = frontmatterAt(i + 1);
       const block = fm ? null : blockAt(i + 1);

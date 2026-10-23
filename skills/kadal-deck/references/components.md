@@ -87,7 +87,7 @@ The main point, in Markdown.
 
 #### `<Drag>`
 
-A block you place by hand (Slidev's v-drag). `pos` is "x,y,w,h[,rotation]" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.
+A block you place by hand. `pos` is "x,y,w,h[,rotation]" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.
 
 ```mdx
 <Drag pos="1400,120,380,_">
@@ -108,7 +108,7 @@ A block you place by hand (Slidev's v-drag). `pos` is "x,y,w,h[,rotation]" in st
 
 #### `<DragArrow>`
 
-An `<Arrow>` whose ends are dragged into place in `kadal-deck dev` (Slidev's v-drag-arrow). `pos` is "x,y,dx,dy" (from x,y by dx,dy) or a dragPos name.
+An `<Arrow>` whose ends are dragged into place in `kadal-deck dev`. `pos` is "x,y,dx,dy" (from x,y by dx,dy) or a dragPos name.
 
 ```mdx
 <DragArrow pos="300,700,600,-280" color="var(--deck-accent)" width={4} />
@@ -126,7 +126,7 @@ An `<Arrow>` whose ends are dragged into place in `kadal-deck dev` (Slidev's v-d
 
 #### `<FitText>`
 
-Text as large as fits its box (reveal.js r-fit-text), between `min` and `max` px.
+Text as large as fits its box, between `min` and `max` px.
 
 ```mdx
 <FitText max={260}>42%</FitText>
@@ -140,7 +140,7 @@ Text as large as fits its box (reveal.js r-fit-text), between `min` and `max` px
 
 #### `<Frame>`
 
-reveal.js's r-frame: a bordered frame around media.
+A bordered frame around media.
 
 ```mdx
 <Frame>![](/screenshot.png)</Frame>
@@ -183,7 +183,7 @@ Vertical space.
 
 #### `<Stack>`
 
-reveal.js's r-stack: children on top of each other in one spot — combine with clicks to swap images in place.
+Children on top of each other in one spot — combine with clicks to swap images in place.
 
 ```mdx
 <Stack>
@@ -198,7 +198,7 @@ reveal.js's r-stack: children on top of each other in one spot — combine with 
 
 #### `<Stretch>`
 
-reveal.js's r-stretch: grows to fill the slide's remaining height (an image under a heading).
+Grows to fill the slide's remaining height (an image under a heading).
 
 ```mdx
 ## The whole map
@@ -212,7 +212,7 @@ reveal.js's r-stretch: grows to fill the slide's remaining height (an image unde
 
 #### `<Transform>`
 
-Scales a block around an origin (Slidev's <Transform>).
+Scales a block around an origin.
 
 ```mdx
 <Transform scale={0.8}>
@@ -265,7 +265,7 @@ One case of a `<Switch>`. Without `at` it is one step after the case before; `at
 
 #### `<Click>`
 
-One click step (Slidev's v-click, reveal.js's fragment): shows its children from its step on, or hides them with `hide`.
+One click step: shows its children from its step on, or hides them with `hide`.
 
 ```mdx
 <Click>Appears on the first click</Click>
@@ -282,7 +282,7 @@ One click step (Slidev's v-click, reveal.js's fragment): shows its children from
 
 #### `<ClickCount>`
 
-The click step this slide is at (Slidev's `$clicks`), or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.
+The click step this slide is at, or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.
 
 ```mdx
 Step <ClickCount offset={1} /> of <ClickCount total />
@@ -324,7 +324,7 @@ Wraps a Markdown list (or any children) so each item is its own click step. Leav
 
 #### `<Fragment>` (= `<Click>`)
 
-reveal.js's name for `<Click>`; identical.
+Another name for `<Click>`; identical.
 
 ```mdx
 <Fragment effect="highlight-red">Same as Click</Fragment>
@@ -332,7 +332,7 @@ reveal.js's name for `<Click>`; identical.
 
 #### `<Switch>`
 
-One child at a time, switched by clicks (Slidev's v-switch): each `<Case>` takes the next step, or `at={n}` / `at="a-b"` in the switch's own steps; the cases share one spot, so nothing below jumps.
+One child at a time, switched by clicks: each `<Case>` takes the next step, or `at={n}` / `at="a-b"` in the switch's own steps; the cases share one spot, so nothing below jumps.
 
 ```mdx
 <Switch transition="slide-up">
@@ -347,7 +347,7 @@ One child at a time, switched by clicks (Slidev's v-switch): each `<Case>` takes
 | `at` | `ClickAt` |  | When the switch's first step is: as `<Click at>`. Default one after the previous click. |
 | `transition` | `(string & {}) \| "fade" \| "slide-up" \| "slide-left" \| "scale" \| "none"` | `"fade"` | "fade" (default), "slide-up", "slide-left", "scale", or "none". |
 | `unmount` | `boolean` | `false` | Leave hidden cases out of the page rather than hidden in it. |
-| `as` | `ElementType` |  | The switch's element (`tag` in Slidev); `div` by default. |
+| `as` | `ElementType` |  | The switch's element; `div` by default. |
 | `childAs` | `ElementType` |  | Each case's element (`childTag`); `div` by default. |
 | `children` | `ReactNode` |  | `<Case>`s — or any elements, each one step. |
 
@@ -481,6 +481,22 @@ Text that resolves out of random glyphs.
 | `speed` | `number` | `30` | Milliseconds per glyph. |
 | `delay` | `number` | `0` | Milliseconds before it starts. |
 
+#### `<FlipBoard>`
+
+A split-flap board whose cells flip to its text: one cell per character, a row per line.
+
+```mdx
+<FlipBoard text={"HIGH WATER\n06:12"} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `text` * | `string` |  | The text; `\n` starts a new row. |
+| `rows` | `number` |  | Rows (default: the text's lines). |
+| `cols` | `number` |  | Columns (default: the longest line). |
+| `flipDuration` | `number` | `35` | Milliseconds per flip. |
+| `stagger` | `number` | `15` | Milliseconds between neighbouring cells. |
+
 #### `<Kbd>`
 
 A keyboard key.
@@ -526,7 +542,7 @@ A link to another slide by 1-based number, `h.v`, or slide id.
 
 #### `<Mark>`
 
-A hand-drawn mark (Slidev's v-mark, rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.
+A hand-drawn mark (rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.
 
 ```mdx
 The answer is <Mark type="circle">forty-two</Mark>.
@@ -536,7 +552,7 @@ The answer is <Mark type="circle">forty-two</Mark>.
 
 | prop | type | default | |
 | --- | --- | --- | --- |
-| `type` | `"strike" \| MarkType \| "line-through" \| "linethrough" \| "cross" \| "crossed"` | `"underline"` | underline · box · circle · highlight · strike-through · crossed-off · bracket (Slidev's aliases strike, line-through, cross, crossed work too). |
+| `type` | `"strike" \| MarkType \| "line-through" \| "linethrough" \| "cross" \| "crossed"` | `"underline"` | underline · box · circle · highlight · strike-through · crossed-off · bracket (the aliases strike, line-through, cross, crossed work too). |
 | `color` | `string` | `"var(--deck-accent)"` | Any CSS colour; default the theme's accent. |
 | `at` | `ClickAt` |  | When: as `<Click at>` (default: the next click; 0 = always; [a, b] from a until b). |
 | `strokeWidth` | `number` |  | Line width in px (default 3; a highlight is as tall as the line). |
@@ -561,7 +577,7 @@ Another name for `<Tex>`.
 
 #### `<Notes>`
 
-Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.
+Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. HTML comments at the very end of a slide are its notes, and both kinds join.
 
 ```mdx
 <Notes>
@@ -777,7 +793,7 @@ An embedded post from X/Twitter.
 
 #### `<Video>`
 
-A video that knows the slide's clicks (Slidev's SlidevVideo and more): plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.
+A video that knows the slide's clicks: plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.
 
 ```mdx
 <Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />
@@ -944,7 +960,7 @@ A ring of light around an icon or emoji.
 
 #### `<Icon>`
 
-A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). Slidev's tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.
+A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). The tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.
 
 ```mdx
 <Icon name="rocket" size="2em" /> <Icon name="mdi:account-circle" color="tomato" /> <logos-react class="text-3xl" />
@@ -956,7 +972,7 @@ A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:
 | `size` | `string \| number` | `"1em"` | Height: CSS size or px (the width follows the icon's proportions). Tag form: 1.2em. |
 | `color` | `string` |  | CSS colour (monochrome icons). |
 | `strokeWidth` | `number` | `1.75` | Lucide icons only. |
-| `class` | `string` |  | Slidev's spelling of `className`. |
+| `class` | `string` |  | Another spelling of `className`. |
 | `title` | `string` |  | An accessible name; without one the icon is decorative. |
 
 #### `<Ribbon>`
@@ -1015,7 +1031,7 @@ export { a, b };
 
 #### `<CodeGroup>`
 
-Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as Slidev's `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print="all"` prints every tab.
+Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print="all"` prints every tab.
 
 ````mdx
 ::code-group
@@ -1058,7 +1074,7 @@ const n = 1
 
 #### `<KatexLines>`
 
-Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.
+Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to. Write the `$$` block, not this tag.
 
 ```mdx
 $$ {1|2|all}
@@ -1085,7 +1101,7 @@ A Mermaid diagram rendered in the browser in the deck's colours. Pass the source
 | `scale` | `number` | `1` | Scale factor. |
 | `theme` | `string` |  | A Mermaid theme for this diagram: default, neutral, dark, forest, base. |
 | `config` | `Record<string, unknown>` |  | Mermaid configuration for this diagram (themeVariables, look, flowchart…). |
-| `alt` | `string` |  | What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. |
+| `alt` | `string` |  | What the diagram shows, for screen readers (a fence's `alt`); default its first line. |
 
 #### `<Sketch>`
 
@@ -1226,7 +1242,7 @@ The audience answers in a word or two; the words grow as they repeat.
 
 #### `<Motion>`
 
-Animates a block with motion (framer-motion): `initial` → `enter` on arrival, `leave` on exit, and per-click targets (Slidev's v-motion).
+Animates a block with motion (framer-motion): `initial` → `enter` on arrival, `leave` on exit, and per-click targets.
 
 ```mdx
 <Motion initial={{ opacity: 0, x: -80 }} enter={{ opacity: 1, x: 0 }} clicks={{ "click-1": { scale: 1.2 } }}>
@@ -1366,7 +1382,7 @@ b
 ```
 ````
 
-- `data-line-numbers="3-5|8"` — reveal.js's attribute spelling: line numbers on, with optional steps; data-ln-start-from sets the first number.
+- `data-line-numbers="3-5|8"` — The attribute spelling: line numbers on, with optional steps; data-ln-start-from sets the first number.
 
 ````mdx
 ```js data-line-numbers="1|2"

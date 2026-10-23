@@ -245,7 +245,7 @@ export const PLAIN_BACKGROUNDS: Array<{ name: string; summary: string; example: 
   },
   {
     name: "video",
-    summary: "A looping muted video (.mp4/.webm/.mov/.ogv).",
+    summary: "A looping muted video (.mp4/.webm/.mov/.ogv); `{ video, loop: false }` plays it once.",
     example: "background: /loop.mp4",
   },
   {
@@ -296,7 +296,7 @@ export const THEME_PACKAGES: ThemePackageInfo[] = [
     name: "classic",
     package: "@kadal/theme-classic",
     summary:
-      "Slidev's default theme: Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover.",
+      "Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover.",
     scheme: "both",
     layouts: ["cover"],
     components: [],
@@ -306,7 +306,7 @@ export const THEME_PACKAGES: ThemePackageInfo[] = [
     name: "seriph",
     package: "@kadal/theme-seriph",
     summary:
-      "Slidev's seriph: PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover.",
+      "PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover.",
     scheme: "both",
     layouts: ["cover"],
     components: [],
@@ -326,7 +326,7 @@ export const THEME_PACKAGES: ThemePackageInfo[] = [
     name: "bricks",
     package: "@kadal/theme-bricks",
     summary:
-      "Slidev's bricks: building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only.",
+      "Building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only.",
     scheme: "light",
     layouts: ["items", "blank"],
     components: [
@@ -348,7 +348,7 @@ export const THEME_PACKAGES: ThemePackageInfo[] = [
     name: "shibainu",
     package: "@kadal/theme-shibainu",
     summary:
-      "Slidev's shibainu: soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only.",
+      "Soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only.",
     scheme: "dark",
     layouts: [
       "default-2",
@@ -533,7 +533,7 @@ export const CODE_META: CodeMetaOption[] = [
   {
     syntax: 'data-line-numbers="3-5|8"',
     summary:
-      "reveal.js's attribute spelling: line numbers on, with optional steps; data-ln-start-from sets the first number.",
+      "The attribute spelling: line numbers on, with optional steps; data-ln-start-from sets the first number.",
     example: '```js data-line-numbers="1|2"\na\nb\n```',
   },
   {
@@ -630,13 +630,13 @@ export const ROUTES: RouteInfo[] = [
   {
     path: "/<slug>/export",
     summary:
-      "The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.",
+      "The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PPTX file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.",
   },
   { path: "/<slug>/stats", summary: "Views, dwell per slide, sessions, questions, reactions." },
   {
     path: "/<slug>/<your-path>",
     summary:
-      'A page of the deck\'s own (Slidev\'s `setup/routes.ts`): `routes.tsx` beside deck.mdx (or src/routes.tsx, setup/routes.ts) exporting `defineRoutes([{ path: "handout", component: Handout }, { path: "q/:id", load: () => import("./Q.tsx"), title }])`, `<Deck routes>`, or a theme\'s or addon\'s `routes` / `api.addRoute()`. Drawn inside the deck\'s providers with `{ path, params, route }`; the engine\'s pages win a clash; the build copies index.html to each plain path for static hosts.',
+      'A page of the deck\'s own: `routes.tsx` beside deck.mdx (or src/routes.tsx, setup/routes.ts) exporting `defineRoutes([{ path: "handout", component: Handout }, { path: "q/:id", load: () => import("./Q.tsx"), title }])`, `<Deck routes>`, or a theme\'s or addon\'s `routes` / `api.addRoute()`. Drawn inside the deck\'s providers with `{ path, params, route }`; the engine\'s pages win a clash; the build copies index.html to each plain path for static hosts.',
   },
   {
     path: "/<slug>/__kadal/drawings",
@@ -836,8 +836,9 @@ export const CLI: CliCommand[] = [
   {
     name: "screenshot",
     usage:
-      "kadal-deck screenshot [--slide N|all] [--out dir] [--theme t] [--scheme light|dark] [--width px] [--url u] [--dev] [--json]",
-    summary: "PNG of slides, every click revealed (build + preview, headless Chromium).",
+      "kadal-deck screenshot [--slide N,M-N|id|all] [--out dir] [--theme t] [--scheme light|dark] [--width px] [--url u] [--dev] [--json]",
+    summary:
+      "PNG of slides, every click revealed (build + preview, headless Chromium). `--slide` counts from 1, as `export --range` does: `--slide 1` writes screenshots/slide-001.png.",
     json: true,
   },
   {
@@ -845,7 +846,7 @@ export const CLI: CliCommand[] = [
     usage:
       "kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--png] [--pptx] [--pptx-editable] [--md] [--no-pdf] [--vector-pdf] [--range 1,3-5] [--dark | --scheme light|dark] [--with-clicks | --no-with-clicks] [--omit-background] [--no-with-toc] [--per-slide] [--out dir] [--output name] [--scale n] [--timeout ms] [--wait ms] [--wait-until networkidle|load|domcontentloaded|none] [--executable-path path] [--url u] [--port n] [--json]",
     summary:
-      "PDF/PNG/PPTX/Markdown into export/. The PDF looks like the web in every viewer (each page a picture of the slide with its text printed over it as text), with bookmarks from the slide titles and levels (--no-with-toc for none) and the deck's metadata; --vector-pdf prints with the browser alone. --format pptx-editable rebuilds the slides as native PowerPoint text, lists, shapes, pictures and tables (what cannot be, it places as a picture where it stood) with the notes. --format md writes a .md file of the PNGs with each slide's notes. --range picks slides, --dark the dark scheme, --no-with-clicks one page per slide, --omit-background transparent pages, --per-slide one page load per slide.",
+      "PDF/PNG/PPTX/Markdown into export/. The PDF looks like the web in every viewer (each page a picture of the slide with its text printed over it as text), with bookmarks from the slide titles and levels (--no-with-toc for none) and the deck's metadata; --vector-pdf prints with the browser alone. --format pptx-editable rebuilds the slides as native PPTX text, lists, shapes, pictures and tables (what cannot be, it places as a picture where it stood) with the notes. --format md writes a .md file of the PNGs with each slide's notes. --range picks slides (counting from 1, like `screenshot --slide`), --dark the dark scheme, --no-with-clicks one page per slide, --omit-background transparent pages, --per-slide one page load per slide.",
     json: true,
   },
   {
@@ -983,10 +984,10 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   lineNumbers: "Line numbers on every code block.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
   monacoTypes:
-    'Types for the packages `{monaco}` editors import, so hovers and errors are real: "auto" (the deck\'s installed declarations, bundled into the build; anything else from jsDelivr), "local", "cdn" or "none". Fetched types are cached in the browser; offline with nothing cached the editor works as before. Slidev\'s `monacoTypesSource` (local · cdn/ata · none) is read too.',
+    'Types for the packages `{monaco}` editors import, so hovers and errors are real: "auto" (the deck\'s installed declarations, bundled into the build; anything else from jsDelivr), "local", "cdn" or "none". Fetched types are cached in the browser; offline with nothing cached the editor works as before. `monacoTypesSource` (local · cdn/ata · none) is read too.',
   monacoPackages:
-    'Packages the editors know, with versions: types acquired up front and `{monaco-run}` imports pinned to them. A list (`["zod", "lodash-es@4"]`) or a map (`{ zod: "^3.23" }`). Slidev\'s `monacoTypesAdditionalPackages` is read too.',
-  monacoTypesIgnore: "Packages never to fetch types for (Slidev: monacoTypesIgnorePackages).",
+    'Packages the editors know, with versions: types acquired up front and `{monaco-run}` imports pinned to them. A list (`["zod", "lodash-es@4"]`) or a map (`{ zod: "^3.23" }`). `monacoTypesAdditionalPackages` is read too.',
+  monacoTypesIgnore: "Packages never to fetch types for (also read as monacoTypesIgnorePackages).",
   monacoRunImports:
     'Where `{monaco-run}` resolves a bare import: a CDN base (default "https://esm.sh": `zod` → https://esm.sh/zod@<monacoPackages version>), a template with {name}, {version} and {path} (e.g. "https://cdn.jsdelivr.net/npm/{name}@{version}{path}/+esm"), or false to keep bare imports an error. The code already runs in a sandboxed worker that may import any URL; this only spells the URL for you.',
   drawings:
@@ -1000,7 +1001,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   badge: "Set by the host; leave it alone.",
   ads: "Set by the host; leave it alone.",
   fonts:
-    'Web fonts. A list of Google Fonts families as written (["Inter:wght@400;600"]), or Slidev\'s object, which also points the theme\'s font tokens at them: { sans, heading, serif, mono, weights: "300,400,600,700", italic, provider: google | bunny | none, local: [families already installed], fallbacks: true }. Exports wait for them.',
+    'Web fonts. A list of Google Fonts families as written (["Inter:wght@400;600"]), or an object, which also points the theme\'s font tokens at them: { sans, heading, serif, mono, weights: "300,400,600,700", italic, provider: google | bunny | none, local: [families already installed], fallbacks: true }. Exports wait for them.',
   addons:
     "Addon packages, in order (a later one wins a name clash): `qr` finds @kadal/addon-qr, then kadal-addon-qr, then a package of that name; `./my-addon` is a folder. Each brings components, layouts, layers, CSS and a setup.",
   themeConfig:
@@ -1016,19 +1017,19 @@ export const EXTRA_DECK_KEYS = [
   {
     name: "aspectRatio",
     type: N(),
-    description: "Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…).",
+    description: "With canvasWidth, sets width and height (16/9 = 1.777…).",
     scope: "deck" as const,
   },
   {
     name: "canvasWidth",
     type: N(),
-    description: "Slidev spelling: the stage width used with aspectRatio.",
+    description: "The stage width used with aspectRatio.",
     scope: "deck" as const,
   },
   {
     name: "mdc",
     type: B(),
-    description: "Slidev's older spelling of `comark` (MDC is Comark's former name).",
+    description: "The older spelling of `comark` (MDC is Comark's former name).",
     scope: "deck" as const,
   },
   {
@@ -1037,7 +1038,7 @@ export const EXTRA_DECK_KEYS = [
       text: 'boolean | "build"',
       variants: [{ type: "boolean" as const }, { type: "string" as const }],
     },
-    description: "Slidev spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing).",
+    description: "Another spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing).",
     scope: "deck" as const,
   },
 ];
@@ -1064,7 +1065,7 @@ export const SLIDE_KEYS = [
     type: S(),
     description: "A stable id: `#/<id>` links here and <Link to> finds it.",
   },
-  { name: "routeAlias", type: S(), description: "Slidev's spelling of `id` for links." },
+  { name: "routeAlias", type: S(), description: "Another spelling of `id` for links." },
   {
     name: "title",
     type: S(),
@@ -1121,7 +1122,7 @@ export const SLIDE_KEYS = [
     description: "Milliseconds before this slide advances on its own.",
     aliases: ["autoslide"],
   },
-  { name: "autoslide", type: N(), description: "reveal.js spelling of autoSlide." },
+  { name: "autoslide", type: N(), description: "Another spelling of autoSlide." },
   { name: "clicks", type: N(), description: "Force the number of click steps." },
   { name: "clicksStart", type: N(), description: "The step the slide opens at." },
   {
@@ -1158,9 +1159,9 @@ export const SLIDE_KEYS = [
       "A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill | tint }.",
     example: "background: { component: starfield, count: 400 }",
   },
-  { name: "backgroundColor", type: S(), description: "reveal.js: flat background colour." },
-  { name: "backgroundGradient", type: S(), description: "reveal.js: a CSS gradient." },
-  { name: "backgroundImage", type: S(), description: "reveal.js: an image URL." },
+  { name: "backgroundColor", type: S(), description: "A flat background colour." },
+  { name: "backgroundGradient", type: S(), description: "A CSS gradient behind the slide." },
+  { name: "backgroundImage", type: S(), description: "An image URL behind the slide." },
   {
     name: "backgroundSize",
     type: S(),
@@ -1169,14 +1170,18 @@ export const SLIDE_KEYS = [
   { name: "backgroundPosition", type: S(), description: "CSS background-position." },
   { name: "backgroundRepeat", type: S(), description: "CSS background-repeat." },
   { name: "backgroundOpacity", type: N(), description: "0–1." },
-  { name: "backgroundVideo", type: S(), description: "reveal.js: a video URL." },
-  { name: "backgroundVideoLoop", type: B(), description: "Loop the background video." },
+  { name: "backgroundVideo", type: S(), description: "A video URL behind the slide." },
+  {
+    name: "backgroundVideoLoop",
+    type: B(),
+    description: "Loop the background video (the default); false plays it once.",
+  },
   {
     name: "backgroundVideoMuted",
     type: B(),
     description: "Mute the background video (default true).",
   },
-  { name: "backgroundIframe", type: S(), description: "reveal.js: a page behind the slide." },
+  { name: "backgroundIframe", type: S(), description: "A page (iframe URL) behind the slide." },
   { name: "backgroundInteractive", type: B(), description: "Let the background page take input." },
   {
     name: "image",
@@ -1243,7 +1248,7 @@ export const SLIDE_KEYS = [
       variants: [{ type: "object" as const }],
     },
     description:
-      'Named positions for `<Drag pos="name">` / `<DragArrow pos="name">` (Slidev\'s v-drag): "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged.',
+      'Named positions for `<Drag pos="name">` / `<DragArrow pos="name">`: "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged.',
     example: 'dragPos:\n  logo: "1500,80,300,_"',
   },
 ];

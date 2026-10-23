@@ -25,7 +25,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Click: {
     category: "steps",
     summary:
-      "One click step (Slidev's v-click, reveal.js's fragment): shows its children from its step on, or hides them with `hide`.",
+      "One click step: shows its children from its step on, or hides them with `hide`.",
     example: `<Click>Appears on the first click</Click>\n<Click at="+2" effect="fade-up">Two clicks later, sliding up</Click>`,
     props: {
       at: 'When: omitted = one after the previous step; "+N" relative ("+0" shares the previous step); a number is absolute (0 = always shown); [from, to] shows it from `from` until `to`.',
@@ -51,7 +51,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   },
   Fragment: {
     category: "steps",
-    summary: "reveal.js's name for `<Click>`; identical.",
+    summary: "Another name for `<Click>`; identical.",
     example: `<Fragment effect="highlight-red">Same as Click</Fragment>`,
   },
   Ul: {
@@ -119,7 +119,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   CodeGroup: {
     category: "code",
     summary:
-      "Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as Slidev's `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print=\"all\"` prints every tab.",
+      "Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print=\"all\"` prints every tab.",
     example:
       "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
     props: {
@@ -175,13 +175,13 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Stack: {
     category: "layout",
     summary:
-      "reveal.js's r-stack: children on top of each other in one spot — combine with clicks to swap images in place.",
+      "Children on top of each other in one spot — combine with clicks to swap images in place.",
     example: `<Stack>\n<Click at={[1, 2]}>![](/v1.png)</Click>\n<Click at={2}>![](/v2.png)</Click>\n</Stack>`,
   },
   Stretch: {
     category: "layout",
     summary:
-      "reveal.js's r-stretch: grows to fill the slide's remaining height (an image under a heading).",
+      "Grows to fill the slide's remaining height (an image under a heading).",
     example: `## The whole map\n\n<Stretch>![](/map.png)</Stretch>`,
   },
   Absolute: {
@@ -198,17 +198,17 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   },
   Transform: {
     category: "layout",
-    summary: "Scales a block around an origin (Slidev's <Transform>).",
+    summary: "Scales a block around an origin.",
     example: `<Transform scale={0.8}>\n\nA table that is a little too big\n\n</Transform>`,
   },
   FitText: {
     category: "layout",
-    summary: "Text as large as fits its box (reveal.js r-fit-text), between `min` and `max` px.",
+    summary: "Text as large as fits its box, between `min` and `max` px.",
     example: `<FitText max={260}>42%</FitText>`,
   },
   Frame: {
     category: "layout",
-    summary: "reveal.js's r-frame: a bordered frame around media.",
+    summary: "A bordered frame around media.",
     example: `<Frame>![](/screenshot.png)</Frame>`,
   },
 
@@ -233,10 +233,10 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Mark: {
     category: "content",
     summary:
-      "A hand-drawn mark (Slidev's v-mark, rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.",
+      "A hand-drawn mark (rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.",
     example: `The answer is <Mark type="circle">forty-two</Mark>.\n\n<Mark type="bracket" brackets="left right" color="#e11d48" at={2}>Both sides</Mark>`,
     props: {
-      type: "underline · box · circle · highlight · strike-through · crossed-off · bracket (Slidev's aliases strike, line-through, cross, crossed work too).",
+      type: "underline · box · circle · highlight · strike-through · crossed-off · bracket (the aliases strike, line-through, cross, crossed work too).",
       at: "Click step, as for <Click> (0: always; [a, b]: from a until b).",
       color: "CSS colour (default the theme's accent).",
       strokeWidth: "Line width in px (default 3; a highlight is as tall as the line).",
@@ -299,6 +299,20 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       delay: "Milliseconds before it starts.",
     },
   },
+  FlipBoard: {
+    category: "content",
+    summary:
+      "A split-flap board whose cells flip to its text: one cell per character, a row per line.",
+    example: `<FlipBoard text={"HIGH WATER\\n06:12"} />`,
+    props: {
+      text: "The text; `\\n` starts a new row.",
+      rows: "Rows (default: the text's lines).",
+      cols: "Columns (default: the longest line).",
+      flipDuration: "Milliseconds per flip.",
+      stagger: "Milliseconds between neighbouring cells.",
+      className: "Class on the board.",
+    },
+  },
   Timer: {
     category: "content",
     summary: "A countdown (with `seconds`) or a stopwatch that starts when its slide is shown.",
@@ -326,7 +340,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Notes: {
     category: "content",
     summary:
-      "Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.",
+      "Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. HTML comments at the very end of a slide are its notes, and both kinds join.",
     example: `<Notes>\nOpen with the question. [click] Then reveal the number.\n</Notes>`,
   },
   Tex: {
@@ -354,13 +368,13 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       code: "The source as a prop (what a ```mermaid fence compiles to).",
       theme: "A Mermaid theme for this diagram: default, neutral, dark, forest, base.",
       config: "Mermaid configuration for this diagram, over the deck's `mermaid:`.",
-      alt: "What the diagram shows, for screen readers (a fence's `{alt: '…'}`, Slidev's spelling); default its first line.",
+      alt: "What the diagram shows, for screen readers (a fence's `{alt: '…'}`); default its first line.",
     },
   },
   KatexLines: {
     category: "diagrams",
     summary:
-      "Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.",
+      "Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to. Write the `$$` block, not this tag.",
     example: "$$ {1|2|all}\n\\begin{aligned}\na &= b + c \\\\\nd &= e\n\\end{aligned}\n$$",
     mapping: true,
     props: {
@@ -396,7 +410,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Video: {
     category: "media",
     summary:
-      "A video that knows the slide's clicks (Slidev's SlidevVideo and more): plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.",
+      "A video that knows the slide's clicks: plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.",
     example: `<Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />`,
     props: {
       src: "Video URL (public/ path or https), or `<source>` children.",
@@ -458,7 +472,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Motion: {
     category: "motion",
     summary:
-      "Animates a block with motion (framer-motion): `initial` → `enter` on arrival, `leave` on exit, and per-click targets (Slidev's v-motion).",
+      "Animates a block with motion (framer-motion): `initial` → `enter` on arrival, `leave` on exit, and per-click targets.",
     example: `<Motion initial={{ opacity: 0, x: -80 }} enter={{ opacity: 1, x: 0 }} clicks={{ "click-1": { scale: 1.2 } }}>\n\nSlides in from the left\n\n</Motion>`,
     props: {
       initial: "Motion target before arrival.",
@@ -529,14 +543,14 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Icon: {
     category: "bling",
     summary:
-      "A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). Slidev's tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.",
+      "A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). The tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.",
     example: `<Icon name="rocket" size="2em" /> <Icon name="mdi:account-circle" color="tomato" /> <logos-react class="text-3xl" />`,
     props: {
       name: "lucide name (kebab-case or PascalCase), or an Iconify `set:name`.",
       size: "Height: CSS size or px (the width follows the icon's proportions). Tag form: 1.2em.",
       color: "CSS colour (monochrome icons).",
       strokeWidth: "Lucide icons only.",
-      class: "Slidev's spelling of className (`text-3xl`, `mx-2`).",
+      class: "Another spelling of className (`text-3xl`, `mx-2`).",
       style: "An object, or a CSS string.",
       title: "An accessible name; without one the icon is decorative.",
     },
@@ -701,12 +715,12 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   ClickCount: {
     category: "steps",
     summary:
-      "The click step this slide is at (Slidev's `$clicks`), or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.",
+      "The click step this slide is at, or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.",
     example: `Step <ClickCount offset={1} /> of <ClickCount total />\n\n<ClickCount when={(c) => c >= 3}>\n\n**Done.**\n\n</ClickCount>`,
     props: {
       total: "Show the slide's number of clicks instead of the current one.",
       offset: "Added to the number shown (`offset={1}` counts from 1).",
-      when: '`(click, total) => boolean`: render the children only while it is true (Slidev\'s `v-if="$clicks > 2"`).',
+      when: '`(click, total) => boolean`: render the children only while it is true.',
       children:
         "With `when`, what to show; otherwise a function `(click, total) => …` rendered instead of the number.",
     },
@@ -736,7 +750,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Switch: {
     category: "steps",
     summary:
-      "One child at a time, switched by clicks (Slidev's v-switch): each `<Case>` takes the next step, or `at={n}` / `at=\"a-b\"` in the switch's own steps; the cases share one spot, so nothing below jumps.",
+      "One child at a time, switched by clicks: each `<Case>` takes the next step, or `at={n}` / `at=\"a-b\"` in the switch's own steps; the cases share one spot, so nothing below jumps.",
     example: `<Switch transition="slide-up">\n<Case>First</Case>\n<Case>Then</Case>\n<Case at="4-6">Steps 4 and 5</Case>\n</Switch>`,
     props: {
       at: "When the switch's first step is, as <Click at>.",
@@ -756,7 +770,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Drag: {
     category: "layout",
     summary:
-      "A block you place by hand (Slidev's v-drag). `pos` is \"x,y,w,h[,rotation]\" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.",
+      "A block you place by hand. `pos` is \"x,y,w,h[,rotation]\" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.",
     example: `<Drag pos="1400,120,380,_">\n\n![](/badge.png)\n\n</Drag>`,
     props: {
       pos: '"x,y,w,h[,r]" or a dragPos name; omitted: where it lies, until the first drag writes one.',
@@ -769,7 +783,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   DragArrow: {
     category: "layout",
     summary:
-      "An `<Arrow>` whose ends are dragged into place in `kadal-deck dev` (Slidev's v-drag-arrow). `pos` is \"x,y,dx,dy\" (from x,y by dx,dy) or a dragPos name.",
+      "An `<Arrow>` whose ends are dragged into place in `kadal-deck dev`. `pos` is \"x,y,dx,dy\" (from x,y by dx,dy) or a dragPos name.",
     example: `<DragArrow pos="300,700,600,-280" color="var(--deck-accent)" width={4} />`,
     props: {
       pos: '"x,y,dx,dy" or a dragPos name (default 100,100,300,300).',

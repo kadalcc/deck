@@ -569,9 +569,16 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         filter: (src) => !SKIP_FONTS.has(src.split("/").pop() ?? ""),
       });
     },
-    resolveId(id) {
+    resolveId(id, importer) {
       if (id === VIRTUAL || id.startsWith(`${VIRTUAL}/`)) return `\0${id}`;
       if (id === "@kadal/deck/mdx-provider") return id;
+      // A slide's module is virtual, so `import x from "./x.ts"` in it has no folder to start
+      // from: resolve it from the file the slide was written in (deck.mdx, or a `src:` include).
+      if (importer?.startsWith(`${RESOLVED}/`) && /^\.\.?\//.test(id)) {
+        const n = /^(?:slide|notes)\/(\d+)/.exec(importer.slice(RESOLVED.length + 1));
+        const from = (n && ensure().slides[Number(n[1])]?.source.file) || entryPath;
+        return this.resolve(id, from, { skipSelf: true });
+      }
       return null;
     },
     async load(id) {

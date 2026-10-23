@@ -89,7 +89,7 @@ export interface SwitchProps {
   transition?: "fade" | "slide-up" | "slide-left" | "scale" | "none" | (string & {});
   /** Leave hidden cases out of the page rather than hidden in it. */
   unmount?: boolean;
-  /** The switch's element (`tag` in Slidev); `div` by default. */
+  /** The switch's element; `div` by default. */
   as?: ElementType;
   /** Each case's element (`childTag`); `div` by default. */
   childAs?: ElementType;
