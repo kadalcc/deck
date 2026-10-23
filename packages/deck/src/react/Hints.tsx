@@ -31,6 +31,21 @@ const SELECTOR = [
   ".deck-image[data-preview]",
 ].join(",");
 
+/** The deck's own chrome that holds controls (beside the current slide). */
+const CHROME = [
+  ".deck-controls",
+  ".deck-nav-custom",
+  ".deck-theme-menu",
+  ".deck-follow",
+  ".deck-audience",
+  // The presenter's whole bar: its tools, the layout switch, and the timer's buttons.
+  ".deck-presenter-bar",
+  ".deck-notes-tools",
+  ".deck-room-panel",
+  ".deck-narration",
+  ".deck-draw-toolbar",
+].join(",");
+
 const LETTERS = "asdfghjkl";
 
 interface Target {
@@ -78,10 +93,10 @@ export function HintLayer() {
     const roots: Element[] = [];
     const slide = document.querySelector(".deck-slide.is-present");
     if (slide) roots.push(slide);
-    for (const extra of document.querySelectorAll(
-      ".deck-controls, .deck-theme-menu, .deck-audience, .deck-presenter-tools, .deck-room-panel",
-    ))
-      roots.push(extra);
+    // Every piece of the deck's own chrome that holds a control. A control added outside these
+    // gets no label: the overview and start buttons of a deck's nav layer, the "Follow the
+    // presenter" pill, the narration bar and the presenter's timer all went unlabelled until they were listed here.
+    for (const extra of document.querySelectorAll(CHROME)) roots.push(extra);
     const seen = new Set<HTMLElement>();
     const els: HTMLElement[] = [];
     for (const root of roots) {

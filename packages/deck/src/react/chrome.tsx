@@ -23,9 +23,9 @@ export function Chrome() {
       {deck.config.controls === true ? <Controls /> : null}
       <NavControlsLayer />
       {deck.config.progress ? <Progress /> : null}
-      {deck.config.slideNumber &&
-      (deck.config.showSlideNumber === "all" ||
-        (deck.config.showSlideNumber === "print" && deck.mode === "print")) ? (
+      {/* The pill of arrows carries the number itself (Controls). */}
+      {slideNumberShown(deck) &&
+      !(deck.config.controls === true && deck.config.controlsLayout === "bottom-right") ? (
         <SlideNumber />
       ) : null}
       {deck.config.showNotes ? <NotesFooter /> : null}
@@ -41,6 +41,23 @@ export function Chrome() {
   );
 }
 
+/** Whether the slide number is drawn in this view at all (`slideNumber`, `showSlideNumber`). */
+function slideNumberShown(deck: ReturnType<typeof useDeck>): boolean {
+  return (
+    !!deck.config.slideNumber &&
+    (deck.config.showSlideNumber === "all" ||
+      (deck.config.showSlideNumber === "print" && deck.mode === "print"))
+  );
+}
+
+/**
+ * The arrows. `edges` puts one on each edge of the stage, reveal.js's way. `bottom-right` (the
+ * default) is one pill in the corner — ‹ 5 / 138 › — on the same line and at the same height as
+ * the theme button opposite it: the up and down arrows join it only on a slide that has a stack to
+ * go up or down, and the slide number, when the deck shows one, sits in the middle and opens
+ * jump-to. It replaced a 3 × 3 cross of bare chevrons with the number floating beside it, which
+ * lined up with nothing else on the screen.
+ */
 export function Controls() {
   const deck = useDeck();
   const nav = useNav((s) => ({
@@ -73,6 +90,7 @@ export function Controls() {
     return unsub;
   }, [deck.nav, tutorial]);
   const back = deck.config.controlsBackArrows;
+  const pill = deck.config.controlsLayout === "bottom-right";
   const arrow = (
     dir: "left" | "right" | "up" | "down",
     enabled: boolean,
@@ -91,6 +109,7 @@ export function Controls() {
         .filter(Boolean)
         .join(" ")}
       aria-label={`Navigate ${dir}`}
+      title={NAV_TITLES[dir]}
       disabled={!enabled}
       hidden={isBack && back === "hidden" && enabled}
       onClick={onClick}
@@ -98,18 +117,31 @@ export function Controls() {
       <span />
     </button>
   );
+  // In the pill, up and down are there only where there is somewhere to go: most slides have no
+  // stack, and two dead chevrons on every one of them were most of the old cross.
+  const stack = routes.up || routes.down;
   return (
     <div
       className={`deck-controls layout-${deck.config.controlsLayout}`}
+      role="toolbar"
+      aria-label="Slide navigation"
       aria-hidden={nav.overview || undefined}
     >
       {arrow("left", routes.left || routes.prevClick, actions.prev, true)}
+      {!pill || stack ? arrow("up", routes.up, actions.up, true) : null}
+      {pill && slideNumberShown(deck) ? <SlideNumber inPill /> : null}
+      {!pill || stack ? arrow("down", routes.down, actions.down, false) : null}
       {arrow("right", routes.right || routes.nextClick, actions.next, false)}
-      {arrow("up", routes.up, actions.up, true)}
-      {arrow("down", routes.down, actions.down, false)}
     </div>
   );
 }
+
+const NAV_TITLES = {
+  left: "Back (←)",
+  right: "Next (→ or Space)",
+  up: "Up the stack (↑)",
+  down: "Down the stack (↓)",
+} as const;
 
 export function Progress() {
   const deck = useDeck();
@@ -150,12 +182,26 @@ export function Progress() {
   );
 }
 
-export function SlideNumber() {
+export function SlideNumber({ inPill = false }: { inPill?: boolean }) {
   const deck = useDeck();
   const nav = useNav((s) => ({ h: s.h, v: s.v, click: s.click }));
   const format = deck.config.slideNumber === true ? "h.v" : deck.config.slideNumber;
   if (!format) return null;
   const text = formatSlideNumber(format, nav, deck.columns, true);
+  if (inPill)
+    return (
+      <button
+        type="button"
+        className="deck-slide-number"
+        // The command, so a deck that turned jump-to off (`jumpToSlide: false`) keeps it off.
+        onClick={() => void deck.commands.run("view.jump", {}, "ui")}
+        disabled={!deck.config.jumpToSlide}
+        title="Go to a slide (G)"
+        aria-label={`Slide ${text}. Go to another slide`}
+      >
+        {text}
+      </button>
+    );
   return (
     <a
       className="deck-slide-number"

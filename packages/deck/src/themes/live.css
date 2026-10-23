@@ -165,12 +165,13 @@
 }
 /* THE WAY BACK. On screen only while a viewer is reading on their own — in step there is nothing
    to say, and any move of their own is how they leave. It sits low and centred, clear of the
-   controls in the corner and of the progress bar under it. */
+   progress bar under it, on the same middle line as the theme button and the arrows' pill in the
+   corners (they are 32px tall at 18px; this one is 40px, so 14px). */
 .deck-follow {
   position: absolute;
   z-index: 40;
   /* Above the ad frame's bottom row when it shows (react/AdFrame.tsx sets the variables). */
-  bottom: calc(26px + var(--deck-frame-bottom, 0px));
+  bottom: calc(14px + var(--deck-frame-bottom, 0px));
   left: calc((100% - var(--deck-frame-right, 0px)) / 2);
   transform: translateX(-50%);
   display: flex;
@@ -634,6 +635,49 @@
 }
 .deck-presenter-current {
   grid-area: current;
+  /* The theme button sits at the slide's bottom-left, as it does in the play view. */
+  position: relative;
+}
+.deck-presenter-current > .deck-theme-menu {
+  left: 14px;
+  bottom: 14px;
+}
+/* The layout switch: one segmented control, the same height as the timer's buttons. */
+.deck-presenter-layout {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 9px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+}
+.deck-presenter-layout button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--deck-muted);
+  cursor: pointer;
+}
+.deck-presenter-layout button:hover {
+  color: var(--deck-fg);
+}
+.deck-presenter-layout button.is-on {
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.deck-presenter-layout button:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+}
+.deck-presenter-layout .deck-icon {
+  width: 16px;
+  height: 16px;
 }
 .deck-presenter-next {
   grid-area: next;

@@ -1242,9 +1242,117 @@ pre.deck-code.has-lines .line::before {
   gap: 2px;
   --deck-controls-color: var(--deck-accent);
 }
+/* The pill (react/chrome.tsx `Controls`): the theme button's twin in the opposite corner — the
+   same 32px height, 18px from the edges, the same frosted fill, faint until the pointer or the
+   keyboard reaches it. The prefixed blur first: the CSS minifier keeps only the last of the pair. */
 .deck-controls.layout-bottom-right {
-  right: 12px;
-  bottom: 12px;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 2px;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: color-mix(in oklab, var(--deck-bg) 85%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.deck-controls.layout-bottom-right:hover,
+.deck-controls.layout-bottom-right:focus-within {
+  opacity: 1;
+}
+.deck-controls.layout-bottom-right .deck-control {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  opacity: 0.3;
+  transition:
+    opacity 0.2s,
+    background-color 0.2s;
+}
+.deck-controls.layout-bottom-right .deck-control.is-enabled {
+  opacity: 1;
+}
+.deck-controls.layout-bottom-right .deck-control.is-enabled.is-faded {
+  opacity: 0.6;
+}
+.deck-controls.layout-bottom-right .deck-control.is-enabled:hover {
+  transform: none;
+  opacity: 1;
+  background: color-mix(in oklab, var(--deck-fg) 9%, transparent);
+}
+.deck-controls.layout-bottom-right .deck-control:focus-visible,
+.deck-controls.layout-bottom-right .deck-slide-number:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 0;
+}
+/* A chevron is the corner of a rotated square, so its middle sits back from its point: each is
+   nudged towards its point to look centred in its circle. */
+.deck-controls.layout-bottom-right .deck-control span {
+  width: 7px;
+  height: 7px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.deck-controls.layout-bottom-right .deck-control-left span {
+  transform: translateX(1.5px) rotate(-135deg);
+}
+.deck-controls.layout-bottom-right .deck-control-right span {
+  transform: translateX(-1.5px) rotate(45deg);
+}
+.deck-controls.layout-bottom-right .deck-control-up span {
+  transform: translateY(1.5px) rotate(-45deg);
+}
+.deck-controls.layout-bottom-right .deck-control-down span {
+  transform: translateY(-1.5px) rotate(135deg);
+}
+.deck-controls.layout-bottom-right .deck-control.is-highlight span {
+  animation: none;
+}
+.deck-controls.layout-bottom-right .deck-control-right.is-highlight {
+  animation: deck-nudge 1.2s ease infinite;
+}
+@keyframes deck-nudge {
+  50% {
+    transform: translateX(3px);
+  }
+}
+/* The number in the middle opens jump-to. Selectors of three classes, so a theme's own
+   `.theme-x .deck-slide-number` (its font, its colour) applies but not its free-floating box. */
+.deck-controls.layout-bottom-right .deck-slide-number {
+  position: static;
+  height: 26px;
+  margin: 0 2px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+  line-height: 26px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.deck-controls.layout-bottom-right .deck-slide-number:hover:not(:disabled) {
+  color: var(--deck-fg);
+  background: color-mix(in oklab, var(--deck-fg) 9%, transparent);
+}
+.deck-controls.layout-bottom-right .deck-slide-number:disabled {
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-controls.layout-bottom-right,
+  .deck-controls.layout-bottom-right .deck-control {
+    transition: none;
+  }
+  .deck-controls.layout-bottom-right .deck-control-right.is-highlight {
+    animation: none;
+  }
 }
 .deck-controls.layout-edges {
   inset: 0;
@@ -1307,18 +1415,6 @@ pre.deck-code.has-lines .line::before {
     transform: rotate(45deg) translate(3px, -3px);
   }
 }
-.deck-controls.layout-bottom-right .deck-control-left {
-  grid-area: 2 / 1;
-}
-.deck-controls.layout-bottom-right .deck-control-right {
-  grid-area: 2 / 3;
-}
-.deck-controls.layout-bottom-right .deck-control-up {
-  grid-area: 1 / 2;
-}
-.deck-controls.layout-bottom-right .deck-control-down {
-  grid-area: 3 / 2;
-}
 .deck-controls.layout-edges .deck-control {
   position: absolute;
 }
@@ -1370,9 +1466,6 @@ pre.deck-code.has-lines .line::before {
   background: var(--deck-surface);
   padding: 4px 8px;
   border-radius: 6px;
-}
-.deck-controls.layout-bottom-right ~ .deck-slide-number {
-  right: 160px;
 }
 .deck-pause-curtain {
   position: absolute;

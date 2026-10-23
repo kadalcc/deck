@@ -46,16 +46,29 @@ const Narration = lazy(() => import("../narrate/Narration.tsx"));
  * the pace they want, their questions, the polls to open. Opened with `S` from the deck; both
  * windows stay in step over the window bus (core/windows.ts), and the room follows the presenter.
  *
- * Layouts (toggle with L): notes-right (default), notes-left, next-big.
+ * Layouts (the switch in the bar, or L): notes-left (the default: notes over the next slide, the
+ * current slide beside them), notes-right, next-big. Each window keeps the one it was left on.
  * ─────────────────────────────────────────────────────────────────────────────
  */
+type PresenterLayout = "notes-left" | "notes-right" | "next-big";
+
+const LAYOUTS: { id: PresenterLayout; icon: string; label: string }[] = [
+  { id: "notes-left", icon: "panel-left", label: "Notes and next on the left" },
+  { id: "notes-right", icon: "panel-right", label: "Notes and next on the right" },
+  { id: "next-big", icon: "layout-panel-top", label: "A big next slide" },
+];
+
+function savedLayout(): PresenterLayout {
+  const saved = readItem("deck.presenter.layout");
+  return LAYOUTS.some((l) => l.id === saved) ? (saved as PresenterLayout) : "notes-left";
+}
+
 export function PresenterPage() {
   const deck = useDeck();
   const live = useLiveOptional();
   const gate = usePresenterGate();
-  const [layout, setLayout] = useState<"notes-right" | "notes-left" | "next-big">(
-    () => (readItem("deck.presenter.layout") as "notes-right" | null) ?? "notes-right",
-  );
+  const [layout, setLayout] = useState<PresenterLayout>(savedLayout);
+  const overview = useNav((s) => s.overview);
   const [mirror, setMirror] = useState(false);
   const [roomOpen, setRoomOpen] = useState(() => readItem("deck.presenter.room") !== "closed");
   const narrate = useNarrationOn();
@@ -71,9 +84,7 @@ export function PresenterPage() {
       // it used to change the layout AND move the deck on a step, every press.
       e.stopImmediatePropagation();
       e.preventDefault();
-      setLayout((l) =>
-        l === "notes-right" ? "notes-left" : l === "notes-left" ? "next-big" : "notes-right",
-      );
+      setLayout((l) => LAYOUTS[(LAYOUTS.findIndex((x) => x.id === l) + 1) % LAYOUTS.length]!.id);
     };
     // Capture: ahead of the deck's own key handler, whatever order the two were added in.
     window.addEventListener("keydown", onKey, true);
@@ -88,6 +99,7 @@ export function PresenterPage() {
         <strong>{deck.config.title}</strong>
         <PresenterTimer />
         <Clock />
+        <LayoutSwitch layout={layout} setLayout={setLayout} />
         <span className="deck-presenter-spacer" />
         <PresenterTools mirror={mirror} setMirror={setMirror} />
       </header>
@@ -95,6 +107,9 @@ export function PresenterPage() {
         <section className="deck-presenter-current">
           <div className="deck-presenter-label">Current</div>
           {mirror ? <ScreenMirror /> : <LiveStage />}
+          {/* Where the play view has it: the bottom-left of the slide. Over the overview it
+              moves to the bottom-left of the window, as it is there in the play view. */}
+          {overview ? null : <ThemeMenu />}
         </section>
         <section className="deck-presenter-next">
           <div className="deck-presenter-label">Next</div>
@@ -111,6 +126,7 @@ export function PresenterPage() {
       {/* Esc, O or a toolbar button: every slide, to pick the next one from. The presenter's own;
           the audience keeps the current slide until one is picked. */}
       <Overview />
+      {overview ? <ThemeMenu /> : null}
       {/* The pen's toolbar (draw/DrawingLayer.tsx) lands here: on the panes, above the player. */}
       <div className="deck-presenter-toolbar-slot" />
       {narrate ? (
@@ -465,6 +481,34 @@ export function NotesPanel() {
   );
 }
 
+/** The three layouts as one segmented switch in the bar; L steps through them too. */
+function LayoutSwitch({
+  layout,
+  setLayout,
+}: {
+  layout: PresenterLayout;
+  setLayout: (l: PresenterLayout) => void;
+}) {
+  return (
+    <div className="deck-presenter-layout" role="radiogroup" aria-label="Layout (L)">
+      {LAYOUTS.map((l) => (
+        <button
+          key={l.id}
+          type="button"
+          role="radio"
+          aria-checked={layout === l.id}
+          aria-label={l.label}
+          title={`${l.label} (L)`}
+          className={layout === l.id ? "is-on" : ""}
+          onClick={() => setLayout(l.id)}
+        >
+          <Icon name={l.icon} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -508,7 +552,9 @@ function PresenterTools({
     deck.ui.update((s) => ({ ...s, [key]: !s[key] }));
   return (
     <div className="deck-presenter-tools" role="toolbar">
-      <ThemeMenu compact />
+      <button type="button" onClick={() => actions.toggleOverview()} title="Every slide (O or Esc)">
+        <Icon name="layout-grid" /> Overview
+      </button>
       <button
         type="button"
         className={ui.drawing ? "is-on" : ""}

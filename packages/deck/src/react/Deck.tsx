@@ -873,10 +873,14 @@ function useDeckEffects(
       const vp = viewport();
       const inset = stageInset.get();
       layout.set(
-        computeLayout(config, {
-          width: Math.max(1, vp.width - inset.right),
-          height: Math.max(1, vp.height - inset.bottom),
-        }),
+        computeLayout(
+          config,
+          {
+            width: Math.max(1, vp.width - inset.right),
+            height: Math.max(1, vp.height - inset.bottom),
+          },
+          window.devicePixelRatio,
+        ),
       );
     };
     measure();
