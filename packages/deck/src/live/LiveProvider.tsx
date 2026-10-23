@@ -400,8 +400,11 @@ export function PointerLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
     live?.client.send({ type: "pointer", x: laser.x, y: laser.y });
   }, [owns, laser, on, live]);
 
+  // The spotlight follows the cursor on its own too: the Spotlight button with the laser off used to
+  // light nothing, here or on any other screen, because only the laser tracked the pointer.
+  const tracking = on || spotlight;
   useEffect(() => {
-    if (!on || role !== "presenter") {
+    if (!tracking || role !== "presenter") {
       if (role === "presenter") live?.client.send({ type: "pointer:off" });
       setLocal(null);
       return;
@@ -429,7 +432,7 @@ export function PointerLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
     };
     window.addEventListener("pointermove", onMove);
     return () => window.removeEventListener("pointermove", onMove);
-  }, [on, role, live, deck.layout, deck.config.width, deck.config.height]);
+  }, [tracking, role, live, deck.layout, deck.config.width, deck.config.height]);
 
   // A laser points at a place on the PRESENTER's slide, so on any other slide it means nothing:
   // a viewer reading on their own is not given the dot.
@@ -454,7 +457,9 @@ export function PointerLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
           }}
         />
       ) : null}
-      {p ? (
+      {/* Under the spotlight the lit circle is the pointer, on every screen alike: the room carries
+          one position, not which of the two the presenter has on. */}
+      {p && !spotlight ? (
         <div
           className="deck-pointer"
           style={{ transform: `translate(${x}px, ${y}px)${inCanvas ? " scale(2.5)" : ""}` }}

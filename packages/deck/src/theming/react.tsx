@@ -270,7 +270,7 @@ export function setupApi(deck: DeckRuntime | (() => DeckRuntime)): SetupApi & { 
     shortcut(combo: string, run: (e: KeyboardEvent) => void) {
       if (typeof window === "undefined") return () => {};
       const onKey = (e: KeyboardEvent) => {
-        if (e.defaultPrevented || isEditable(e.target) || current().projector) return;
+        if (e.defaultPrevented || isEditable(e) || current().projector) return;
         if (!matchesShortcut(combo, e)) return;
         e.preventDefault();
         run(e);

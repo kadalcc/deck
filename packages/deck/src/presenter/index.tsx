@@ -21,6 +21,7 @@ import { Icon } from "../components/bling.tsx";
 import { ConfettiLayer } from "../react/ConfettiLayer.tsx";
 import { HintLayer } from "../react/Hints.tsx";
 import { NavControlsLayer } from "../react/Layers.tsx";
+import { Overview } from "../react/Overview.tsx";
 import { ThemeMenu } from "../react/ThemeMenu.tsx";
 import { loadSlide, SlideFrame } from "../react/SlideFrame.tsx";
 import { Stage } from "../react/Stage.tsx";
@@ -65,7 +66,7 @@ export function PresenterPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "KeyL" || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      if (isEditable(e.target)) return;
+      if (isEditable(e)) return;
       // L is also vim's "right" in the deck's own keymap. Here it is the layout, and only that:
       // it used to change the layout AND move the deck on a step, every press.
       e.stopImmediatePropagation();
@@ -107,6 +108,11 @@ export function PresenterPage() {
           <PresenterSidebar open={roomOpen} setOpen={setRoomOpen} />
         </aside>
       </main>
+      {/* Esc, O or a toolbar button: every slide, to pick the next one from. The presenter's own;
+          the audience keeps the current slide until one is picked. */}
+      <Overview />
+      {/* The pen's toolbar (draw/DrawingLayer.tsx) lands here: on the panes, above the player. */}
+      <div className="deck-presenter-toolbar-slot" />
       {narrate ? (
         <Suspense fallback={null}>
           <Narration />
@@ -223,23 +229,37 @@ function usePresenterGate(): Gate {
   return { ...state, login };
 }
 
-function PresenterLogin({ gate }: { gate: Gate }) {
+/**
+ * The passcode form (and "Sign in as the author", when the host offers it). `stats`: the same gate
+ * in front of /stats, opened in a tab that has no ticket yet — the passcode opens the stats there.
+ */
+function PresenterLogin({ gate, stats = false }: { gate: Gate; stats?: boolean }) {
+  const deck = useDeck();
   const [code, setCode] = useState("");
   const author = gate.signIn ? (
     <a className="deck-gate-signin" href={gate.signIn}>
       Sign in as the author
     </a>
   ) : null;
+  // The author's sign-in returns to the presenter view; its Stats button opens them from there.
+  const viaPresenter = stats ? (
+    <p className="deck-gate-or">
+      Signed in on the presenter view? Open the stats from its toolbar:{" "}
+      <a href={`${deck.base}presenter`}>open the presenter view</a>.
+    </p>
+  ) : null;
   if (!gate.passcode)
     return (
       <div className="deck-gate">
         <div className="deck-gate-card">
-          <h1>Presenter</h1>
+          <h1>{stats ? "Stats" : "Presenter"}</h1>
           <p>
-            This deck has no presenter passcode yet. Sign in as its author (with Google or GitHub)
-            to present it — you can set a passcode there for next time.
+            {stats
+              ? "This deck's stats are for its presenter. Sign in as its author (with Google or GitHub) to see them."
+              : "This deck has no presenter passcode yet. Sign in as its author (with Google or GitHub) to present it — you can set a passcode there for next time."}
           </p>
           {author ?? <p className="deck-gate-error">Ask the deck's owner how to present it.</p>}
+          {viaPresenter}
         </div>
       </div>
     );
@@ -251,9 +271,11 @@ function PresenterLogin({ gate }: { gate: Gate }) {
           void gate.login(code);
         }}
       >
-        <h1>Presenter</h1>
+        <h1>{stats ? "Stats" : "Presenter"}</h1>
         <p>
-          This deck's presenter view is protected. Enter its presenter passcode
+          {stats
+            ? "This deck's stats are for its presenter. Enter the presenter passcode"
+            : "This deck's presenter view is protected. Enter its presenter passcode"}
           {gate.signIn ? ", or sign in as its author." : "."}
         </p>
         <input
@@ -265,10 +287,11 @@ function PresenterLogin({ gate }: { gate: Gate }) {
           disabled={gate.checking}
         />
         <button type="submit" disabled={gate.checking || !code}>
-          {gate.checking ? "Checking…" : "Open the presenter view"}
+          {gate.checking ? "Checking…" : stats ? "Open the stats" : "Open the presenter view"}
         </button>
         {gate.error ? <p className="deck-gate-error">{gate.error}</p> : null}
         {author ? <p className="deck-gate-or">or {author}</p> : null}
+        {viaPresenter}
       </form>
     </div>
   );
@@ -740,8 +763,12 @@ export function StatsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const ticket = useStore(presenterTicket);
+  // The presenter's gate, here too: a tab opened on /stats directly has no ticket, and the
+  // passcode (or the author's sign-in) gives it one without going round by the presenter view.
+  const gate = usePresenterGate();
   useEffect(() => {
-    if (!api) return;
+    if (!api || !gate.ok) return;
+    setError(null);
     fetch(`${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/stats`, {
       headers: ticketHeaders(),
     })
@@ -750,16 +777,29 @@ export function StatsPage() {
           ? setStats((await r.json()) as Stats)
           : setError(
               r.status === 401
-                ? "Sign in on the presenter page first."
+                ? "The host did not accept this sign-in. Open the presenter view and sign in again."
                 : `The host answered ${r.status}.`,
             ),
       )
       .catch((e: unknown) => setError(String(e)));
-  }, [api, deck.config, ticket]);
-  if (!api)
-    return <div className="deck-stats-page">This deck has no host, so there are no stats.</div>;
-  if (error) return <div className="deck-stats-page">{error}</div>;
-  if (!stats) return <div className="deck-stats-page">Loading…</div>;
+  }, [api, deck.config, ticket, gate.ok]);
+  const note = (text: string, tone?: "error") => (
+    <div className="deck-gate">
+      <div className="deck-gate-card">
+        <h1>Stats</h1>
+        <p className={tone === "error" ? "deck-gate-error" : undefined}>{text}</p>
+        <p className="deck-gate-or">
+          <a href={`${deck.base}presenter`}>The presenter view</a> ·{" "}
+          <a href={deck.base}>the deck</a>
+        </p>
+      </div>
+    </div>
+  );
+  if (!api) return note("This deck has no host, so there are no stats.");
+  if (gate.required && !gate.ok)
+    return gate.checking && !gate.error ? note("Checking…") : <PresenterLogin gate={gate} stats />;
+  if (error) return note(error, "error");
+  if (!stats) return note("Loading…");
   const maxDwell = Math.max(1, ...stats.slides.map((s) => s.dwellMs));
   const titleOf = (slide: string) => {
     const [h, v] = slide.split(",").map(Number);

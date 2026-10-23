@@ -500,6 +500,9 @@ export function Deck({
         ui.update((s) => ({ ...s, theme, themeMenu: false }));
       },
       openPresenter: () => {
+        // This window is the one the presenter view will drive (the projector, a shared screen):
+        // it follows from here, even after moves of its own had stopped it following.
+        nav.update((s) => (s.follow ? s : { ...s, follow: true }));
         const p = nav.get();
         // The presenter this window was opened for (a ticket) is the presenter of the view it opens.
         const opened = window.open(
@@ -989,7 +992,7 @@ function useDeckEffects(
       return;
     let pendingG = 0;
     const onKey = (e: KeyboardEvent) => {
-      if (isEditable(e.target)) return;
+      if (isEditable(e)) return;
       const u = ui.get();
       const s = nav.get();
       // The binding this key has here (core/shortcuts.ts): the defaults, the deck's own changes.

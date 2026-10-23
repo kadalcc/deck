@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { createClickRegistry, isShown } from "./clicks.ts";
 import { formatHash, parseFlags, parseHash } from "./hash.ts";
+import { isEditable } from "./keyboard.ts";
 import { computeLayout } from "./layout.ts";
 import {
   type Column,
@@ -267,5 +268,43 @@ describe("a slide that forces a colour scheme", () => {
   });
   test("and a slide that forces none has no layer it did not ask for", () => {
     expect(resolveSlideOptions({}, DEFAULT_CONFIG, false).background).toBeNull();
+  });
+});
+
+describe("typing in a field", () => {
+  // Elements as the DOM shapes them, enough for isEditable (no DOM in these tests).
+  const el = (tagName: string, extra: Record<string, unknown> = {}) => ({
+    nodeType: 1,
+    tagName,
+    isContentEditable: false,
+    hasAttribute: (name: string) => name in ((extra.attrs as object) ?? {}),
+    closest: () => null,
+    ...extra,
+  });
+  const key = (path: object[], target = path[0]) =>
+    ({ target, composedPath: () => path }) as unknown as Event;
+  const host = el("DECK-COPILOT");
+  const doc = { nodeType: 9 };
+
+  test("a field inside a shadow root is a field, though the event's target is its host", () => {
+    const input = el("INPUT");
+    const shadow = { nodeType: 11 };
+    const e = key([input, shadow, host, el("ASIDE"), doc, {}], host);
+    expect(isEditable(e.target)).toBe(false);
+    expect(isEditable(e)).toBe(true);
+  });
+
+  test("textareas, selects and contenteditable anywhere up the path; plain keys are the deck's", () => {
+    expect(isEditable(key([el("TEXTAREA"), doc]))).toBe(true);
+    expect(isEditable(key([el("SELECT"), doc]))).toBe(true);
+    expect(isEditable(key([el("SPAN", { isContentEditable: true }), doc]))).toBe(true);
+    expect(isEditable(key([el("BUTTON"), el("DIV", { attrs: { "data-deck-own-keys": "" } }), doc]))).toBe(true);
+    expect(isEditable(key([el("BUTTON"), el("MAIN"), doc]))).toBe(false);
+    expect(isEditable(key([doc]))).toBe(false);
+    expect(isEditable(null)).toBe(false);
+  });
+
+  test("an element from another realm (an iframe) counts, though it is no HTMLElement here", () => {
+    expect(isEditable(el("INPUT") as unknown as EventTarget)).toBe(true);
   });
 });
