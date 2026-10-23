@@ -1,5 +1,13 @@
 # @kadal/deck-python
 
+## 0.4.5
+
+### Patch Changes
+
+- Updated dependencies [2416c3a]
+- Updated dependencies [2aa06ab]
+  - @kadal/deck@0.4.5
+
 ## 0.4.4
 
 ### Patch Changes
