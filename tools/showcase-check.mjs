@@ -8,6 +8,8 @@
  *   node tools/showcase-check.mjs --out <dir>       where screenshots and exports go
  *                                                   (default examples/showcase/check-output, gitignored)
  *   node tools/showcase-check.mjs --port <n>        serve the deck on that port (default: any free one)
+ *   node tools/showcase-check.mjs --only <text>     run only the checks whose name contains <text>
+ *                                                   (the walk still reads the deck's slides)
  *
  * Needs the engine built (`bun run build`) and Playwright's Chromium (`npx playwright install chromium`).
  * Prints a table and exits non-zero on any failure.
@@ -40,7 +42,9 @@ const started = Date.now();
 // ── results ────────────────────────────────────────────────────────────────
 const results = [];
 let current = null;
+const only = val("--only", null);
 async function step(name, fn) {
+  if (only && !name.includes(only) && !name.startsWith("walk:")) return;
   const t = Date.now();
   current = { name, ok: true, detail: [], ms: 0 };
   try {
@@ -217,6 +221,7 @@ await step("walk: every slide and every click, light", async () => {
   await page.goto(`${base}#/0`);
   await ready(page);
   columns = await manifestOf(page);
+  if (only && !"walk: every slide and every click, light".includes(only)) return void (await context.close());
   const expected = columns.reduce((n, c) => n + c.length, 0);
   let last = "";
   let stepsTaken = 0;
@@ -620,6 +625,121 @@ await step("presenter: current, next, notes for the click, timer, L", async () =
     for (const p of take()) expect(false, `${scheme}: ${p}`);
     await context.close();
   }
+});
+
+await step("presenter: the pen, the overview, and keys typed into fields", async () => {
+  const { page, context, take } = await openPage({ viewport: { width: 1440, height: 900 } });
+  const s = at("writing");
+  await page.goto(`${base}presenter#/${s.h}`);
+  await page.waitForSelector(".deck-presenter", { timeout: 30_000 });
+  await page.waitForTimeout(1500);
+  // Strokes stay: through a change of colour and tool, past the time a scribble would fade.
+  await page.keyboard.press("c");
+  await page.waitForTimeout(300);
+  const canvas = await page.locator(".deck-presenter-current .deck-presenter-canvas").boundingBox();
+  const stroke = async (x, y) => {
+    await page.mouse.move(canvas.x + canvas.width * x, canvas.y + canvas.height * y);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(canvas.x + canvas.width * (x + i * 0.02), canvas.y + canvas.height * (y + i * 0.01));
+    await page.mouse.up();
+  };
+  const strokes = () => page.locator(".deck-presenter-current svg.deck-drawing g[data-stroke]").count();
+  await stroke(0.2, 0.3);
+  await page.click(".deck-draw-toolbar button[aria-label='Colour #3b82f6']");
+  await page.click(".deck-draw-toolbar button[aria-label='Rectangle']");
+  await stroke(0.5, 0.5);
+  await page.click(".deck-draw-toolbar button[aria-label='Pen']");
+  await stroke(0.3, 0.7);
+  expect((await strokes()) === 3, `${await strokes()} strokes after changing colour and tool, expected 3`);
+  // The toolbar sits clear of the narration bar.
+  const overlap = await page.evaluate(() => {
+    const t = document.querySelector(".deck-draw-toolbar")?.getBoundingClientRect();
+    const n = document.querySelector(".deck-presenter .deck-narration")?.getBoundingClientRect();
+    return t && n ? t.bottom > n.top + 1 : false;
+  });
+  expect(!overlap, "the drawing toolbar covers the narration bar");
+  // With the pen on, Escape closes an open theme menu first.
+  await page.click(".deck-theme-button");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  const u1 = await ui(page);
+  expect(!u1.themeMenu && u1.drawing, `Esc with the pen on: theme menu ${u1.themeMenu}, pen ${u1.drawing}`);
+  await page.click(".deck-draw-toolbar button[aria-label='Done']");
+  await page.waitForTimeout(6500);
+  expect((await strokes()) === 3, `${await strokes()} strokes once the tools closed and a scribble's time passed, expected 3`);
+  await page.keyboard.press("Shift+c");
+  await page.keyboard.press("c");
+  await page.keyboard.press("Shift+c");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+  // The overview opens over the presenter view, and a tile goes there.
+  await page.click(".deck-presenter-tools button[aria-label='Overview']");
+  await page.waitForTimeout(500);
+  expect(await page.locator(".deck-presenter .deck-overview").isVisible(), "the Overview button showed no overview");
+  await page.locator(".deck-overview-tile").nth(4).click();
+  await page.waitForTimeout(500);
+  expect((await page.locator(".deck-overview").count()) === 0 && (await nav(page)).h === 3, "an overview tile did not go to its slide");
+  // Keys typed into a field are the field's: one in a shadow root (a host's panel), and search.
+  const before = await nav(page);
+  const layout = await page.evaluate(() => document.querySelector(".deck-presenter").className);
+  await page.evaluate(() => {
+    const host = document.createElement("div");
+    host.id = "shadow-panel";
+    document.querySelector(".deck-presenter-room").append(host);
+    const root = host.attachShadow({ mode: "open" });
+    root.innerHTML = '<input id="ask" /><div id="ce" contenteditable="true"></div>';
+  });
+  await page.locator("#shadow-panel input").click();
+  await page.keyboard.type("hello lt gjk b. sdc");
+  const typed = await page.locator("#shadow-panel input").inputValue();
+  expect(typed === "hello lt gjk b. sdc", `the shadow-root field got “${typed}”`);
+  await page.locator("#shadow-panel [contenteditable]").click();
+  await page.keyboard.type("all ok");
+  expect((await page.locator("#shadow-panel [contenteditable]").textContent()) === "all ok", "the shadow-root contenteditable lost keys");
+  const after = await nav(page);
+  const u2 = await ui(page);
+  expect(after.h === before.h && after.click === before.click && !after.paused, `typing moved the deck (${before.h}/${before.click} → ${after.h}/${after.click})`);
+  expect(!u2.themeMenu && !u2.drawing && !u2.search && !u2.jump, "typing opened a menu or tool");
+  expect((await page.evaluate(() => document.querySelector(".deck-presenter").className)) === layout, "typing changed the presenter layout (L)");
+  await page.evaluate(() => document.getElementById("shadow-panel")?.remove());
+  for (const p of take()) expect(false, p);
+  await context.close();
+});
+
+await step("typing in fields on the deck and the audience page", async () => {
+  const { page, context, take } = await openPage();
+  const s = at("writing");
+  await page.goto(`${base}#/${s.h}`);
+  await ready(page);
+  await page.waitForTimeout(500);
+  await page.keyboard.press("/");
+  await page.keyboard.type("lt b");
+  const u = await ui(page);
+  expect(u.search && !u.themeMenu && !(await nav(page)).paused, "keys typed into search reached the deck");
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    host.attachShadow({ mode: "open" }).innerHTML = '<textarea id="t"></textarea>';
+    host.id = "shadow-play";
+  });
+  const before = await nav(page);
+  await page.locator("#shadow-play textarea").click();
+  await page.keyboard.type("next slide please");
+  const after = await nav(page);
+  expect(after.h === before.h && after.click === before.click, "typing in a shadow-root textarea moved the deck");
+  expect((await page.locator("#shadow-play textarea").inputValue()) === "next slide please", "the shadow-root textarea lost keys");
+  await page.goto(`${base}join`);
+  await page.waitForSelector(".deck-audience", { timeout: 30_000 });
+  await page.waitForTimeout(800);
+  const field = page.locator(".deck-audience textarea, .deck-audience input[type=text]").first();
+  if (await field.count()) {
+    await field.click();
+    await page.keyboard.type("hello lt");
+    expect((await field.inputValue()) === "hello lt", `the audience page's field got “${await field.inputValue()}”`);
+  } else note("the audience page has no text field without a room");
+  for (const p of take()) expect(false, p);
+  await context.close();
 });
 
 await step("notes page: every note", async () => {

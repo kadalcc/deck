@@ -5,7 +5,8 @@ import { DrawingDoc, cleanStrokes, type DrawBusMessage } from "./doc.ts";
 import { cut, cutAll, distToSegment, sweep, touches } from "./erase.ts";
 import { record, redo, RoomSender, roomOps, undo, emptyHistory } from "./history.ts";
 import { constrain, headLength, polylineOf, shapePoints, shapeStroke, tooSmall } from "./shapes.ts";
-import { pathOf, segmentsOf } from "./strokes.ts";
+import { newStroke, pathOf, segmentsOf } from "./strokes.ts";
+import { parseDrawPrefs } from "./DrawingLayer.tsx";
 import {
   drawingFile,
   isDrawingFile,
@@ -483,5 +484,37 @@ describe("the shared drawing", () => {
       [4, 5],
     ]);
     expect(out[0]!.shape).toBe("rect");
+  });
+});
+
+describe("strokes stay", () => {
+  test("by default a stroke stays: the tool's first preferences, and older saved ones", () => {
+    expect(parseDrawPrefs(null).keep).toBe(true);
+    expect(parseDrawPrefs("not json").keep).toBe(true);
+    // What every browser saved on its first visit before strokes stayed: the default, not a choice.
+    expect(parseDrawPrefs(JSON.stringify({ tool: "rect", color: "#3b82f6", keep: false })).keep).toBe(true);
+    expect(parseDrawPrefs(JSON.stringify({ tool: "rect", color: "#3b82f6", keep: false })).tool).toBe("rect");
+    // Turning the pin off is remembered.
+    expect(parseDrawPrefs(JSON.stringify({ fade: true })).keep).toBe(false);
+    expect(parseDrawPrefs(JSON.stringify({ fade: false })).keep).toBe(true);
+  });
+
+  test("changing colour and tool keeps every stroke already drawn", () => {
+    const d = new DrawingDoc({ windowId: "a" });
+    const add = (s: Stroke) => d.change({ "2,0": [...d.get("2,0"), s] });
+    const keep = parseDrawPrefs(null).keep;
+    const pen = (color: string) => ({ ...newStroke("pen", color, 8, !keep), points: [[0, 0], [40, 40]] as [number, number][] });
+    add(pen("#ef4444"));
+    add(shapeStroke(newStroke("pen", "#3b82f6", 8, !keep), "rect", [100, 100], [300, 200]));
+    add(pen("#3b82f6"));
+    add(pen("#f59e0b"));
+    add(pen("#f59e0b"));
+    const list = d.get("2,0");
+    expect(list.map((s) => s.color)).toEqual(["#ef4444", "#3b82f6", "#3b82f6", "#f59e0b", "#f59e0b"]);
+    expect(list.map((s) => s.shape ?? s.tool)).toEqual(["pen", "rect", "pen", "pen", "pen"]);
+    // None of them is a scribble that unwinds on its own.
+    expect(list.some((s) => s.fade)).toBe(false);
+    d.undo("2,0");
+    expect(d.get("2,0")).toHaveLength(4);
   });
 });

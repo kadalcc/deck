@@ -44,16 +44,18 @@ import { DrawToolbar, type DrawTool, SIZE_STEPS, TOOLS } from "./Toolbar.tsx";
  * are the base layer, live strokes go on top. With `drawings.perClick` a stroke belongs to the
  * click step it was drawn on and shows from that step on.
  *
- * A stroke drifts through its colour's family as it travels (see `segmentsOf`). Unless the pin
- * is on, a stroke is a scribble: it lingers a few seconds after the pen lifts, then unwinds
- * along its own path — every screen does the same from the moment it saw the stroke, so nothing
- * more needs to cross the wire. Pinned strokes stay, persist, and can be undone or erased.
+ * A stroke drifts through its colour's family as it travels (see `segmentsOf`). Strokes stay
+ * until they are erased or cleared, persist, and can be undone. With the pin turned off a stroke
+ * is a scribble instead: it lingers a few seconds after the pen lifts, then unwinds along its own
+ * path — every screen does the same from the moment it saw the stroke, so nothing more needs to
+ * cross the wire.
  *
  * A stylus draws without the mode being on; fingers and the mouse navigate. A stylus's eraser end
  * erases.
  *
  * `inCanvas`: rendered inside a scaled stage canvas (the presenter's current-slide box) rather
- * than over the viewport — it fills the canvas in stage pixels and its toolbar is portalled out.
+ * than over the viewport — it fills the canvas in stage pixels and its toolbar is portalled out,
+ * into the presenter's toolbar slot when there is one.
  */
 export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) {
   const deck = useDeck();
@@ -150,7 +152,7 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
   const [keep, setKeep] = useState(prefs.current.keep);
   const [partial, setPartial] = useState(prefs.current.partial);
   useEffect(() => {
-    writeItem(`deck.drawTools.${slug}`, JSON.stringify({ tool, color, size, keep, partial }));
+    writeItem(`deck.drawTools.${slug}`, JSON.stringify({ tool, color, size, fade: !keep, partial }));
   }, [slug, tool, color, size, keep, partial]);
   const setTool = (t: DrawTool) => setToolState(t);
 
@@ -439,7 +441,7 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
     keep: z
       .boolean()
       .optional()
-      .describe("keep the stroke; by default it fades a few seconds after it is drawn"),
+      .describe("false lets the stroke fade a few seconds after it is drawn; by default it stays"),
   });
   const penStroke = useRef<{
     stroke: Stroke | null;
@@ -644,9 +646,10 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
   useEffect(() => {
     if (!drawing || !canDraw) return;
     const onKey = (e: KeyboardEvent) => {
-      if (isEditable(e.target)) return;
+      if (isEditable(e)) return;
       const u = deck.ui.get();
-      if (u.jump || u.search || u.hints || u.help) return;
+      // An open menu or prompt owns the keys, Escape first among them: it closes that, not the pen.
+      if (u.jump || u.search || u.hints || u.help || u.themeMenu) return;
       const mod = e.ctrlKey || e.metaKey;
       let handled = true;
       if (e.code === "KeyZ" && mod && e.shiftKey) redo();
@@ -735,7 +738,12 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
       </svg>
       {on
         ? inCanvas
-          ? createPortal(<div className="deck-draw-toolbar-host">{toolbar}</div>, document.body)
+          ? createPortal(
+              <div className="deck-draw-toolbar-host">{toolbar}</div>,
+              // The presenter keeps a place for it above the narration bar, so the player's
+              // controls stay in reach while drawing; anywhere else it floats over the page.
+              document.querySelector(".deck-presenter-toolbar-slot") ?? document.body,
+            )
           : toolbar
         : null}
     </>
@@ -743,30 +751,42 @@ export function DrawingLayer({ inCanvas = false }: { inCanvas?: boolean } = {}) 
 }
 
 /** The last tool, colour and width this browser drew with on this deck. */
-function readPrefs(slug: string): {
+function readPrefs(slug: string): DrawPrefs {
+  return parseDrawPrefs(readItem(`deck.drawTools.${slug}`));
+}
+
+export interface DrawPrefs {
   tool: DrawTool;
   color: string;
   size: number;
+  /** Strokes stay until erased or cleared (the default); false makes them fading scribbles. */
   keep: boolean;
   partial: boolean;
-} {
-  const fallback = {
-    tool: "pen" as DrawTool,
+}
+
+/**
+ * The saved tool preferences, or the defaults. Fading is stored as `fade`, a choice someone made:
+ * the `keep: false` that older versions saved was only the default of the day (written on the
+ * first visit, whatever anyone chose), and reading it as a choice would make every stroke in that
+ * browser fade, so it is ignored.
+ */
+export function parseDrawPrefs(raw: string | null): DrawPrefs {
+  const fallback: DrawPrefs = {
+    tool: "pen",
     color: DRAW_COLORS[0]!,
     size: DRAW_SIZES[1]!,
-    keep: false,
+    keep: true,
     partial: false,
   };
+  if (!raw) return fallback;
   try {
-    const raw = readItem(`deck.drawTools.${slug}`);
-    if (!raw) return fallback;
-    const p = JSON.parse(raw) as Partial<typeof fallback>;
+    const p = JSON.parse(raw) as Partial<DrawPrefs> & { fade?: unknown };
     const tools = TOOLS.map((t) => t.tool) as string[];
     return {
       tool: typeof p.tool === "string" && tools.includes(p.tool) ? p.tool : fallback.tool,
       color: typeof p.color === "string" && p.color.length < 40 ? p.color : fallback.color,
       size: typeof p.size === "number" && p.size >= 1 && p.size <= 48 ? p.size : fallback.size,
-      keep: typeof p.keep === "boolean" ? p.keep : false,
+      keep: p.fade !== true,
       partial: typeof p.partial === "boolean" ? p.partial : false,
     };
   } catch {

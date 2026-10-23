@@ -195,14 +195,34 @@ export function actionFor(
   return null;
 }
 
-/** Typing in a field must never turn pages. */
-export function isEditable(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  const tag = target.tagName;
+/**
+ * Typing in a field must never turn pages. Give it the event rather than its target: a field in a
+ * shadow root (a host's panel, like deck.kadal.cc's copilot) reaches a window listener retargeted
+ * to the shadow's host element, so only the event's composed path says a field was typed in.
+ */
+export function isEditable(target: EventTarget | Event | null): boolean {
+  if (target && typeof (target as Event).composedPath === "function") {
+    const path = (target as Event).composedPath();
+    if (path.length) return path.some((n) => typing(n, false));
+    target = (target as Event).target;
+  }
+  return typing(target as EventTarget | null, true);
+}
+
+/**
+ * One node of the path. Duck-typed rather than `instanceof HTMLElement`, which is false for an
+ * element from another realm (an iframe's document). `closest` reaches the ancestors when there is
+ * no path to walk; it stops at a shadow root, which the path does not.
+ */
+function typing(node: EventTarget | null, ancestors: boolean): boolean {
+  const el = node as (HTMLElement & { nodeType?: number }) | null;
+  if (!el || el.nodeType !== 1) return false;
+  if (el.isContentEditable) return true;
+  const tag = el.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
   // A control that handles its own keys (react/Listbox.tsx: arrows, typeahead).
-  return !!target.closest?.("[data-deck-own-keys]");
+  if (!ancestors) return el.hasAttribute?.("data-deck-own-keys") ?? false;
+  return !!el.closest?.("[data-deck-own-keys]");
 }
 
 export { MODIFIERS };

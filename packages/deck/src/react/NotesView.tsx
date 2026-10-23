@@ -172,10 +172,18 @@ export function NotesView({
     if (!el || editing) return;
     const steps = (el.dataset.steps ?? "0").split(",").map(Number);
     const now = click === null ? -1 : currentPart(steps, click);
+    // Notes with no `[click]` markers are one part, always the current one: nothing to point at.
+    const parted = steps.length > 1;
     for (const n of el.querySelectorAll<HTMLElement>("[data-part]")) {
       const i = Number(n.dataset.part);
       const state =
-        click === null ? "" : i === now ? "current" : steps[i]! <= click ? "past" : "future";
+        click === null || !parted
+          ? ""
+          : i === now
+            ? "current"
+            : steps[i]! <= click
+              ? "past"
+              : "future";
       n.classList.toggle("is-current", state === "current");
       n.classList.toggle("is-past", state === "past");
       n.classList.toggle("is-future", state === "future");
