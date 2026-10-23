@@ -90,7 +90,9 @@ describe("model", () => {
     // A plain video background loops, as the catalog says; it can be told to play once.
     expect(resolveBackground({ background: "/v.mp4" })!.videoLoop).toBe(true);
     expect(resolveBackground({ background: { video: "/v.mp4" } })!.videoLoop).toBe(true);
-    expect(resolveBackground({ background: { video: "/v.mp4", loop: false } })!.videoLoop).toBe(false);
+    expect(resolveBackground({ background: { video: "/v.mp4", loop: false } })!.videoLoop).toBe(
+      false,
+    );
     expect(
       resolveBackground({ backgroundVideo: "/v.mp4", backgroundVideoLoop: false })!.videoLoop,
     ).toBe(false);
@@ -202,7 +204,9 @@ describe("hash and flags", () => {
     expect(parseHash("#/nope", columns)).toBeNull();
     // An id with a step, as formatHash writes it: the step is kept.
     expect(parseHash("#/s4/2", columns)).toEqual({ h: 2, v: 0, click: 2 });
-    expect(parseHash(formatHash({ h: 2, v: 0, click: 3 }, { withClick: true, id: "s4" }), columns)).toEqual({ h: 2, v: 0, click: 3 });
+    expect(
+      parseHash(formatHash({ h: 2, v: 0, click: 3 }, { withClick: true, id: "s4" }), columns),
+    ).toEqual({ h: 2, v: 0, click: 3 });
     expect(parseHash("#/s4/x", columns)).toEqual({ h: 2, v: 0, click: 0 });
     expect(formatHash({ h: 1, v: 2, click: 3 }, { withClick: true })).toBe("#/1/2/3");
     expect(formatHash({ h: 1, v: 0, click: 0 })).toBe("#/1");
@@ -220,6 +224,44 @@ describe("layout and touch", () => {
     );
     expect(l.scale).toBe(0.5);
     expect(l.top).toBe((1000 - 540) / 2);
+  });
+
+  test("the bars either side of the stage are whole device pixels, at most one apart", () => {
+    // The window that showed a wider bar on the left: 1488 × 834 at 2×, a 1920 × 1080 deck; and
+    // the presenter's tall pane at 1× (856 × 872) that a stage grown to fill overflowed by 1.8px.
+    for (const [w, h, dpr] of [
+      [1488, 834, 2],
+      [989, 557, 2],
+      [1366, 600, 1],
+      [700, 900, 3],
+      [854, 870, 1],
+      [854, 870, 2],
+    ] as const) {
+      const l = computeLayout(
+        { width: 1920, height: 1080, margin: 0, minScale: 0.1, maxScale: 3 },
+        { width: w, height: h },
+        dpr,
+      );
+      const across = w - l.width > h - l.height;
+      const [view, size, at] = across ? [w, l.width, l.left] : [h, l.height, l.top];
+      const before = at * dpr;
+      const after = (view - at - size) * dpr;
+      const whole = (n: number) => Math.abs(n - Math.round(n)) < 1e-6;
+      expect(whole(before) && whole(after)).toBe(true);
+      expect(Math.abs(after - before)).toBeLessThanOrEqual(1 + 1e-6);
+      // The other way the stage fills the box, overflowing by no more than a device pixel a side.
+      const [oView, oSize, oAt] = across ? [h, l.height, l.top] : [w, l.width, l.left];
+      expect(oSize).toBeGreaterThanOrEqual(oView - 1e-6);
+      expect(-oAt * dpr).toBeLessThanOrEqual(1 + 1e-6);
+      expect((oAt + oSize - oView) * dpr).toBeLessThanOrEqual(1 + 1e-6);
+    }
+    // The owner's window: equal bars.
+    const l = computeLayout(
+      { width: 1920, height: 1080, margin: 0, minScale: 0.1, maxScale: 3 },
+      { width: 1488, height: 834 },
+      2,
+    );
+    expect(l.left * 2).toBe((1488 - l.left - l.width) * 2);
   });
 
   test("swipes classify by the dominant axis", () => {
@@ -358,7 +400,9 @@ describe("typing in a field", () => {
     expect(isEditable(key([el("TEXTAREA"), doc]))).toBe(true);
     expect(isEditable(key([el("SELECT"), doc]))).toBe(true);
     expect(isEditable(key([el("SPAN", { isContentEditable: true }), doc]))).toBe(true);
-    expect(isEditable(key([el("BUTTON"), el("DIV", { attrs: { "data-deck-own-keys": "" } }), doc]))).toBe(true);
+    expect(
+      isEditable(key([el("BUTTON"), el("DIV", { attrs: { "data-deck-own-keys": "" } }), doc])),
+    ).toBe(true);
     expect(isEditable(key([el("BUTTON"), el("MAIN"), doc]))).toBe(false);
     expect(isEditable(key([doc]))).toBe(false);
     expect(isEditable(null)).toBe(false);
