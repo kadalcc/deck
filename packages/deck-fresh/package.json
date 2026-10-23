@@ -9,7 +9,7 @@
     "islands",
     "fresh"
   ],
-  "homepage": "https://deck.kadal.cc/docs/",
+  "homepage": "https://deck.kadal.cc/docs/islands/fresh/",
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/pmithunish"
@@ -23,7 +23,7 @@
     "url": "https://github.com/kadalcc/deck/issues"
   },
   "license": "AGPL-3.0-or-later",
-  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "author": "Kadal <hello@kadal.cc> (https://kadal.cc)",
   "type": "module",
   "sideEffects": false,
   "files": [

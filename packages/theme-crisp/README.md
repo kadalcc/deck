@@ -5,6 +5,13 @@ Neue, bold titles over a bold subtitle, pictures set inside a margin, and layout
 pictures and photo grids. Light and dark. A port of a Slidev theme (see the attribution below),
 with its layout names and frontmatter, so a Slidev deck moves over unchanged.
 
+<p>
+  <img src="https://deck.kadal.cc/themes/crisp-light-1.webp" alt="Crisp: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/crisp-dark-2.webp" alt="Crisp: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-crisp)
+
 ```bash
 npm install @kadal/theme-crisp
 ```
@@ -46,4 +53,4 @@ npm run check    # lint it
 MIT. This package is a port of [`@slidev/theme-apple-basic`](https://github.com/slidevjs/themes), MIT License,
 Copyright (c) 2021 Slidev.js Team (the theme by Jeremy Meissner). The look, the layouts and their frontmatter are
 theirs; the React layouts and the stylesheet were rewritten for Kadal Deck. The full notice is in
-[LICENSE](./LICENSE).
+[LICENSE](https://github.com/kadalcc/deck/blob/main/packages/theme-crisp/LICENSE).

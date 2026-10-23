@@ -1,10 +1,12 @@
 # @kadal/deck-python
 
+The Python renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Python code as an island on a slide, loaded only when its slide appears.
+
+[Python islands guide](https://deck.kadal.cc/docs/islands/python/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-python)
+
 ```sh
 npm install @kadal/deck-python
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
 
 Python islands on a deck slide, through Pyodide — CPython compiled to WebAssembly.
 
@@ -79,4 +81,4 @@ bug: it is the download, visible.
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
-[LICENSING.md](../deck/LICENSING.md).
+[LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

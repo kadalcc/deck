@@ -18,10 +18,10 @@ If you are self-hosting your own decks, this licence is all you need and you owe
 ## 2 · Commercial licence
 
 If you want to build a **hosted or proprietary product on top of the engine** without publishing
-your own source, a commercial licence removes the AGPL obligations. That is the arrangement that
-funds the engine's development, in the same way Slides.com funds reveal.js.
+your own source, a commercial licence removes the AGPL obligations. That arrangement, with the hosted
+service at deck.kadal.cc, funds the engine's development.
 
-Ask: **pmithunish@gmail.com**.
+Ask: **hello@kadal.cc**.
 
 ## Why this split
 
@@ -37,4 +37,4 @@ a Durable Object holding a room for thirty phones is somebody's bill.
 
 Contributions are accepted under the AGPL, and dual licensing means they may also appear in the
 commercial offering. A CLA will be added before the repository opens to outside contributions; until
-then the only contributor is the author.
+then the only contributor is the Kadal team.

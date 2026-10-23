@@ -1,10 +1,12 @@
 # @kadal/deck-solid
 
+The Solid renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Solid code as an island on a slide, loaded only when its slide appears.
+
+[Solid islands guide](https://deck.kadal.cc/docs/islands/solid/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-solid)
+
 ```sh
 npm install @kadal/deck-solid solid-js vite-plugin-solid
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
 
 Solid components on a deck slide.
 
@@ -66,4 +68,4 @@ nobody runs Babel over. It calls `createComponent` directly — the same thing, 
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
-[LICENSING.md](../deck/LICENSING.md).
+[LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

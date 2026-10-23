@@ -2,7 +2,12 @@
 
 **Ocean**, a theme for [Kadal Deck](https://deck.kadal.cc). Kadal's own theme. *Kadal* is Tamil for the sea, and the palette is the one [kadal.cc](https://kadal.cc) dives through: sunlit shallows in the light scheme (foam, sky and deep-sea ink), midnight water in the dark one (twilight blue, bioluminescent cyan, lure amber). Calm gradients for the page, Catamaran for type, Night Owl for code. Made to be a good default for a new deck.
 
-![Ocean: the cover, a content slide, code and the theme's own layout](./screenshot.jpg)
+<p>
+  <img src="https://deck.kadal.cc/themes/ocean-light-1.webp" alt="Ocean: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/ocean-dark-2.webp" alt="Ocean: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-ocean)
 
 ## Use it
 

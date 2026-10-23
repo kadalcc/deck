@@ -1,10 +1,12 @@
 # @kadal/prettier-plugin
 
+Prettier for [Kadal Deck](https://deck.kadal.cc) presentations: `deck.mdx` (and `slides.mdx`) formatted the way the engine reads them, in any editor that runs Prettier.
+
+[CLI: kadal-deck format](https://deck.kadal.cc/docs/cli/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/prettier-plugin)
+
 ```sh
 npm install --save-dev prettier @kadal/prettier-plugin
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/). Prettier for decks: `deck.mdx` (and `slides.mdx`) formatted the way the engine reads them.
 
 ```json
 // .prettierrc

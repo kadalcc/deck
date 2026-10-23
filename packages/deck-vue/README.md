@@ -1,10 +1,12 @@
 # @kadal/deck-vue
 
+The Vue renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Vue code as an island on a slide, loaded only when its slide appears.
+
+[Vue islands guide](https://deck.kadal.cc/docs/islands/vue/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-vue)
+
 ```sh
 npm install @kadal/deck-vue vue
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
 
 Vue 3 components on a deck slide.
 
@@ -63,4 +65,4 @@ wiring the plugin into the deck's own Vite plugin is still to do.
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
-[LICENSING.md](../deck/LICENSING.md).
+[LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

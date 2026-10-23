@@ -1,10 +1,12 @@
 # @kadal/deck-wasm
 
+The WebAssembly renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: WebAssembly code as an island on a slide, loaded only when its slide appears.
+
+[WebAssembly islands guide](https://deck.kadal.cc/docs/islands/wasm/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-wasm)
+
 ```sh
 npm install @kadal/deck-wasm
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
 
 Islands whose component is not JavaScript.
 
@@ -119,4 +121,4 @@ and the interval. That division is not a simplification for the demo — it is e
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
-[LICENSING.md](../deck/LICENSING.md).
+[LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

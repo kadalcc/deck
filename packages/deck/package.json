@@ -1,18 +1,23 @@
 {
   "name": "@kadal/deck",
   "version": "0.4.2",
-  "description": "Kadal Deck: presentations written in MDX, with reveal.js and Slidev features, a live room for the audience, islands in any framework, and export to PDF, PNG and PPTX.",
+  "description": "Kadal Deck: presentations written in MDX, with a live room for the audience (polls, questions, reactions from their phones), islands in any framework, export to PDF, PNG and PPTX, and the kadal-deck CLI and MCP server.",
   "keywords": [
     "presentation",
     "slides",
     "mdx",
+    "markdown",
     "deck",
-    "reveal.js",
-    "slidev",
+    "slideshow",
+    "presenter-view",
+    "speaker-notes",
+    "live-polling",
+    "audience",
     "vite",
     "react",
-    "live",
-    "audience"
+    "pdf-export",
+    "pptx",
+    "mcp"
   ],
   "homepage": "https://deck.kadal.cc",
   "funding": {
@@ -28,7 +33,7 @@
     "url": "https://github.com/kadalcc/deck/issues"
   },
   "license": "AGPL-3.0-or-later",
-  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "author": "Kadal <hello@kadal.cc> (https://kadal.cc)",
   "type": "module",
   "sideEffects": [
     "**/*.css",

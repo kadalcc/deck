@@ -2,7 +2,12 @@
 
 **Swiss**, a theme for [Kadal Deck](https://deck.kadal.cc). The International Typographic Style for design talks. Huge Inter Tight headings set tight and flush left on a twelve-column grid, heavy black rules, and one signal colour used sparingly. Facts, statements and quotes sit flush left, not centred; a section is the signal colour edge to edge; a running header carries the deck's title, the current section and the page.
 
-![Swiss: the cover, a content slide, code and the theme's own layout](./screenshot.jpg)
+<p>
+  <img src="https://deck.kadal.cc/themes/swiss-light-1.webp" alt="Swiss: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/swiss-dark-2.webp" alt="Swiss: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-swiss)
 
 ## Use it
 
