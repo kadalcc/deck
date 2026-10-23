@@ -244,7 +244,7 @@ export function createServer(options: McpOptions): {
         "Kadal Deck: presentations written in MDX (deck.mdx). Slides split at `---`, vertical slides at `----`; YAML after a separator is that slide's frontmatter; the YAML at the very top is the headmatter (deck settings + the first slide).",
         "Workflow: deck_reference (look up components/layouts/backgrounds before using them) → deck_create or deck_outline → slide_add / slide_update / notes_set → deck_check → slide_render and LOOK at the pictures → fix → deck_export or deck_publish.",
         "Edit slides through the slide tools rather than rewriting deck.mdx: they change only that slide's lines and lint the result.",
-        "Resources: kadal-deck://guide/design (how to make a good talk), kadal-deck://guide/authoring, kadal-deck://reference.",
+        "Resources: kadal-deck://guide/design-guide (how to make a good talk), kadal-deck://guide/authoring, kadal-deck://reference.",
       ].join("\n"),
     },
   );

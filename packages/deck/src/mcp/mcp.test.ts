@@ -134,6 +134,10 @@ describe("the server describes itself", () => {
       "kadal-deck://guide/components",
     ])
       expect(uris).toContain(u);
+    // every resource the instructions name is one the server lists
+    const named = client.getInstructions()?.match(/kadal-deck:\/\/[\w/-]+/g) ?? [];
+    expect(named.length).toBeGreaterThan(0);
+    for (const u of named) expect(uris).toContain(u);
     const cat = await client.readResource({ uri: "kadal-deck://catalog" });
     expect(
       JSON.parse((cat.contents[0] as { text: string }).text).components.length,
