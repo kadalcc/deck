@@ -5,6 +5,7 @@ import {
   MERMAID_FENCE_KEYS,
   PLANTUML_FENCE_KEYS,
 } from "../compiler/remark-fences.ts";
+import { packageOf } from "../monaco/types-config.ts";
 import { toJs, type Value } from "./expr.ts";
 import type { Reporter } from "./report.ts";
 import { scaleCssValue } from "./uno.ts";
@@ -23,8 +24,9 @@ import { scaleCssValue } from "./uno.ts";
  *   - `maxHeight` is a length on Slidev's 980px canvas: scaled to Kadal's stage like every length.
  *   - `{at: …}` (when the highlight steps start) has no Kadal spelling: the steps take their place
  *     in the slide's click order. Dropped, reported.
- *   - a `{monaco-run}` that imports a package or a local file: Kadal runs the code in a worker
- *     with no module resolution, so the import fails when it runs. Kept, reported.
+ *   - a `{monaco-run}` that imports a local file or one of Node's modules: Kadal runs the code in
+ *     a browser worker, which fetches packages from a CDN (`monacoRunImports`) but cannot read the
+ *     deck's files, so that import fails when it runs. Kept, reported.
  *
  * The code inside a fence is never touched.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -177,12 +179,16 @@ export function convertFence(
   }
   if (parsed.monaco === "run") {
     const code = lines.slice(1, -1).join("\n");
-    const imports = [...code.matchAll(/^\s*import\s[^'"]*['"]([^'"]+)['"]/gm)].map((x) => x[1]!);
+    // A package (`zod`, `vue`) is fetched from the deck's `monacoRunImports` CDN when the block
+    // runs (monaco/run-js.ts); a file of the deck's or a Node module is not.
+    const imports = [...code.matchAll(/^\s*import\s[^'"]*['"]([^'"]+)['"]/gm)]
+      .map((x) => x[1]!)
+      .filter((x) => /^\.{0,2}\//.test(x) || packageOf(x) === "@types/node");
     if (imports.length)
       report({
         severity: "warning",
         line,
-        what: `This {monaco-run} block imports ${imports.map((x) => `\`${x}\``).join(", ")}; Kadal runs the code in a worker without module resolution, so the import fails when it runs.`,
+        what: `This {monaco-run} block imports ${imports.map((x) => `\`${x}\``).join(", ")}; Kadal runs the code in a browser worker that can fetch packages but not the deck's files or Node's modules, so that import fails when it runs.`,
         suggestion: "Inline what it imports, or register a runner for it (registerCodeRunner).",
       });
   }

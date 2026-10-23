@@ -345,6 +345,11 @@ export const HEAD_ONLY = new Set([
   "timer",
   "magicMoveDuration",
   "config",
+  // translated above (comark, monacoTypes, monacoPackages, monacoTypesIgnore): not copied as well
+  "mdc",
+  "monacoTypesSource",
+  "monacoTypesAdditionalPackages",
+  "monacoTypesIgnorePackages",
   ...Object.keys(DROPPED),
   ...GENERATED.deckConfig.map((f) => f.name),
 ]);

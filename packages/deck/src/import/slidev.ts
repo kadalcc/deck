@@ -371,6 +371,7 @@ export function convertSlidev(text: string, options: SlidevImportOptions = {}): 
         onSnippet: (p: string) => snippetRead(path, p),
         clickAnimation: mapped.clickAnimation ?? settings.clickAnimation,
         dragNames: mapped.dragNames,
+        comark: settings.deck.comark === true,
       };
       // the slide's class: frontmatter is utility classes too
       for (const c of String(fm.class ?? "")

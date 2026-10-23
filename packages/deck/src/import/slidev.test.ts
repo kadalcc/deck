@@ -108,6 +108,13 @@ describe("headmatter", () => {
     expect(slides(convert("---\nmonacoTypesSource: local\n---\n# A").mdx)[0]!.fm.monacoTypes).toBe(
       "auto",
     );
+    // translated, not copied as well (check flags Slidev's spellings as unknown keys)
+    for (const key of [
+      "monacoTypesSource",
+      "monacoTypesAdditionalPackages",
+      "monacoTypesIgnorePackages",
+    ])
+      expect(fm[key]).toBeUndefined();
   });
 
   test("canvasWidth sets the scale every length is multiplied by", () => {
@@ -144,10 +151,26 @@ describe("headmatter", () => {
   test("comark: true (and the older mdc: true) is carried: Kadal reads Comark natively", () => {
     for (const key of ["comark", "mdc"]) {
       const r = convert(`---\n${key}: true\n---\n\nThis is [red]{style="color:red"} :badge[New]\n`);
-      expect(slides(r.mdx)[0]!.fm.comark).toBe(true);
+      const [first] = slides(r.mdx);
+      expect(first!.fm.comark).toBe(true);
+      // carried as `comark`, not copied as `mdc` too (which check would flag)
+      expect(first!.fm.mdc).toBeUndefined();
+      expect(first!.body).toBe('This is [red]{style="color:red"} :badge[New]');
       expect(what(r).join()).not.toContain(key);
     }
     expect(slides(convert("---\ncomark: false\n---\n# A").mdx)[0]!.fm.comark).toBeUndefined();
+  });
+
+  test("with Comark on, attribute lists stay as written; other braces are escaped", () => {
+    const { body } = one(
+      '**b**{.x} `c`{.y} [l](/x){target=_blank} :badge[New]{tone="good"} { a }\n\n::note{.n}\nIn\n::',
+      "comark: true\n",
+    );
+    expect(body).toBe(
+      '**b**{.x} `c`{.y} [l](/x){target=_blank} :badge[New]{tone="good"} \\{ a \\}\n\n::note{.n}\nIn\n::',
+    );
+    // Without Comark Slidev shows the braces as text, and so does the converted slide.
+    expect(one("[red]{.r}").body).toBe("[red]\\{.r\\}");
   });
 });
 
@@ -497,8 +520,13 @@ describe("code", () => {
     expect(what(r.r).join()).toContain("A code block's `at`");
   });
 
-  test("{monaco-run} that imports is reported; twoslash's packages come from the project", () => {
+  test("{monaco-run} that imports a file is reported; twoslash's packages come from the project", () => {
     const r = one("```ts {monaco-run}\nimport { x } from './y'\n```");
+    // a package is fetched from the CDN when the block runs (monacoRunImports): nothing to say
+    expect(what(one("```ts {monaco-run}\nimport { z } from 'zod'\n```").r)).toEqual([]);
+    expect(what(one("```ts {monaco-run}\nimport fs from 'node:fs'\n```").r).join()).toContain(
+      "imports `node:fs`",
+    );
     expect(what(r.r).join()).toContain("imports `./y`");
     const project = convert("```ts twoslash\nimport { ref } from 'vue'\n```", {
       readFile: (p) =>
