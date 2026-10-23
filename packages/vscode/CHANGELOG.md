@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- A new Marketplace page: screenshots and an animation taken from the extension itself (the preview following the cursor, the Slides outline, completion for settings and components), a getting-started section, every command and setting, and links to the docs, issues and Discussions.
+- The listing's categories, keywords, badges and Q&A link, and the publisher contact (Kadal, hello@kadal.cc).
+
 ## 0.1.0
 
 The first version.
