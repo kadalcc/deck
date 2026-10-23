@@ -8,14 +8,14 @@ background:
 
 <p className="sc-eyebrow">Chapter 11</p>
 
-# Every icon, and Slidev's components
+# Every icon, and a full component kit
 
 <p className="sc-icon-row"><logos-react /> <logos-vue /> <logos-svelte-icon /> <logos-typescript-icon /> <mdi-rocket-launch /> <mdi-anchor /></p>
 
-Any Iconify icon by name, marks drawn by hand, switches, elements placed with the mouse, and the small pieces a Slidev deck reaches for.
+Any Iconify icon by name, marks drawn by hand, switches, elements placed with the mouse, and pieces that know where they are.
 
 <Notes>
-Chapter eleven: the components a Slidev deck expects, the Kadal way. The row of logos above is Slidev's tag form — `<logos-react />` — and none of it came from the network: the build read the drawings from the deck's own icon packages.
+Chapter eleven: the components a talk reaches for. The row of logos above is the icon tag form — `<logos-react />` — and none of it came from the network: the build read the drawings from the deck's own icon packages.
 </Notes>
 
 ---
@@ -29,11 +29,11 @@ id: icons
 <Cols cols="1fr 1fr" gap="2.5rem" align="start">
 <Col>
 
-<p className="sc-icons-big"><logos-github-icon /> <logos-figma /> <logos-docker-icon /> <logos-cloudflare-icon /> <logos-python /></p>
+<p className="sc-icons-big"><mdi-github /> <logos-figma /> <logos-docker-icon /> <logos-cloudflare-icon /> <logos-python /></p>
 
 <p className="sc-icons-big"><mdi-weather-night class="text-sky-500" /> <mdi-heart style="color: #e11d48" /> <Icon name="mdi:compass-rose" size="1.2em" color="var(--deck-accent)" /> <Icon name="anchor" size="1.2em" /></p>
 
-Slidev's tag form or `<Icon name>`: every Iconify set, and Lucide names still work bare. Sized and coloured like text.
+The tag form or `<Icon name>`: every Iconify set, and Lucide names still work bare. Sized and coloured like text.
 
 <p className="sc-small">A built deck carries the drawings from its own <code>@iconify-json/*</code> packages; the hosted builder fetches them once from the Iconify API. <code>kadal-deck check</code> names a misspelt icon and the set to install.</p>
 
@@ -43,7 +43,7 @@ Slidev's tag form or `<Icon name>`: every Iconify set, and Lucide names still wo
 <How>
 
 ```mdx
-<logos-github-icon /> <logos-figma />
+<mdi-github /> <logos-figma />
 
 <mdi-weather-night class="text-sky-500" />
 <mdi-heart style="color: #e11d48" />
@@ -62,7 +62,7 @@ bun add -d @iconify-json/logos @iconify-json/mdi
 </Cols>
 
 <Notes>
-Icons from any Iconify set. The tag form is Slidev's: the compiler turns `<mdi-heart />` into `<Icon name="mdi:heart" />`. Class and style size and colour them like text. Lucide icons by their bare names keep working, and need no package.
+Icons from any Iconify set. The compiler turns `<mdi-heart />` into `<Icon name="mdi:heart" />`. Class and style size and colour them like text. Lucide icons by their bare names keep working, and need no package.
 </Notes>
 
 ---
@@ -102,6 +102,51 @@ A <Mark at={1}>plain underline</Mark>, a <Mark type="box" at={2} color="#0ea5e9"
 Every mark rough-notation has, drawn on its click. [click] Underline. [click] Box. [click] Circle. [click] A highlight, line by line. [click] Strike-through. [click] Crossed off. [click] And brackets, on both sides.
 </Notes>
 
+----
+id: marks-options
+---
+
+<p className="sc-eyebrow">Components · marks, tuned</p>
+
+## How a mark is drawn
+
+<Cols cols="1.15fr 1fr" gap="2.5rem" align="start">
+<Col className="sc-words">
+
+<ul className="sc-mark-list">
+  <li>A <Mark type="underline" at={1} strokeWidth={8} iterations={1}>thick single stroke</Mark></li>
+  <li>A <Mark type="circle" at={2} padding={14} duration={2000}>slow, roomy circle</Mark></li>
+  <li>A <Mark type="box" at={3} animate={false} color="#0ea5e9">box, not drawn</Mark></li>
+  <li>A <Mark type="highlight" at={4} opacity={0.6} delay={500} color="#a855f7">late, strong highlight</Mark></li>
+  <li>And <Mark at={0} type="underline" color="#10b981">one always there</Mark></li>
+</ul>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Mark strokeWidth={8} iterations={1}>…</Mark>
+<Mark type="circle" padding={14} duration={2000}>…</Mark>
+<Mark type="box" animate={false}>…</Mark>
+<Mark type="highlight" opacity={0.6} delay={500}>…</Mark>
+<Mark at={0}>…</Mark>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+A mark's options. The green underline has `at={0}`: it is there from the start and takes no step.
+[click] Eight pixels wide, one stroke instead of two.
+[click] Fourteen pixels of room, drawn over two seconds.
+[click] No animation: the box is simply there.
+[click] Half a second's wait, then a highlight at sixty percent.
+</Notes>
+
 ---
 id: switch
 ---
@@ -121,7 +166,7 @@ id: switch
 <Case at={4}><Callout kind="danger" title="And the last one stays">Unless it has a range of its own.</Callout></Case>
 </Switch>
 
-<p className="sc-small">Slidev's <code>v-switch</code>: its slot numbers are the cases' <code>at</code>.</p>
+<p className="sc-small">Each case takes the next click; <code>at</code> pins one to a step or a range.</p>
 
 </Col>
 <Col>
@@ -145,6 +190,59 @@ id: switch
 
 <Notes>
 A switch holds one case at a time. [click] The first case. [click] The second, in the same place. [click] A case with a range of its own. [click] And the last, which stays.
+</Notes>
+
+----
+id: switch-more
+---
+
+<p className="sc-eyebrow">Components · switch transitions</p>
+
+## Four ways to change a case
+
+<Grid cols={4} gap="1.2rem">
+<div>
+<p className="sc-label"><code>fade</code></p>
+<Switch className="sc-switch-sm">
+<Case><Badge tone="accent">one</Badge></Case>
+<Case><Badge tone="good">two</Badge></Case>
+</Switch>
+</div>
+<div>
+<p className="sc-label"><code>scale</code></p>
+<Switch transition="scale" className="sc-switch-sm">
+<Case><Badge tone="accent">one</Badge></Case>
+<Case><Badge tone="good">two</Badge></Case>
+</Switch>
+</div>
+<div>
+<p className="sc-label"><code>slide-left</code>, <code>unmount</code></p>
+<Switch transition="slide-left" unmount className="sc-switch-sm">
+<Case><Badge tone="accent">one</Badge></Case>
+<Case><Badge tone="good">two</Badge></Case>
+</Switch>
+</div>
+<div>
+<p className="sc-label"><code>none</code></p>
+<Switch transition="none" className="sc-switch-sm">
+<Case><Badge tone="accent">one</Badge></Case>
+<Case><Badge tone="good">two</Badge></Case>
+</Switch>
+</div>
+</Grid>
+
+<p className="sc-small">Each switch takes the next two clicks. <code>unmount</code> leaves the hidden case out of the page instead of hidden in it. <StepMeter /></p>
+
+<Notes>
+The switch's other transitions, each on its own two clicks.
+[click] fade
+[click] and its second case.
+[click] scale
+[click] two.
+[click] slide-left, which also unmounts the case it leaves
+[click] two.
+[click] none: a cut
+[click] two.
 </Notes>
 
 ---
@@ -194,7 +292,7 @@ dragPos:
 <DragArrow pos="1060,520,330,-200" color="var(--deck-accent)" width={4} />
 
 <Notes>
-Elements placed by hand, Slidev's v-drag. The card at the top right takes its position from this slide's frontmatter by name; the tip below it carries its own. In kadal-deck dev, double-click either to move, resize or turn it; the arrow's ends drag the same way. Elsewhere — a build, the hosted copy, a PDF — they are simply placed.
+Elements placed by hand. The card at the top right takes its position from this slide's frontmatter by name; the tip below it carries its own. In kadal-deck dev, double-click either to move, resize or turn it; the arrow's ends drag the same way. Elsewhere — a build, the hosted copy, a PDF — they are simply placed.
 </Notes>
 
 ---
@@ -245,6 +343,60 @@ id: in-context
 
 <Notes>
 Small pieces that know their context: the slide's number and the deck's length, another slide's title, one thing in light and another in dark, and content that renders only in the presenter view, or only in print.
+</Notes>
+
+----
+id: in-context-more
+---
+
+<p className="sc-eyebrow">Components · the small pieces</p>
+
+## Numbers, type, contents and arrows
+
+<Grid cols={3} gap="1.4rem">
+<Glass>
+
+<p className="sc-big-mini"><Counter value={6.12} from={0} decimals={2} prefix="↑ " suffix=" m" duration={2400} /></p>
+
+<p className="sc-small"><code>{'<Counter decimals={2} prefix suffix duration>'}</code></p>
+
+</Glass>
+<Glass>
+
+<p className="sc-type-mini"><Typewriter text="Slow, with a block cursor." speed={90} cursor="▌" /></p>
+
+<p className="sc-small"><code>{'<Typewriter speed={90} cursor="▌">'}</code></p>
+
+</Glass>
+<Glass>
+
+<p><Terms>{"A string with MDX and KaTeX in it, linked at render time."}</Terms></p>
+
+<p className="sc-small"><code>{"<Terms>"}</code> links glossary words inside a plain string.</p>
+
+</Glass>
+<Glass className="sc-toc-mini" style={{ gridColumn: "span 2" }}>
+
+<Toc mode="onlySiblings" minDepth={2} maxDepth={2} columns={3} />
+
+<p className="sc-small"><code>{'<Toc mode="onlySiblings" minDepth={2}>'}</code>: this chapter's slides.</p>
+
+</Glass>
+<Glass>
+
+<p className="sc-small"><code>{'<Spacer size="1.2rem">'}</code> leaves room:</p>
+
+<Spacer size="1.2rem" />
+
+<p className="sc-small"><code>{"<Arrow twoWay>"}</code>, placed in stage pixels:</p>
+
+</Glass>
+</Grid>
+
+<Arrow x1={1310} y1={830} x2={1770} y2={830} width={4} twoWay color="var(--deck-accent)" />
+
+<Notes>
+The remaining small pieces: a counter with decimals, a prefix and a suffix; a slower typewriter with its own cursor; `<Terms>`, which links glossary words in a string a component receives; a table of contents of just this chapter's slides; a spacer; and an arrow with heads at both ends.
 </Notes>
 
 ---

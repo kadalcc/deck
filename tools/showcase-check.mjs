@@ -193,6 +193,8 @@ async function slideProblems(page) {
     if (document.querySelector(".deck-backgrounds .deck-background-missing") || el.querySelector(".deck-background-missing"))
       found.push(`unknown background: ${(document.querySelector(".deck-background-missing") ?? el.querySelector(".deck-background-missing")).textContent}`);
     if (el.getAttribute("data-id") === "hidden-slide") found.push("the hide: true slide is showing");
+    // `src: ./extras.mdx#2` includes one slide of three: the other two must never be in the deck.
+    if (/^extras-(one|three)$/.test(el.getAttribute("data-id") ?? "")) found.push("a slide the src range left out is showing");
     for (const img of el.querySelectorAll("img")) {
       if (!img.src || !img.src.startsWith(location.origin) || img.closest(".deck-frame")) continue;
       if (img.loading === "lazy" && !img.complete) continue; // judged once it has had time, below
@@ -206,7 +208,7 @@ async function slideProblems(page) {
 async function manifestOf(page) {
   return page.evaluate(() => {
     const d = window.__deck;
-    return d.columns.map((c) => c.slides.map((s) => ({ id: s.id, title: s.title, hasNotes: s.hasNotes, index: s.index })));
+    return d.columns.map((c) => c.slides.map((s) => ({ id: s.id, title: s.title, hasNotes: s.hasNotes, index: s.index, start: Number(s.frontmatter?.clicksStart ?? 0) })));
   });
 }
 
@@ -330,10 +332,14 @@ await step("dark: every slide at its last step", async () => {
       if (!el) return null;
       const rgb = (c) => (c.match(/[\d.]+/g) ?? []).map(Number);
       const lum = ([r, g, b]) => { const f = (x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
-      // the colour behind the heading: the first opaque background up the tree, else the page
+      // the colour behind the heading: the first opaque background up the slide, else the slide's
+      // background layer (which the stage sits over), else the page. Not the deck's root: a slide
+      // that forces its own scheme sits on its own layer, whatever the root wears.
       let bg = null;
-      for (let n = el; n; n = n.parentElement) { const c = getComputedStyle(n).backgroundColor; const a = rgb(c); if (a.length >= 3 && (a[3] ?? 1) > 0.9) { bg = a; break; } }
-      const layer = document.querySelector(".deck-backgrounds .is-entering, .deck-backgrounds .deck-background");
+      const slideEl = el.closest(".deck-slide");
+      for (let n = el; n && n !== slideEl?.parentElement; n = n.parentElement) { const c = getComputedStyle(n).backgroundColor; const a = rgb(c); if (a.length >= 3 && (a[3] ?? 1) > 0.9) { bg = a; break; } }
+      // The slide's own layer: the one entering, not one still leaving from the slide before.
+      const layer = document.querySelector(".deck-backgrounds .is-entering") ?? document.querySelector(".deck-backgrounds .deck-background");
       const layerBg = layer ? rgb(getComputedStyle(layer).backgroundColor) : [];
       if (!bg && layerBg.length >= 3 && (layerBg[3] ?? 1) > 0.9) bg = layerBg;
       if (!bg) bg = rgb(getComputedStyle(document.body).backgroundColor);
@@ -521,6 +527,59 @@ await step("auto-slide: a slide's autoSlide advances; A pauses and resumes", asy
   await context.close();
 });
 
+await step("transitions: a click never replays the entrance; cuts and view transitions leave nothing behind", async () => {
+  const { page, context, take } = await openPage();
+  const at$ = (id) => page.evaluate((id) => { const c = window.__deck.columns; for (let h = 0; h < c.length; h++) for (let v = 0; v < c[h].slides.length; v++) if (c[h].slides[v].id === id) return { h, v }; return null; }, id);
+  const goto = async (id, click = 0) => { const p = await at$(id); await page.evaluate(({ h, v, click }) => window.__deck.actions.goto(h, v, click), { ...p, click }); await page.waitForTimeout(900); };
+  /** Animations running on the present slide itself (its entrance), by name. */
+  const entrance = () => page.evaluate(() => document.querySelector(".deck-slide.is-present")?.getAnimations().filter((a) => a.playState === "running").map((a) => a.animationName) ?? []);
+  await page.goto(`${base}#/0`);
+  await ready(page);
+  // Stepping back a click keeps the slide where it is: its entrance is keyed on the direction.
+  await goto("click-direction");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(600);
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForTimeout(60);
+  const replay = await entrance();
+  expect(replay.length === 0, `a click back replayed the slide's entrance (${replay.join(", ")})`);
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForTimeout(60);
+  expect((await entrance()).length === 0, "a second click back replayed the entrance");
+  // Up a stack lands on step 0 of a slide that waited at its last step: its steps snap hidden.
+  const fmt = await at$("format");
+  await page.evaluate(({ h }) => window.__deck.actions.goto(h, 1, 0), fmt);
+  await page.waitForTimeout(900);
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(80);
+  const flashed = await page.evaluate(() => [...document.querySelectorAll(".deck-slide.is-present .deck-click.is-hidden")].filter((e) => Number(getComputedStyle(e).opacity) > 0.05).length);
+  expect(flashed === 0, `${flashed} hidden steps were still showing on arrival from below`);
+  // A cut and a view transition: the slide that left is gone, and so is its background.
+  for (const id of ["tr-none", "tr-view"]) {
+    const p = await at$(id);
+    await page.evaluate(({ h }) => window.__deck.actions.goto(h - 1, 0, 99), p);
+    await page.waitForTimeout(900);
+    await page.keyboard.press("Shift+ArrowRight");
+    await page.waitForTimeout(120);
+    const left = await page.evaluate(() => ({
+      slides: [...document.querySelectorAll(".deck-stage .deck-slide.is-leaving")].filter((e) => getComputedStyle(e).visibility !== "hidden").length,
+      backgrounds: [...document.querySelectorAll(".deck-backgrounds .is-leaving")].filter((e) => getComputedStyle(e).display !== "none").length,
+    }));
+    expect(left.slides === 0 && left.backgrounds === 0, `${id}: ${left.slides} leaving slides and ${left.backgrounds} leaving backgrounds still showing`);
+  }
+  // A zooming background zooms, at the slide's speed.
+  const sp = await at$("tr-speed");
+  await page.evaluate(({ h }) => window.__deck.actions.goto(h - 1, 0, 99), sp);
+  await page.waitForTimeout(900);
+  await page.keyboard.press("Shift+ArrowRight");
+  await page.waitForTimeout(60);
+  const bg = await page.evaluate(() => { const e = document.querySelector(".deck-backgrounds .is-entering"); const cs = e && getComputedStyle(e); return cs ? `${cs.animationName} ${cs.animationDuration}` : ""; });
+  expect(bg === "deck-bg-zoom-in 1s", `the slow, zooming background ran “${bg}”`);
+  for (const p of take()) expect(false, p);
+  await context.close();
+});
+
 // ── 6 · addresses ──────────────────────────────────────────────────────────
 await step("links: #/h/v/click, #/id, ?at", async () => {
   const { page, context, take } = await openPage();
@@ -544,6 +603,13 @@ await step("links: #/h/v/click, #/id, ?at", async () => {
   const g = at("glossary");
   expect(n.h === g.h && n.v === g.v, `#/glossary landed on ${n.h}/${n.v}`);
   expect((await page.evaluate(() => location.hash)) === "#/glossary", "the hash of a slide with an id is not its id");
+  // An id with a step, the way the deck writes it with fragmentInURL.
+  await page.goto(`${base}#/click-effects/4`);
+  await page.reload();
+  await ready(page);
+  await page.waitForTimeout(600);
+  n = await nav(page);
+  expect(n.h === effects.h && n.v === effects.v && n.click === 4, `#/click-effects/4 landed on ${n.h}/${n.v}/${n.click}`);
   await page.goto(`${base}?at#/${fmt.h}`);
   await ready(page);
   await page.waitForTimeout(600);
@@ -847,7 +913,9 @@ await step("?embedded and ?projector", async () => {
 });
 
 // ── 8 · print and export ───────────────────────────────────────────────────
-const expectedPages = () => [...visited.values()].reduce((n, clicks) => n + clicks + 1, 0);
+// A slide with `clicksStart` opens (and prints) from that step.
+const startOf = (key) => flat().find((s) => `${s.h},${s.v}` === key)?.start ?? 0;
+const expectedPages = () => [...visited.entries()].reduce((n, [key, clicks]) => n + clicks + 1 - Math.min(startOf(key), clicks), 0);
 await step("print: ?print-pdf has a page per click step", async () => {
   const { page, context, take } = await openPage({ viewport: { width: 1920, height: 1080 } });
   await page.goto(`${base}?print-pdf`);

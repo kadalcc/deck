@@ -17,8 +17,10 @@ export function parseHash(
   const parts = raw.split("/");
   const offset = oneBased ? 1 : 0;
   if (parts[0] && !/^\d+$/.test(parts[0])) {
+    // `#/slide-id/3`: the step after the id, as formatHash writes it with `withClick`.
     const found = findById(columns, decodeURIComponent(parts[0]));
-    return found ? { ...found, click: 0 } : null;
+    const click = parts[1] ? Number(parts[1]) : 0;
+    return found ? { ...found, click: Number.isFinite(click) && click > 0 ? click : 0 } : null;
   }
   const h = Number(parts[0] ?? 0) - offset;
   const v = parts[1] ? Number(parts[1]) - offset : 0;

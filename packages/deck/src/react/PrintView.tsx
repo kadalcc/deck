@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { key as navKey } from "../core/navigation.ts";
+import { clickFloor, key as navKey } from "../core/navigation.ts";
 import { type PrintOptions, parseRange, readPrintOptions } from "../core/print-options.ts";
 import { PrintDrawings } from "../draw/PrintDrawings.tsx";
 import { fileDrawings } from "../draw/source.ts";
@@ -99,7 +99,11 @@ export function PrintView({
     };
   }, [deck.config.width, deck.config.height]);
 
-  const pages = printPages(flat, totals, separate);
+  const pages = printPages(
+    flat.map((s) => ({ ...s, start: clickFloor(deck.columns, s.h, s.v) })),
+    totals,
+    separate,
+  );
   const number = new Map(flat.map((s) => [navKey(s.h, s.v), s.n]));
   // The deck's web fonts (`fonts`), loaded: an export taken before them is in the fallback face.
   const fontsReady = useFontsReady();
@@ -155,7 +159,7 @@ export function PrintView({
       })}
       {showNotes === "separate-page"
         ? pages
-            .filter((p) => p.click === 0 && deck.columns[p.h]!.slides[p.v]!.hasNotes)
+            .filter((p) => p.first && deck.columns[p.h]!.slides[p.v]!.hasNotes)
             .map((p) => (
               <div
                 key={`notes:${p.key}`}
@@ -179,15 +183,18 @@ export interface PrintPage {
   h: number;
   v: number;
   click: number;
+  /** The slide's first page (where its notes page follows, with `showNotes: separate-page`). */
+  first: boolean;
 }
 
 /**
  * The pages of the printed deck: with `separate` (`pdfSeparateFragments`, on by default), one per
- * click step of every slide — step 0 to its total — and otherwise one per slide, at its last step.
- * `totals` are the click totals the slides reported; a slide yet to report counts as having none.
+ * click step of every slide — from the step it opens at (`clicksStart`, else 0) to its total — and
+ * otherwise one per slide, at its last step. `totals` are the click totals the slides reported; a
+ * slide yet to report counts as having none.
  */
 export function printPages(
-  slides: { h: number; v: number }[],
+  slides: { h: number; v: number; start?: number }[],
   totals: Record<string, number>,
   separate: boolean,
 ): PrintPage[] {
@@ -196,10 +203,12 @@ export function printPages(
     const k = navKey(s.h, s.v);
     const total = totals[k] ?? 0;
     if (!separate) {
-      pages.push({ key: `${k}:0`, h: s.h, v: s.v, click: total });
+      pages.push({ key: `${k}:0`, h: s.h, v: s.v, click: total, first: true });
       continue;
     }
-    for (let c = 0; c <= total; c++) pages.push({ key: `${k}:${c}`, h: s.h, v: s.v, click: c });
+    const start = Math.min(s.start ?? 0, total);
+    for (let c = start; c <= total; c++)
+      pages.push({ key: `${k}:${c}`, h: s.h, v: s.v, click: c, first: c === start });
   }
   return pages;
 }

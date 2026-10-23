@@ -14,6 +14,7 @@ import { closeTerm, openTerm } from "../react/terms.ts";
 import { RemoteMirror } from "../remote/mirror.ts";
 import { Analytics } from "./analytics.tsx";
 import { RoomClient, viewerId } from "./client.ts";
+import { createAwayWatch } from "./away.ts";
 import { presenterTicket, viewerPass } from "./ticket.ts";
 import { turnstileToken, viewerCheck } from "./turnstile.ts";
 import { LiveContext, type LiveValue, useLiveOptional } from "./context.ts";
@@ -41,7 +42,16 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
   const room = roomIdOf(deck.config);
   const value = useMemo<LiveValue | null>(() => {
     // The phone remote opens its own presenter socket (src/remote/link.ts); it is not a viewer.
-    if (!api || deck.mode === "print" || deck.mode === "remote") return null;
+    // /stats and /export read the host's API and follow nobody: in the room they were one more
+    // viewer, and every visit to the stats counted as a view of the deck.
+    if (
+      !api ||
+      deck.mode === "print" ||
+      deck.mode === "remote" ||
+      deck.mode === "stats" ||
+      deck.mode === "export"
+    )
+      return null;
     const siteKey = deck.config.live.turnstile;
     const verify = deck.config.live.verify ?? null;
     const presenting = deck.mode === "presenter";
@@ -68,6 +78,29 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
       typeof window === "undefined" ? "" : `${window.location.origin}${deck.base}join`;
     return { client, joinUrl };
   }, [api, room, deck.mode, deck.base, deck.config.live.turnstile, deck.config.live.verify]);
+
+  // A presenter view forgotten in a background tab stops presenting after a while (live/away.ts).
+  useEffect(() => {
+    if (!value || deck.mode !== "presenter" || typeof document === "undefined") return;
+    const { client } = value;
+    const watch = createAwayWatch({
+      hidden: () => document.visibilityState === "hidden",
+      sessionLive: () => client.state.get().startedAt != null,
+      remotes: () => client.state.get().presence.remotes ?? 0,
+      setAway: (away) => client.setAway(away),
+      setTimer: (fn, ms) => setTimeout(fn, ms),
+      clearTimer: (t) => clearTimeout(t as ReturnType<typeof setTimeout>),
+    });
+    const onVisibility = () => watch.visibility();
+    document.addEventListener("visibilitychange", onVisibility);
+    const unsub = client.state.subscribe(() => watch.roomChanged());
+    watch.visibility();
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      unsub();
+      watch.dispose();
+    };
+  }, [value, deck.mode]);
 
   useEffect(() => {
     if (!value) return;

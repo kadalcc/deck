@@ -29,6 +29,19 @@
         "@kadal/deck-svelte": "workspace:*",
         "@kadal/deck-vue": "workspace:*",
         "@kadal/deck-wasm": "workspace:*",
+        "@kadal/theme-brand": "workspace:*",
+        "@kadal/theme-bricks": "workspace:*",
+        "@kadal/theme-classic": "workspace:*",
+        "@kadal/theme-crayon": "workspace:*",
+        "@kadal/theme-crisp": "workspace:*",
+        "@kadal/theme-folio": "workspace:*",
+        "@kadal/theme-lecture": "workspace:*",
+        "@kadal/theme-neon": "workspace:*",
+        "@kadal/theme-ocean": "workspace:*",
+        "@kadal/theme-seriph": "workspace:*",
+        "@kadal/theme-shibainu": "workspace:*",
+        "@kadal/theme-swiss": "workspace:*",
+        "@kadal/theme-terminal": "workspace:*",
         "@preact/signals": "^2.11.3",
         "@qwik.dev/core": "2.0.0-rc.0",
         "lucide-react": "^1.18.0",
@@ -100,14 +113,14 @@
     },
     "packages/create-deck": {
       "name": "@kadal/create-deck",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "bin": {
         "create-deck": "src/index.mjs",
       },
     },
     "packages/deck": {
       "name": "@kadal/deck",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "bin": {
         "kadal-deck": "dist/cli/bin.js",
       },
@@ -124,7 +137,7 @@
         "@codemirror/view": "^6.36.5",
         "@excalidraw/excalidraw": "0.18.1",
         "@excalidraw/mermaid-to-excalidraw": "2.2.2",
-        "@kadal/prettier-plugin": "^0.4.1",
+        "@kadal/prettier-plugin": "^0.4.2",
         "@lezer/highlight": "^1.2.1",
         "@mdx-js/mdx": "^3.1.1",
         "@modelcontextprotocol/sdk": "^1.32.1",
@@ -184,7 +197,7 @@
     },
     "packages/deck-angular": {
       "name": "@kadal/deck-angular",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@angular/compiler": "^22.2.1",
         "@angular/core": "^22.2.1",
@@ -196,12 +209,12 @@
         "@angular/compiler": "^20.0.0 || ^21.0.0 || ^22.0.0",
         "@angular/core": "^20.0.0 || ^21.0.0 || ^22.0.0",
         "@angular/platform-browser": "^20.0.0 || ^21.0.0 || ^22.0.0",
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
       },
     },
     "packages/deck-fresh": {
       "name": "@kadal/deck-fresh",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@kadal/deck-preact": "workspace:*",
@@ -209,45 +222,45 @@
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
-        "@kadal/deck-preact": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
+        "@kadal/deck-preact": "^0.4.2",
         "preact": "^10.0.0 || ^11.0.0",
       },
     },
     "packages/deck-preact": {
       "name": "@kadal/deck-preact",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "preact": "^11.0.0",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "preact": "^10.0.0 || ^11.0.0",
       },
     },
     "packages/deck-python": {
       "name": "@kadal/deck-python",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
       },
     },
     "packages/deck-qwik": {
       "name": "@kadal/deck-qwik",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@qwik.dev/core": "2.0.0-rc.0",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "@qwik.dev/core": "^2.0.0-rc.0",
       },
     },
@@ -266,57 +279,57 @@
     },
     "packages/deck-solid": {
       "name": "@kadal/deck-solid",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "solid-js": "^1.9.15",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "solid-js": "^1.9.0",
       },
     },
     "packages/deck-svelte": {
       "name": "@kadal/deck-svelte",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "svelte": "^5.57.1",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "svelte": "^5.0.0",
       },
     },
     "packages/deck-vue": {
       "name": "@kadal/deck-vue",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
         "vue": "^3.5.22",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "vue": "^3.5.0",
       },
     },
     "packages/deck-wasm": {
       "name": "@kadal/deck-wasm",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "typescript": "^6.0.3",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
       },
     },
     "packages/prettier-plugin": {
       "name": "@kadal/prettier-plugin",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "dependencies": {
         "remark-gfm": "^4.0.1",
         "remark-math": "^6.0.0",
@@ -336,7 +349,7 @@
     },
     "packages/theme-brand": {
       "name": "@kadal/theme-brand",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -348,13 +361,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-bricks": {
       "name": "@kadal/theme-bricks",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -366,13 +379,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-classic": {
       "name": "@kadal/theme-classic",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -384,13 +397,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-crayon": {
       "name": "@kadal/theme-crayon",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -402,13 +415,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-crisp": {
       "name": "@kadal/theme-crisp",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -420,13 +433,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-folio": {
       "name": "@kadal/theme-folio",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -438,13 +451,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-lecture": {
       "name": "@kadal/theme-lecture",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -456,13 +469,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-neon": {
       "name": "@kadal/theme-neon",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -474,13 +487,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-ocean": {
       "name": "@kadal/theme-ocean",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -492,13 +505,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-seriph": {
       "name": "@kadal/theme-seriph",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -510,13 +523,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-shibainu": {
       "name": "@kadal/theme-shibainu",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -528,13 +541,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-swiss": {
       "name": "@kadal/theme-swiss",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -546,13 +559,13 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },
     "packages/theme-terminal": {
       "name": "@kadal/theme-terminal",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "devDependencies": {
         "@kadal/deck": "workspace:*",
         "@types/react": "^19.2.0",
@@ -564,7 +577,7 @@
         "vite": "^8.0.16",
       },
       "peerDependencies": {
-        "@kadal/deck": "^0.4.1",
+        "@kadal/deck": "^0.4.2",
         "react": "^19.2.0",
       },
     },

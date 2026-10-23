@@ -1,4 +1,6 @@
-import { type ComponentType, useEffect, useState } from "react";
+import { type ComponentType, useEffect, useRef, useState } from "react";
+
+import { splitTransition } from "../core/model.ts";
 
 import type { SlideBackground } from "../core/model.ts";
 import { useDeck } from "./context.ts";
@@ -114,12 +116,26 @@ export function Backgrounds() {
   const deck = useDeck();
   const layout = useLayout();
   const { h, v, direction } = useNav((s) => ({ h: s.h, v: s.v, direction: s.direction }));
-  const current = deck.options.get(`${h},${v}`)?.background ?? null;
+  const options = deck.options.get(`${h},${v}`);
+  const current = options?.background ?? null;
   const [layers, setLayers] = useState<
     { key: string; bg: SlideBackground | null; leaving: boolean }[]
   >([{ key: `${h},${v}`, bg: current, leaving: false }]);
+  // The direction the slide was arrived from, as the stage keeps it: a click going back must not
+  // restart the background's entrance (its animation name follows the direction).
+  const arrival = useRef({ h, v, direction });
+  if (arrival.current.h !== h || arrival.current.v !== v) arrival.current = { h, v, direction };
+  // A slide that cuts in (`transition: none`) or hands the change to the browser's view transition
+  // takes its background with it, unless it names a background transition of its own: a cross-fade
+  // under a cut left the new slide's text on the old background for half a second.
+  const slideIn = splitTransition(options?.transition, deck.config.transition).in;
   const transition =
-    deck.options.get(`${h},${v}`)?.backgroundTransition ?? deck.config.backgroundTransition;
+    options?.backgroundTransition ??
+    (slideIn === "none" || slideIn === "view-transition"
+      ? "none"
+      : deck.config.backgroundTransition);
+  // The slide's own speed: a slow slide's background changes as slowly as the slide.
+  const speed = options?.transitionSpeed ?? deck.config.transitionSpeed;
 
   useEffect(() => {
     const key = `${h},${v}`;
@@ -130,17 +146,18 @@ export function Backgrounds() {
     });
     const t = setTimeout(
       () => setLayers((prev) => prev.filter((l) => !l.leaving)),
-      transitionMs(deck.config.transitionSpeed),
+      transition === "none" ? 0 : transitionMs(speed),
     );
     return () => clearTimeout(t);
-  }, [h, v, current, deck.config.transitionSpeed]);
+  }, [h, v, current, speed, transition]);
 
   return (
     <div
       className="deck-backgrounds"
       style={{ left: layout.left, top: layout.top, width: layout.width, height: layout.height }}
       data-transition={transition}
-      data-direction={direction}
+      data-direction={arrival.current.direction}
+      data-speed={speed}
     >
       {layers.map((l) => (
         <BackgroundLayer

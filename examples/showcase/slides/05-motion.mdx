@@ -38,7 +38,9 @@ The deck sets one; any slide may set its own. Press <Kbd>→</Kbd> to arrive at 
   <Link to="tr-none">none</Link>
   <Link to="tr-view">view-transition</Link>
   <Link to="tr-in-out">zoom-in fade-out</Link>
-  <Link to="tr-speed">transitionSpeed</Link>
+  <Link to="tr-speed">slow</Link>
+  <Link to="tr-fast">fast</Link>
+  <Link to="tr-custom">your own</Link>
 </div>
 
 </Col>
@@ -64,7 +66,7 @@ transition: zoom-in fade-out
 </Cols>
 
 <Notes>
-reveal.js's transitions, by the same names. A slide's `transition` decides how it arrives; `-in` and `-out` give the two halves different ones. The next nine slides each arrive with the transition they are named after — press right through them.
+Seven transitions, and any of your own. A slide's `transition` decides how it arrives; `-in` and `-out` give the two halves different ones. The next eleven slides each arrive with the transition they are named after — press right through them, then come back with left: every transition runs in reverse.
 </Notes>
 
 ---
@@ -223,7 +225,7 @@ background:
 This slide zoomed in. Press <Kbd>→</Kbd>: it fades out while the next one slides in, slowly.
 
 <Notes>
-reveal.js's split form: `zoom-in fade-out`. The in-half is how this slide arrives, the out-half how it leaves.
+The split form: `zoom-in fade-out`. The in-half is how this slide arrives, the out-half how it leaves.
 </Notes>
 
 ---
@@ -248,7 +250,62 @@ A slow slide transition, a second long, with the background zooming rather than 
 </Notes>
 
 ---
+transition: slide
+transitionSpeed: fast
+id: tr-fast
+layout: center
+class: sc-transition
+background:
+  component: stripes
+  color: "rgba(236,72,153,0.12)"
+  angle: -45
+---
+
+<p className="sc-eyebrow">transitionSpeed: fast</p>
+
+## fast
+
+A third of a second: `fast` is 0.3 s, `default` 0.6 s, `slow` 1 s.
+
+<Notes>
+The same slide transition at `fast`.
+</Notes>
+
+---
+transition: rise
+id: tr-custom
+layout: center
+class: sc-transition
+background:
+  component: dots
+  color: "rgba(16,185,129,0.3)"
+---
+
+<p className="sc-eyebrow">transition: rise</p>
+
+## One of your own
+
+`rise` is not built in: the headmatter names two keyframes for it under `transitions:`, and one more pair for going back.
+
+<How>
+
+```yaml
+transitions:
+  rise:
+    in: sc-rise-in
+    out: sc-rise-out
+    back: { in: sc-rise-in-back, out: sc-rise-out-back }
+```
+
+</How>
+
+<Notes>
+A custom transition defined in the headmatter: the keyframes live in this deck's stylesheet, and `transitions:` gives them a name any slide can use. Going back plays the `back` pair. Speeds, reduced motion and print treat it as they treat the built-in ones.
+</Notes>
+
+---
 autoAnimate: true
+autoAnimateId: tide
 id: auto-animate
 ---
 
@@ -264,11 +321,12 @@ id: auto-animate
 Elements with the same `data-id` on two neighbouring `autoAnimate: true` slides move between their places. Press <Kbd>↓</Kbd>.
 
 <Notes>
-Auto-animate, reveal.js's FLIP: two slides side by side or one above the other, both `autoAnimate: true`, and every element sharing a `data-id` animates from its old box to its new one — position, size, colour and radius.
+Auto-animate: two slides side by side or one above the other, both `autoAnimate: true`, and every element sharing a `data-id` animates from its old box to its new one — position, size, colour and radius.
 </Notes>
 
 ----
 autoAnimate: true
+autoAnimateId: tide
 id: auto-animate-2
 ---
 
@@ -284,7 +342,7 @@ id: auto-animate-2
 <p className="sc-small">The box crossed the slide and grew; the dot changed colour on its way. Nothing here was animated by hand.</p>
 
 <Notes>
-Same ids, different places. The engine measured both, then played the difference.
+Same ids, different places. The engine measured both, then played the difference. Both slides also carry `autoAnimateId: tide`, so they animate only into each other; `autoAnimateRestart: true` would break a chain.
 </Notes>
 
 ---
@@ -331,9 +389,53 @@ id: motion-component
 </Cols>
 
 <Notes>
-Slidev's v-motion, in React, backed by the motion library: any property it can animate.
+`<Motion>`, backed by the motion library: any property it can animate.
 [click] Step one, from `click-1`.
 [click] Step two, from `click-2`.
+</Notes>
+
+----
+id: motion-more
+---
+
+<p className="sc-eyebrow">Movement · motion on a click</p>
+
+## Arrive late, leave on cue
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Motion at={1} initial={{ opacity: 0, scale: 0.6 }} enter={{ opacity: 1, scale: 1 }} transition={{ type: "spring", bounce: 0.45 }}>
+  <Glass tone="pink" pad="0.9em 1.1em"><p className="sc-tight"><code>at={1}</code>: this springs in on the first click.</p></Glass>
+</Motion>
+
+<ul className="sc-motion-list">
+  <Motion as="li" initial={{ x: -60, opacity: 0 }} enter={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}>`as="li"`: a list item</Motion>
+  <Motion as="li" initial={{ x: -60, opacity: 0 }} enter={{ x: 0, opacity: 1 }} leave={{ x: 60, opacity: 0 }} transition={{ delay: 0.4 }}>`leave`: slides off when you move on</Motion>
+</ul>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+<Motion at={1}
+  initial={{ opacity: 0, scale: 0.6 }}
+  enter={{ opacity: 1, scale: 1 }}
+  transition={{ type: "spring" }}>…</Motion>
+
+<Motion as="li" leave={{ x: 60, opacity: 0 }}>…</Motion>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+More of `<Motion>`. The two list items arrive with the slide, a beat apart; the second has a `leave`, so it slides off to the right when you move on.
+[click] The card is tied to a click with `at`, and arrives on a spring.
 </Notes>
 
 ---

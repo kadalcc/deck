@@ -6,6 +6,7 @@ import {
   Sketch,
   type SketchStep,
   useClickIndex,
+  useDeck,
   useNav,
   useNavDirection,
   useSlide,
@@ -98,20 +99,31 @@ function BgTile({ name, label, ...props }: { name: string; label?: string; [k: s
 }
 
 /**
- * A theme, shown small. A theme is a class carrying tokens, so a card that wears `theme-rla` and a
- * colour scheme gets that theme's colours and type wherever it sits — even on a slide in another.
+ * A theme, shown small, in both its schemes. A theme is a class carrying tokens, so a face that
+ * wears `theme-ocean` and a colour scheme gets that theme's colours, radius and accent wherever it
+ * sits — even on a slide in another theme. (Its fonts load when the T menu picks it; the card names
+ * them instead of fetching thirteen families for one slide.)
  */
-function ThemeCard({ theme, scheme }: { theme: string; scheme: "light" | "dark" }) {
+function ThemeCard({ theme }: { theme: string }) {
+  const deck = useDeck();
+  const pkg = deck.manifest.packages?.themes.find((t) => t.name === theme);
+  const meta = pkg?.meta as { title?: string; config?: { fonts?: { sans?: string; serif?: string; heading?: string } } } | undefined;
+  const fonts = meta?.config?.fonts;
+  const face = fonts?.heading ?? fonts?.serif ?? fonts?.sans;
   return (
-    <div className={`sc-theme theme-${theme}`} data-color-scheme={scheme}>
-      <div className="sc-theme-face">
-        <strong>Tides</strong>
-        <span>High water at six.</span>
-        <code>{"<Click>"}</code>
-        <i />
+    <div className="sc-theme" data-theme-card={theme}>
+      <div className="sc-theme-pair">
+        {(["light", "dark"] as const).map((scheme) => (
+          <div key={scheme} className={`sc-theme-face theme-${theme}`} data-color-scheme={scheme}>
+            <strong>Tides</strong>
+            <span>High water at six.</span>
+            <i />
+          </div>
+        ))}
       </div>
       <span className="sc-theme-name">
-        {theme} · {scheme}
+        {meta?.title ?? theme}
+        {face ? <small> · {face}</small> : null}
       </span>
     </div>
   );
@@ -411,6 +423,32 @@ function VueIsland({ label }: { label?: string }) {
   );
 }
 
+/**
+ * A button that runs one of the deck's commands — the registry every key, the phone remote and an
+ * agent go through, so this is exactly what pressing the key does.
+ */
+function RunCommand({
+  command,
+  params,
+  children,
+}: {
+  command: string;
+  params?: Record<string, unknown>;
+  children?: ReactNode;
+}) {
+  const deck = useDeck();
+  return (
+    <button
+      type="button"
+      className="sc-run"
+      onClick={() => void deck.commands.run(command, params ?? {}, "ui")}
+    >
+      <code>{command}</code>
+      <span>{children}</span>
+    </button>
+  );
+}
+
 /** Which way the deck is moving, live: what `forward:` / `backward:` styles key on. */
 function DirectionBadge() {
   const dir = useNavDirection();
@@ -473,6 +511,7 @@ export const components: Record<string, ComponentType<Record<string, unknown>>> 
   StepMeter: StepMeter as ComponentType<Record<string, unknown>>,
   DirectionBadge: DirectionBadge as ComponentType<Record<string, unknown>>,
   EnterCounter: EnterCounter as ComponentType<Record<string, unknown>>,
+  RunCommand: RunCommand as ComponentType<Record<string, unknown>>,
   LiveStatus: LiveStatus as ComponentType<Record<string, unknown>>,
   // `layout: spotlight` in frontmatter picks this; the `layout:` prefix is the whole convention.
   "layout:spotlight": SpotlightLayout as unknown as ComponentType<Record<string, unknown>>,

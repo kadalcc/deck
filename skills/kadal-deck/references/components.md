@@ -1326,6 +1326,7 @@ Links glossary mentions inside a plain string at render time — for words that 
 - `highlight-current-red` — Red only during its own step.
 - `highlight-current-green` — Green only during its own step.
 - `highlight-current-blue` — Blue only during its own step.
+- `blur` — Start blurred, come into focus.
 
 ## Click timing (`at`)
 

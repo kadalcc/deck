@@ -24,22 +24,30 @@ id: themes
 ## Sixteen themes, light and dark
 
 <div className="sc-themes">
-  <ThemeCard theme="minimal" scheme="light" />
-  <ThemeCard theme="rla" scheme="light" />
-  <ThemeCard theme="stack" scheme="light" />
-  <ThemeCard theme="minimal" scheme="dark" />
-  <ThemeCard theme="rla" scheme="dark" />
-  <ThemeCard theme="stack" scheme="dark" />
+  <ThemeCard theme="minimal" />
+  <ThemeCard theme="rla" />
+  <ThemeCard theme="stack" />
+  <ThemeCard theme="ocean" />
+  <ThemeCard theme="folio" />
+  <ThemeCard theme="swiss" />
+  <ThemeCard theme="terminal" />
+  <ThemeCard theme="lecture" />
+  <ThemeCard theme="brand" />
+  <ThemeCard theme="crayon" />
+  <ThemeCard theme="neon" />
+  <ThemeCard theme="classic" />
+  <ThemeCard theme="seriph" />
+  <ThemeCard theme="crisp" />
+  <ThemeCard theme="bricks" />
+  <ThemeCard theme="shibainu" />
 </div>
 
-<p className="sc-small">These are the three built in. Thirteen more are packages: eight of Kadal's own and Slidev's five official themes, ported (all at <a href="https://deck.kadal.cc/themes">deck.kadal.cc/themes</a>). Press <Kbd>T</Kbd> to wear one, <Kbd>D</Kbd> to flip light and dark. Each screen remembers its own choice. A theme is a class of CSS tokens — colours, type, radius, padding — so writing your own is one stylesheet.</p>
+<p className="sc-small">Press <Kbd>T</Kbd> to wear any of them, <Kbd>D</Kbd> to flip light and dark; each screen keeps its own choice. Three are built in; thirteen are packages, <code>npm i @kadal/theme-ocean</code> and <code>theme: ocean</code>. A theme is a class of CSS tokens, so writing your own is one stylesheet.</p>
 
 <Notes>
-Three built in, thirteen as packages: ocean, folio, swiss, terminal, lecture, brand, crayon and neon are Kadal's own; classic, seriph, crisp, bricks and shibainu are Slidev's official themes, ported. A package theme brings its own layouts and components.
+Every theme the engine has, each in its light and its dark scheme: minimal, rla and stack are built in. Ocean, folio, swiss, terminal, lecture, brand, crayon and neon are Kadal's own packages. Classic, seriph, crisp, bricks and shibainu are Slidev's five official themes, ported with their MIT licences and their original layouts. Bricks is light only and neon and shibainu are dark only, so their two faces match.
 
-minimal is the default — black on white, one accent. rla is the dark, dot-matrix look with an accessible body face. stack is warm neutrals with an emerald accent. Each has a light and a dark scheme.
-
-These cards are the real themes: each wears the theme's class, so its tokens apply inside it. Press T for the menu — the choice is per screen and remembered per deck, so the projector and your laptop can differ.
+Each face wears the theme's class, so its colours, radius and accent apply inside it. Press T: this tour lists all sixteen in its menu, through `themes:` in the headmatter. The choice is per screen and remembered per deck, so the projector and your laptop can differ. A package theme brings its own layouts and components too.
 </Notes>
 
 ----
@@ -72,6 +80,28 @@ background:
 
 <Notes>
 Per-slide colour scheme. The deck may be light, but this slide is always dark, because its background asks for it. The reverse — `colorScheme: light` — works too.
+</Notes>
+
+----
+colorScheme: light
+id: light-slide
+background:
+  component: sparkles
+  color: "rgba(14,165,233,0.55)"
+---
+
+<p className="sc-eyebrow">Looks · colorScheme: light</p>
+
+## A light slide in a dark deck
+
+Press <Kbd>D</Kbd>: the rest of the tour turns dark, and this slide stays light, because its frontmatter says `colorScheme: light`.
+
+<LightOrDark>
+{({ scheme }) => <p className="sc-small">The deck around this slide is <b>{scheme}</b> right now; <code>{"<LightOrDark>"}</code> with a function child read that.</p>}
+</LightOrDark>
+
+<Notes>
+The mirror of the slide above. Turn the deck dark with D and come back: this one keeps the light tokens. The line at the bottom is `<LightOrDark>` given a function, which receives the scheme.
 </Notes>
 
 ---
@@ -173,7 +203,7 @@ id: bg-image
 
 ## A picture
 
-`image`, with `size`, `position`, `repeat` and `opacity` as in reveal.js.
+`image`, with `size`, `position`, `repeat` and `opacity`, as in CSS.
 
 <Notes>
 An image behind the slide. A string ending in an image extension works too: `background: media/sea-wide.jpg`. This sea was drawn for the tour, and ships in the deck's `public/` folder.
@@ -302,6 +332,40 @@ Behind this text: a starfield of 500, from frontmatter, and a constellation laye
 Two layers: the slide's own background from frontmatter, and a second one placed inside the slide with the `<Background>` component — any registered background, at any opacity.
 </Notes>
 
+----
+backgroundColor: "#0b1d33"
+backgroundImage: media/night-thumb.jpg
+backgroundSize: 360px
+backgroundRepeat: repeat
+backgroundPosition: center
+backgroundOpacity: 0.4
+colorScheme: dark
+id: bg-longhand
+---
+
+<p className="sc-eyebrow">background, key by key</p>
+
+## The long-hand keys
+
+<How>
+
+```yaml
+backgroundColor: "#0b1d33"
+backgroundImage: media/night-thumb.jpg
+backgroundSize: 360px
+backgroundRepeat: repeat
+backgroundPosition: center
+backgroundOpacity: 0.4
+```
+
+</How>
+
+<p className="sc-small">One key each, for decks that came from HTML: a colour under a tiled picture at 40%. <code>backgroundVideo</code>, <code>backgroundIframe</code> and <code>backgroundInteractive</code> do the same for the other kinds.</p>
+
+<Notes>
+The same backgrounds, spelt one key at a time. Here a navy colour sits under a small picture tiled across the slide at 40% opacity.
+</Notes>
+
 ---
 id: bling
 background:
@@ -348,6 +412,47 @@ background:
 
 <Notes>
 Bling: gradient text, a glass card with chips in five tones, halos for numbered steps and icons — any lucide icon by its name — a labelled divider and a shimmer. On the right, a card that tilts toward the pointer over a blob and a glow, with a ribbon in its corner. All of it reads the theme's tokens, so it changes with T.
+</Notes>
+
+----
+id: bling-tones
+---
+
+<p className="sc-eyebrow">Looks · bling, every tone</p>
+
+## Eleven tones, and where they go
+
+<div className="sc-tone-row">
+<Chip>neutral</Chip><Chip tone="accent">accent</Chip><Chip tone="accent-2">accent-2</Chip><Chip tone="good" icon="check">good</Chip><Chip tone="warn">warn</Chip><Chip tone="bad">bad</Chip><Chip tone="info" icon="info">info</Chip><Chip tone="purple">purple</Chip><Chip tone="pink">pink</Chip><Chip tone="amber">amber</Chip><Chip tone="teal">teal</Chip>
+</div>
+
+<Cols n={3} gap="1.6rem" align="start">
+<Col>
+
+<Glass tone="amber" pad="0.8em 1em" className="sc-ribbon-card">
+<Ribbon tone="teal" corner="left">left</Ribbon>
+<p className="sc-tight">A <b>Ribbon</b> in the left corner; <code>corner="left"</code>.</p>
+</Glass>
+
+</Col>
+<Col>
+
+<GradientText as="h3" from="#f59e0b" to="#ec4899" angle={135}>As a heading, at 135°</GradientText>
+
+<p className="sc-halos"><Halo tone="purple" size="2.4em">S</Halo> <Halo tone="good" size="3.2em">M</Halo> <Halo tone="warn" size="4em">L</Halo></p>
+
+</Col>
+<Col>
+
+<p className="sc-icon-row-sm"><Icon name="anchor" size={40} /> <Icon name="ship" size={40} strokeWidth={1} /> <Icon name="waves" size={40} strokeWidth={2.5} color="var(--deck-accent)" /> <Icon name="mdi:sail-boat" size={40} title="A sailing boat" /></p>
+
+<p className="sc-small">Lucide by name with a stroke width, or any Iconify set; <code>title</code> gives an icon a name for screen readers.</p>
+
+</Col>
+</Cols>
+
+<Notes>
+Every tone the bling components take, on chips. Below, a ribbon on the left corner, gradient text set as a heading at an angle, halos in three sizes, and icons at three stroke widths.
 </Notes>
 
 ---
@@ -410,7 +515,7 @@ id: blocks
 <Arrow x1={820} y1={835} x2={1220} y2={818} width={3} color="var(--deck-accent)" />
 
 <Notes>
-The layout and annotation pieces. Callouts in five kinds, badges in five tones, keys. A `<Stack>` holds things in one place for clicks to step through — reveal.js's r-stack.
+The layout and annotation pieces. Callouts in five kinds, badges in five tones, keys. A `<Stack>` holds things in one place for clicks to step through.
 [click] two
 [click] three.
 `<FitText>` is as large as fits its box. `<Transform>` scales a block; `<Absolute>` and `<Arrow>` place things in stage pixels, the 1920 by 1080 grid every slide is authored on.

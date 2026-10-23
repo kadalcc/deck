@@ -202,6 +202,44 @@ export interface TocProps {
   listClass?: string;
 }
 
+/**
+ * Which entries a `<Toc mode>` lists, given the current one's index (-1: not in the list).
+ * `onlyCurrentTree`: the top-level items, and everything under the current one's top-level item.
+ * `onlySiblings`: the current item's tree — its ancestors, itself, its descendants — and the
+ * siblings of each of those, so the items around it are listed and the other branches are not.
+ */
+export function tocShown<T extends { level: number }>(
+  entries: T[],
+  currentFlat: number,
+  mode: "all" | "onlyCurrentTree" | "onlySiblings",
+): T[] {
+  if (mode === "all") return entries;
+  // Each entry's parent: the nearest entry before it with a smaller level (-1 for the top).
+  const parent = entries.map((e, i) => {
+    for (let j = i - 1; j >= 0; j--) if (entries[j]!.level < e.level) return j;
+    return -1;
+  });
+  if (currentFlat === -1) return entries.filter((_e, i) => parent[i] === -1);
+  const ancestry = (i: number) => {
+    const out: number[] = [];
+    for (let j = parent[i]!; j !== -1; j = parent[j]!) out.push(j);
+    return out;
+  };
+  if (mode === "onlySiblings") {
+    const line = new Set([currentFlat, ...ancestry(currentFlat)]);
+    return entries.filter(
+      (_e, i) => line.has(i) || line.has(parent[i]!) || parent[i] === -1 || ancestry(i).includes(currentFlat),
+    );
+  }
+  // onlyCurrentTree: top-level items, plus the children of the current branch.
+  const top = (i: number) => {
+    const a = ancestry(i);
+    return a.length ? a[a.length - 1]! : i;
+  };
+  const branch = top(currentFlat);
+  return entries.filter((_e, i) => parent[i] === -1 || top(i) === branch);
+}
+
 /** The table of contents from every slide's title and level (`hideInToc` slides skipped). */
 export function Toc({
   columns = 1,
@@ -213,7 +251,9 @@ export function Toc({
   const deck = useDeck();
   const actions = useActions();
   const nav = useNav((s) => ({ h: s.h, v: s.v }));
-  const entries = deck.columns.flatMap((c) =>
+  // The whole tree decides what a mode keeps (a chapter's slides are the ones under its heading,
+  // even when the chapters themselves are below minDepth); the depths then decide what is listed.
+  const tree = deck.columns.flatMap((c) =>
     c.slides
       .map((s, v) => ({
         h: c.h,
@@ -222,22 +262,15 @@ export function Toc({
         level: s.level,
         hide: !!s.frontmatter.hideInToc || deck.options.get(`${c.h},${v}`)?.hideInToc,
       }))
-      .filter((e) => e.title && !e.hide && e.level >= minDepth && e.level <= maxDepth),
+      .filter((e) => e.title && !e.hide),
   );
+  const entries = tree.filter((e) => e.level >= minDepth && e.level <= maxDepth);
   const currentFlat = entries.findIndex((e) => e.h === nav.h && e.v === nav.v);
-  const shown = entries.filter((e, i) => {
-    if (mode === "all") return true;
-    if (currentFlat === -1) return e.level === minDepth;
-    const cur = entries[currentFlat]!;
-    if (mode === "onlySiblings") return e.level <= cur.level;
-    // onlyCurrentTree: top-level items, plus the children of the current branch.
-    if (e.level === minDepth) return true;
-    let j = i;
-    while (j >= 0 && entries[j]!.level > minDepth) j--;
-    let k = currentFlat;
-    while (k >= 0 && entries[k]!.level > minDepth) k--;
-    return j === k;
-  });
+  const shown = tocShown(
+    tree,
+    tree.findIndex((e) => e.h === nav.h && e.v === nav.v),
+    mode,
+  ).filter((e) => e.level >= minDepth && e.level <= maxDepth);
   return (
     <ol
       className={["deck-toc", listClass].filter(Boolean).join(" ")}

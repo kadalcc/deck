@@ -132,16 +132,21 @@ body {
 .deck-backgrounds[data-transition="none"] .is-leaving {
   display: none;
 }
+/* The slide's speed reaches its background too (the stage carries the same attribute). */
+.deck-backgrounds[data-speed="fast"] {
+  --deck-transition: 300ms;
+}
+.deck-backgrounds[data-speed="slow"] {
+  --deck-transition: 1000ms;
+}
 .deck-backgrounds[data-transition="slide"] .is-leaving,
 .deck-backgrounds[data-transition="convex"] .is-leaving,
-.deck-backgrounds[data-transition="concave"] .is-leaving,
-.deck-backgrounds[data-transition="zoom"] .is-leaving {
+.deck-backgrounds[data-transition="concave"] .is-leaving {
   animation: deck-bg-leave var(--deck-transition) ease forwards;
 }
 .deck-backgrounds[data-transition="slide"] .is-entering,
 .deck-backgrounds[data-transition="convex"] .is-entering,
-.deck-backgrounds[data-transition="concave"] .is-entering,
-.deck-backgrounds[data-transition="zoom"] .is-entering {
+.deck-backgrounds[data-transition="concave"] .is-entering {
   animation: deck-bg-enter var(--deck-transition) ease;
 }
 .deck-backgrounds[data-direction="back"] .is-leaving {
@@ -149,6 +154,76 @@ body {
 }
 .deck-backgrounds[data-direction="back"] .is-entering {
   animation-name: deck-bg-enter-back;
+}
+/* Up and down a stack, a sliding background moves the way the slides do. */
+.deck-backgrounds[data-direction="down"] .is-leaving {
+  animation-name: deck-bg-leave-up;
+}
+.deck-backgrounds[data-direction="down"] .is-entering {
+  animation-name: deck-bg-enter-up;
+}
+.deck-backgrounds[data-direction="up"] .is-leaving {
+  animation-name: deck-bg-leave-down;
+}
+.deck-backgrounds[data-direction="up"] .is-entering {
+  animation-name: deck-bg-enter-down;
+}
+/* A zooming background zooms (it used to slide sideways like `slide`). */
+.deck-backgrounds[data-transition="zoom"] .is-leaving {
+  animation: deck-bg-zoom-out var(--deck-transition) ease forwards;
+}
+.deck-backgrounds[data-transition="zoom"] .is-entering {
+  animation: deck-bg-zoom-in var(--deck-transition) ease;
+}
+.deck-backgrounds[data-transition="zoom"][data-direction="back"] .is-leaving {
+  animation-name: deck-bg-zoom-out-back;
+}
+.deck-backgrounds[data-transition="zoom"][data-direction="back"] .is-entering {
+  animation-name: deck-bg-zoom-in-back;
+}
+@keyframes deck-bg-enter-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes deck-bg-leave-up {
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes deck-bg-enter-down {
+  from {
+    transform: translateY(-100%);
+  }
+}
+@keyframes deck-bg-leave-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes deck-bg-zoom-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes deck-bg-zoom-out {
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes deck-bg-zoom-in-back {
+  from {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes deck-bg-zoom-out-back {
+  to {
+    transform: scale(0.4);
+    opacity: 0;
+  }
 }
 @keyframes deck-bg-enter {
   from {
@@ -403,9 +478,17 @@ body {
   animation: var(--deck-anim-out, none) var(--deck-transition) cubic-bezier(0.26, 0.86, 0.44, 0.985)
     both;
 }
-/* No way out is an instant cut: the slide that left must not sit under the arriving one. */
-.deck-stage[data-transition-out="none"] .deck-slide.is-leaving {
+/* No way out is an instant cut: the slide that left must not sit under the arriving one. Nor under
+   a view transition, which animates snapshots of the page: the live page is the new slide alone. */
+.deck-stage[data-transition-out="none"] .deck-slide.is-leaving,
+.deck-stage:is([data-transition="view-transition"], [data-transition-out="view-transition"])
+  .deck-slide.is-leaving {
   visibility: hidden;
+  animation: none;
+}
+/* Arriving, a slide's clicks take the state the move landed on at once (react/Stage.tsx). */
+.deck-slide.is-arriving .deck-click {
+  transition: none;
 }
 /* The way in is the arriving slide's (`data-transition`), the way out the leaving one's
    (`data-transition-out`): the same name for a plain `transition: slide`, two for reveal.js's

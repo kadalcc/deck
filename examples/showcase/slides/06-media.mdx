@@ -150,6 +150,39 @@ The only two pieces of this tour that come from somewhere else — so they are t
 </Notes>
 
 ----
+id: media-more
+---
+
+<p className="sc-eyebrow">Media · more ways in</p>
+
+## A page at half size, a picture in Markdown
+
+<Cols cols="1.2fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<Iframe src="embed/tide.html" title="Tide clock at half size" scale={0.5} poster="media/tide-poster-half.jpg" className="sc-frame" />
+
+<p className="sc-caption"><code>{"<Iframe scale={0.5}>"}</code>: the page is laid out twice as wide, then shrunk to fit.</p>
+
+</Col>
+<Col>
+
+![The sea at dusk, as a Markdown image](media/sea-thumb.jpg)
+
+<p className="sc-caption"><code>{"![alt](media/sea-thumb.jpg)"}</code>: plain Markdown, lazy-loaded like <code>{"<Image>"}</code>.</p>
+
+<Audio src="media/chime.ogg" loop controls />
+
+<p className="sc-caption"><code>{"<Audio loop>"}</code>: the chime, again and again.</p>
+
+</Col>
+</Cols>
+
+<Notes>
+Three smaller things. `scale` on an embed gives a narrow frame the page's desktop layout. A Markdown image is the same lazy image as the component. And `<Audio>` takes `loop` and `autoplay` as the element does.
+</Notes>
+
+----
 id: qr
 ---
 

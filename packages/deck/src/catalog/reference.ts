@@ -485,6 +485,7 @@ export const CLICK_EFFECT_META: Record<string, string> = {
   "highlight-current-red": "Red only during its own step.",
   "highlight-current-green": "Green only during its own step.",
   "highlight-current-blue": "Blue only during its own step.",
+  blur: "Start blurred, come into focus.",
 };
 
 export const CLICK_AT: NamedInfo[] = [

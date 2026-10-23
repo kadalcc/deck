@@ -102,7 +102,7 @@ export function ScrollView() {
                   h={s.h}
                   v={s.v}
                   active={i === current}
-                  click={clicks[k] ?? 0}
+                  click={Math.max(options.clicksStart, clicks[k] ?? 0)}
                   className="is-scroll"
                 />
               </div>

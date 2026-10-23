@@ -112,7 +112,7 @@ fn main() {
 </Cols>
 
 <Notes>
-Four blocks, four options. Line numbers starting where the excerpt starts in the real file. A block that stays hidden until its first step, then highlights each line. A maximum height, past which the block scrolls. And reveal.js's own spelling, `data-line-numbers`, for decks brought over from it.
+Four blocks, four options. Line numbers starting where the excerpt starts in the real file. A block that stays hidden until its first step, then highlights each line. A maximum height, past which the block scrolls. And the attribute spelling, `data-line-numbers`, for decks brought over from HTML.
 [click] The hidden block arrives.
 [click] Its second line.
 [click] The Rust block steps once.
@@ -172,7 +172,7 @@ const highWater = "06:12";
 </Cols>
 
 <Notes>
-Slidev's magic move, compiled at build time. One fence of fences: each inner block is a step.
+Magic move, compiled at build time. One fence of fences: each inner block is a step.
 [click] The function arrives around the constant.
 [click] Its three lines light up: the step's own highlight, one more click.
 [click] It is exported, typed and called — the tokens it shares with the step before slide into place.
@@ -242,6 +242,100 @@ npm i @kadal/deck
 Three conveniences of a technical talk. Shiki's notation comments mark lines added, removed, highlighted or focused — the comment itself disappears — and they sit under the click steps rather than fighting them.
 [click] Line three and four light up as a step, on top of the highlight mark.
 [click] And everything again. Below, a code group: one tab per fence, named by its title, with ← and → between tabs. On the right, a region of a real file in the repo, imported with three angle brackets — edit the file and the slide follows.
+</Notes>
+
+----
+id: code-notation
+---
+
+<p className="sc-eyebrow">Code · more marks, tabs on clicks</p>
+
+## Focus, errors, and tabs that turn
+
+<Cols cols="1.1fr 1fr" gap="2rem" align="start">
+<Col>
+
+```ts {none|2|all} [tide.ts]
+const station = "Chennai" // [!code focus]
+const high = predict(station) // [!code error]
+const low = predict(station, "low") // [!code warning]
+log(high, low) // [!code highlight:2]
+export { high, low }
+```
+
+<p className="sc-caption"><code>{"{none|2|all}"}</code>: no line lit, then line 2, then all; <code>[!code focus]</code> blurs the rest until you hover.</p>
+
+</Col>
+<Col>
+
+::code-group {clicks:true}
+
+```sh [install]
+npm create @kadal/deck my-talk
+```
+
+```sh [write]
+npx kadal-deck dev
+```
+
+```sh [ship]
+npx kadal-deck publish
+```
+
+::
+
+<p className="sc-caption"><code>{"::code-group {clicks:true}"}</code>: the next tab on each click.</p>
+
+</Col>
+</Cols>
+
+<Notes>
+The rest of the notation marks: focus, which blurs every other line until the pointer is over the block; error and warning, which tint their lines; and `highlight:2`, which lights two lines from here. The steps start at `none`, so no line is lit yet.
+[click] Line two, the error.
+[click] And all of them.
+[click] On the right, a code group with `{clicks:true}`: each click turns to the next tab.
+[click] And the last one.
+</Notes>
+
+----
+id: magic-move-options
+---
+
+<p className="sc-eyebrow">Code · magic move options</p>
+
+## Slower, and later
+
+<Cols cols="1.3fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+````md magic-move {at:2, duration:1600}
+```ts
+let depth = 14
+```
+```ts
+let depth = 14.5
+const unit = "m"
+```
+```ts
+const depth = { value: 14.5, unit: "m" }
+```
+````
+
+</Col>
+<Col>
+
+<Click at={1}>`{at:2}` — the first morph waits for the second click, so this line can come first.</Click>
+
+<Click at={2}>`{duration:1600}` — each morph takes 1.6 seconds; the deck's default is `magicMoveDuration: 800`.</Click>
+
+</Col>
+</Cols>
+
+<Notes>
+Options on the outer fence. `at` says on which click the first morph happens, so something else can come first.
+[click] The first click: an explanation, pinned with `<Click at={1}>`.
+[click] The second click: the first morph, slowly, over 1.6 seconds.
+[click] And the second morph.
 </Notes>
 
 ----
@@ -377,7 +471,7 @@ id: maths
 <Cols cols="1.1fr 1fr" gap="2.5rem" align="start">
 <Col>
 
-Inline, between dollars: the tide height is $h(t) = A\cos(\omega t + \varphi)$.
+Inline, between dollars: the tide height is $\tide(t) = A\cos(\omega t + \varphi)$.
 
 Display, between double dollars:
 
@@ -395,7 +489,7 @@ From JSX, where Markdown cannot reach:
 <How>
 
 ```mdx
-$h(t) = A\cos(\omega t + \varphi)$
+$\tide(t) = A\cos(\omega t + \varphi)$
 
 $$
 \omega = \frac{2\pi}{T}
@@ -410,7 +504,7 @@ $$
 </Cols>
 
 <Notes>
-KaTeX, at build time: the slide arrives as HTML, so maths costs the audience nothing to render. `<Tex>` — also exported as `<Math>` — is for maths inside components, where the dollar syntax does not reach.
+KaTeX, at build time: the slide arrives as HTML, so maths costs the audience nothing to render. `\tide` is a macro of this deck's own, defined once under `katex: { macros }` in the headmatter. `<Tex>` — also exported as `<Math>` — is for maths inside components, where the dollar syntax does not reach.
 </Notes>
 
 ---
@@ -455,6 +549,56 @@ id: diagrams
 
 <Notes>
 Any Mermaid diagram: a flowchart of how this deck is built, and a sequence diagram of what the room does when the presenter moves. Mermaid is loaded only by slides that use it, and the diagram follows the colour scheme.
+</Notes>
+
+----
+id: diagrams-more
+---
+
+<p className="sc-eyebrow">Diagrams · more kinds</p>
+
+## Any kind Mermaid draws
+
+<Grid cols={3} gap="1.5rem">
+
+<Mermaid scale={1.1}>
+{`pie title Water in a tide pool
+  "sea water" : 82
+  "rain" : 11
+  "spray" : 7
+`}
+</Mermaid>
+
+<Mermaid scale={1.1} theme="forest">
+{`stateDiagram-v2
+  [*] --> Low
+  Low --> Rising
+  Rising --> High
+  High --> Falling
+  Falling --> Low
+`}
+</Mermaid>
+
+<Mermaid scale={1.05} config={{ look: "handDrawn" }}>
+{`classDiagram
+  class Deck {
+    slides
+    present()
+  }
+  class Room {
+    polls
+    questions
+  }
+  Deck --> Room : opens
+`}
+</Mermaid>
+
+</Grid>
+
+<p className="sc-small">A pie, a state machine in <code>theme="forest"</code>, a class diagram with <code>{'config={{ look: "handDrawn" }}'}</code>. The deck's <code>mermaid:</code> headmatter sets defaults for all of them.</p>
+
+<Notes>
+Three more of Mermaid's kinds, each a `<Mermaid>` with its source as children. A diagram can carry its own `theme` or any of Mermaid's configuration; otherwise it follows the deck's colour scheme.
 </Notes>
 
 ---

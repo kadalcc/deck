@@ -56,7 +56,7 @@ id: poll
 
 ## A poll
 
-<Poll id="tools" question="What do you present with today?" options={["Keynote or PowerPoint", "Google Slides", "reveal.js or Slidev", "Something else"]} />
+<Poll id="tools" question="How do you make your slides today?" options={["A slide app", "Markdown or code", "Whatever the team uses", "I'm here to find out"]} />
 
 <Notes>
 A poll is defined by the slide and opened from the presenter view. Phones answer on the audience page; the bars move live. Offline, a vote here is remembered on this screen only.
@@ -78,13 +78,13 @@ id: poll-kinds
 </Col>
 <Col>
 
-<Poll id="pace-rating" kind="rating" scale={5} question="How is the pace so far?" />
+<Poll id="pace-rating" kind="rating" scale={5} liveResults={false} question="How is the pace so far?" />
 
 </Col>
 </Cols>
 
 <Notes>
-`kind="multi"` takes several answers, `kind="rating"` a score out of `scale`.
+`kind="multi"` takes several answers, `kind="rating"` a score out of `scale`. The rating has `liveResults={false}`: phones see the bars only once the presenter closes it.
 </Notes>
 
 ---

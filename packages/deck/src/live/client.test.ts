@@ -104,4 +104,38 @@ describe("the room client", () => {
     });
     client.close();
   });
+
+  test("a presenter stepping down reconnects as a viewer, and back up as the presenter", async () => {
+    FakeSocket.all = [];
+    const client = new RoomClient({ api: "/api", room: "talk", role: "presenter", viewer: "v1" });
+    client.connect();
+    await Promise.resolve();
+    FakeSocket.all[0]!.open();
+    expect(FakeSocket.all[0]!.url).toContain("role=presenter");
+    client.setAway(true);
+    await Promise.resolve();
+    const down = FakeSocket.all.at(-1)!;
+    expect(down.url).toContain("role=viewer");
+    down.open();
+    expect((down.sent[0] as { role: string }).role).toBe("viewer");
+    client.setAway(true); // already away: nothing new
+    await Promise.resolve();
+    expect(FakeSocket.all.at(-1)).toBe(down);
+    client.setAway(false);
+    await Promise.resolve();
+    const up = FakeSocket.all.at(-1)!;
+    expect(up.url).toContain("role=presenter");
+    up.open();
+    expect((up.sent[0] as { role: string }).role).toBe("presenter");
+    client.close();
+    // A viewer has nothing to step down from.
+    FakeSocket.all = [];
+    const viewer = new RoomClient({ api: "/api", room: "talk", role: "viewer", viewer: "v2" });
+    viewer.connect();
+    await Promise.resolve();
+    viewer.setAway(true);
+    await Promise.resolve();
+    expect(FakeSocket.all.length).toBe(1);
+    viewer.close();
+  });
 });

@@ -282,7 +282,7 @@
 /* ── clicks ───────────────────────────────────────────────────────────────── */
 .sc-effects {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.6em;
 }
 .sc-effect {
@@ -355,20 +355,26 @@
 /* ── looks ────────────────────────────────────────────────────────────────── */
 .sc-themes {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8em;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55em 0.9em;
+  font-size: 0.82em;
 }
 .sc-theme {
   display: grid;
-  gap: 0.35em;
+  gap: 0.3em;
+}
+.sc-theme-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3em;
 }
 .sc-theme-face {
   position: relative;
   display: grid;
-  gap: 0.25em;
+  gap: 0.15em;
   align-content: start;
-  height: 6.2em;
-  padding: 0.8em 1em;
+  height: 3.9em;
+  padding: 0.6em 0.75em;
   overflow: hidden;
   border: 1px solid var(--deck-border);
   border-radius: var(--deck-radius);
@@ -377,35 +383,36 @@
   font-family: var(--deck-body-font);
 }
 .sc-theme-face strong {
-  font: 700 1.2em/1.1 var(--deck-heading-font);
+  font: 700 1em/1.1 var(--deck-heading-font);
   letter-spacing: -0.01em;
 }
 .sc-theme-face span {
   color: var(--deck-muted);
-  font-size: 0.62em;
-}
-.sc-theme-face code {
-  justify-self: start;
-  padding: 0.15em 0.5em;
-  border-radius: 6px;
-  background: var(--deck-code-bg);
-  color: var(--deck-code-fg);
-  font: 0.5em var(--deck-mono-font);
+  font-size: 0.58em;
 }
 .sc-theme-face i {
   position: absolute;
-  right: 1em;
-  bottom: 1em;
-  width: 3.2em;
-  height: 0.5em;
+  right: 0.75em;
+  bottom: 0.7em;
+  width: 2.4em;
+  height: 0.4em;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2));
+  background: linear-gradient(90deg, var(--deck-accent), var(--deck-accent-2, var(--deck-accent)));
 }
 .sc-theme-name {
   color: var(--deck-muted);
-  font: 500 0.62em var(--deck-mono-font);
-  letter-spacing: 0.08em;
+  font: 600 0.6em var(--deck-mono-font);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-theme-name small {
+  font-size: inherit;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .sc-bg-grid {
@@ -664,7 +671,7 @@
 /* ── presenting ───────────────────────────────────────────────────────────── */
 .sc-keys-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.5em;
 }
 .sc-keys-grid > div {
@@ -709,7 +716,7 @@
 }
 .sc-views {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.6em;
 }
 .deck-slide .sc-views a {
@@ -953,4 +960,138 @@
 }
 .sc-handout a:hover {
   text-decoration-color: currentColor;
+}
+
+/* ── the slides added for every variation ─────────────────────────────────── */
+
+/* A small mono label over a demo: the prop or option it shows. */
+.sc-label {
+  margin: 0 0 0.5em;
+  font-size: 0.62em;
+}
+.sc-tone-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  margin: 0 0 1.1em;
+  font-size: 0.78em;
+}
+.sc-ribbon-card {
+  position: relative;
+  overflow: hidden;
+  padding-top: 2.2em !important;
+}
+.sc-icon-row-sm {
+  display: flex;
+  gap: 0.6em;
+  align-items: center;
+  margin: 0 0 0.6em;
+}
+.sc-motion-list {
+  margin: 1.2em 0 0;
+  padding-left: 1.2em;
+  font-size: 0.86em;
+}
+.sc-run-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  margin-top: 1em;
+}
+.sc-run {
+  display: grid;
+  gap: 0.2em;
+  padding: 0.6em 0.9em;
+  border: 1px solid var(--deck-border);
+  border-radius: var(--deck-radius);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  font: inherit;
+  font-size: 0.7em;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-run:hover,
+.sc-run:focus-visible {
+  border-color: var(--deck-accent);
+  outline: none;
+}
+.sc-run span {
+  color: var(--deck-muted);
+}
+/* slide-top.tsx draws this on the slide about layers. */
+.sc-layer-note {
+  position: absolute;
+  top: 36px;
+  right: 56px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+  font: 600 20px var(--deck-mono-font);
+}
+/* `defaults: { state: tour }` puts .state-tour on every slide that sets no state of its own. */
+.deck-slide.state-tour .sc-defaults-proof::after {
+  content: "state-tour ✓";
+  display: inline-block;
+  margin-left: 0.3em;
+  padding: 0.05em 0.5em;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--deck-accent) 18%, transparent);
+  color: var(--deck-fg);
+  font: 600 0.8em var(--deck-mono-font);
+}
+.sc-switch-sm {
+  min-height: 2.2em;
+  font-size: 1.2em;
+}
+.sc-big-mini {
+  margin: 0 0 0.3em;
+  font: 700 1.6em/1.1 var(--deck-heading-font);
+  font-variant-numeric: tabular-nums;
+}
+.sc-type-mini {
+  min-height: 2.6em;
+  margin: 0 0 0.3em;
+  font: 500 0.8em var(--deck-mono-font);
+}
+.sc-toc-mini .deck-toc {
+  margin: 0 0 0.4em;
+  font-size: 0.82em;
+}
+
+/* `transition: rise`, named under `transitions:` in the headmatter: the next slide rises from
+   below as this one sinks, and the other way round going back. */
+@keyframes sc-rise-in {
+  from {
+    transform: translateY(18%) scale(0.96);
+    opacity: 0;
+  }
+}
+@keyframes sc-rise-out {
+  to {
+    transform: translateY(-12%) scale(0.98);
+    opacity: 0;
+  }
+}
+@keyframes sc-rise-in-back {
+  from {
+    transform: translateY(-12%) scale(0.98);
+    opacity: 0;
+  }
+}
+@keyframes sc-rise-out-back {
+  to {
+    transform: translateY(18%) scale(0.96);
+    opacity: 0;
+  }
+}
+
+/* One mark per line: a roomy circle must not cut through the line under it. */
+.sc-mark-list {
+  display: grid;
+  gap: 0.75em;
+  margin: 0.4em 0 0;
+  padding: 0;
+  list-style: none;
 }

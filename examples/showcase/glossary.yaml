@@ -6,15 +6,9 @@ MDX:
   tag: Format
   link: https://mdxjs.com
 
-reveal.js:
-  def: Hakim El Hattab's open-source HTML presentation framework — the source of this engine's keyboard map, fragments and two-dimensional slide grid.
-  tag: Prior art
-  see: [Slidev]
-
 Slidev:
-  def: Anthony Fu's slide tool for developers, written in Markdown on Vue and Vite — the source of the click model, the slots and the code-block meta.
-  tag: Prior art
-  see: [reveal.js]
+  def: An open-source slide tool for developers by Anthony Fu, written in Markdown on Vue and Vite. Kadal Deck reads its Markdown as written, and `kadal-deck import slidev` converts a whole Slidev project.
+  tag: Compatibility
 
 Durable Object:
   def: >-
