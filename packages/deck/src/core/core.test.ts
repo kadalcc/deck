@@ -226,31 +226,42 @@ describe("layout and touch", () => {
     expect(l.top).toBe((1000 - 540) / 2);
   });
 
-  test("the bars either side of the stage are the same whole number of device pixels", () => {
-    // The window that showed a wider bar on the left: 1488 × 834 at 2×, a 1920 × 1080 deck.
+  test("the bars either side of the stage are whole device pixels, at most one apart", () => {
+    // The window that showed a wider bar on the left: 1488 × 834 at 2×, a 1920 × 1080 deck; and
+    // the presenter's tall pane at 1× (856 × 872) that a stage grown to fill overflowed by 1.8px.
     for (const [w, h, dpr] of [
       [1488, 834, 2],
       [989, 557, 2],
       [1366, 600, 1],
       [700, 900, 3],
+      [854, 870, 1],
+      [854, 870, 2],
     ] as const) {
       const l = computeLayout(
         { width: 1920, height: 1080, margin: 0, minScale: 0.1, maxScale: 3 },
         { width: w, height: h },
         dpr,
       );
-      const across = l.width < w - 0.01;
+      const across = w - l.width > h - l.height;
       const [view, size, at] = across ? [w, l.width, l.left] : [h, l.height, l.top];
       const before = at * dpr;
       const after = (view - at - size) * dpr;
-      expect(Math.abs(before - Math.round(before))).toBeLessThan(1e-6);
-      expect(Math.abs(after - before)).toBeLessThan(1e-6);
-      // The other way the stage still fills the window: the under-two-device-pixel growth, times
-      // the deck's shape, is all the root clips.
-      const other = across ? l.height - h : l.width - w;
-      expect(other).toBeGreaterThanOrEqual(-1e-6);
-      expect(other * dpr).toBeLessThan(2 * (16 / 9));
+      const whole = (n: number) => Math.abs(n - Math.round(n)) < 1e-6;
+      expect(whole(before) && whole(after)).toBe(true);
+      expect(Math.abs(after - before)).toBeLessThanOrEqual(1 + 1e-6);
+      // The other way the stage fills the box, overflowing by no more than a device pixel a side.
+      const [oView, oSize, oAt] = across ? [h, l.height, l.top] : [w, l.width, l.left];
+      expect(oSize).toBeGreaterThanOrEqual(oView - 1e-6);
+      expect(-oAt * dpr).toBeLessThanOrEqual(1 + 1e-6);
+      expect((oAt + oSize - oView) * dpr).toBeLessThanOrEqual(1 + 1e-6);
     }
+    // The owner's window: equal bars.
+    const l = computeLayout(
+      { width: 1920, height: 1080, margin: 0, minScale: 0.1, maxScale: 3 },
+      { width: 1488, height: 834 },
+      2,
+    );
+    expect(l.left * 2).toBe((1488 - l.left - l.width) * 2);
   });
 
   test("swipes classify by the dominant axis", () => {

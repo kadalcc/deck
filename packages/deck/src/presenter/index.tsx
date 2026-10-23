@@ -69,6 +69,7 @@ export function PresenterPage() {
   const gate = usePresenterGate();
   const [layout, setLayout] = useState<PresenterLayout>(savedLayout);
   const overview = useNav((s) => s.overview);
+  const drawing = useUi((s) => s.drawing);
   const [mirror, setMirror] = useState(false);
   const [roomOpen, setRoomOpen] = useState(() => readItem("deck.presenter.room") !== "closed");
   const narrate = useNarrationOn();
@@ -94,7 +95,16 @@ export function PresenterPage() {
   if (live && gate.required && !gate.ok) return <PresenterLogin gate={gate} />;
 
   return (
-    <div className={`deck-presenter layout-${layout} room-${roomOpen ? "open" : "collapsed"}`}>
+    <div
+      className={[
+        "deck-presenter",
+        `layout-${layout}`,
+        `room-${roomOpen ? "open" : "collapsed"}`,
+        drawing ? "is-drawing" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <header className="deck-presenter-bar">
         <strong>{deck.config.title}</strong>
         <PresenterTimer />
@@ -552,7 +562,12 @@ function PresenterTools({
     deck.ui.update((s) => ({ ...s, [key]: !s[key] }));
   return (
     <div className="deck-presenter-tools" role="toolbar">
-      <button type="button" onClick={() => actions.toggleOverview()} title="Every slide (O or Esc)">
+      <button
+        type="button"
+        onClick={() => actions.toggleOverview()}
+        aria-label="Overview"
+        title="Every slide (O or Esc)"
+      >
         <Icon name="layout-grid" /> Overview
       </button>
       <button

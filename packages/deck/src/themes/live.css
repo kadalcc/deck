@@ -641,6 +641,17 @@
 .deck-presenter-current > .deck-theme-menu {
   left: 14px;
   bottom: 14px;
+  transition: bottom 0.2s ease;
+}
+/* The pen's tools take the panes' bottom edge (the toolbar slot below); the button steps up
+   clear of them rather than sitting under a row of pen buttons. */
+.deck-presenter.is-drawing .deck-presenter-current > .deck-theme-menu {
+  bottom: 68px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-presenter-current > .deck-theme-menu {
+    transition: none;
+  }
 }
 /* The layout switch: one segmented control, the same height as the timer's buttons. */
 .deck-presenter-layout {
