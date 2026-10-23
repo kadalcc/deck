@@ -117,6 +117,12 @@ async function until(page, fn, arg, ms = 15_000) {
   }
 }
 
+/** The tooltip's words, row by row (its picture of the slide left out). */
+const tipText = (page) =>
+  page
+    .locator(".deck-narration-tip .deck-narration-tip-row")
+    .evaluateAll((rows) => rows.map((r) => r.innerText.replace(/\s+/g, " ").trim()).join(" "));
+
 // The slide with five click steps and a note for each (02-clicks.mdx).
 const target = await (async () => {
   const { page, context } = await open(base, { prefs: false });
@@ -141,7 +147,7 @@ await step("presenter: the bar renders, with its commands", async (expect) => {
   expect(points === sections + 1, `${points} points for ${sections} sections and the opening`);
   // Hovering a point says which chapter it is.
   await page.locator(".deck-narration-point").nth(2).hover();
-  const tip = await page.locator(".deck-narration-tip").innerText();
+  const tip = await tipText(page);
   expect(/^Chapter 3 · /.test(tip) && /slides \d+–\d+ · starts \d+:\d\d/.test(tip), `chapter tooltip: ${tip}`);
   // Hovering the track elsewhere names the slide under the pointer, inside the window.
   const t = await page.locator(".deck-narration-track").boundingBox();
@@ -149,7 +155,7 @@ await step("presenter: the bar renders, with its commands", async (expect) => {
   const tipBox = await page.locator(".deck-narration-tip").boundingBox();
   const vw = page.viewportSize().width;
   expect(tipBox.x >= 0 && tipBox.x + tipBox.width <= vw, `tooltip off screen: ${JSON.stringify(tipBox)}`);
-  expect(/^\d+\. /.test(await page.locator(".deck-narration-tip").innerText()), "no slide tooltip on the track");
+  expect(/^\d+\. /.test(await tipText(page)), "no slide tooltip on the track");
   expect(!problems.length, problems.join("; "));
   await context.close();
 });
@@ -171,17 +177,22 @@ await step("presenter: a point for every slide, the chapters kept, a picture in 
   const dot = page.locator(".deck-narration-dot").nth(5);
   const n = Number(await dot.getAttribute("data-slide"));
   await dot.hover();
-  const tip = await page.locator(".deck-narration-tip").innerText();
+  const tip = await tipText(page);
   expect(tip.startsWith(`${n + 1}. `), `slide point tooltip: ${tip}`);
   const thumb = page.locator(".deck-narration-tip .deck-narration-thumb");
   await thumb.locator(".deck-slide *").first().waitFor({ timeout: 5000 }).catch(() => {});
   const box = await thumb.boundingBox();
   expect(box && Math.abs(box.width - 192) <= 1 && Math.abs(box.height - 108) <= 1, `thumbnail box: ${JSON.stringify(box)}`);
   expect(await thumb.locator(".deck-slide *").count(), "the thumbnail drew nothing");
+  // The card is the picture's width with the same padding all round, however long the title.
+  const card = await page.locator(".deck-narration-tip").boundingBox();
+  const pad = [box.x - card.x, card.x + card.width - (box.x + box.width), box.y - card.y];
+  expect(Math.max(...pad) - Math.min(...pad) <= 1, `tooltip padding uneven: ${pad.join(", ")}`);
   await page.locator(".deck-narration-tip").screenshot({ path: join(deckDir, "check-output", "narration-tooltip.png") }).catch(() => {});
-  // A click on a slide's point narrates from that slide.
+  // A click on a slide's point goes to that slide, and does not start the voice.
   await dot.click();
   await until(page, (i) => window.__deck.commands.run("narrate.state").then((r) => r.value.slide === i), n);
+  expect(!(await page.evaluate(() => window.__deck.commands.run("narrate.state"))).value.playing, "a seek started playing");
   await page.evaluate(() => window.__deck.commands.run("narrate.stop"));
   expect(!problems.length, problems.join("; "));
   await context.close();
@@ -276,11 +287,23 @@ await step("presenter: speed, volume, mute and the timeline", async (expect) => 
   await until(page, () => window.__deck.commands.run("narrate.state").then((r) => r.value.playing));
   await page.keyboard.press("r");
   expect(!(await state(page)).playing, "R did not pause");
-  // A click on the track narrates from the slide under it.
+  // A click on the track goes to the slide under it and leaves playing alone: paused stays
+  // paused, and playing plays on from there.
   const box = await page.locator(".deck-narration-track").boundingBox();
   await page.mouse.click(box.x + box.width * 0.6, box.y + box.height / 2);
   await until(page, () => window.__deck.commands.run("deck.state").then((r) => r.value.slide.index > 3));
-  expect((await state(page)).playing, "seeking did not play");
+  expect(!(await state(page)).playing, "seeking while paused started playing");
+  await page.evaluate(() => window.__deck.commands.run("narrate.play"));
+  await until(page, () => window.__deck.commands.run("narrate.state").then((r) => r.value.playing));
+  await page.mouse.click(box.x + box.width * 0.2, box.y + box.height / 2);
+  await page.waitForTimeout(300);
+  expect((await state(page)).playing, "seeking while playing stopped it");
+  await page.evaluate(() => window.__deck.commands.run("narrate.stop"));
+  // The bar ends at the last slide: on it, before the talk has ended, the fill is full.
+  await page.mouse.click(box.x + box.width - 1, box.y + box.height / 2);
+  await until(page, () => window.__deck.commands.run("narrate.state").then((r) => r.value.slide === window.__deck.columns.flatMap((c) => c.slides).length - 1));
+  const fullAt = await page.evaluate(() => parseFloat(document.querySelector(".deck-narration-fill").style.width));
+  expect(fullAt === 100, `the fill on the last slide is ${fullAt}%`);
   await page.evaluate(() => window.__deck.commands.run("narrate.stop"));
   // The timeline from the keyboard: Home, then PageDown a chapter, ArrowRight a slide.
   const firstOfChapter2 = await page.evaluate(

@@ -41,8 +41,7 @@ export function narrationPosition(
   if (!entry) return 0;
   /** Where segment `k` of this slide starts: each earlier segment that says something, plus its gap. */
   const startOf = (k: number) =>
-    entry.start +
-    entry.ms.slice(0, Math.max(0, k)).reduce((n, m) => n + m + (m > 0 ? gap : 0), 0);
+    entry.start + entry.ms.slice(0, Math.max(0, k)).reduce((n, m) => n + m + (m > 0 ? gap : 0), 0);
   const k = s.part >= 0 ? s.part : s.segment;
   const slot = entry.ms[k] ?? 0;
   const done = s.expectedMs > 0 ? clamp01((now - s.startedAt) / s.expectedMs) : 1;
@@ -79,4 +78,33 @@ export function steadyPosition(
   const forward =
     next.slide > prev.slide || (next.slide === prev.slide && next.segment >= prev.segment);
   return forward ? Math.max(prev.at, next.at) : next.at;
+}
+
+/**
+ * Where the BAR ends, in timeline milliseconds: at the start of the last slide.
+ *
+ * The bar is a map of the slides, not a clock — every slide has a point on it, and the last one
+ * belongs at the far end. Scaled to the whole talk, the last slide's point (and the fill on
+ * arriving there) stopped short by that slide's own length, and the grey after it read as "more
+ * to come" when there was none. The time readout beside the bar stays the real talk's time.
+ *
+ * A deck whose last slide starts at 0 (one slide, or nothing before it takes any time) has no
+ * slides to spread out; its bar is that slide's own talk instead.
+ */
+export function barSpan(timeline: Timeline): number {
+  const last = timeline.slides.at(-1);
+  return last && last.start > 0 ? last.start : timeline.total;
+}
+
+/** How full the bar is (0–1) at `at` ms: on the last slide, in any phase, it is full. */
+export function barFill(
+  timeline: Timeline,
+  at: number,
+  s: Pick<PositionState, "phase" | "slide">,
+): number {
+  if (s.phase === "ended") return 1;
+  const last = timeline.slides.at(-1);
+  if (last && last.start > 0 && s.slide >= last.index) return 1;
+  const span = barSpan(timeline);
+  return span > 0 ? clamp01(at / span) : 0;
 }
