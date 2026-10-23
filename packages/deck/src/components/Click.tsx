@@ -16,7 +16,7 @@ import { useClick } from "../react/hooks.ts";
  * a step and shows its children from that step on (or hides them, with `hide`). `effect` names the
  * reveal.js fragment styles — fade-in (default), fade-up/down/left/right, fade-out, grow, shrink,
  * strike, highlight-red/green/blue, highlight-current-*, semi-fade-out, current-visible,
- * fade-in-then-out, fade-in-then-semi-out — and any custom class the theme defines.
+ * fade-in-then-out, fade-in-then-semi-out, blur — and any custom class the theme defines.
  */
 export type ClickEffect =
   | "fade-in"
@@ -38,6 +38,7 @@ export type ClickEffect =
   | "highlight-current-red"
   | "highlight-current-green"
   | "highlight-current-blue"
+  | "blur"
   | (string & {});
 
 export interface ClickProps {

@@ -74,6 +74,8 @@ export class RoomClient {
   private queue: ClientMessage[] = [];
   /** The position to announce on connect; kept current by the provider. */
   position = { h: 0, v: 0, click: 0 };
+  /** A presenter client stepped down to a viewer while its tab is forgotten (live/away.ts). */
+  private away = false;
 
   constructor(private readonly options: RoomClientOptions) {}
 
@@ -88,7 +90,7 @@ export class RoomClient {
     const base = this.options.api.startsWith("http")
       ? this.options.api.replace(/^http/, "ws")
       : `${proto}//${window.location.host}${this.options.api}`;
-    const q = new URLSearchParams({ role: this.options.pairing ? "remote" : this.options.role });
+    const q = new URLSearchParams({ role: this.options.pairing ? "remote" : this.roleNow() });
     if (token) q.set("t", token);
     for (const [k, v] of Object.entries(this.options.credentials?.() ?? {})) q.set(k, v);
     return `${base}/rooms/${encodeURIComponent(this.options.room)}/ws?${q}`;
@@ -136,7 +138,7 @@ export class RoomClient {
             }
           : {
               type: "hello",
-              role: this.options.role,
+              role: this.roleNow(),
               viewer: this.options.viewer,
               name: this.options.name,
               position: this.position,
@@ -238,6 +240,21 @@ export class RoomClient {
     return () => {
       this.listeners.delete(listener);
     };
+  }
+
+  private roleNow(): Role {
+    return this.away ? "viewer" : this.options.role;
+  }
+
+  /**
+   * A presenter client steps down to a viewer (`true`), or back up (`false`): it reconnects with
+   * the other role. Nothing for a viewer or a phone.
+   */
+  setAway(away: boolean) {
+    if (this.options.role !== "presenter" || this.options.client === "remote") return;
+    if (this.away === away) return;
+    this.away = away;
+    if (this.ws || this.opening || this.timer) this.reconnect();
   }
 
   /** Drop the connection and open it again now — the credentials changed (a presenter signed in). */

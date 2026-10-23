@@ -391,7 +391,8 @@ export function Deck({
       // reveal.js's arrows: steps first, then the next column (the whole deck in linear mode).
       left: () =>
         withTransition((s) => {
-          if (s.click > 0) return N.prevClick(s);
+          const floor = N.clickFloor(columns, s.h, s.v);
+          if (s.click > floor) return N.prevClick(s, floor);
           if (config.navigationMode === "linear") return N.prev(s, columns, config);
           return config.rtl ? N.right(s, columns, config) : N.left(s, columns, config);
         }),

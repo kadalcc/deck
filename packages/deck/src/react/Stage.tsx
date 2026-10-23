@@ -32,6 +32,19 @@ export function Stage() {
   const stageRef = useRef<HTMLDivElement>(null);
   // Forward or backward, for `forward:` / `backward:` styles (core/direction.ts).
   const navDir = useNavDirection();
+  /*
+   * The slide arrived at: which way the deck moved to reach it, and on which move. A click changes
+   * the nav's direction too, but the slide's own entrance must not: its animation is keyed on the
+   * direction, and a changed animation name restarts it, so stepping back a click replayed the
+   * whole slide sliding in. And until the next move after arriving, its clicks snap to where the
+   * move landed (`up` lands on the first step of a slide that was waiting, pre-rendered, at its
+   * last) rather than fading out under the transition.
+   */
+  const arrival = useRef({ h, v, seq, direction });
+  if (arrival.current.h !== h || arrival.current.v !== v)
+    arrival.current = { h, v, seq, direction };
+  const slideDirection = arrival.current.direction;
+  const arriving = arrival.current.seq === seq;
   // The slide just left keeps the click it was showing while it animates out — rendering it at
   // its total (or at zero) would flash every hidden fragment for the length of the transition.
   const [leaving, setLeaving] = useState<{
@@ -87,8 +100,14 @@ export function Stage() {
   // animation at all (a name nothing defines): that is a cut, not two slides drawn over each other.
   useEffect(() => {
     if (!leaving) return;
-    const t = setTimeout(() => setLeaving(null), transitionMs(speed) + 50);
     const name = transitionOut;
+    // A cut, or the browser's own view transition (which animates snapshots of the page): the
+    // slide that left has nothing to play, and kept in the page it would show under the new one.
+    if (name === "none" || name === "view-transition" || transition === "view-transition") {
+      setLeaving(null);
+      return;
+    }
+    const t = setTimeout(() => setLeaving(null), transitionMs(speed) + 50);
     const frame =
       name === "none" || name === "view-transition"
         ? 0
@@ -158,8 +177,13 @@ export function Stage() {
 
   const autoAnimating = !!leaving && autoSnapWas(leaving, current);
   // A named custom transition's keyframes for this direction (none for built-ins and pure CSS).
-  const customIn = transitionAnimation(transition, "in", direction, deck.config.transitions);
-  const customOut = transitionAnimation(transitionOut, "out", direction, deck.config.transitions);
+  const customIn = transitionAnimation(transition, "in", slideDirection, deck.config.transitions);
+  const customOut = transitionAnimation(
+    transitionOut,
+    "out",
+    slideDirection,
+    deck.config.transitions,
+  );
   const stageStyle: React.CSSProperties = {
     width: deck.config.width,
     height: deck.config.height,
@@ -176,7 +200,7 @@ export function Stage() {
       data-transition={autoAnimating || seq === 0 ? "none" : transition}
       data-transition-out={autoAnimating || seq === 0 ? "none" : transitionOut}
       data-speed={speed}
-      data-direction={direction}
+      data-direction={slideDirection}
       data-nav-direction={navDir}
       data-overview={overview || undefined}
     >
@@ -208,7 +232,7 @@ export function Stage() {
             click={frameClick}
             prefetch={prefetch}
             navDirection={isPresent || f.role === "leaving" ? navDir : undefined}
-            className={`is-${f.role}`}
+            className={isPresent && arriving ? "is-present is-arriving" : `is-${f.role}`}
           />
         );
       })}

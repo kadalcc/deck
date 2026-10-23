@@ -144,6 +144,26 @@ describe("navigation", () => {
     expect(routes.left).toBe(true);
   });
 
+  test("clicksStart: a slide opens at its step, and stepping back stops there", () => {
+    const cols = columnsOf(
+      [slide(0, 0, 0), slide(1, 1, 0, { clicksStart: 1 }), slide(2, 2, 0)],
+      DEFAULT_CONFIG,
+    );
+    let s = setTotal(setTotal(initialNav(), 1, 0, 3), 0, 0, 0);
+    s = next(s, cols, DEFAULT_CONFIG);
+    expect([s.h, s.click]).toEqual([1, 1]);
+    s = next(s, cols, DEFAULT_CONFIG);
+    expect(s.click).toBe(2);
+    s = prev(s, cols, DEFAULT_CONFIG);
+    expect(s.click).toBe(1);
+    expect(availableRoutes(s, cols, DEFAULT_CONFIG).prevClick).toBe(false);
+    s = prev(s, cols, DEFAULT_CONFIG);
+    expect([s.h, s.click]).toEqual([0, 0]);
+    // A link to step 0 lands on the slide's first step; a link past it is kept.
+    expect(goto(initialNav(), cols, { h: 1, click: 0 }).click).toBe(1);
+    expect(goto(initialNav(), cols, { h: 1, click: 3 }).click).toBe(3);
+  });
+
   test("slide numbers format like reveal.js", () => {
     const p = { h: 1, v: 2, click: 0 };
     expect(formatSlideNumber("c", p, columns)).toBe("4");
@@ -180,6 +200,10 @@ describe("hash and flags", () => {
     expect(parseHash("#/2", columns)).toEqual({ h: 2, v: 0, click: 0 });
     expect(parseHash("#/s4", columns)).toEqual({ h: 2, v: 0, click: 0 });
     expect(parseHash("#/nope", columns)).toBeNull();
+    // An id with a step, as formatHash writes it: the step is kept.
+    expect(parseHash("#/s4/2", columns)).toEqual({ h: 2, v: 0, click: 2 });
+    expect(parseHash(formatHash({ h: 2, v: 0, click: 3 }, { withClick: true, id: "s4" }), columns)).toEqual({ h: 2, v: 0, click: 3 });
+    expect(parseHash("#/s4/x", columns)).toEqual({ h: 2, v: 0, click: 0 });
     expect(formatHash({ h: 1, v: 2, click: 3 }, { withClick: true })).toBe("#/1/2/3");
     expect(formatHash({ h: 1, v: 0, click: 0 })).toBe("#/1");
     expect(formatHash({ h: 1, v: 0, click: 2 }, { withClick: true })).toBe("#/1/0/2");

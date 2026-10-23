@@ -53,11 +53,20 @@ export function initialNav(): NavState {
   };
 }
 
+/**
+ * The step a slide opens at (frontmatter `clicksStart`): arriving lands there rather than on 0, and
+ * stepping back stops there. The click registry numbers the slide's steps from it too.
+ */
+export function clickFloor(columns: Column[], h: number, v: number): number {
+  const start = Number(columns[h]?.slides[v]?.frontmatter?.clicksStart ?? 0);
+  return Number.isFinite(start) && start > 0 ? Math.floor(start) : 0;
+}
+
 export function clampPosition(columns: Column[], p: Partial<Position>): Position {
   const h = Math.min(Math.max(0, p.h ?? 0), Math.max(0, columns.length - 1));
   const col = columns[h];
   const v = Math.min(Math.max(0, p.v ?? 0), Math.max(0, (col?.slides.length ?? 1) - 1));
-  return { h, v, click: Math.max(0, p.click ?? 0) };
+  return { h, v, click: Math.max(clickFloor(columns, h, v), p.click ?? 0) };
 }
 
 export interface Routes {
@@ -79,7 +88,7 @@ export function availableRoutes(state: NavState, columns: Column[], config: Deck
     right: config.rtl ? left : right,
     up: state.v > 0,
     down: !!col && state.v < col.slides.length - 1,
-    prevClick: state.click > 0,
+    prevClick: state.click > clickFloor(columns, state.h, state.v),
     nextClick: state.click < total,
   };
 }
@@ -170,8 +179,8 @@ export function nextClick(state: NavState): NavState {
   return state;
 }
 
-export function prevClick(state: NavState): NavState {
-  if (state.click > 0)
+export function prevClick(state: NavState, floor = 0): NavState {
+  if (state.click > floor)
     return { ...state, click: state.click - 1, direction: "back", seq: state.seq + 1 };
   return state;
 }
@@ -197,7 +206,7 @@ export function prev(
   config: DeckConfig,
   opts: { toLastClick?: boolean } = {},
 ): NavState {
-  const unclicked = prevClick(state);
+  const unclicked = prevClick(state, clickFloor(columns, state.h, state.v));
   if (unclicked !== state) return unclicked;
   const routes = availableRoutes(state, columns, config);
   let moved: NavState = state;

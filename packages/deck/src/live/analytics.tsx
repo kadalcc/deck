@@ -16,7 +16,9 @@ export function Analytics() {
   const api = deck.config.live.api;
   const slug = roomIdOf(deck.config);
   useEffect(() => {
-    if (!api || !slug || deck.mode === "print" || deck.mode === "presenter") return;
+    // Views are the audience's: the deck and the audience page. The presenter's own pages (notes,
+    // overview, stats, export) are not someone watching the talk.
+    if (!api || !slug || (deck.mode !== "play" && deck.mode !== "audience")) return;
     const dwell: Record<string, number> = {};
     const enters: Record<string, number> = {};
     let current = navKey(deck.nav.get().h, deck.nav.get().v);

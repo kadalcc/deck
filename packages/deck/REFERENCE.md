@@ -1453,6 +1453,7 @@ First-party theme packages (install one, then `theme: <name>`; the prebuilt shel
 - `highlight-current-red` — Red only during its own step.
 - `highlight-current-green` — Green only during its own step.
 - `highlight-current-blue` — Blue only during its own step.
+- `blur` — Start blurred, come into focus.
 
 ## Click timing (`at`)
 
