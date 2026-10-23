@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-vue",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "The Vue renderer for Kadal Deck (@kadal/deck): Vue components as islands on a slide.",
   "keywords": [
     "kadal-deck",
@@ -57,7 +57,7 @@
     "vue": "^3.5.22"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.4.3",
+    "@kadal/deck": "^0.4.4",
     "vue": "^3.5.0"
   }
 }
