@@ -61,7 +61,9 @@ jobs:
   showcase:
     needs: check
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The tour walks every one of its ~140 slides and ~300 click steps twice, then exports them all;
+    # it took 13 minutes at 115 slides, so 20 left no room.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

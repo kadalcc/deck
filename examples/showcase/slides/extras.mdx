@@ -1,0 +1,50 @@
+---
+id: extras-one
+---
+
+## You should never see this slide
+
+It is slide 1 of `slides/extras.mdx`, and the include asked for `#2` only.
+
+---
+id: extras-two
+---
+
+<p className="sc-eyebrow">Slidev syntax · part of a file</p>
+
+## Slide 2 of another file
+
+<Cols cols="1.1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+This slide lives in `slides/extras.mdx`, which holds three. The slide that pulled it in asked for one of them, with a range after the file name; the other two are not in the deck.
+
+Ranges are 1-based and can be lists: `#2-5`, `#1,3,5-7`, `#4-`.
+
+</Col>
+<Col>
+
+<How>
+
+```yaml
+---
+src: ./extras.mdx#2
+---
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Part of a file, included: `src:` with a range after a hash. Slides one and three of extras.mdx exist in the source and nowhere in the deck — the tour's checks fail if either shows up.
+</Notes>
+
+---
+id: extras-three
+---
+
+## You should never see this one either
+
+Slide 3 of `slides/extras.mdx`.

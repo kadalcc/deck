@@ -13,7 +13,7 @@ background:
 A slide can say one thing at a time. Each press reveals the next step; going back undoes it.
 
 <Notes>
-Chapter two: steps inside a slide. reveal.js calls them fragments, Slidev calls them clicks; here both spellings work.
+Chapter two: steps inside a slide. Each press reveals the next one; `<Click>` and `<Fragment>` are two spellings of the same thing.
 </Notes>
 
 ---
@@ -87,16 +87,18 @@ id: click-effects
   <EffectTile effect="highlight-red" />
   <EffectTile effect="highlight-green" />
   <EffectTile effect="highlight-blue" />
+  <EffectTile effect="highlight-current-red" />
+  <EffectTile effect="highlight-current-green" />
   <EffectTile effect="highlight-current-blue" />
   <EffectTile effect="current-visible" />
   <EffectTile effect="fade-in-then-out" />
   <EffectTile effect="fade-in-then-semi-out" />
 </div>
 
-<p className="sc-small">reveal.js's fragment styles by their own names — <code>{'<Click effect="grow">'}</code> — and a theme can add more. <StepMeter /></p>
+<p className="sc-small">Each is <code>{'<Click effect="grow">'}</code> with the effect's name, and a theme can add more. <StepMeter /></p>
 
 <Notes>
-Eighteen effects, one per press, in reading order. The first six arrive: fade in, from below, above, the right, the left, and out of a blur. The next ones change something already there: grow, shrink, strike, fade out, half-fade, and three highlight colours. The last four are about the current step: a highlight that only lasts its step, a word visible only on its step, and two that arrive and then leave or dim.
+Twenty effects, one per press, in reading order. The first six arrive: fade in, from below, above, the right, the left, and out of a blur. The next eight change something already there: grow, shrink, strike, fade out, half-fade, and three highlight colours. The last six are about the current step: three highlights that only last their step, a word visible only on its step, and two that arrive and then leave or dim.
 </Notes>
 
 ----
@@ -141,13 +143,84 @@ id: click-direction
   <div><code>deck-instant-back</code><Click effect="grow" className="sc-pill deck-instant-back">no Tailwind: the plain class</Click></div>
 </div>
 
-<p className="sc-small">The deck root carries <code>data-nav-direction</code>; the starter's Tailwind has <code>@custom-variant forward</code> and <code>backward</code> (Slidev's variants), and <code>--deck-nav-sign</code> is 1 or −1 for your own CSS. <StepMeter /></p>
+<p className="sc-small">The deck root carries <code>data-nav-direction</code>; the starter's Tailwind has <code>@custom-variant forward</code> and <code>backward</code> variants, and <code>--deck-nav-sign</code> is 1 or −1 for your own CSS. <StepMeter /></p>
 
 <Notes>
 Every move has a direction, and styles can read it.
 [click] Going forward this pill waits three hundred milliseconds — `forward:delay-300` — and going back it leaves at once.
 [click] This one rises in with its fade, and `backward:duration-0` takes it away instantly when you step back.
 [click:3] Without Tailwind, `deck-instant-back` does the same for any element. Step back through the slide to see the difference; the badge in the title says which way the deck last moved.
+</Notes>
+
+----
+id: click-lists
+clicksStart: 1
+---
+
+<p className="sc-eyebrow">Clicks · lists</p>
+
+## Lists that step their own way
+
+<Cols n={3} gap="2rem" align="start">
+<Col>
+
+<p className="sc-label"><code>{"<Clicks every={2}>"}</code></p>
+
+<Clicks every={2}>
+
+- Two items
+- per press
+- then two
+- more
+
+</Clicks>
+
+</Col>
+<Col>
+
+<p className="sc-label"><code>{"<Clicks depth={2}>"}</code></p>
+
+<Clicks depth={2}>
+
+- The tide turns
+  - every 12 h 25 min
+  - twice a day
+- Spring tides
+  - at new and full moon
+
+</Clicks>
+
+</Col>
+<Col>
+
+<p className="sc-label"><code>{'<Clicks effect="fade-up">'}</code></p>
+
+<Clicks effect="fade-up">
+
+- Rises in
+- one by one
+
+</Clicks>
+
+<Fragment><p className="sc-small"><code>{"<Fragment>"}</code> is <code>{"<Click>"}</code> by its other name.</p></Fragment>
+
+</Col>
+</Cols>
+
+<Click at={1}><p className="sc-small"><code>clicksStart: 1</code> in this slide's frontmatter: it opens at step 1, so this line (<code>{"at={1}"}</code>) is already here, and stepping back stops at it. <StepMeter /></p></Click>
+
+<Notes>
+Three ways a list steps. This slide opened at step one — `clicksStart: 1` — so the line at the bottom, pinned to step one, was there on arrival.
+[click] `every={2}` reveals two items per press:
+[click] and the next pair.
+[click] `depth={2}` lets nested lists take part: the first item,
+[click] then its children one at a time,
+[click] and the next,
+[click] then the second item
+[click] and its child.
+[click] An effect on the whole list: these rise in,
+[click] one by one.
+[click] And `<Fragment>`, the other spelling of `<Click>`.
 </Notes>
 
 ---

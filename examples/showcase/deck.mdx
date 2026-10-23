@@ -1,12 +1,32 @@
 ---
 title: Kadal Deck — the tour
-author: Mithunish Prabhakaran
+author: Kadal
 info: Every feature of the engine, on one deck. Press ? for the keys.
 lang: en
 seoMeta:
   ogImage: auto
+  ogUrl: https://decks.kadal.cc/@pmithunish/tour/
 theme: minimal
+# Every theme in the T menu: the three built in, and the thirteen theme packages.
+themes: [minimal, rla, stack, ocean, folio, swiss, terminal, lecture, brand, crayon, neon, classic, seriph, crisp, bricks, shibainu]
+# Frontmatter every slide gets unless it sets the key itself (see the slide on defaults).
+defaults:
+  state: tour
+# Readings shown over these words in the speaker notes.
+notesAutoRuby:
+  Kadal: KAH-dul
+katex:
+  macros:
+    "\\tide": "h_{\\text{tide}}"
 transition: slide
+# A transition of this deck's own: keyframes in src/styles.css, named here (slide "tr-custom").
+transitions:
+  rise:
+    in: sc-rise-in
+    out: sc-rise-out
+    back:
+      in: sc-rise-in-back
+      out: sc-rise-out-back
 slideNumber: c/t
 defaultTiming: 45
 layout: cover
@@ -39,7 +59,7 @@ background:
   color: "rgba(100,116,139,0.28)"
 ---
 
-<p className="sc-eyebrow">Nine chapters</p>
+<p className="sc-eyebrow">Eleven chapters</p>
 
 ## The tour
 
@@ -65,7 +85,7 @@ background:
 <Notes>
 The table of contents is generated, not written: each chapter opens with a first-level heading, and `<Toc maxDepth={1} />` lists those. Click any line to go there.
 
-The tour goes right through nine chapters; down, under many slides, are the variations — every layout, every background, every transition.
+The tour goes right through eleven chapters; down, under many slides, are the variations — every layout, every background, every transition.
 </Notes>
 
 ---

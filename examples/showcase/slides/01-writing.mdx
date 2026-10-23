@@ -140,7 +140,7 @@ layout: two-cols-header
 <Callout kind="tip" title="Each theme styles it">minimal draws a hairline under the header, rla sets the columns on glass, stack puts an accent rule over each.</Callout>
 
 <Notes>
-Slidev's two-cols-header: the default slot becomes a header across the slide, and the left and right slots sit side by side beneath it. Press T and switch themes: each built-in theme styles the header and the columns its own way.
+`two-cols-header`: the default slot becomes a header across the slide, and the left and right slots sit side by side beneath it. Press T and switch themes: each built-in theme styles the header and the columns its own way.
 </Notes>
 
 ----
@@ -194,7 +194,7 @@ id: layouts
 </div>
 
 <Notes>
-Slidev's nineteen layouts, every one of them used somewhere in this tour. The chips are `<Link to="id">` — each slide that demonstrates a layout has an `id:` in its frontmatter, so the link survives slides being added or moved. Press down to walk through the ones that have no other home.
+Nineteen layouts, every one of them used somewhere in this tour. The chips are `<Link to="id">` — each slide that demonstrates a layout has an `id:` in its frontmatter, so the link survives slides being added or moved. Press down to walk through the ones that have no other home.
 </Notes>
 
 ----
@@ -218,7 +218,7 @@ A heading, then the content, from the top. Any slide that names no layout gets t
 </Stretch>
 
 <Notes>
-`default` is what you get without asking: content from the top, inside the theme's padding. The three cards sit in `<Cols n={3}>`; the band below is `<Stretch>`, reveal.js's r-stretch, which grows to fill the height that is left.
+`default` is what you get without asking: content from the top, inside the theme's padding. The three cards sit in `<Cols n={3}>`; the band below is `<Stretch>`, which grows to fill the height that is left.
 </Notes>
 
 ----
@@ -273,12 +273,12 @@ id: layout-fact
 
 <p className="sc-eyebrow">layout: fact</p>
 
-<Counter value={18} className="sc-big-number" />
+<Counter value={19} className="sc-big-number" />
 
 <p className="sc-fact-caption">layouts built in — and a component away from your own</p>
 
 <Notes>
-`fact` makes the number the slide. It counts up when the slide arrives: `<Counter value={18}>`, with `from`, `duration`, `decimals`, a `prefix` and a `suffix` when you need them.
+`fact` makes the number the slide. It counts up when the slide arrives: `<Counter value={19}>`, with `from`, `duration`, `decimals`, a `prefix` and a `suffix` when you need them.
 </Notes>
 
 ----
@@ -386,6 +386,8 @@ id: layout-iframe
 
 ---
 id: glossary
+terms:
+  skip: [D1]
 ---
 
 <p className="sc-eyebrow">Writing · glossary</p>
@@ -397,7 +399,7 @@ id: glossary
 
 Rest the pointer on a dotted word: the cursor fills like a pie, then the definition opens. **Click** pins it, <Kbd>F</Kbd> reaches it from the keyboard, <Kbd>Esc</Kbd> closes it.
 
-Nothing on this slide was tagged. The compiler links each slide's first mention of an entry in `glossary.yaml` — MDX, a Durable Object, KaTeX.
+Nothing on this slide was tagged. The compiler links each slide's first mention of an entry in `glossary.yaml` — MDX, a Durable Object, KaTeX — except D1, which `terms: { skip: [D1] }` leaves plain here.
 
 By hand: <Term id="mdx">other words for an entry</Term>, or a <Term def="Written where it is used, with **Markdown** and $e^{i\pi} = -1$." tag="One-off">one-off definition</Term>.
 
@@ -431,3 +433,42 @@ The glossary is a YAML file beside deck.mdx. At build time the compiler finds th
 
 `<Term>` does it by hand, for other wording or for a definition written in place. Cards are private to whoever hovers until the presenter view turns on Share terms — then they open on the projector and every phone.
 </Notes>
+
+---
+id: tooling
+---
+
+<p className="sc-eyebrow">Writing · the tools around it</p>
+
+## Checked, formatted, edited anywhere
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+- **`kadal-deck check`**: every mistake, with its line
+- **`kadal-deck format`**: tidy Markdown and frontmatter; code, notes and maths untouched
+- **The VS Code extension**: an outline to drag, a live preview, completion
+- **<Kbd>E</Kbd> in `kadal-deck dev`**: the slide's source beside it, saved into deck.mdx
+- **`kadal-deck mcp`** and the Agent Skill: an agent writes, checks and renders slides
+
+</Col>
+<Col>
+
+<How label="in the deck's folder">
+
+```sh
+npx kadal-deck check
+npx kadal-deck format --check
+npx kadal-deck dev          # E opens the side editor
+npx kadal-deck mcp          # for an agent
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+The tools around the file. The checker knows the whole catalog, so a misspelt layout, an unknown prop or an icon you have not installed is a line number, not a blank slide. The formatter is also a Prettier plugin. In this tour, E is the deck's own shortcut; in a deck of yours under `kadal-deck dev` it opens the side editor.
+</Notes>
+

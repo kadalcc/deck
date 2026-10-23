@@ -109,7 +109,8 @@ Open on the problem. [click] The chart.
 </Cols>
 
 <Notes>
-The presenter's top bar holds the timer: click the time to pause it, the arrow to reset, the chevron to switch between stopwatch and countdown or change the length for this talk.
+Everything a talk needs, in the presenter view.
+[click] The top bar holds the timer: click the time to pause it, the arrow to reset, the chevron to switch between stopwatch and countdown or change the length for this talk.
 [click] Under `kadal-deck dev` every notes panel has an Edit button. Cmd or Ctrl+S, or clicking away, writes just this slide's notes back into the file, and the views update in place.
 [click] These numbered circles are buttons: press one and the deck jumps to that step.
 [click] And /overview lists every slide with a slider through its steps, the notes beside each one.
@@ -153,7 +154,7 @@ id: own-keys
 </Cols>
 
 <Notes>
-Three things Slidev has that now live here too. The context menu runs the same commands as the keyboard, so it offers only what works in this window. Display settings are kept per deck in this browser and reach every window of it — tune the projector from the presenter view. And shortcuts: an array adds to the defaults, a function gets them and returns the whole list.
+Three things for the room you are in. The context menu runs the same commands as the keyboard, so it offers only what works in this window. Display settings are kept per deck in this browser and reach every window of it — tune the projector from the presenter view. And shortcuts: an array adds to the defaults, a function gets them and returns the whole list.
 </Notes>
 
 ----
@@ -190,7 +191,7 @@ useSlideLeave(() => save());
 </Cols>
 
 <Notes>
-Slides stay mounted while they are near, so mount and unmount are not "shown". `useSlideEnter` and `useSlideLeave` are: an enter can return a cleanup that runs on leave. Slidev's names, `onSlideEnter` and `onSlideLeave`, work too.
+Slides stay mounted while they are near, so mount and unmount are not "shown". `useSlideEnter` and `useSlideLeave` are: an enter can return a cleanup that runs on leave. `onSlideEnter` and `onSlideLeave` are the same hooks under other names.
 </Notes>
 
 ---
@@ -218,12 +219,16 @@ id: keys
   <div><span><Kbd>Alt</Kbd> + click</span>zoom to a point</div>
   <div><span><Kbd>A</Kbd></span>auto-slide on and off</div>
   <div><span><Kbd>D</Kbd> <Kbd>T</Kbd></span>dark, and the theme menu</div>
+  <div><span><Kbd>R</Kbd></span>narrate: read the notes aloud</div>
+  <div><span><Kbd>V</Kbd></span>your camera on the slide</div>
+  <div><span><Kbd>,</Kbd></span>display settings</div>
+  <div><span><Kbd>L</Kbd></span>the presenter view's layout</div>
 </div>
 
 <p className="sc-small"><Kbd>?</Kbd> shows this sheet over any slide.</p>
 
 <Notes>
-reveal.js's keys, with vim's on top: j and k step, h and l move between columns, gg and G go to the ends, slash searches every slide's text, g or colon jumps by number. F is Vimium's: every link, button, term and embedded page gets a short label — type it to use it. Alt-click zooms to the point you click; Escape zooms back out.
+The arrows and space, with vim's keys on top: j and k step, h and l move between columns, gg and G go to the ends, slash searches every slide's text, g or colon jumps by number. F is Vimium's: every link, button, term and embedded page gets a short label — type it to use it. Alt-click zooms to the point you click; Escape zooms back out.
 </Notes>
 
 ----
@@ -258,8 +263,8 @@ id: draw
 </Cols>
 
 <Notes>
-Drawings belong to the slide they were made on and are kept per deck. With a room, they reach every screen — the projector, the phones — unless `drawings.presenterOnly` is set.
-[click] clearing and undo [click] the laser [click] and zoom.
+Drawings belong to the slide they were made on and stay until you erase or clear them. With a room, they reach every screen — the projector, the phones — unless `drawings.presenterOnly` is set.
+[click] The pen and its tools. [click] Clearing, undo and redo. [click] The laser. [click] And zoom.
 </Notes>
 
 ----
@@ -310,8 +315,155 @@ id: camera
 </Clicks>
 
 <Notes>
-The bubble sits on the slide itself, so a recording or a screen share of the audience's view has you in it. It never prints.
-[click] from the presenter view [click] and the recorder.
+Your camera, on the slide.
+[click] The bubble sits on the slide itself, so a recording or a screen share of the audience's view has you in it. It never prints.
+[click] From the presenter view, for every window. [click] And the recorder.
+</Notes>
+
+---
+id: phone-remote
+---
+
+<p className="sc-eyebrow">Presenting · the phone remote</p>
+
+## Your phone as the clicker
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Clicks>
+
+- In the presenter view, **Phone remote** shows a QR code; the phone that scans it becomes the remote
+- Next and back, blackout, the slide list, the notes for this step, the timer with buzzes at the minutes you choose
+- A live copy of the slide: touch it to aim the laser, draw on it, or tap to zoom; hold the pointer button and move the phone to point
+- One phone at a time: the code changes every 30 seconds, and the newest phone to scan takes over
+
+</Clicks>
+
+</Col>
+<Col>
+
+<How label="where the phone pairs">
+
+```sh
+# a published deck: through its room, nothing to run
+# writing it: the dev server relays it
+kadal-deck dev --host --https    # motion sensors need https
+# a build on a static host
+kadal-deck relay --tunnel        # prints a wss:// address
+```
+
+```ts
+// deck.config.ts, for the static host
+remote: { relay: "wss://…" }
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+The phone remote.
+[click] Open the presenter view and press Phone remote: a QR code appears, and the phone that scans it runs the deck.
+[click] Everything a clicker does, and the notes and timer in your hand.
+[click] The slide on the phone is live: a finger on it is the laser, the pen, or a zoom; the air pointer uses the phone's motion sensors.
+[click] Pairing is one phone at a time, with a code that keeps changing, so a photo of the screen is soon worthless. Published decks pair through the room; on your own machine the dev server or `kadal-deck relay` carries it.
+</Notes>
+
+---
+id: narration
+say: "This slide is read from its say key, not from its notes. [click] Narration reads each slide's notes aloud and turns the pages. [click] The timeline has a point for every chapter. [click] And kadal-deck narrate bakes the voice into files."
+---
+
+<p className="sc-eyebrow">Presenting · narration</p>
+
+## The deck reads itself aloud
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Clicks>
+
+- <Kbd>R</Kbd> (or <code>?narrate</code>) opens the narration bar: the notes are read aloud, each <code>[click]</code> part at its step, and the pages turn by themselves
+- The timeline has a point for every chapter — every <code>layout: section</code> slide — and a dot for every slide; hover for a picture of it
+- Three voices: clips baked by <code>kadal-deck narrate</code>, Kokoro running in the browser, or the browser's own speech
+
+</Clicks>
+
+</Col>
+<Col>
+
+<How>
+
+```yaml
+---
+say: "Read this instead of my notes. [click] And this on the step."
+---
+```
+
+```yaml
+---
+narration: false   # a slide the narrator skips
+---
+```
+
+</How>
+
+<p className="sc-small">The presenter view has the same bar along its bottom: rehearse the talk with it, or let it run a kiosk.</p>
+
+</Col>
+</Cols>
+
+<Notes>
+Narration, for rehearsing or for a deck that presents itself.
+[click] Press R and listen: this slide has a `say:` key in its frontmatter, so the narrator reads that rather than these notes.
+[click] The bar's timeline marks the chapters, and the dots between them are the slides.
+[click] The voices: baked files, a model in the browser, or the browser's speech.
+</Notes>
+
+----
+id: commands
+---
+
+<p className="sc-eyebrow">Presenting · commands</p>
+
+## Every action is a command
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+Keys, buttons, the phone remote and AI agents all run the same registry, so each does exactly what the others do. Try them:
+
+<div className="sc-run-row">
+  <RunCommand command="view.toast" params={{ message: "Hello from a command" }}>say hello</RunCommand>
+  <RunCommand command="view.help">the key sheet</RunCommand>
+  <RunCommand command="view.colorScheme">dark or light</RunCommand>
+</div>
+
+</Col>
+<Col>
+
+<How>
+
+```ts
+const deck = window.__deck;
+deck.commands.list();               // ids, descriptions, parameters
+await deck.commands.run("nav.next");
+await deck.commands.run("present.laserAt", { x: 0.5, y: 0.4 });
+```
+
+```sh
+kadal-deck mcp   # the same for an agent, over MCP
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+The command registry. Everything a person can do to a running deck has an id, a description and typed parameters: the keyboard runs through it, and so do the phone remote and the MCP server an agent talks to. The buttons on the left run three of them.
 </Notes>
 
 ---
@@ -323,21 +475,27 @@ id: views
 ## One deck, many views
 
 <div className="sc-views">
-  <a href="?view=scroll"><b>?view=scroll</b><span>every slide in one long page</span></a>
-  <a href="?print-pdf"><b>?print-pdf</b><span>a page per slide and step, for print</span></a>
   <a href="presenter"><b>/presenter</b><span>notes, next, timer, room</span></a>
   <a href="join"><b>/join</b><span>the audience page, for phones</span></a>
+  <a href="remote"><b>/remote</b><span>the phone remote, once paired</span></a>
   <a href="notes"><b>/notes</b><span>every note on one page</span></a>
+  <a href="overview"><b>/overview</b><span>every slide, a step slider, notes</span></a>
+  <a href="export"><b>/export</b><span>PDF, PNGs, PPTX from the browser</span></a>
   <a href="stats"><b>/stats</b><span>the deck's numbers, from the host</span></a>
+  <a href="handout"><b>/handout</b><span>a page of this deck's own</span></a>
+  <a href="?view=scroll"><b>?view=scroll</b><span>every slide in one long page</span></a>
+  <a href="?print-pdf"><b>?print-pdf</b><span>a page per slide and step</span></a>
   <a href="?projector"><b>?projector</b><span>a screen that only follows</span></a>
   <a href="?embedded"><b>?embedded</b><span>for a deck inside another page</span></a>
+  <a href="?scheme=dark#/views"><b>?scheme=dark</b><span>open in a scheme, just this once</span></a>
+  <a href="?narrate"><b>?narrate</b><span>the narration bar on the deck</span></a>
   <a href="#/views"><b>#/views</b><span>a slide by its id — or #/h/v/step</span></a>
 </div>
 
 <p className="sc-small">Every view is the same build, at a different address. <Kbd>Esc</Kbd> is the overview of the deck itself.</p>
 
 <Notes>
-One build, many pages. The scroll view is for reading on a phone; print lays out every slide — and every step, with `pdfSeparateFragments` — as a page. The presenter, audience, notes and stats pages are routes of the same bundle. A projector window takes no input and always follows. And any slide has an address: by position, `#/5/2/1` for column five, row two, step one — or by its `id`, like this one.
+One build, many pages. The presenter, audience, remote, notes, overview, export and stats pages are routes of the same bundle; /handout is this deck's own, from `routes.tsx` beside deck.mdx. The scroll view is for reading on a phone; print lays out every slide — and every step, with `pdfSeparateFragments` — as a page. A projector window takes no input and always follows. And any slide has an address: by position, `#/5/2/1` for column five, row two, step one — or by its `id`, like this one.
 </Notes>
 
 ----
@@ -387,6 +545,49 @@ Per-slide options: `zoom` scales a slide's content, `state` adds a class, `hideI
 </Notes>
 
 ----
+id: uncounted
+visibility: uncounted
+title: A slide without a number
+routeAlias: no-number
+hideInToc: true
+preload: false
+---
+
+<p className="sc-eyebrow">Presenting · per-slide options</p>
+
+## This slide has no number
+
+<Cols n={2} gap="2rem" align="start">
+<Col>
+
+`visibility: uncounted` shows it but leaves it out of the count: the number in the corner is gone, and the next slide carries on from the one before.
+
+`title:` names it in search and the outline, `routeAlias:` is a second address (<Link to="no-number">#/no-number</Link>), and `preload: false` loads its module only when it is shown.
+
+</Col>
+<Col>
+
+<How>
+
+```yaml
+---
+visibility: uncounted
+title: A slide without a number
+routeAlias: no-number
+preload: false
+---
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+More per-slide options. An uncounted slide is shown but not numbered — an aside, a backup slide. Its title for search comes from frontmatter rather than its heading, it answers to a second address, and it is not loaded ahead of time.
+</Notes>
+
+----
 hide: true
 id: hidden-slide
 ---
@@ -411,15 +612,18 @@ id: export
 ```sh
 kadal-deck export                  # PDF
 kadal-deck export --png --pptx     # + a PNG per page, PowerPoint
-kadal-deck export --scale 1 --out handouts
+kadal-deck export --format pptx-editable,md
+kadal-deck export --range 1,4-9 --dark --no-with-clicks
 ```
 
 </How>
 
+<p className="sc-small">No terminal? <a href="export">/export</a> does PDF, PNGs, PowerPoint and Markdown in the browser, with a preview.</p>
+
 </Col>
 <Col>
 
-A headless browser prints `?print-pdf`: each PDF page is a picture of the slide with its text over it, so glass, glows and gradients look the same in every viewer and the words can still be searched. The PowerPoint is a picture per slide with your notes attached — it opens in Keynote and Google Slides looking exactly like the web.
+A headless browser prints `?print-pdf`: each PDF page is a picture of the slide with its text over it, so glass, glows and gradients look the same in every viewer and the words can still be searched. The PowerPoint is a picture per slide with your notes attached, so it looks exactly like the web; `pptx-editable` rebuilds the slides as real text boxes, lists and shapes instead.
 
 <Callout kind="tip">Embedded pages are photographed first, so paper gets a picture where the page was.</Callout>
 
@@ -427,5 +631,5 @@ A headless browser prints `?print-pdf`: each PDF page is a picture of the slide 
 </Cols>
 
 <Notes>
-Export drives a headless Chromium over the print view. PDF comes from the browser's own printer; PNGs are a screenshot of each page; the PPTX wraps those pictures one per slide with the speaker notes attached.
+Export drives a headless Chromium over the print view. PDF comes from the browser's own printer, with bookmarks from the slide titles; PNGs are a screenshot of each page; the PPTX wraps those pictures one per slide with the speaker notes attached; Markdown puts each picture above its notes. Every deck also has /export, the same in the browser with no install.
 </Notes>

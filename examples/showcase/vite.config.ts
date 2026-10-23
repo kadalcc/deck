@@ -20,7 +20,14 @@ export default defineConfig({
   // One pair per framework: the framework's own plugin, and the one that tells the deck whose
   // components it just compiled. `deckSveltePlugin` runs `enforce: "post"`, after svelte().
   plugins: [
-    deck({ entry: "deck.mdx" }),
+    // The tour shows its own MDX on nearly every slide, so it adds `mdx` to the languages Shiki
+    // loads (it is not a default: the grammar is 146 kB, and most decks never need it).
+    deck({
+      entry: "deck.mdx",
+      shiki: {
+        langs: ["ts", "tsx", "js", "jsx", "json", "sh", "bash", "python", "rust", "yaml", "css", "html", "md", "mdx", "diff", "text"],
+      },
+    }),
     // React and Solid both want .tsx and their JSX transforms are mutually unintelligible, so the
     // deck says which files are whose. One glob, given to both, so the filters cannot drift apart.
     react({

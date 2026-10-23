@@ -8,9 +8,9 @@ background:
 
 <p className="sc-eyebrow">Chapter 10</p>
 
-# Slidev syntax, natively
+# Markdown syntax you already know
 
-Comment notes, block frontmatter, scoped styles, diagram fences, stepped maths: a Slidev deck's Markdown, read as it is.
+Comment notes, block frontmatter, scoped styles, diagram fences, stepped maths: a Slidev deck's Markdown, read as it is, and a command that converts a whole Slidev project.
 
 <!-- A comment in the middle of a slide is not notes: it is dropped, since MDX cannot take one. -->
 
@@ -20,6 +20,43 @@ Comment notes, block frontmatter, scoped styles, diagram fences, stepped maths: 
 Chapter ten. These notes are written the Slidev way: an HTML comment at the very end of the slide. The comment in the middle of the slide is not notes; it is dropped, because MDX could not compile it.
 
 Notes in a `<Notes>` block and notes in comments can sit on the same slide; they join, in order.
+-->
+
+----
+id: slidev-import
+---
+
+<p className="sc-eyebrow">Slidev syntax · bringing a deck over</p>
+
+## One command for a whole Slidev project
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<How>
+
+```sh
+npx kadal-deck import slidev ./slides.md
+# → slides-kadal/  deck.mdx, components as TSX,
+#   styles, public/, and IMPORT-REPORT.md
+cd slides-kadal && npx kadal-deck dev
+```
+
+</How>
+
+</Col>
+<Col>
+
+- The headmatter, the theme (to its Kadal port), transitions, fonts and export options
+- Every click directive and its component form, Vue's template syntax, UnoCSS classes
+- The project's Vue components, layouts and global layers, as TSX
+- `IMPORT-REPORT.md`: what did not carry over, slide by slide
+
+</Col>
+</Cols>
+
+<!--
+The importer writes a new deck folder and changes nothing in the Slidev project; it runs nothing in it either. Slidev's own starter deck converts with sixteen of its seventeen slides needing nothing further. The rest of this chapter is what needs no converting at all: Slidev's Markdown, read as it is.
 -->
 
 ----
@@ -311,10 +348,86 @@ This slide arrived with a transition the engine does not ship: flip. The keyfram
 -->
 
 ----
+src: ./extras.mdx#2
+---
+
+----
+id: slidev-defaults
+---
+
+<p className="sc-eyebrow">Slidev syntax · defaults and readings</p>
+
+## Settings for every slide, readings for your notes
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+<How label="the headmatter">
+
+```yaml
+defaults:
+  state: tour
+notesAutoRuby:
+  Kadal: KAH-dul
+```
+
+</How>
+
+</Col>
+<Col>
+
+<p className="sc-defaults-proof">Every slide of this tour carries <code>state: tour</code> from <code>defaults</code>, unless it sets its own: </p>
+
+`notesAutoRuby` puts a reading over a word wherever it appears in the speaker notes. Press <Kbd>S</Kbd>: over “Kadal” in these notes is how to say it.
+
+</Col>
+</Cols>
+
+<!--
+Two headmatter keys. `defaults` is frontmatter every slide gets unless it sets the key itself; the badge on the right is this deck's CSS reading the class it adds. And notesAutoRuby: the word Kadal in these notes has its reading above it, for a name you do not want to stumble over on stage.
+-->
+
+----
+id: slidev-layers
+---
+
+<p className="sc-eyebrow">Slidev syntax · layers, routes, nav controls</p>
+
+## Files beside deck.mdx that add to every slide
+
+<Cols cols="1fr 1fr" gap="2.5rem" align="start">
+<Col>
+
+- `slide-top.tsx` — the line at the top right of this slide is one, given the page and the click
+- `global-top.tsx`, `global-bottom.tsx`, `slide-bottom.tsx` — the other three layers
+- `custom-nav-controls.tsx` — the ▦ and ⇤ buttons beside the theme pill
+- `routes.tsx` — pages of the deck's own: <a href="handout">/handout</a>
+
+</Col>
+<Col>
+
+<How label="slide-top.tsx">
+
+```tsx
+export default function SlideTop({ page, total, click }: LayerProps) {
+  return <div>page {page} of {total} · step {click}</div>;
+}
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<!--
+Layers are components drawn on every slide — a footer, a logo, a watermark — in play, print and export alike; this deck's only shows itself here. The custom nav controls are the two buttons next to the theme pill, and the presenter view's toolbar has them too. A routes file adds pages of the deck's own inside its providers: this one has a handout.
+-->
+
+----
 id: slidev-build
 ---
 
-<p className="sc-eyebrow">Slidev's build · and a little more</p>
+<p className="sc-eyebrow">The build · any host</p>
 
 ## One build, any host, no network
 
@@ -353,7 +466,7 @@ kadal-deck serve
 </Cols>
 
 <!--
-What Slidev's build does, and a little more. The headmatter writes the page's head, so a link to the deck shows its title, its description and a picture of its first slide, taken at build time. With pwa on, the deck installs like an app and presents with no network at all; with bundleRemoteAssets, the pictures and fonts it borrows from the web come along in the build. Several decks build in one command, under any base path, and kadal-deck ci writes the files a host needs: GitHub Pages, Netlify, Vercel, Cloudflare, or a Docker image.
+The build, for any host. The headmatter writes the page's head, so a link to the deck shows its title, its description and a picture of its first slide, taken at build time. With pwa on, the deck installs like an app and presents with no network at all; with bundleRemoteAssets, the pictures and fonts it borrows from the web come along in the build. Several decks build in one command, under any base path, and kadal-deck ci writes the files a host needs: GitHub Pages, Netlify, Vercel, Cloudflare, or a Docker image.
 -->
 
 ----
