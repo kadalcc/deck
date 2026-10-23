@@ -1,5 +1,15 @@
 # @kadal/deck
 
+## 0.4.4
+
+### Patch Changes
+
+- 1bab109: The audience page (`/join`) keeps the tab the viewer was on and the question they had not sent yet when the page reloads, as a phone often does when it wakes and reconnects. It used to come back on Pace with the draft gone. Both are kept in session storage for that browser tab only.
+- 1bab109: A magic-move block counts its clicks on a cold load. When the block's steps arrived after the slide's first render (opening a deck straight onto a magic-move slide, most often in a tall window), the slide registered 0 clicks: the block showed its last step at once and Next skipped past it. The click registry now lays the slide out again when an element asks for different steps, and the elements after it move along.
+- 1bab109: `kadal-deck publish` prints the full address of the published deck. A host that answers with only a path (`/@ana/talk/`) got that path printed on its own; it is now resolved against https://decks.kadal.cc for the default host, or against the host's own origin for a self-hosted one.
+- 1bab109: `kadal-deck screenshot` and the MCP server's `slide_render` no longer leave a 1px grey line along an edge of each picture. The print view's 16px gaps and page shadow landed a fraction of a pixel inside the picture at most widths (1280, the default, included); the pages are now butted together at the left edge while the pictures are taken.
+- @kadal/prettier-plugin@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes

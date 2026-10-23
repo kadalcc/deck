@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-lecture",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Lecture, a theme for Kadal Deck (@kadal/deck). An academic theme for lectures and seminars: numbered sections, a course footer, theorem, definition and proof blocks, citations, and print-perfect pages.",
   "keywords": [
     "kadal-theme",
@@ -102,7 +102,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.4.3",
+    "@kadal/deck": "^0.4.4",
     "react": "^19.2.0"
   },
   "devDependencies": {
