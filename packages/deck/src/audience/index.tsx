@@ -16,7 +16,7 @@ import { DrawingLayer } from "../draw/DrawingLayer.tsx";
 import { PointerLayer, slideLabel } from "../live/LiveProvider.tsx";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { ConfettiLayer } from "../react/ConfettiLayer.tsx";
-import { roomIdOf } from "../core/model.ts";
+import { flatIndex, roomIdOf, totalSlides } from "../core/model.ts";
 import { useDeck } from "../react/context.ts";
 import { useActions, useNav } from "../react/hooks.ts";
 import { closeTerm } from "../react/terms.ts";
@@ -212,9 +212,8 @@ export function AudiencePage() {
         ) : null}
         <div className="deck-audience-slide-bar">
           <span>
-            Slide {pos.h + 1}
-            {pos.v ? `.${pos.v + 1}` : ""} of{" "}
-            {deck.columns.reduce((n, c) => n + c.slides.length, 0)}
+            {/* Counted as the deck counts them (29 / 115), stacked slides included: `h` is a column. */}
+            Slide {flatIndex(deck.columns, pos.h, pos.v) + 1} of {totalSlides(deck.columns)}
           </span>
           <button
             type="button"
