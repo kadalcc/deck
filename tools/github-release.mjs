@@ -13,6 +13,8 @@
  *   GITHUB_SHA          the commit to tag; defaults to the commit of `@kadal/deck@<version>`
  *   GH_TOKEN            for `gh` (the workflow's GITHUB_TOKEN, with contents: write)
  *
+ * It also pushes this version's per-package tags, which nothing else in the workflow does.
+ *
  * Locally: `git fetch --tags && node tools/github-release.mjs` (with `gh` signed in).
  */
 import { execFileSync } from "node:child_process";
@@ -26,6 +28,12 @@ const run = (cmd, args, opts = {}) =>
 
 const { version } = JSON.parse(readFileSync(join(root, "packages/deck/package.json"), "utf8"));
 const tag = `v${version}`;
+
+// tools/publish.mjs tags each package it publishes, but changesets/action doesn't push those tags
+// with createGithubReleases off (0.4.2's never left the runner), so they go up here.
+const packageTags = run("git", ["tag", "--list", `@kadal/*@${version}`]).split("\n").filter(Boolean);
+if (packageTags.length)
+  run("git", ["push", "origin", ...packageTags.map((t) => `refs/tags/${t}`)], { stdio: "inherit" });
 
 try {
   run("gh", ["release", "view", tag], { stdio: ["ignore", "pipe", "ignore"] });
