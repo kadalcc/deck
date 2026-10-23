@@ -21,6 +21,11 @@
   bottom: 56px;
   max-width: 1180px;
 }
+/* The dock is its own stacking context (z 50), which would hold the tooltip under the theme
+   pill and the deck's buttons; while a tooltip shows, the dock comes up over them. */
+.deck-narration-dock:has(.deck-narration-tip) {
+  z-index: 1100;
+}
 .deck-narration-dock .deck-narration {
   border: 1px solid var(--deck-border);
   border-radius: 12px;
@@ -150,10 +155,12 @@
 /* The tooltip: exactly as wide as its picture of the slide (the width is set where the picture's
    is), with the same padding on every side. Its text styles live on its rows, never on the box:
    the picture is a real slide, and white-space or a font size set here would reach into it. */
+/* Over everything: it is only there while the pointer is on the timeline, and the presenter's
+   theme button and its menu (z 60, on the current slide just above the bar) drew over it. */
 .deck-narration-tip {
   position: absolute;
   bottom: calc(100% + 8px);
-  z-index: 2;
+  z-index: 1100;
   box-sizing: content-box;
   display: flex;
   flex-direction: column;
