@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-ocean",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Ocean, a theme for Kadal Deck (@kadal/deck). Kadal's own theme: the sea's palette from sunlit shallows to midnight water, calm gradients and polished type.",
   "keywords": [
     "kadal-theme",
@@ -85,7 +85,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.4.4",
+    "@kadal/deck": "^0.4.5",
     "react": "^19.2.0"
   },
   "devDependencies": {
