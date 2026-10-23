@@ -87,6 +87,13 @@ describe("model", () => {
     expect(
       resolveBackground({ backgroundVideo: "/v.mp4", backgroundVideoLoop: true })!.videoLoop,
     ).toBe(true);
+    // A plain video background loops, as the catalog says; it can be told to play once.
+    expect(resolveBackground({ background: "/v.mp4" })!.videoLoop).toBe(true);
+    expect(resolveBackground({ background: { video: "/v.mp4" } })!.videoLoop).toBe(true);
+    expect(resolveBackground({ background: { video: "/v.mp4", loop: false } })!.videoLoop).toBe(false);
+    expect(
+      resolveBackground({ backgroundVideo: "/v.mp4", backgroundVideoLoop: false })!.videoLoop,
+    ).toBe(false);
     expect(resolveBackground({})).toBeNull();
   });
 

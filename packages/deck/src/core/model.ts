@@ -391,13 +391,13 @@ export interface DeckConfig {
    */
   download: boolean | string;
   /**
-   * Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or Slidev's object —
+   * Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or an object —
    * `{ sans, heading, serif, mono, weights, italic, provider: google|bunny|none, local, fallbacks }`
    * — which also points the theme's font tokens at them (theming/fonts.ts).
    */
   fonts: FontsInput;
   /**
-   * The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage`
+   * The link preview and search tags (core/head.ts), by unhead's names: `ogImage`
    * (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`,
    * `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any
    * other key as a meta tag of its own. Written into the built index.html.
@@ -421,7 +421,7 @@ export interface DeckConfig {
    */
   bundleRemoteAssets: boolean;
   /**
-   * Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g.
+   * Frontmatter every slide gets unless it sets the key itself, e.g.
    * `{ layout: center, transition: fade }`. A theme's defaults sit beneath it.
    */
   defaults: Frontmatter;
@@ -453,14 +453,14 @@ export interface DeckConfig {
   /** Where the global and slide layers draw besides the deck, print and export. */
   layers: { presenter: boolean; overview: boolean };
   /**
-   * The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration` (Slidev's
-   * `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and
+   * The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration`.
+   * Both pause, resume and reset, show a progress bar when the talk has a length, and
    * go into overtime past it; the pacing badge (ahead/behind) works with either.
    */
   timer: "stopwatch" | "countdown";
   /**
    * How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number
-   * of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it;
+   * of minutes. The countdown runs from it and the progress bar fills to it;
    * pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is
    * `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes.
    */
@@ -731,7 +731,8 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
     repeat: "no-repeat",
     opacity: 1,
     video: null,
-    videoLoop: false,
+    // A background video loops unless told not to (`loop: false`, `backgroundVideoLoop: false`).
+    videoLoop: true,
     videoMuted: true,
     iframe: null,
     iframeInteractive: false,

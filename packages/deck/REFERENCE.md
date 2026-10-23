@@ -113,7 +113,7 @@ The main point, in Markdown.
 
 #### `<Drag>`
 
-A block you place by hand (Slidev's v-drag). `pos` is "x,y,w,h[,rotation]" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.
+A block you place by hand. `pos` is "x,y,w,h[,rotation]" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.
 
 ```mdx
 <Drag pos="1400,120,380,_">
@@ -134,7 +134,7 @@ A block you place by hand (Slidev's v-drag). `pos` is "x,y,w,h[,rotation]" in st
 
 #### `<DragArrow>`
 
-An `<Arrow>` whose ends are dragged into place in `kadal-deck dev` (Slidev's v-drag-arrow). `pos` is "x,y,dx,dy" (from x,y by dx,dy) or a dragPos name.
+An `<Arrow>` whose ends are dragged into place in `kadal-deck dev`. `pos` is "x,y,dx,dy" (from x,y by dx,dy) or a dragPos name.
 
 ```mdx
 <DragArrow pos="300,700,600,-280" color="var(--deck-accent)" width={4} />
@@ -152,7 +152,7 @@ An `<Arrow>` whose ends are dragged into place in `kadal-deck dev` (Slidev's v-d
 
 #### `<FitText>`
 
-Text as large as fits its box (reveal.js r-fit-text), between `min` and `max` px.
+Text as large as fits its box, between `min` and `max` px.
 
 ```mdx
 <FitText max={260}>42%</FitText>
@@ -166,7 +166,7 @@ Text as large as fits its box (reveal.js r-fit-text), between `min` and `max` px
 
 #### `<Frame>`
 
-reveal.js's r-frame: a bordered frame around media.
+A bordered frame around media.
 
 ```mdx
 <Frame>![](/screenshot.png)</Frame>
@@ -209,7 +209,7 @@ Vertical space.
 
 #### `<Stack>`
 
-reveal.js's r-stack: children on top of each other in one spot — combine with clicks to swap images in place.
+Children on top of each other in one spot — combine with clicks to swap images in place.
 
 ```mdx
 <Stack>
@@ -224,7 +224,7 @@ reveal.js's r-stack: children on top of each other in one spot — combine with 
 
 #### `<Stretch>`
 
-reveal.js's r-stretch: grows to fill the slide's remaining height (an image under a heading).
+Grows to fill the slide's remaining height (an image under a heading).
 
 ```mdx
 ## The whole map
@@ -238,7 +238,7 @@ reveal.js's r-stretch: grows to fill the slide's remaining height (an image unde
 
 #### `<Transform>`
 
-Scales a block around an origin (Slidev's <Transform>).
+Scales a block around an origin.
 
 ```mdx
 <Transform scale={0.8}>
@@ -291,7 +291,7 @@ One case of a `<Switch>`. Without `at` it is one step after the case before; `at
 
 #### `<Click>`
 
-One click step (Slidev's v-click, reveal.js's fragment): shows its children from its step on, or hides them with `hide`.
+One click step: shows its children from its step on, or hides them with `hide`.
 
 ```mdx
 <Click>Appears on the first click</Click>
@@ -308,7 +308,7 @@ One click step (Slidev's v-click, reveal.js's fragment): shows its children from
 
 #### `<ClickCount>`
 
-The click step this slide is at (Slidev's `$clicks`), or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.
+The click step this slide is at, or with `total` how many it has; with a function child, anything that depends on the count. Never adds a click step itself. Hook: `useClicks()`.
 
 ```mdx
 Step <ClickCount offset={1} /> of <ClickCount total />
@@ -350,7 +350,7 @@ Wraps a Markdown list (or any children) so each item is its own click step. Leav
 
 #### `<Fragment>` (= `<Click>`)
 
-reveal.js's name for `<Click>`; identical.
+Another name for `<Click>`; identical.
 
 ```mdx
 <Fragment effect="highlight-red">Same as Click</Fragment>
@@ -358,7 +358,7 @@ reveal.js's name for `<Click>`; identical.
 
 #### `<Switch>`
 
-One child at a time, switched by clicks (Slidev's v-switch): each `<Case>` takes the next step, or `at={n}` / `at="a-b"` in the switch's own steps; the cases share one spot, so nothing below jumps.
+One child at a time, switched by clicks: each `<Case>` takes the next step, or `at={n}` / `at="a-b"` in the switch's own steps; the cases share one spot, so nothing below jumps.
 
 ```mdx
 <Switch transition="slide-up">
@@ -373,7 +373,7 @@ One child at a time, switched by clicks (Slidev's v-switch): each `<Case>` takes
 | `at` | `ClickAt` |  | When the switch's first step is: as `<Click at>`. Default one after the previous click. |
 | `transition` | `(string & {}) \| "fade" \| "slide-up" \| "slide-left" \| "scale" \| "none"` | `"fade"` | "fade" (default), "slide-up", "slide-left", "scale", or "none". |
 | `unmount` | `boolean` | `false` | Leave hidden cases out of the page rather than hidden in it. |
-| `as` | `ElementType` |  | The switch's element (`tag` in Slidev); `div` by default. |
+| `as` | `ElementType` |  | The switch's element; `div` by default. |
 | `childAs` | `ElementType` |  | Each case's element (`childTag`); `div` by default. |
 | `children` | `ReactNode` |  | `<Case>`s — or any elements, each one step. |
 
@@ -507,6 +507,22 @@ Text that resolves out of random glyphs.
 | `speed` | `number` | `30` | Milliseconds per glyph. |
 | `delay` | `number` | `0` | Milliseconds before it starts. |
 
+#### `<FlipBoard>`
+
+A split-flap board whose cells flip to its text: one cell per character, a row per line.
+
+```mdx
+<FlipBoard text={"HIGH WATER\n06:12"} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `text` * | `string` |  | The text; `\n` starts a new row. |
+| `rows` | `number` |  | Rows (default: the text's lines). |
+| `cols` | `number` |  | Columns (default: the longest line). |
+| `flipDuration` | `number` | `35` | Milliseconds per flip. |
+| `stagger` | `number` | `15` | Milliseconds between neighbouring cells. |
+
 #### `<Kbd>`
 
 A keyboard key.
@@ -552,7 +568,7 @@ A link to another slide by 1-based number, `h.v`, or slide id.
 
 #### `<Mark>`
 
-A hand-drawn mark (Slidev's v-mark, rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.
+A hand-drawn mark (rough-notation's types): underline, box, circle, highlight, strike-through, crossed-off or bracket, drawn stroke by stroke on its click. The wobble is seeded from the text, so it looks the same on every screen and in the PDF.
 
 ```mdx
 The answer is <Mark type="circle">forty-two</Mark>.
@@ -562,7 +578,7 @@ The answer is <Mark type="circle">forty-two</Mark>.
 
 | prop | type | default | |
 | --- | --- | --- | --- |
-| `type` | `"strike" \| MarkType \| "line-through" \| "linethrough" \| "cross" \| "crossed"` | `"underline"` | underline · box · circle · highlight · strike-through · crossed-off · bracket (Slidev's aliases strike, line-through, cross, crossed work too). |
+| `type` | `"strike" \| MarkType \| "line-through" \| "linethrough" \| "cross" \| "crossed"` | `"underline"` | underline · box · circle · highlight · strike-through · crossed-off · bracket (the aliases strike, line-through, cross, crossed work too). |
 | `color` | `string` | `"var(--deck-accent)"` | Any CSS colour; default the theme's accent. |
 | `at` | `ClickAt` |  | When: as `<Click at>` (default: the next click; 0 = always; [a, b] from a until b). |
 | `strokeWidth` | `number` |  | Line width in px (default 3; a highlight is as tall as the line). |
@@ -587,7 +603,7 @@ Another name for `<Tex>`.
 
 #### `<Notes>`
 
-Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. Slidev's spelling works too: HTML comments at the very end of a slide are its notes, and both kinds join.
+Speaker notes. Lifted out at compile time and shown in the presenter view; `[click]` markers line them up with clicks. HTML comments at the very end of a slide are its notes, and both kinds join.
 
 ```mdx
 <Notes>
@@ -803,7 +819,7 @@ An embedded post from X/Twitter.
 
 #### `<Video>`
 
-A video that knows the slide's clicks (Slidev's SlidevVideo and more): plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.
+A video that knows the slide's clicks: plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.
 
 ```mdx
 <Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />
@@ -970,7 +986,7 @@ A ring of light around an icon or emoji.
 
 #### `<Icon>`
 
-A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). Slidev's tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.
+A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:vue`). The tag form `<mdi-account />` compiles to this. Built decks bundle the drawings from the deck's installed `@iconify-json/<set>` (or `@iconify/json`); the hosted shell, or a set not installed, fetches them from the Iconify API once and keeps them.
 
 ```mdx
 <Icon name="rocket" size="2em" /> <Icon name="mdi:account-circle" color="tomato" /> <logos-react class="text-3xl" />
@@ -982,7 +998,7 @@ A Lucide icon by name, or any Iconify icon as `set:name` (`mdi:account`, `logos:
 | `size` | `string \| number` | `"1em"` | Height: CSS size or px (the width follows the icon's proportions). Tag form: 1.2em. |
 | `color` | `string` |  | CSS colour (monochrome icons). |
 | `strokeWidth` | `number` | `1.75` | Lucide icons only. |
-| `class` | `string` |  | Slidev's spelling of `className`. |
+| `class` | `string` |  | Another spelling of `className`. |
 | `title` | `string` |  | An accessible name; without one the icon is decorative. |
 
 #### `<Ribbon>`
@@ -1041,7 +1057,7 @@ export { a, b };
 
 #### `<CodeGroup>`
 
-Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as Slidev's `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print="all"` prints every tab.
+Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print="all"` prints every tab.
 
 ````mdx
 ::code-group
@@ -1084,7 +1100,7 @@ const n = 1
 
 #### `<KatexLines>`
 
-Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to (Slidev's katex-lines). Write the `$$` block, not this tag.
+Display maths whose lines light up one step per click: what `$$ {1|3|all}` compiles to. Write the `$$` block, not this tag.
 
 ```mdx
 $$ {1|2|all}
@@ -1111,7 +1127,7 @@ A Mermaid diagram rendered in the browser in the deck's colours. Pass the source
 | `scale` | `number` | `1` | Scale factor. |
 | `theme` | `string` |  | A Mermaid theme for this diagram: default, neutral, dark, forest, base. |
 | `config` | `Record<string, unknown>` |  | Mermaid configuration for this diagram (themeVariables, look, flowchart…). |
-| `alt` | `string` |  | What the diagram shows, for screen readers (Slidev's fence `alt`); default its first line. |
+| `alt` | `string` |  | What the diagram shows, for screen readers (a fence's `alt`); default its first line. |
 
 #### `<Sketch>`
 
@@ -1252,7 +1268,7 @@ The audience answers in a word or two; the words grow as they repeat.
 
 #### `<Motion>`
 
-Animates a block with motion (framer-motion): `initial` → `enter` on arrival, `leave` on exit, and per-click targets (Slidev's v-motion).
+Animates a block with motion (framer-motion): `initial` → `enter` on arrival, `leave` on exit, and per-click targets.
 
 ```mdx
 <Motion initial={{ opacity: 0, x: -80 }} enter={{ opacity: 1, x: 0 }} clicks={{ "click-1": { scale: 1.2 } }}>
@@ -1372,7 +1388,7 @@ Links glossary mentions inside a plain string at render time — for words that 
 - **color** — A flat colour (any CSS colour). `background: "#0f172a"`
 - **gradient** — A CSS gradient. `background: "linear-gradient(135deg, #0f172a, #1e3a8a)"`
 - **image** — An image (public/ path or URL), cover by default. `background: /photo.jpg`
-- **video** — A looping muted video (.mp4/.webm/.mov/.ogv). `background: /loop.mp4`
+- **video** — A looping muted video (.mp4/.webm/.mov/.ogv); `{ video, loop: false }` plays it once. `background: /loop.mp4`
 - **iframe** — A web page behind the slide. `background: { iframe: https://example.com, interactive: false }`
 - **tint** — A soft diagonal wash of one colour (`fill:` or `tint:`), alone or under a component background whose `color` is its stroke. `background: { component: topo, color: "rgba(5,150,105,0.55)", fill: "rgba(5,150,105,0.12)" }`
 
@@ -1386,11 +1402,11 @@ Theme and addon packages: `theme: seriph` finds @kadal/theme-seriph, then kadal-
 
 First-party theme packages (install one, then `theme: <name>`; the prebuilt shell has them all):
 
-- **classic** (light and dark) — Slidev's default theme: Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover. `@kadal/theme-classic`, from Slidev's `default`. Adds layouts `cover`.
-- **seriph** (light and dark) — Slidev's seriph: PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover. `@kadal/theme-seriph`, from Slidev's `seriph`. Adds layouts `cover`.
+- **classic** (light and dark) — Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover. `@kadal/theme-classic`, from Slidev's `default`. Adds layouts `cover`.
+- **seriph** (light and dark) — PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover. `@kadal/theme-seriph`, from Slidev's `seriph`. Adds layouts `cover`.
 - **crisp** (light and dark) — Plain black on white: Helvetica Neue, bold titles under a bold subtitle, pictures set in a margin. `@kadal/theme-crisp`, from Slidev's `apple-basic`. Adds layouts `intro-image`, `intro-image-right`, `image-right`, `3-images`, `bullets`.
-- **bricks** (light) — Slidev's bricks: building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only. `@kadal/theme-bricks`, from Slidev's `bricks`. Adds layouts `items`, `blank`; components `Polygon1`, `Polygon2`, `Polygon3`, `Polygon4`, `Polygon5`, `Polygon6`, `Polygon7`, `Polygon8`, `Polygon9`, `Polygon10`, `Polygon11`.
-- **shibainu** (dark) — Slidev's shibainu: soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only. `@kadal/theme-shibainu`, from Slidev's `shibainu`. Adds layouts `default-2`, `default-3`, `default-4`, `default-5`, `default-6`, `default-7`, `right`, `section-2`, `section-3`.
+- **bricks** (light) — Building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only. `@kadal/theme-bricks`, from Slidev's `bricks`. Adds layouts `items`, `blank`; components `Polygon1`, `Polygon2`, `Polygon3`, `Polygon4`, `Polygon5`, `Polygon6`, `Polygon7`, `Polygon8`, `Polygon9`, `Polygon10`, `Polygon11`.
+- **shibainu** (dark) — Soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only. `@kadal/theme-shibainu`, from Slidev's `shibainu`. Adds layouts `default-2`, `default-3`, `default-4`, `default-5`, `default-6`, `default-7`, `right`, `section-2`, `section-3`.
 - **brand** (light and dark) — A corporate theme branded from themeConfig alone — primary and secondary colours, a logo (and a dark one), the company and a footer line — on a white page with Plus Jakarta Sans and calm cards. `@kadal/theme-brand`. Adds layouts `title-logo`, `agenda`, `metrics`; components `Metric`, `Logo`.
 - **crayon** (light and dark) — A playful pastel theme for workshops and classrooms: Fredoka and Nunito, cream paper and plum ink, chunky outlines, callouts as tilted stickers, a blockquote as a speech bubble. `@kadal/theme-crayon`. Adds layouts `activity`, `cards`; components `Sticker`, `Bubble`.
 - **folio** (light and dark) — An editorial theme for essays and keynotes: warm paper and ink, Playfair Display over Newsreader, booktabs tables, an asterism for a rule, a drop cap, generous margins. `@kadal/theme-folio`. Adds layouts `pull-quote`, `essay`, `chapter`; components `Byline`, `Lede`.
@@ -1493,7 +1509,7 @@ b
 ```
 ````
 
-- `data-line-numbers="3-5|8"` — reveal.js's attribute spelling: line numbers on, with optional steps; data-ln-start-from sets the first number.
+- `data-line-numbers="3-5|8"` — The attribute spelling: line numbers on, with optional steps; data-ln-start-from sets the first number.
 
 ````mdx
 ```js data-line-numbers="1|2"
@@ -1679,13 +1695,13 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `badge` | `boolean` | `false` | Show the "Made with Kadal Deck" link in the corner (set by the host, see `withHostOverride`). |
 | `ads` | `boolean` | `false` | Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them. |
 | `download` | `string \| boolean` | `false` | A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there is none; a URL links that file instead. A host may switch it off, or on, for the decks it serves (`window.__KADAL_DECK__.download`). See core/download.ts. |
-| `fonts` | `FontsInput` | `[]` | Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or Slidev's object — `{ sans, heading, serif, mono, weights, italic, provider: google\|bunny\|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts). |
-| `seoMeta` | `Record<string, string>` | `{}` | The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html. |
+| `fonts` | `FontsInput` | `[]` | Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or an object — `{ sans, heading, serif, mono, weights, italic, provider: google\|bunny\|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts). |
+| `seoMeta` | `Record<string, string>` | `{}` | The link preview and search tags (core/head.ts), by unhead's names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html. |
 | `lang` | `string` | `""` | The page's language: `<html lang>` and og:locale. Empty leaves index.html's. |
 | `favicon` | `string` | `""` | The tab icon: a file in public/ (`/logo.svg`) or a URL. The PWA's icon, when it is local. |
 | `pwa` | `boolean \| Record<string, string>` | `false` | `kadal-deck build` makes the deck an installable web app that presents offline: a web manifest, icons, and a service worker that precaches the build (vite/pwa.ts). Never in dev; `kadal-deck publish` leaves it out unless `--pwa`. An object sets { name, shortName, themeColor, backgroundColor, display }. |
 | `bundleRemoteAssets` | `boolean` | `false` | At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache. |
-| `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
+| `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself, e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
 | `plantUmlServer` | `string` | `"https://www.plantuml.com/plantuml"` | The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. |
 | `comark` | `boolean` | `false` | Comark (formerly MDC) syntax in the slides: `:badge[New]{tone="good"}`, `[text]{.class}`, `::callout{type="warn"}` … `::` blocks with `#slot` sections (compiler/remark-comark.ts). |
 | `notesAutoRuby` | `Record<string, string>` | `{}` | Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. |
@@ -1695,13 +1711,13 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `addons` | `string[]` | `[]` | Addon packages: `@kadal/addon-<name>`, `kadal-addon-<name>`, a package name or a folder. |
 | `themeConfig` | `Record<string, unknown>` | `{}` | The theme's knobs: each key becomes a `--theme-<kebab-key>` custom property on the deck root (`primary: "#0f766e"` → `--theme-primary`), over the theme's own defaults. |
 | `layers` | `{ presenter: boolean; overview: boolean; }` | `{"presenter":true,"overview":false}` | Where the global and slide layers draw besides the deck, print and export. |
-| `timer` | `"stopwatch" \| "countdown"` | `"stopwatch"` | The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration` (Slidev's `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either. Values: `stopwatch` `countdown` |
-| `duration` | `string \| number \| null ("30min", "1h", "90s", "25:00", or minutes)` | `null` | How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes. |
+| `timer` | `"stopwatch" \| "countdown"` | `"stopwatch"` | The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration`. Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either. Values: `stopwatch` `countdown` |
+| `duration` | `string \| number \| null ("30min", "1h", "90s", "25:00", or minutes)` | `null` | How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes. The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes. |
 | `contextMenu` | `boolean \| "dev" \| "build"` | `true` | The right-click menu on the slides: true (always), false (never), "dev" (only under `kadal-deck dev`) or "build" (only in a built deck). Shift + right-click always gives the browser's own menu. Values: `dev` `build` |
-| `aspectRatio` | `number` |  | Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…). |
-| `canvasWidth` | `number` |  | Slidev spelling: the stage width used with aspectRatio. |
-| `mdc` | `boolean` |  | Slidev's older spelling of `comark` (MDC is Comark's former name). |
-| `remoteAssets` | `boolean \| "build"` |  | Slidev spelling of bundleRemoteAssets (true or "build"; "dev" does nothing). |
+| `aspectRatio` | `number` |  | With canvasWidth, sets width and height (16/9 = 1.777…). |
+| `canvasWidth` | `number` |  | The stage width used with aspectRatio. |
+| `mdc` | `boolean` |  | The older spelling of `comark` (MDC is Comark's former name). |
+| `remoteAssets` | `boolean \| "build"` |  | Another spelling of bundleRemoteAssets (true or "build"; "dev" does nothing). |
 
 ## Slide frontmatter
 
@@ -1712,7 +1728,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `layout` | `string` |  | The slide's layout (see layouts). Default: cover for the first slide, default after. Values: e.g. `default` `center` `cover` `intro` `section` `end` `fact` `quote` |
 | `class` | `string \| string[]` |  | Extra CSS classes on the slide. |
 | `id` | `string` |  | A stable id: `#/<id>` links here and <Link to> finds it. |
-| `routeAlias` | `string` |  | Slidev's spelling of `id` for links. |
+| `routeAlias` | `string` |  | Another spelling of `id` for links. |
 | `title` | `string` |  | The title the table of contents and search use (default: the first heading). |
 | `level` | `number` |  | Heading level for the table of contents (default: the first heading's depth). |
 | `hide` | `boolean` |  | Leave the slide out of the talk (still in the file). |
@@ -1726,7 +1742,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `autoAnimateId` | `string` |  | Only auto-animate between slides with the same id. |
 | `autoAnimateRestart` | `boolean` |  | Break the auto-animate chain here. |
 | `autoSlide` | `number` |  | Milliseconds before this slide advances on its own. |
-| `autoslide` | `number` |  | reveal.js spelling of autoSlide. |
+| `autoslide` | `number` |  | Another spelling of autoSlide. |
 | `clicks` | `number` |  | Force the number of click steps. |
 | `clicksStart` | `number` |  | The step the slide opens at. |
 | `preload` | `boolean` | `true` | Load the slide's module ahead of time (default true). |
@@ -1735,17 +1751,17 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `colorScheme` | `"light" \| "dark"` |  | Force light or dark tokens on this slide (dark background under a light theme). Values: `light` `dark` |
 | `zoom` | `number` |  | Scale the slide's content (0.8 fits more). |
 | `background` | `string \| object` |  | A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill \| tint }. |
-| `backgroundColor` | `string` |  | reveal.js: flat background colour. |
-| `backgroundGradient` | `string` |  | reveal.js: a CSS gradient. |
-| `backgroundImage` | `string` |  | reveal.js: an image URL. |
+| `backgroundColor` | `string` |  | A flat background colour. |
+| `backgroundGradient` | `string` |  | A CSS gradient behind the slide. |
+| `backgroundImage` | `string` |  | An image URL behind the slide. |
 | `backgroundSize` | `string` |  | CSS background-size for the image (also the image layouts). |
 | `backgroundPosition` | `string` |  | CSS background-position. |
 | `backgroundRepeat` | `string` |  | CSS background-repeat. |
 | `backgroundOpacity` | `number` |  | 0–1. |
-| `backgroundVideo` | `string` |  | reveal.js: a video URL. |
-| `backgroundVideoLoop` | `boolean` |  | Loop the background video. |
+| `backgroundVideo` | `string` |  | A video URL behind the slide. |
+| `backgroundVideoLoop` | `boolean` |  | Loop the background video (the default); false plays it once. |
 | `backgroundVideoMuted` | `boolean` |  | Mute the background video (default true). |
-| `backgroundIframe` | `string` |  | reveal.js: a page behind the slide. |
+| `backgroundIframe` | `string` |  | A page (iframe URL) behind the slide. |
 | `backgroundInteractive` | `boolean` |  | Let the background page take input. |
 | `image` | `string` |  | The image for the image, image-left and image-right layouts. |
 | `url` | `string` |  | The page for the iframe, iframe-left and iframe-right layouts. |
@@ -1756,7 +1772,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them. |
 | `say` | `string` |  | What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent. |
 | `narration` | `false` |  | false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck. |
-| `dragPos` | `Record<string, string>` |  | Named positions for `<Drag pos="name">` / `<DragArrow pos="name">` (Slidev's v-drag): "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged. |
+| `dragPos` | `Record<string, string>` |  | Named positions for `<Drag pos="name">` / `<DragArrow pos="name">`: "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged. |
 
 ## Keyboard
 
@@ -1799,9 +1815,9 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `/<slug>/notes` — Every speaker note on one page, following the presenter: the current part marked, markers jump to their step; editable per slide under `kadal-deck dev`.
 - `/<slug>/notes-edit` — The batch notes editor: every slide's notes as Markdown on one scrolling page, saved into deck.mdx as you type (`kadal-deck dev`, or a host's `notesEditor`; read-only elsewhere).
 - `/<slug>/overview` — Every slide in order with a slider through its click steps and its notes beside it (editable under `kadal-deck dev`); a thumbnail opens the deck at that step.
-- `/<slug>/export` — The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PowerPoint file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.
+- `/<slug>/export` — The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PPTX file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.
 - `/<slug>/stats` — Views, dwell per slide, sessions, questions, reactions.
-- `/<slug>/<your-path>` — A page of the deck's own (Slidev's `setup/routes.ts`): `routes.tsx` beside deck.mdx (or src/routes.tsx, setup/routes.ts) exporting `defineRoutes([{ path: "handout", component: Handout }, { path: "q/:id", load: () => import("./Q.tsx"), title }])`, `<Deck routes>`, or a theme's or addon's `routes` / `api.addRoute()`. Drawn inside the deck's providers with `{ path, params, route }`; the engine's pages win a clash; the build copies index.html to each plain path for static hosts.
+- `/<slug>/<your-path>` — A page of the deck's own: `routes.tsx` beside deck.mdx (or src/routes.tsx, setup/routes.ts) exporting `defineRoutes([{ path: "handout", component: Handout }, { path: "q/:id", load: () => import("./Q.tsx"), title }])`, `<Deck routes>`, or a theme's or addon's `routes` / `api.addRoute()`. Drawn inside the deck's providers with `{ path, params, route }`; the engine's pages win a clash; the build copies index.html to each plain path for static hosts.
 - `/<slug>/__kadal/drawings` — `kadal-deck dev` only: GET every `drawings/*.svg`; PUT `{ file, svg }` writes one (same origin, JSON; the SVG is re-serialised, never written as sent) and tells every open page. Used by `drawings.persist: "files"`.
 
 ## Query parameters
@@ -1845,8 +1861,8 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `kadal-deck check [--json] [--no-compile]` — Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--json`
 - `kadal-deck format [files…] [--check] [--json]` — Format deck files with @kadal/prettier-plugin (default: deck.mdx and the files it includes): `---`/`----` separators and frontmatter normalised, the YAML through Prettier with its comments and key order kept, each slide's Markdown through Prettier — code fences, notes, magic-move, `<style>`, maths, `::slot::` markers, code groups and `<<<` imports left byte for byte. Every formatted slide is checked to mean the same, or keeps its text (and the command says why). The deck's own Prettier config applies. `--check` writes nothing and exits 1 when a file would change. `--json`
 - `kadal-deck info [topic] [--search q] [--json]` — Print the catalog: components, layouts, backgrounds, frontmatter… `info themes` adds the theme and addon packages the deck can see, with their layouts. `--json`
-- `kadal-deck screenshot [--slide N|all] [--out dir] [--theme t] [--scheme light|dark] [--width px] [--url u] [--dev] [--json]` — PNG of slides, every click revealed (build + preview, headless Chromium). `--json`
-- `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--png] [--pptx] [--pptx-editable] [--md] [--no-pdf] [--vector-pdf] [--range 1,3-5] [--dark | --scheme light|dark] [--with-clicks | --no-with-clicks] [--omit-background] [--no-with-toc] [--per-slide] [--out dir] [--output name] [--scale n] [--timeout ms] [--wait ms] [--wait-until networkidle|load|domcontentloaded|none] [--executable-path path] [--url u] [--port n] [--json]` — PDF/PNG/PPTX/Markdown into export/. The PDF looks like the web in every viewer (each page a picture of the slide with its text printed over it as text), with bookmarks from the slide titles and levels (--no-with-toc for none) and the deck's metadata; --vector-pdf prints with the browser alone. --format pptx-editable rebuilds the slides as native PowerPoint text, lists, shapes, pictures and tables (what cannot be, it places as a picture where it stood) with the notes. --format md writes a .md file of the PNGs with each slide's notes. --range picks slides, --dark the dark scheme, --no-with-clicks one page per slide, --omit-background transparent pages, --per-slide one page load per slide. `--json`
+- `kadal-deck screenshot [--slide N,M-N|id|all] [--out dir] [--theme t] [--scheme light|dark] [--width px] [--url u] [--dev] [--json]` — PNG of slides, every click revealed (build + preview, headless Chromium). `--slide` counts from 1, as `export --range` does: `--slide 1` writes screenshots/slide-001.png. `--json`
+- `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--png] [--pptx] [--pptx-editable] [--md] [--no-pdf] [--vector-pdf] [--range 1,3-5] [--dark | --scheme light|dark] [--with-clicks | --no-with-clicks] [--omit-background] [--no-with-toc] [--per-slide] [--out dir] [--output name] [--scale n] [--timeout ms] [--wait ms] [--wait-until networkidle|load|domcontentloaded|none] [--executable-path path] [--url u] [--port n] [--json]` — PDF/PNG/PPTX/Markdown into export/. The PDF looks like the web in every viewer (each page a picture of the slide with its text printed over it as text), with bookmarks from the slide titles and levels (--no-with-toc for none) and the deck's metadata; --vector-pdf prints with the browser alone. --format pptx-editable rebuilds the slides as native PPTX text, lists, shapes, pictures and tables (what cannot be, it places as a picture where it stood) with the notes. --format md writes a .md file of the PNGs with each slide's notes. --range picks slides (counting from 1, like `screenshot --slide`), --dark the dark scheme, --no-with-clicks one page per slide, --omit-background transparent pages, --per-slide one page load per slide. `--json`
 - `kadal-deck login [--host url] [--json]` — Sign this machine in (opens the browser). `--json`
 - `kadal-deck logout [--json]` — Forget the saved token. `--json`
 - `kadal-deck whoami [--json]` — Who is signed in (exit 3 when nobody). `--json`

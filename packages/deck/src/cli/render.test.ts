@@ -59,7 +59,7 @@ describe.if(node && existsSync(dist))("under Node", () => {
             "-C",
             join(work, "d"),
             "--slide",
-            "0",
+            "1",
             "--width",
             "480",
             "--json",
@@ -69,7 +69,7 @@ describe.if(node && existsSync(dist))("under Node", () => {
         expect(r.status, r.stderr.slice(-800)).toBe(0);
         const out = JSON.parse(r.stdout);
         expect(out.files.map((f: { slide: number; width: number }) => [f.slide, f.width])).toEqual([
-          [0, 480],
+          [1, 480],
         ]);
       } finally {
         rmSync(work, { recursive: true, force: true });

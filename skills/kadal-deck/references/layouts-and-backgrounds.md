@@ -85,7 +85,7 @@ Custom layouts: add `"layout:name": Component` to `src/components.tsx`.
 - **color** — A flat colour (any CSS colour). `background: "#0f172a"`
 - **gradient** — A CSS gradient. `background: "linear-gradient(135deg, #0f172a, #1e3a8a)"`
 - **image** — An image (public/ path or URL), cover by default. `background: /photo.jpg`
-- **video** — A looping muted video (.mp4/.webm/.mov/.ogv). `background: /loop.mp4`
+- **video** — A looping muted video (.mp4/.webm/.mov/.ogv); `{ video, loop: false }` plays it once. `background: /loop.mp4`
 - **iframe** — A web page behind the slide. `background: { iframe: https://example.com, interactive: false }`
 - **tint** — A soft diagonal wash of one colour (`fill:` or `tint:`), alone or under a component background whose `color` is its stroke. `background: { component: topo, color: "rgba(5,150,105,0.55)", fill: "rgba(5,150,105,0.12)" }`
 
@@ -99,11 +99,11 @@ Theme and addon packages: `theme: seriph` finds @kadal/theme-seriph, then kadal-
 
 First-party theme packages (install one, then `theme: <name>`; the prebuilt shell has them all):
 
-- **classic** (light and dark) — Slidev's default theme: Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover. `@kadal/theme-classic`, from Slidev's `default`. Adds layouts `cover`.
-- **seriph** (light and dark) — Slidev's seriph: PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover. `@kadal/theme-seriph`, from Slidev's `seriph`. Adds layouts `cover`.
+- **classic** (light and dark) — Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover. `@kadal/theme-classic`, from Slidev's `default`. Adds layouts `cover`.
+- **seriph** (light and dark) — PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover. `@kadal/theme-seriph`, from Slidev's `seriph`. Adds layouts `cover`.
 - **crisp** (light and dark) — Plain black on white: Helvetica Neue, bold titles under a bold subtitle, pictures set in a margin. `@kadal/theme-crisp`, from Slidev's `apple-basic`. Adds layouts `intro-image`, `intro-image-right`, `image-right`, `3-images`, `bullets`.
-- **bricks** (light) — Slidev's bricks: building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only. `@kadal/theme-bricks`, from Slidev's `bricks`. Adds layouts `items`, `blank`; components `Polygon1`, `Polygon2`, `Polygon3`, `Polygon4`, `Polygon5`, `Polygon6`, `Polygon7`, `Polygon8`, `Polygon9`, `Polygon10`, `Polygon11`.
-- **shibainu** (dark) — Slidev's shibainu: soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only. `@kadal/theme-shibainu`, from Slidev's `shibainu`. Adds layouts `default-2`, `default-3`, `default-4`, `default-5`, `default-6`, `default-7`, `right`, `section-2`, `section-3`.
+- **bricks** (light) — Building blocks in coral, butter, rose and sky on a cream page, Sigmar One headings. Light only. `@kadal/theme-bricks`, from Slidev's `bricks`. Adds layouts `items`, `blank`; components `Polygon1`, `Polygon2`, `Polygon3`, `Polygon4`, `Polygon5`, `Polygon6`, `Polygon7`, `Polygon8`, `Polygon9`, `Polygon10`, `Polygon11`.
+- **shibainu** (dark) — Soft blobs in a shiba's browns, Titillium Web, a different arrangement for each of fourteen layouts. Dark only. `@kadal/theme-shibainu`, from Slidev's `shibainu`. Adds layouts `default-2`, `default-3`, `default-4`, `default-5`, `default-6`, `default-7`, `right`, `section-2`, `section-3`.
 - **brand** (light and dark) — A corporate theme branded from themeConfig alone — primary and secondary colours, a logo (and a dark one), the company and a footer line — on a white page with Plus Jakarta Sans and calm cards. `@kadal/theme-brand`. Adds layouts `title-logo`, `agenda`, `metrics`; components `Metric`, `Logo`.
 - **crayon** (light and dark) — A playful pastel theme for workshops and classrooms: Fredoka and Nunito, cream paper and plum ink, chunky outlines, callouts as tilted stickers, a blockquote as a speech bubble. `@kadal/theme-crayon`. Adds layouts `activity`, `cards`; components `Sticker`, `Bubble`.
 - **folio** (light and dark) — An editorial theme for essays and keynotes: warm paper and ink, Playfair Display over Newsreader, booktabs tables, an asterism for a rule, a drop cap, generous margins. `@kadal/theme-folio`. Adds layouts `pull-quote`, `essay`, `chapter`; components `Byline`, `Lede`.
@@ -138,7 +138,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `layout` | `string` |  | The slide's layout (see layouts). Default: cover for the first slide, default after. Values: e.g. `default` `center` `cover` `intro` `section` `end` `fact` `quote` |
 | `class` | `string \| string[]` |  | Extra CSS classes on the slide. |
 | `id` | `string` |  | A stable id: `#/<id>` links here and <Link to> finds it. |
-| `routeAlias` | `string` |  | Slidev's spelling of `id` for links. |
+| `routeAlias` | `string` |  | Another spelling of `id` for links. |
 | `title` | `string` |  | The title the table of contents and search use (default: the first heading). |
 | `level` | `number` |  | Heading level for the table of contents (default: the first heading's depth). |
 | `hide` | `boolean` |  | Leave the slide out of the talk (still in the file). |
@@ -152,7 +152,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `autoAnimateId` | `string` |  | Only auto-animate between slides with the same id. |
 | `autoAnimateRestart` | `boolean` |  | Break the auto-animate chain here. |
 | `autoSlide` | `number` |  | Milliseconds before this slide advances on its own. |
-| `autoslide` | `number` |  | reveal.js spelling of autoSlide. |
+| `autoslide` | `number` |  | Another spelling of autoSlide. |
 | `clicks` | `number` |  | Force the number of click steps. |
 | `clicksStart` | `number` |  | The step the slide opens at. |
 | `preload` | `boolean` | `true` | Load the slide's module ahead of time (default true). |
@@ -161,17 +161,17 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `colorScheme` | `"light" \| "dark"` |  | Force light or dark tokens on this slide (dark background under a light theme). Values: `light` `dark` |
 | `zoom` | `number` |  | Scale the slide's content (0.8 fits more). |
 | `background` | `string \| object` |  | A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill \| tint }. |
-| `backgroundColor` | `string` |  | reveal.js: flat background colour. |
-| `backgroundGradient` | `string` |  | reveal.js: a CSS gradient. |
-| `backgroundImage` | `string` |  | reveal.js: an image URL. |
+| `backgroundColor` | `string` |  | A flat background colour. |
+| `backgroundGradient` | `string` |  | A CSS gradient behind the slide. |
+| `backgroundImage` | `string` |  | An image URL behind the slide. |
 | `backgroundSize` | `string` |  | CSS background-size for the image (also the image layouts). |
 | `backgroundPosition` | `string` |  | CSS background-position. |
 | `backgroundRepeat` | `string` |  | CSS background-repeat. |
 | `backgroundOpacity` | `number` |  | 0–1. |
-| `backgroundVideo` | `string` |  | reveal.js: a video URL. |
-| `backgroundVideoLoop` | `boolean` |  | Loop the background video. |
+| `backgroundVideo` | `string` |  | A video URL behind the slide. |
+| `backgroundVideoLoop` | `boolean` |  | Loop the background video (the default); false plays it once. |
 | `backgroundVideoMuted` | `boolean` |  | Mute the background video (default true). |
-| `backgroundIframe` | `string` |  | reveal.js: a page behind the slide. |
+| `backgroundIframe` | `string` |  | A page (iframe URL) behind the slide. |
 | `backgroundInteractive` | `boolean` |  | Let the background page take input. |
 | `image` | `string` |  | The image for the image, image-left and image-right layouts. |
 | `url` | `string` |  | The page for the iframe, iframe-left and iframe-right layouts. |
@@ -182,7 +182,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `src` | `string` |  | Include the slides of another .mdx file here (a frontmatter-only slide). `#2-5`, `#1,3,5-7` or `#4-` includes only those slides (1-based); the slide's other keys merge into the first of them. |
 | `say` | `string` |  | What the narrator says on this slide instead of its notes (`[click]` splits it into steps); an empty string keeps it silent. |
 | `narration` | `false` |  | false: the narrator says nothing here (the slide dwells as `narration.silent` says). In the headmatter, false switches narration off for the deck. |
-| `dragPos` | `Record<string, string>` |  | Named positions for `<Drag pos="name">` / `<DragArrow pos="name">` (Slidev's v-drag): "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged. |
+| `dragPos` | `Record<string, string>` |  | Named positions for `<Drag pos="name">` / `<DragArrow pos="name">`: "x,y,w,h[,rotation]" in stage pixels, `_` for an automatic height. `kadal-deck dev` writes them when an element is dragged. |
 
 ## Deck frontmatter (headmatter)
 
@@ -274,13 +274,13 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `badge` | `boolean` | `false` | Show the "Made with Kadal Deck" link in the corner (set by the host, see `withHostOverride`). |
 | `ads` | `boolean` | `false` | Frame the first and last slides with the host's ads (set by the host, see `withHostOverride` and core/ads.ts). Only the play view shows them. |
 | `download` | `string \| boolean` | `false` | A Download button beside the theme menu. `true` offers the PDF that `kadal-deck build --download` puts beside the deck (`deck.pdf`), or the browser exporter (/export) when there is none; a URL links that file instead. A host may switch it off, or on, for the decks it serves (`window.__KADAL_DECK__.download`). See core/download.ts. |
-| `fonts` | `FontsInput` | `[]` | Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or Slidev's object — `{ sans, heading, serif, mono, weights, italic, provider: google\|bunny\|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts). |
-| `seoMeta` | `Record<string, string>` | `{}` | The link preview and search tags (core/head.ts), by Slidev's (unhead's) names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html. |
+| `fonts` | `FontsInput` | `[]` | Web fonts: Google Fonts families as written (`["Inter:wght@400;600"]`), or an object — `{ sans, heading, serif, mono, weights, italic, provider: google\|bunny\|none, local, fallbacks }` — which also points the theme's font tokens at them (theming/fonts.ts). |
+| `seoMeta` | `Record<string, string>` | `{}` | The link preview and search tags (core/head.ts), by unhead's names: `ogImage` (`auto` photographs slide 1 into og-image.png at build; a path or URL uses that), `ogUrl`, `ogTitle`, `ogDescription`, `twitterCard`, `twitterSite`, `canonical`, `themeColor`, and any other key as a meta tag of its own. Written into the built index.html. |
 | `lang` | `string` | `""` | The page's language: `<html lang>` and og:locale. Empty leaves index.html's. |
 | `favicon` | `string` | `""` | The tab icon: a file in public/ (`/logo.svg`) or a URL. The PWA's icon, when it is local. |
 | `pwa` | `boolean \| Record<string, string>` | `false` | `kadal-deck build` makes the deck an installable web app that presents offline: a web manifest, icons, and a service worker that precaches the build (vite/pwa.ts). Never in dev; `kadal-deck publish` leaves it out unless `--pwa`. An object sets { name, shortName, themeColor, backgroundColor, display }. |
 | `bundleRemoteAssets` | `boolean` | `false` | At build, download the remote images, media, fonts (Google Fonts' CSS and its files) and CSS `url()`s the deck names into dist/remote-assets/ and point the deck at the copies, so it presents with no network (vite/remote-assets.ts). Cached in .kadal-deck/cache. |
-| `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself (Slidev's `defaults`), e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
+| `defaults` | `Frontmatter` | `{}` | Frontmatter every slide gets unless it sets the key itself, e.g. `{ layout: center, transition: fade }`. A theme's defaults sit beneath it. |
 | `plantUmlServer` | `string` | `"https://www.plantuml.com/plantuml"` | The PlantUML server ```plantuml fences render with: `<server>/svg/<encoded source>`. |
 | `comark` | `boolean` | `false` | Comark (formerly MDC) syntax in the slides: `:badge[New]{tone="good"}`, `[text]{.class}`, `::callout{type="warn"}` … `::` blocks with `#slot` sections (compiler/remark-comark.ts). |
 | `notesAutoRuby` | `Record<string, string>` | `{}` | Words in the speaker notes and their reading, shown as ruby: `{ 日本語: "ni hon go" }`. |
@@ -290,10 +290,10 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `addons` | `string[]` | `[]` | Addon packages: `@kadal/addon-<name>`, `kadal-addon-<name>`, a package name or a folder. |
 | `themeConfig` | `Record<string, unknown>` | `{}` | The theme's knobs: each key becomes a `--theme-<kebab-key>` custom property on the deck root (`primary: "#0f766e"` → `--theme-primary`), over the theme's own defaults. |
 | `layers` | `{ presenter: boolean; overview: boolean; }` | `{"presenter":true,"overview":false}` | Where the global and slide layers draw besides the deck, print and export. |
-| `timer` | `"stopwatch" \| "countdown"` | `"stopwatch"` | The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration` (Slidev's `timer:`). Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either. Values: `stopwatch` `countdown` |
-| `duration` | `string \| number \| null ("30min", "1h", "90s", "25:00", or minutes)` | `null` | How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes (Slidev's `duration:`). The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes. |
+| `timer` | `"stopwatch" \| "countdown"` | `"stopwatch"` | The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration`. Both pause, resume and reset, show a progress bar when the talk has a length, and go into overtime past it; the pacing badge (ahead/behind) works with either. Values: `stopwatch` `countdown` |
+| `duration` | `string \| number \| null ("30min", "1h", "90s", "25:00", or minutes)` | `null` | How long the talk is, in seconds once read: `30min`, `1h`, `1h30m`, `90s`, `25:00`, or a number of minutes. The countdown runs from it and the progress bar fills to it; pacing spreads it over the slides when there is no `totalTime`. Null: the planned length is `totalTime`, else the slides' `timing` added up, else (for a countdown) thirty minutes. |
 | `contextMenu` | `boolean \| "dev" \| "build"` | `true` | The right-click menu on the slides: true (always), false (never), "dev" (only under `kadal-deck dev`) or "build" (only in a built deck). Shift + right-click always gives the browser's own menu. Values: `dev` `build` |
-| `aspectRatio` | `number` |  | Slidev spelling: with canvasWidth, sets width and height (16/9 = 1.777…). |
-| `canvasWidth` | `number` |  | Slidev spelling: the stage width used with aspectRatio. |
-| `mdc` | `boolean` |  | Slidev's older spelling of `comark` (MDC is Comark's former name). |
-| `remoteAssets` | `boolean \| "build"` |  | Slidev spelling of bundleRemoteAssets (true or "build"; "dev" does nothing). |
+| `aspectRatio` | `number` |  | With canvasWidth, sets width and height (16/9 = 1.777…). |
+| `canvasWidth` | `number` |  | The stage width used with aspectRatio. |
+| `mdc` | `boolean` |  | The older spelling of `comark` (MDC is Comark's former name). |
+| `remoteAssets` | `boolean \| "build"` |  | Another spelling of bundleRemoteAssets (true or "build"; "dev" does nothing). |

@@ -153,7 +153,7 @@ export function Icon({
   /** Lucide icons only. */
   strokeWidth?: number;
   className?: string;
-  /** Slidev's spelling of `className`. */
+  /** Another spelling of `className`. */
   class?: string;
   /** An object, or a CSS string (`style="color: tomato"`). */
   style?: React.CSSProperties | string;
