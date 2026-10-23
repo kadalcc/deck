@@ -24,7 +24,7 @@
     "url": "https://github.com/kadalcc/deck/issues"
   },
   "license": "AGPL-3.0-or-later",
-  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "author": "Kadal <hello@kadal.cc> (https://kadal.cc)",
   "type": "module",
   "sideEffects": false,
   "files": [

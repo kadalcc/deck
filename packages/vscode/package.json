@@ -1,13 +1,13 @@
 {
   "name": "kadal-deck",
   "displayName": "Kadal Deck",
-  "description": "Kadal Deck in VS Code: a live preview that follows your cursor, a slide outline you can drag to reorder, frontmatter and component IntelliSense, the deck's checks as problems, formatting, and one-click dev, presenter and PDF export.",
-  "version": "0.1.0",
+  "description": "Write Kadal Deck presentations in MDX with the deck beside your text: a live preview that follows your cursor, a slide outline you drag to reorder, IntelliSense for every setting and component, the deck's checks as problems, and formatting.",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "publisher": "kadal",
   "license": "AGPL-3.0-or-later",
-  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "author": "Kadal <hello@kadal.cc> (https://kadal.cc)",
   "homepage": "https://deck.kadal.cc/docs/",
   "repository": {
     "type": "git",
@@ -17,6 +17,7 @@
   "bugs": {
     "url": "https://github.com/kadalcc/deck/issues"
   },
+  "qna": "https://github.com/kadalcc/deck/discussions",
   "sponsor": {
     "url": "https://github.com/sponsors/pmithunish"
   },
@@ -25,12 +26,24 @@
     "color": "#0b1d2e",
     "theme": "dark"
   },
+  "badges": [
+    {
+      "url": "https://img.shields.io/npm/v/@kadal/deck?label=%40kadal%2Fdeck&color=0e7490",
+      "href": "https://www.npmjs.com/package/@kadal/deck",
+      "description": "@kadal/deck on npm"
+    },
+    {
+      "url": "https://img.shields.io/github/actions/workflow/status/kadalcc/deck/ci.yml?branch=main&label=CI",
+      "href": "https://github.com/kadalcc/deck/actions/workflows/ci.yml",
+      "description": "CI"
+    }
+  ],
   "categories": [
     "Programming Languages",
+    "Visualization",
     "Formatters",
     "Linters",
-    "Visualization",
-    "Other"
+    "AI"
   ],
   "keywords": [
     "kadal",
@@ -38,8 +51,11 @@
     "slides",
     "presentation",
     "mdx",
-    "slidev",
-    "reveal.js"
+    "markdown",
+    "preview",
+    "slideshow",
+    "speaker-notes",
+    "mcp"
   ],
   "engines": {
     "vscode": "^1.90.0"

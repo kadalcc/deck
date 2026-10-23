@@ -2,7 +2,12 @@
 
 **Terminal**, a theme for [Kadal Deck](https://deck.kadal.cc). A developer theme for code-heavy talks. Mono-forward: JetBrains Mono for headings, labels and code, IBM Plex Sans for reading text. Dark first (a deck starts dark unless it says `colorScheme: light`) with a light variant made to the same standard; the palette is Ayu's, so the slide and the code colours agree. Code blocks are editor windows: a bar with three lights, line numbers, a lit active line, a clear dim. Headings keep their markdown (`#`), lists use `›`, the table of contents prints like `tree`, callouts read like log lines.
 
-![Terminal: the cover, a content slide, code and the theme's own layout](./screenshot.jpg)
+<p>
+  <img src="https://deck.kadal.cc/themes/terminal-light-1.webp" alt="Terminal: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/terminal-dark-2.webp" alt="Terminal: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-terminal)
 
 ## Use it
 

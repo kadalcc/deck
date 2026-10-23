@@ -2,7 +2,12 @@
 
 **Crayon**, a theme for [Kadal Deck](https://deck.kadal.cc). A playful pastel theme for workshops and classrooms. Fredoka for headings, Nunito for text, Fira Code for code; cream paper and plum ink, six pastels, chunky ink outlines and offset shadows that look like paper cut-outs. Callouts are stickers, a blockquote is a speech bubble, list bullets are coloured dots, a section title is a big sticker and a fact sits in a round one. The shadows are solid offsets, never blurred, so print and PDF look like the screen.
 
-![Crayon: the cover, a content slide, code and the theme's own layout](./screenshot.jpg)
+<p>
+  <img src="https://deck.kadal.cc/themes/crayon-light-1.webp" alt="Crayon: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/crayon-dark-2.webp" alt="Crayon: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-crayon)
 
 ## Use it
 

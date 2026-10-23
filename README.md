@@ -1,82 +1,66 @@
-<p align="center">
-  <a href="https://deck.kadal.cc">
-    <img src=".github/assets/hero.jpg" alt="Kadal Deck: a slide in the browser, and the audience page on a phone with reactions, pace and a raise-hand button" width="100%">
-  </a>
-</p>
-
 <h1 align="center">Kadal Deck</h1>
 
 <p align="center">
-  <strong>Slides in MDX. A live room for your audience. One command to publish.</strong><br>
-  Write the talk in the editor you already use, present it in a browser, and let the room follow,<br>
-  react, ask and vote from their phones — nothing for them to install.
+  <strong>Write your talk in MDX. Present it in a browser. Let the room follow, vote and ask from their phones.</strong>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@kadal/deck"><img alt="npm version" src="https://img.shields.io/npm/v/@kadal/deck?color=0e7490&label=%40kadal%2Fdeck"></a>
   <a href="https://www.npmjs.com/package/@kadal/deck"><img alt="npm downloads a month" src="https://img.shields.io/npm/dm/@kadal/deck?color=0e7490"></a>
   <a href="https://github.com/kadalcc/deck/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kadalcc/deck/ci.yml?branch=main&label=CI"></a>
-  <a href="https://github.com/kadalcc/deck/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/kadalcc/deck?sort=semver&color=0e7490"></a>
   <a href="LICENSING.md"><img alt="Licence: AGPL-3.0-or-later" src="https://img.shields.io/badge/licence-AGPL--3.0--or--later-0e7490"></a>
-  <a href="https://www.npmjs.com/package/@kadal/deck"><img alt="Node version" src="https://img.shields.io/node/v/@kadal/deck?color=0e7490"></a>
-  <br>
-  <a href="https://deck.kadal.cc"><img alt="deck.kadal.cc status" src="https://img.shields.io/website?url=https%3A%2F%2Fdeck.kadal.cc%2Fapi%2Fhealth&label=deck.kadal.cc&up_message=online&down_message=down"></a>
-  <a href="https://decks.kadal.cc/@pmithunish/tour/"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-the%20tour-5eead4"></a>
-  <a href="https://deck.kadal.cc/docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-deck.kadal.cc-7dd3fc"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=kadal.kadal-deck"><img alt="VS Code extension" src="https://img.shields.io/badge/VS%20Code-Marketplace-0e7490"></a>
   <a href="https://github.com/sponsors/pmithunish"><img alt="Sponsor Kadal Deck" src="https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white"></a>
+</p>
+
+<p align="center">
+  <a href="https://deck.kadal.cc/tour/">
+    <img src=".github/assets/tour.webp" alt="The Kadal Deck tour in a browser: the cover, a slide of deck.mdx source stepping one highlight per click, code that steps line by line, a magic-move code morph, a hand-drawn diagram revealed region by region, a grid of animated backgrounds, eleven framework islands on one slide, and the join slide with its QR code" width="100%">
+  </a>
+  <br>
+  <sub>The <a href="https://deck.kadal.cc/tour/">tour</a>, the engine's own feature deck: over a hundred slides, all written in MDX. Open it and press <kbd>?</kbd>.</sub>
 </p>
 
 <p align="center">
   <a href="https://deck.kadal.cc/docs/getting-started/">Get started</a> ·
   <a href="https://deck.kadal.cc/docs/">Docs</a> ·
-  <a href="https://decks.kadal.cc/@pmithunish/tour/">Live demo</a> ·
-  <a href="https://deck.kadal.cc/showcase/">Showcase</a> ·
-  <a href="https://deck.kadal.cc/changelog/">Changelog</a> ·
-  <a href="https://deck.kadal.cc/sponsor/">Sponsor</a>
+  <a href="https://deck.kadal.cc/tour/">Live tour</a> ·
+  <a href="https://deck.kadal.cc/themes/">Themes</a> ·
+  <a href="https://deck.kadal.cc/pricing/">Hosting</a> ·
+  <a href="https://deck.kadal.cc/changelog/">Changelog</a>
 </p>
 
 ---
 
-## Why Kadal Deck
+## Start in 30 seconds
 
-- **You write; it presents.** A talk is one `deck.mdx` file: Markdown, plus components when you
-  need them. It lives in git, diffs cleanly and reloads as you type.
-- **The room is part of the deck.** Your audience scans a QR code and follows along on their
-  phones: reactions, questions with upvotes, polls, word clouds, timed quizzes, a pace dial and a
-  raised hand, all built in. No add-on, no second app.
-- **Any framework on a slide.** React and web components out of the box; Vue, Svelte, Solid,
-  Preact, Qwik, Angular, Fresh, Rust/WebAssembly and Python as islands, each loaded only when its
-  slide appears.
-- **Familiar keys.** Slides split at `---` and `----` the way reveal.js and Slidev do, the
-  presenter view opens on `S`, and the keyboard is vim-first.
-- **Yours to run.** A built deck is a static site that works offline. Export it to PDF, PNG or
-  PPTX, host it anywhere, or publish it with a live room in one command.
-
-## Quick start
-
-You need **Node 20.19+** and npm, pnpm, Yarn or Bun.
+You need Node 20.19 or later.
 
 ```sh
 npm create @kadal/deck@latest my-talk
 cd my-talk && npm install
-npm run dev                  # edit deck.mdx; the slide you're on updates in place
+npm run dev        # http://localhost:5173: edit deck.mdx and the slide you're on updates in place
 ```
+
+A deck is one `deck.mdx` file: Markdown, split into slides at `---`, with components when you need
+them.
 
 ```mdx
 ---
 title: Hello, room
+theme: ocean
 ---
 
 # Hello, room
 
 ---
 
-## Clicks, one point at a time
+## One point at a time
 
 <Clicks>
 
-- Slides split at `---`, vertical ones at `----`
-- Code steps line by line, and notes follow your clicks
+- Slides split at `---`; a slide below this one starts at `----`
+- Code steps line by line, and the notes follow your clicks
 
 </Clicks>
 
@@ -88,258 +72,205 @@ title: Hello, room
 When it's ready:
 
 ```sh
-npx kadal-deck build         # dist/ for any static host (everything but the live room)
-npx kadal-deck export        # PDF in export/; add --png --pptx for those too
-npx kadal-deck publish       # deck.kadal.cc/@you/my-talk/ with a live room (free plan)
+npx kadal-deck build      # dist/: a static site for any host, works offline
+npx kadal-deck export     # PDF in export/ (add --png or --pptx)
+npx kadal-deck publish    # a URL on deck.kadal.cc with a live room (free plan)
 ```
 
-## See it
+Already have a Slidev deck? `npx kadal-deck import slidev slides.md` converts it and writes a
+report of anything that didn't carry over.
+
+## What you get
+
+<p align="center">
+  <img src=".github/assets/slides.webp" alt="Four slides from the tour: code with one highlighted line per click, a hand-drawn diagram beside a Mermaid chart and an Excalidraw file, eleven framework islands each counting how long it has been alive, and a grid of animated backgrounds" width="100%">
+</p>
+
+| | |
+| --- | --- |
+| **Writing** ([docs](https://deck.kadal.cc/docs/writing-slides/)) | MDX slides, 19 layouts with named slots, frontmatter per slide, `src:` includes, glossary terms the compiler links on first mention |
+| **Clicks and motion** ([docs](https://deck.kadal.cc/docs/clicks-and-animation/)) | `<Click>`, `<Clicks>`, `at="+2"`, notes that follow your clicks, 7 transitions (a different one in and out if you like), auto-animate, `<Motion>` |
+| **Code** ([docs](https://deck.kadal.cc/docs/code/)) | Shiki highlighting stepped line by line, magic move, Monaco editors, runnable JS/TS/Python, TwoSlash hovers, code groups, snippet imports |
+| **Maths, diagrams, sketches** ([docs](https://deck.kadal.cc/docs/math-diagrams-sketches/)) | KaTeX at build time, Mermaid in the deck's colours, Excalidraw drawings revealed region by region |
+| **Looks** ([docs](https://deck.kadal.cc/docs/themes-and-backgrounds/)) | 16 themes in light and dark, 42 backgrounds (most of them animated), 200,000 icons through Iconify, Tailwind |
+| **Any framework** ([docs](https://deck.kadal.cc/docs/islands/)) | React and web components built in; Vue, Svelte, Solid, Preact, Qwik, Angular, Fresh, Rust/WebAssembly and Python as islands, each loaded only when its slide appears |
+| **Presenting** ([docs](https://deck.kadal.cc/docs/presenter-and-keyboard/)) | Presenter view with notes, timer and next slide; drawing, laser, spotlight, blackout, camera, recording; a share window for video calls; a phone remote; vim keys |
+| **The live room** ([docs](https://deck.kadal.cc/docs/live-room/)) | The audience follows on their phones: reactions, questions with upvotes, polls, word clouds, timed quizzes, a pace dial and a raised hand |
+| **Export** ([docs](https://deck.kadal.cc/docs/export/)) | PDF, PNG and PPTX, with or without each click step; a static build that works offline |
+
+### The presenter view, and the audience's phone
 
 <table>
 <tr>
-<th width="70%">The presenter view</th>
-<th width="30%">The audience, on a phone</th>
+<td width="70%" valign="top"><img src=".github/assets/presenter.webp" alt="The presenter view: the current slide with a hand-drawn diagram, speaker notes with numbered click markers and the current one highlighted, the next step, a timer, and buttons for drawing, pointer, spotlight, blackout, share window, camera, recording, phone remote and stats" width="100%"></td>
+<td width="30%" valign="top"><img src=".github/assets/phone.webp" alt="The audience page on a phone, live: the presenter's current slide, reactions, tabs for pace, questions, polls and notes, and buttons for slower, just right, faster and raise a hand" width="100%"></td>
 </tr>
 <tr>
-<td valign="top"><img src=".github/assets/presenter.jpg" alt="Presenter view: the current slide, the next slide, notes with click markers, a timer and tools for drawing, pointer, spotlight, blackout, share window, camera and recording" width="100%"></td>
-<td valign="top"><img src=".github/assets/phone.jpg" alt="The audience page: the presenter's slide, reactions, and buttons for pace and raising a hand" width="100%"></td>
-</tr>
-<tr>
-<td valign="top">Current and next slide, notes that follow your clicks, a timer with pacing, drawing, laser, spotlight, blackout, a frameless share window for calls, and the room panel.</td>
-<td valign="top">The slide in step with you (or roam ahead and catch up), reactions, questions, polls, quizzes, pace and a raised hand.</td>
+<td valign="top">Notes that highlight with each click, the next step, a timer with pacing and every tool on one screen. Press <kbd>S</kbd> in any deck.</td>
+<td valign="top">Scan the QR code: no app, no account. The slide stays in step with you, or roams ahead and catches up.</td>
 </tr>
 </table>
 
-**[Open the tour →](https://decks.kadal.cc/@pmithunish/tour/)**: the engine's own feature deck, nine chapters
-showing every layout, component, background, transition and view, with every framework island
-running on one slide. Press `?` for the keys. Its source is [`examples/showcase`](examples/showcase),
-and `node tools/showcase-check.mjs` drives every slide and view of it in a headless browser.
+## Themes
 
-## Features
+Sixteen themes, each in light and dark where it makes sense. Three are built in; the rest are
+packages you install and name in the headmatter (`theme: ocean`). Browse them all at
+[deck.kadal.cc/themes](https://deck.kadal.cc/themes/).
 
 <table>
 <tr>
-<td valign="top" width="50%">
-
-**Authoring**
-
-- MDX with clicks (`<Click>`, `<Clicks>`, `at="+2"`), layouts and named slots
-- Code that steps line by line, Shiki highlighting, magic move
-- Live code: Monaco editors and diffs, runnable JS/TS/Python with the output on
-  the slide, TwoSlash type hovers, code groups, `<<<` snippet imports, `[!code ++]` marks
-- KaTeX maths and Mermaid diagrams
-- Excalidraw sketches drawn in code, with guided steps
-- Glossary term cards: the compiler links the first mention of each term
-- 14 layouts, 30+ backgrounds (aurora, starfield, a wire globe…), transitions,
-  auto-animate and motion
-
-</td>
-<td valign="top" width="50%">
-
-**Presenting**
-
-- Presenter view with notes, timer, next slide and tools
-- A frameless share window for video calls; a projector mode that ignores stray input
-- Overview, search, jump to slide, zoom, drawing, laser, spotlight, blackout
-- Narration for rehearsal: the notes read aloud click by click (Kokoro TTS in the browser,
-  baked clips, or the system voice) while the deck turns its own pages
-- Vim keys and Vimium-style `f` hints for everything clickable
-- The same slide at any window size: authored at 1920 × 1080 and scaled, never reflowed
-
-</td>
+<td align="center" width="25%"><img src="https://deck.kadal.cc/themes/minimal-light-1.webp" alt="Minimal theme" width="100%"><br><b>minimal</b> · built in</td>
+<td align="center" width="25%"><img src="https://deck.kadal.cc/themes/rla-dark-1.webp" alt="RLA theme" width="100%"><br><b>rla</b> · built in</td>
+<td align="center" width="25%"><img src="https://deck.kadal.cc/themes/stack-light-1.webp" alt="Stack theme" width="100%"><br><b>stack</b> · built in</td>
+<td align="center" width="25%"><a href="packages/theme-ocean"><img src="https://deck.kadal.cc/themes/ocean-light-1.webp" alt="Ocean theme" width="100%"><br><b>ocean</b></a></td>
 </tr>
 <tr>
-<td valign="top">
-
-**The live room**
-
-- The audience follows on their phones, or roams and catches up with one button
-- Reactions, questions with upvotes, polls, ratings, word clouds, timed quizzes and a leaderboard
-- Pace feedback and raised hands in the presenter's room panel
-- Your drawings, confetti and shared term cards on every screen
-
-</td>
-<td valign="top">
-
-**Shipping it**
-
-- `kadal-deck build`: a static site for any host, working offline
-- `kadal-deck export`: PDF, PNG and PPTX (one image per slide, notes attached)
-- `kadal-deck publish`: hosted with a live room, analytics, passcodes and share links
-- Publishes from CI with an API token; only changed files are uploaded
-
-</td>
+<td align="center"><a href="packages/theme-brand"><img src="https://deck.kadal.cc/themes/brand-light-1.webp" alt="Brand theme" width="100%"><br><b>brand</b></a></td>
+<td align="center"><a href="packages/theme-crayon"><img src="https://deck.kadal.cc/themes/crayon-light-1.webp" alt="Crayon theme" width="100%"><br><b>crayon</b></a></td>
+<td align="center"><a href="packages/theme-folio"><img src="https://deck.kadal.cc/themes/folio-light-1.webp" alt="Folio theme" width="100%"><br><b>folio</b></a></td>
+<td align="center"><a href="packages/theme-lecture"><img src="https://deck.kadal.cc/themes/lecture-light-1.webp" alt="Lecture theme" width="100%"><br><b>lecture</b></a></td>
+</tr>
+<tr>
+<td align="center"><a href="packages/theme-neon"><img src="https://deck.kadal.cc/themes/neon-dark-1.webp" alt="Neon theme" width="100%"><br><b>neon</b></a></td>
+<td align="center"><a href="packages/theme-swiss"><img src="https://deck.kadal.cc/themes/swiss-light-1.webp" alt="Swiss theme" width="100%"><br><b>swiss</b></a></td>
+<td align="center"><a href="packages/theme-terminal"><img src="https://deck.kadal.cc/themes/terminal-dark-1.webp" alt="Terminal theme" width="100%"><br><b>terminal</b></a></td>
+<td align="center"><a href="packages/theme-classic"><img src="https://deck.kadal.cc/themes/classic-light-1.webp" alt="Classic theme" width="100%"><br><b>classic</b></a></td>
+</tr>
+<tr>
+<td align="center"><a href="packages/theme-seriph"><img src="https://deck.kadal.cc/themes/seriph-light-1.webp" alt="Seriph theme" width="100%"><br><b>seriph</b></a></td>
+<td align="center"><a href="packages/theme-crisp"><img src="https://deck.kadal.cc/themes/crisp-light-1.webp" alt="Crisp theme" width="100%"><br><b>crisp</b></a></td>
+<td align="center"><a href="packages/theme-bricks"><img src="https://deck.kadal.cc/themes/bricks-light-1.webp" alt="Bricks theme" width="100%"><br><b>bricks</b></a></td>
+<td align="center"><a href="packages/theme-shibainu"><img src="https://deck.kadal.cc/themes/shibainu-dark-1.webp" alt="Shibainu theme" width="100%"><br><b>shibainu</b></a></td>
 </tr>
 </table>
 
-## Use with AI agents
+Classic, seriph, crisp, bricks and shibainu are ports of the official Slidev themes, MIT-licensed,
+with credit to their authors in each package. `npm create @kadal/deck@latest -- --theme <name>`
+starts a theme of your own; the contract is [THEMES.md](packages/deck/THEMES.md).
 
-Kadal Deck is built to be written by an agent as well as a person: a skill that teaches the
-format and the workflow, an MCP server that can edit slides precisely and **look at them**, and a
-CLI whose every command answers in JSON.
+## For AI agents
 
-**Claude Code plugin** (the skill and the MCP server together):
+Kadal Deck is built to be written by an agent as well as by you: a skill that teaches the format,
+an MCP server that edits slides line by line and renders them so the agent can look at its work,
+and a CLI whose every command answers in JSON. Guide: [AI agents](https://deck.kadal.cc/docs/ai-agents/).
 
 ```text
-/plugin marketplace add kadalcc/deck
+/plugin marketplace add kadalcc/deck          # Claude Code: the skill and the MCP server together
 /plugin install kadal-deck@kadal-deck
 ```
 
-(On Claude Code 2.1.275 or later, `/plugin install kadal-deck --marketplace kadalcc/deck` does both.)
-
-**The skill alone, for any agent** ([Agent Skills](https://agentskills.io) format, in
-[`skills/kadal-deck`](skills/kadal-deck)): `npx skills add kadalcc/deck`
-
-**The MCP server alone** — `kadal-deck mcp` speaks the Model Context Protocol on stdio. It works
-on the deck in the folder it starts in (or `--dir <path>`; every tool also takes a `dir` inside
-it). Tools never read or write outside that folder unless the server is started with
-`--allow-outside`.
-
 ```sh
-claude mcp add kadal-deck -- npx -y @kadal/deck mcp          # Claude Code
+npx skills add kadalcc/deck                              # the skill alone, for any agent (skills/kadal-deck)
+claude mcp add kadal-deck -- npx -y @kadal/deck mcp      # the MCP server alone
 ```
 
-```jsonc
-// Claude Desktop (claude_desktop_config.json) and Cursor (.cursor/mcp.json)
-{ "mcpServers": { "kadal-deck": { "command": "npx", "args": ["-y", "@kadal/deck", "mcp", "--dir", "/path/to/my-talk"] } } }
+For Claude Desktop, Cursor and VS Code, point the client at `npx -y @kadal/deck mcp`. The server
+works in the folder it starts in (or `--dir <path>`) and never reads or writes outside it unless
+started with `--allow-outside`.
 
-// VS Code (.vscode/mcp.json)
-{ "servers": { "kadal-deck": { "type": "stdio", "command": "npx", "args": ["-y", "@kadal/deck", "mcp"] } } }
-```
-
-| tools | |
+| MCP tools | |
 | --- | --- |
 | `deck_reference`, `deck_frontmatter_schema` | every component, layout, background and option, from the engine's own catalog |
 | `deck_create`, `deck_outline`, `deck_read_slide`, `deck_check` | scaffold, read the deck as structure, lint it |
 | `slide_add`, `slide_update`, `slide_remove`, `slide_move`, `deck_update_frontmatter`, `notes_set` | edits that change only that slide's lines, linted on the spot |
-| `slide_render`, `deck_preview` | PNG pictures of slides from a dev server kept running between calls, and a live URL for you |
-| `deck_build`, `deck_export`, `deck_publish` | a static site, PDF/PNG/PPTX, and a published deck (with your saved `kadal-deck login`) |
+| `slide_render`, `deck_preview` | PNGs of slides from a dev server kept running between calls, and a live URL |
+| `deck_build`, `deck_export`, `deck_publish` | a static site, PDF/PNG/PPTX, and a published deck |
 
-It also serves the catalog, the reference and the guides as resources, and two prompts:
-`draft_deck` (outline → finished deck) and `review_deck`. Rendering and export need Playwright
-in the deck: `npm i -D playwright && npx playwright install chromium`.
+For scripts: `kadal-deck check` (exit 1 on errors), `kadal-deck screenshot`, `kadal-deck info [topic]`,
+and `--json` on every command. Exit codes: 0 ok, 1 failed, 2 usage, 3 not signed in, 4 missing
+prerequisite. `@kadal/deck/catalog` is everything a deck can use as data, `@kadal/deck/authoring`
+reads, lints and edits a deck as text, and `@kadal/deck/schema/frontmatter.json` is the JSON Schema
+for frontmatter.
 
-**Editors**: `kadal-deck format` (and [`@kadal/prettier-plugin`](packages/prettier-plugin) for
-any editor running Prettier), the side editor in `kadal-deck dev` (press E), and the
-[VS Code extension](packages/vscode) — outline with drag-to-reorder, a preview that follows the
-cursor, frontmatter IntelliSense, `check` as problems. `kadal-deck dev --tunnel` shares the dev
-server through a Cloudflare Quick Tunnel; `--remote <password>` guards the presenter. A build on a
-static host gets the phone remote through `kadal-deck relay` (`remote: { relay: "wss://…" }`).
+## In your editor
 
-**The CLI, for scripts and agents**: `kadal-deck check` (lint, exit 1 on errors),
-`kadal-deck screenshot` (PNGs), `kadal-deck info [topic]` (the reference), `kadal-deck new <dir>`
-(no questions asked); `--json` on every command prints one JSON object on stdout. Exit codes:
-0 ok · 1 failed · 2 usage · 3 not signed in · 4 missing prerequisite.
+- **[VS Code extension](packages/vscode)** ([Marketplace](https://marketplace.visualstudio.com/items?itemName=kadal.kadal-deck)):
+  a live preview that follows your cursor, a slide outline you drag to reorder, IntelliSense for
+  every setting and component, the deck's checks as problems, and formatting.
+- **[`@kadal/prettier-plugin`](packages/prettier-plugin)**: Prettier for deck files, in any editor
+  that runs Prettier. `kadal-deck format` runs the same formatter with no setup.
+- **In the browser**: press <kbd>E</kbd> in `kadal-deck dev` for a side editor on the slide you're on.
 
-Building your own tooling? `@kadal/deck/catalog` is everything a deck can use as data,
-`@kadal/deck/authoring` reads, lints and edits a deck as text (no Node APIs), and
-`@kadal/deck/schema/frontmatter.json` is the JSON Schema for frontmatter.
+## Hosted or self-hosted
 
-## Islands, in any framework
+Writing, presenting, the presenter view, export and a static build need nothing but this engine,
+and stay free. The **live room** needs a server holding a WebSocket per deck.
 
-Put a component from any of these on a slide. Each runtime is code-split and loads only when its
-slide appears; [`examples/showcase`](examples/showcase) runs all eleven on one slide.
-
-| Framework | Package | | Framework | Package |
-| --- | --- | --- | --- | --- |
-| React | built in | | Qwik | [`@kadal/deck-qwik`](packages/deck-qwik) |
-| Web components | built in | | Angular | [`@kadal/deck-angular`](packages/deck-angular) |
-| Vue | [`@kadal/deck-vue`](packages/deck-vue) | | Fresh | [`@kadal/deck-fresh`](packages/deck-fresh) |
-| Svelte | [`@kadal/deck-svelte`](packages/deck-svelte) | | WebAssembly / Rust (Leptos, …) | [`@kadal/deck-wasm`](packages/deck-wasm) |
-| Solid | [`@kadal/deck-solid`](packages/deck-solid) | | Python (Pyodide) | [`@kadal/deck-python`](packages/deck-python) |
-| Preact | [`@kadal/deck-preact`](packages/deck-preact) | | | |
+- **[deck.kadal.cc](https://deck.kadal.cc)**: `npx kadal-deck publish` gives the deck a URL, a live
+  room, analytics, passcodes, version history and teams. There is a [free plan](https://deck.kadal.cc/pricing/),
+  and the paid plans fund the engine.
+- **Your own host**: `kadal-deck build` output runs on any static host (`kadal-deck ci` writes the
+  deploy files for GitHub Pages, Netlify, Vercel, Cloudflare or Docker). The room protocol is typed
+  in `@kadal/deck/protocol` and [documented endpoint by endpoint](https://deck.kadal.cc/docs/self-hosting/),
+  and `kadal-deck relay` gives a static build the phone remote.
 
 ## Packages
 
-| Package | Version | What it is |
+| Package | Version | |
 | --- | --- | --- |
-| [`@kadal/deck`](packages/deck) | [![npm](https://img.shields.io/npm/v/@kadal/deck?label=)](https://www.npmjs.com/package/@kadal/deck) | The engine: MDX compiler and Vite plugin, React runtime, components, themes, live client, export, and the `kadal-deck` CLI |
-| [`@kadal/create-deck`](packages/create-deck) | [![npm](https://img.shields.io/npm/v/@kadal/create-deck?label=)](https://www.npmjs.com/package/@kadal/create-deck) | `npm create @kadal/deck@latest`: a new deck from the starter |
-| `@kadal/deck-*` | [![npm](https://img.shields.io/npm/v/@kadal/deck-vue?label=)](https://www.npmjs.com/org/kadal) | The framework renderers above, released in lockstep with the engine |
-| `@kadal/theme-*` | [![npm](https://img.shields.io/npm/v/@kadal/theme-ocean?label=)](https://deck.kadal.cc/themes/) | Theme packages: eight of Kadal's own and Slidev's five official themes, ported ([gallery](https://deck.kadal.cc/themes/)) |
-| [`@kadal/prettier-plugin`](packages/prettier-plugin) | [![npm](https://img.shields.io/npm/v/@kadal/prettier-plugin?label=)](https://www.npmjs.com/package/@kadal/prettier-plugin) | Prettier for deck files, the same formatter as `kadal-deck format` |
-| [Kadal Deck for VS Code](packages/vscode) | [![Marketplace](https://img.shields.io/visual-studio-marketplace/v/kadal.kadal-deck?label=)](https://marketplace.visualstudio.com/items?itemName=kadal.kadal-deck) | Preview, slide outline, IntelliSense, checks and formatting; also on [Open VSX](https://open-vsx.org/extension/kadal/kadal-deck) |
+| [`@kadal/deck`](packages/deck) | [![npm](https://img.shields.io/npm/v/@kadal/deck?label=)](https://www.npmjs.com/package/@kadal/deck) | The engine: MDX compiler and Vite plugin, runtime, components, themes, live client, export, the `kadal-deck` CLI and MCP server |
+| [`@kadal/create-deck`](packages/create-deck) | [![npm](https://img.shields.io/npm/v/@kadal/create-deck?label=)](https://www.npmjs.com/package/@kadal/create-deck) | `npm create @kadal/deck@latest`: a new deck, theme or addon |
+| [`@kadal/deck-vue`](packages/deck-vue), [`-svelte`](packages/deck-svelte), [`-solid`](packages/deck-solid), [`-preact`](packages/deck-preact), [`-qwik`](packages/deck-qwik), [`-angular`](packages/deck-angular), [`-fresh`](packages/deck-fresh), [`-wasm`](packages/deck-wasm), [`-python`](packages/deck-python) | [![npm](https://img.shields.io/npm/v/@kadal/deck-vue?label=)](https://www.npmjs.com/org/kadal) | Framework renderers for islands |
+| `@kadal/theme-*` (13 packages) | [![npm](https://img.shields.io/npm/v/@kadal/theme-ocean?label=)](https://www.npmjs.com/org/kadal) | The themes above |
+| [`@kadal/prettier-plugin`](packages/prettier-plugin) | [![npm](https://img.shields.io/npm/v/@kadal/prettier-plugin?label=)](https://www.npmjs.com/package/@kadal/prettier-plugin) | Prettier for deck files |
+| [Kadal Deck for VS Code](packages/vscode) | [![Marketplace](https://img.shields.io/badge/-Marketplace-0e7490)](https://marketplace.visualstudio.com/items?itemName=kadal.kadal-deck) | Preview, outline, IntelliSense, checks and formatting |
+| [`@kadal/deck-shell`](packages/deck-shell) | not on npm yet | A prebuilt page that runs any `deck.mdx` compiled in the browser, for hosts and editors |
 
-Every npm package is published from this repository's [release workflow](.github/workflows/release.yml)
-through npm trusted publishing, with [provenance](https://docs.npmjs.com/generating-provenance-statements)
-you can check on each npm page. The VS Code extension is published to the Visual Studio Marketplace
-and Open VSX by its [own workflow](.github/workflows/vscode.yml) whenever its version changes.
-
-## The live room: self-hosted or hosted
-
-Everything one machine can do is free and stays free: writing, presenting, the presenter view,
-export and a static build. The **live room** needs a server that holds a WebSocket per deck.
-
-- **Host it yourself.** The room protocol is typed in the engine (`@kadal/deck/protocol`) and
-  [documented endpoint by endpoint](https://deck.kadal.cc/docs/self-hosting/), so a room server
-  you write against it can't drift from the client.
-- **Or use [deck.kadal.cc](https://deck.kadal.cc).** `npx kadal-deck publish` gives the deck a
-  live room, analytics, passcodes, version history and teams. There's a
-  [free plan](https://deck.kadal.cc/pricing/), and the paid plans fund the engine, the way
-  Slides.com funds reveal.js.
+All `@kadal/*` packages version together and are published from this repository's
+[release workflow](.github/workflows/release.yml) through npm trusted publishing, with
+[provenance](https://docs.npmjs.com/generating-provenance-statements) on each npm page. The VS Code
+extension is published by its [own workflow](.github/workflows/vscode.yml).
 
 ## Documentation
 
-| | |
-| --- | --- |
-| [Getting started](https://deck.kadal.cc/docs/getting-started/) | Create a deck and learn what each file is for |
-| [Writing slides](https://deck.kadal.cc/docs/writing-slides/) | Slides, frontmatter, layouts and slots |
-| [Clicks and animation](https://deck.kadal.cc/docs/clicks-and-animation/) | Steps, auto-animate, motion and transitions |
-| [Code](https://deck.kadal.cc/docs/code/) | Line steps, magic move and highlighting |
-| [The live room](https://deck.kadal.cc/docs/live-room/) | Polls, quizzes, questions, pace and following |
-| [Islands](https://deck.kadal.cc/docs/islands/) | Components from other frameworks |
-| [Presenter and keyboard](https://deck.kadal.cc/docs/presenter-and-keyboard/) | Every view and every key |
-| [Export](https://deck.kadal.cc/docs/export/) | PDF, PNG and PPTX |
-| [CLI](https://deck.kadal.cc/docs/cli/) | `new`, `dev`, `build`, `check`, `screenshot`, `export`, `login`, `publish`, `mcp` |
-| [Self-hosting the room](https://deck.kadal.cc/docs/self-hosting/) | The protocol and what the AGPL asks of you |
+[Getting started](https://deck.kadal.cc/docs/getting-started/) ·
+[Writing slides](https://deck.kadal.cc/docs/writing-slides/) ·
+[Components](https://deck.kadal.cc/docs/components/) ·
+[Configuration](https://deck.kadal.cc/docs/configuration/) ·
+[CLI](https://deck.kadal.cc/docs/cli/) ·
+[Publishing](https://deck.kadal.cc/docs/publishing/) ·
+[Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) ·
+[Coming from Slidev](https://deck.kadal.cc/docs/coming-from-slidev/)
 
-The engine's own reference, with every component and option, is in
-[`packages/deck/README.md`](packages/deck/README.md).
+The engine's full reference, with every component and option, is in
+[`packages/deck/README.md`](packages/deck/README.md), and `npx kadal-deck info` prints it in the
+terminal.
+
+## Licence
+
+**[AGPL-3.0-or-later](LICENSE)**. Presenting with Kadal Deck, self-hosting your own decks, and
+embedding a deck in a site you publish trigger nothing; you owe nobody anything. If you run a
+**modified** engine as a network service, its users must be able to get your modified source.
+
+Building a hosted or proprietary product on the engine without publishing your changes? A
+commercial licence removes the AGPL obligations: write to **hello@kadal.cc**. Details are in
+[LICENSING.md](LICENSING.md). The five ported themes are MIT, and third-party notices are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Contributing
+
+A bug report with a small `deck.mdx` that reproduces it is the most useful thing you can send, and
+pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the setup (Bun 1.3+), the
+tests and the island verifier. Questions and ideas go to
+[Discussions](https://github.com/kadalcc/deck/discussions). Please follow the
+[code of conduct](CODE_OF_CONDUCT.md), and report security issues privately as
+[SECURITY.md](SECURITY.md) describes.
 
 ## Sponsors
 
-Kadal Deck is made by [@pmithunish](https://github.com/pmithunish), an independent developer in Chennai
-working as [Kadal](https://kadal.cc). Sponsorships go straight to the maintainer and pay for time on
-the open-source engine: issues, docs, new islands and the features you ask for.
-**[Become a sponsor →](https://github.com/sponsors/pmithunish)**
-
-| Tier | A month | What you get |
-| --- | --- | --- |
-| Supporter | $3 | Our thanks and the sponsor badge on your GitHub profile |
-| Backer | $10 | Your name in [BACKERS.md](BACKERS.md) and on [the sponsor page](https://deck.kadal.cc/sponsor/) |
-| Patron | $25 | Your avatar in this README and on the sponsor page |
-| Bronze | $100 | Your company's logo in this README and on the sponsor page |
-| Silver | $250 | A larger logo here, on the sponsor page and in the docs |
-| Gold | $500 | The largest logo at the top of this README and the docs, priority on your issues, and a monthly call |
-
-One-time sponsorships of $10 and $50 are welcome too. Companies can sponsor
+Sponsorships pay for time on the open-source engine: issues, docs, new islands and the features
+you ask for. **[Sponsor Kadal Deck on GitHub](https://github.com/sponsors/pmithunish)**; the tiers
+and what each one gets are on [deck.kadal.cc/sponsor](https://deck.kadal.cc/sponsor/), and backers
+are listed in [BACKERS.md](BACKERS.md). Companies can sponsor
 [by invoice](https://docs.github.com/en/sponsors/sponsoring-open-source-contributors/paying-for-github-sponsors-by-invoice).
 
 <!-- sponsors: Gold, Silver and Bronze logos and Patron avatars go here, largest first -->
 <p align="center">
-  <a href="https://github.com/sponsors/pmithunish"><strong>Your logo here</strong></a> —
+  <a href="https://github.com/sponsors/pmithunish"><strong>Your logo here</strong></a>:
   be the first company to sponsor Kadal Deck.
 </p>
 <!-- /sponsors -->
 
-## Contributing
-
-Bug reports with a small `deck.mdx` that reproduces them are the most useful thing you can send,
-and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the setup (Bun 1.3+),
-the tests and the island verifier. Please follow the [code of conduct](CODE_OF_CONDUCT.md), and
-report security issues privately as [SECURITY.md](SECURITY.md) describes.
-
-<a href="https://github.com/kadalcc/deck/graphs/contributors">
-  <img alt="Contributors" src="https://contrib.rocks/image?repo=kadalcc/deck">
-</a>
-
-## Licence
-
-**[AGPL-3.0-or-later](LICENSE)**, with a commercial licence for anyone who wants to build a hosted
-or proprietary product on the engine without publishing their changes. Presenting with it,
-self-hosting your own decks or embedding a deck in a site you publish triggers nothing. The
-details are in [LICENSING.md](LICENSING.md).
-
 <p align="center">
-  <sub>Made in Chennai by <a href="https://kadal.cc">Kadal</a> · <a href="https://deck.kadal.cc">deck.kadal.cc</a></sub>
+  <sub>Made in Chennai by <a href="https://kadal.cc">Kadal</a> · <a href="https://deck.kadal.cc">deck.kadal.cc</a> · <a href="mailto:hello@kadal.cc">hello@kadal.cc</a></sub>
 </p>

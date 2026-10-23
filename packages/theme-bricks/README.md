@@ -4,6 +4,13 @@
 Building blocks in coral, butter, rose and sky on a cream page, a different arrangement behind
 each layout, Sigmar One for headings and Signika Negative for words. Light only.
 
+<p>
+  <img src="https://deck.kadal.cc/themes/bricks-light-1.webp" alt="Bricks: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/bricks-light-2.webp" alt="Bricks: a content slide, light" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-bricks)
+
 ```bash
 npm install @kadal/theme-bricks
 ```
@@ -46,4 +53,4 @@ npm run check    # lint it
 MIT. This package is a port of [`@slidev/theme-bricks`](https://github.com/slidevjs/themes), MIT License,
 Copyright (c) 2021 Slidev.js Team (the theme by Inès Fendi). The look, the layouts and their frontmatter are
 theirs; the React layouts and the stylesheet were rewritten for Kadal Deck. The full notice is in
-[LICENSE](./LICENSE).
+[LICENSE](https://github.com/kadalcc/deck/blob/main/packages/theme-bricks/LICENSE).

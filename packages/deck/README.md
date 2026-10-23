@@ -1,8 +1,12 @@
 # @kadal/deck
 
-**Kadal Deck** — presentations written in MDX. Every reveal.js and Slidev feature, a live room so
-the audience can follow, react, ask and vote from their phones, islands in any framework, and
-export to PDF, PNG, PPTX (pictures or editable) and Markdown. Docs: **https://deck.kadal.cc/docs/**
+The engine behind **[Kadal Deck](https://deck.kadal.cc)**: presentations written in MDX, with a
+live room so the audience can follow, react, ask and vote from their phones, islands in any
+framework, and export to PDF, PNG, PPTX (pictures or editable) and Markdown. It is the MDX compiler
+and Vite plugin, the React runtime and components, the themes, the `kadal-deck` CLI and the MCP
+server for AI agents.
+
+[Docs](https://deck.kadal.cc/docs/) · [The tour](https://deck.kadal.cc/tour/) · [Themes](https://deck.kadal.cc/themes/) · [AI agents](https://deck.kadal.cc/docs/ai-agents/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck)
 
 [![npm](https://img.shields.io/npm/v/@kadal/deck?color=0e7490)](https://www.npmjs.com/package/@kadal/deck)
 [![CI](https://img.shields.io/github/actions/workflow/status/kadalcc/deck/ci.yml?branch=main&label=CI)](https://github.com/kadalcc/deck/actions/workflows/ci.yml)
@@ -36,7 +40,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | `kadal-deck relay [--port n] [--host addr] [--password p] [--tunnel]` | the phone remote for a build on a static host: a WebSocket relay its presenter view and phone meet at. See [Build and host](#build-and-host) |
 | `kadal-deck ci <github-pages\|netlify\|vercel\|cloudflare\|docker>` | write that host's deploy files for this deck (`--force` to replace) |
 | `kadal-deck check [--no-compile]` | lint: YAML and frontmatter keys/types, unknown layouts, backgrounds, themes, transitions, MDX compile errors with file:line, unknown JSX components, broken `src:` includes, missing assets, glossary, code-fence options |
-| `kadal-deck format [files] [--check]` | format `deck.mdx` and its includes (or the files named) with [@kadal/prettier-plugin](../prettier-plugin): separators, frontmatter YAML (comments kept), each slide's Markdown; code, notes, magic-move, `<style>`, maths and `::slot::` sugar byte for byte; every slide checked to mean the same. `--check` exits 1 when a file would change |
+| `kadal-deck format [files] [--check]` | format `deck.mdx` and its includes (or the files named) with [@kadal/prettier-plugin](https://github.com/kadalcc/deck/tree/main/packages/prettier-plugin): separators, frontmatter YAML (comments kept), each slide's Markdown; code, notes, magic-move, `<style>`, maths and `::slot::` sugar byte for byte; every slide checked to mean the same. `--check` exits 1 when a file would change |
 | `kadal-deck info [topic] [name] [--search words] [--markdown]` | the reference (components, layouts, backgrounds, themes, transitions, clicks, code, deck, slide, keys, routes, live, cli, exit) |
 | `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium) |
 | `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--range 1,3-5] [--dark] [--no-with-clicks] [--omit-background] [--per-slide] [--out dir] [--output name] [--scale n] [--url u]` | PDF (and PNG, PPTX, editable PPTX, Markdown) into `export/` — install `playwright`. Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable, with bookmarks from the slide titles; `--vector-pdf` prints with the browser alone. See [Export](#export) |
@@ -90,7 +94,7 @@ Slidev project is run. The converter itself is a pure function, `convertSlidev` 
 - `@kadal/deck/catalog` — `catalog` (components with props/defaults/examples, layouts,
   backgrounds, themes, transitions, click effects, code meta, deck/slide frontmatter, keys, routes,
   live room, CLI, exit codes), `searchCatalog`, `findEntry`, `catalogMarkdown`,
-  `frontmatterSchema`. Pure data: works in a browser or a Worker. [REFERENCE.md](REFERENCE.md) is
+  `frontmatterSchema`. Pure data: works in a browser or a Worker. [REFERENCE.md](https://github.com/kadalcc/deck/blob/main/packages/deck/REFERENCE.md) is
   the same catalog as Markdown.
 - `@kadal/deck/authoring` — `outlineDeck`, `lintDeck`, `addSlide` / `updateSlide` /
   `removeSlide` / `moveSlide` / `setNotes` / `updateHeadmatter` over a `{ entry, read }` file
@@ -455,3 +459,9 @@ the engine is built for it:
 - `src/authoring` — `@kadal/deck/authoring`: outline, lint and line-exact edits of a deck as text
 - `src/cli` — the `kadal-deck` CLI (commands, args, render, new, host/login/publish)
 - `src/mcp` — `kadal-deck mcp`, the MCP server
+
+## Licence
+
+AGPL-3.0-or-later, with a commercial licence for building a hosted or proprietary product on the
+engine: see [LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md). Third-party
+notices are in [THIRD_PARTY_NOTICES.md](https://github.com/kadalcc/deck/blob/main/packages/deck/THIRD_PARTY_NOTICES.md).

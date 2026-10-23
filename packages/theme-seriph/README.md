@@ -4,6 +4,13 @@
 Serif for everything, PT Mono for code, headings in the primary colour (a slate teal) except on
 the cover, and a centred cover over a dimmed background picture. Light and dark.
 
+<p>
+  <img src="https://deck.kadal.cc/themes/seriph-light-1.webp" alt="Seriph: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/seriph-dark-2.webp" alt="Seriph: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-seriph)
+
 ```bash
 npm install @kadal/theme-seriph
 ```
@@ -44,4 +51,4 @@ npm run check    # lint it
 MIT. This package is a port of [`@slidev/theme-seriph`](https://github.com/slidevjs/themes), MIT License,
 Copyright (c) 2021 Slidev.js Team (the theme by Anthony Fu). The look, the layouts and their frontmatter are
 theirs; the React layouts and the stylesheet were rewritten for Kadal Deck. The full notice is in
-[LICENSE](./LICENSE).
+[LICENSE](https://github.com/kadalcc/deck/blob/main/packages/theme-seriph/LICENSE).

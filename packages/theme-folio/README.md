@@ -2,7 +2,12 @@
 
 **Folio**, a theme for [Kadal Deck](https://deck.kadal.cc). An editorial theme for essays and keynotes. Warm paper and ink, Playfair Display for the display lines, Newsreader for reading text, IBM Plex Mono for code; one oxblood accent and a gilt second. Generous margins, a measure kept to reading length, booktabs tables, an asterism for a rule, small capitals for labels, a fleuron over a section.
 
-![Folio: the cover, a content slide, code and the theme's own layout](./screenshot.jpg)
+<p>
+  <img src="https://deck.kadal.cc/themes/folio-light-1.webp" alt="Folio: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/folio-dark-2.webp" alt="Folio: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-folio)
 
 ## Use it
 

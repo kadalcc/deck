@@ -1,10 +1,12 @@
 # @kadal/deck-preact
 
+The Preact renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Preact code as an island on a slide, loaded only when its slide appears.
+
+[Preact islands guide](https://deck.kadal.cc/docs/islands/preact/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-preact)
+
 ```sh
 npm install @kadal/deck-preact preact
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
 
 Preact components on a deck slide. The shortest renderer in the engine, and the smallest amount of
 configuration of any of them.
@@ -55,4 +57,4 @@ source text. Only the stamp separates them.
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
-[LICENSING.md](../deck/LICENSING.md).
+[LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

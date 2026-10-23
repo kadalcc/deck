@@ -4,6 +4,13 @@
 Soft blobs and paw-print dots in a shiba's browns, Titillium Web, and fourteen layouts that are
 each a different arrangement of the blobs. Dark only.
 
+<p>
+  <img src="https://deck.kadal.cc/themes/shibainu-dark-1.webp" alt="Shibainu: the cover, dark" width="49%">
+  <img src="https://deck.kadal.cc/themes/shibainu-dark-2.webp" alt="Shibainu: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-shibainu)
+
 ```bash
 npm install @kadal/theme-shibainu
 ```
@@ -45,4 +52,4 @@ npm run check    # lint it
 MIT. This package is a port of [`@slidev/theme-shibainu`](https://github.com/slidevjs/themes), MIT License,
 Copyright (c) 2021 Slidev.js Team (the theme by Inès Fendi). The look, the layouts and their frontmatter are
 theirs; the React layouts and the stylesheet were rewritten for Kadal Deck. The full notice is in
-[LICENSE](./LICENSE).
+[LICENSE](https://github.com/kadalcc/deck/blob/main/packages/theme-shibainu/LICENSE).

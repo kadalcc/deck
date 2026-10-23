@@ -4,6 +4,13 @@
 Avenir Next (Nunito Sans where it is not installed), light headings, square bullets, dashed
 links, a cyan primary, and a cover that dims a background picture. Light and dark.
 
+<p>
+  <img src="https://deck.kadal.cc/themes/classic-light-1.webp" alt="Classic: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/classic-dark-2.webp" alt="Classic: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-classic)
+
 ```bash
 npm install @kadal/theme-classic
 ```
@@ -47,4 +54,4 @@ npm run check    # lint it
 MIT. This package is a port of [`@slidev/theme-default`](https://github.com/slidevjs/themes), MIT License,
 Copyright (c) 2021 Slidev.js Team (the theme by Anthony Fu). The look, the layouts and their frontmatter are
 theirs; the React layouts and the stylesheet were rewritten for Kadal Deck. The full notice is in
-[LICENSE](./LICENSE).
+[LICENSE](https://github.com/kadalcc/deck/blob/main/packages/theme-classic/LICENSE).

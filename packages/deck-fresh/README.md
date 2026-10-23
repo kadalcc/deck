@@ -1,10 +1,12 @@
 # @kadal/deck-fresh
 
+The Fresh renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Fresh code as an island on a slide, loaded only when its slide appears.
+
+[Fresh islands guide](https://deck.kadal.cc/docs/islands/fresh/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-fresh)
+
 ```sh
 npm install @kadal/deck-fresh @kadal/deck-preact preact @preact/signals
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
 
 Fresh islands on a deck slide.
 
@@ -42,4 +44,4 @@ Fresh came with it.
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
-[LICENSING.md](../deck/LICENSING.md).
+[LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

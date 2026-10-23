@@ -2,7 +2,12 @@
 
 **Lecture**, a theme for [Kadal Deck](https://deck.kadal.cc). An academic theme for lectures, seminars and defences. The Source family (Serif 4 for headings, Sans 3 for text, Code Pro for code), navy for structure and crimson for results, numbered sections, a footer on every slide, definition / theorem / proof blocks set the way a textbook sets them, citations, and a references layout. Made to print: white pages, hairlines that survive a laser printer, no shadows, the footer on every page.
 
-![Lecture: the cover, a content slide, code and the theme's own layout](./screenshot.jpg)
+<p>
+  <img src="https://deck.kadal.cc/themes/lecture-light-1.webp" alt="Lecture: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/lecture-dark-2.webp" alt="Lecture: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-lecture)
 
 ## Use it
 

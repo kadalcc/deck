@@ -2,7 +2,12 @@
 
 **Brand**, a theme for [Kadal Deck](https://deck.kadal.cc). A corporate theme a company makes its own without writing CSS. Everything that says "us" comes from `themeConfig`: the primary and secondary colours, the logo (and a version for dark slides), the company's name and the footer line. The rest is built to be trusted: Plus Jakarta Sans, a white page, generous cards, quiet hairlines, numbers that line up. The cover is the brand's colour edge to edge; content slides carry the logo and a footer with the page.
 
-![Brand: the cover, a content slide, code and the theme's own layout](./screenshot.jpg)
+<p>
+  <img src="https://deck.kadal.cc/themes/brand-light-1.webp" alt="Brand: the cover, light" width="49%">
+  <img src="https://deck.kadal.cc/themes/brand-dark-2.webp" alt="Brand: a content slide, dark" width="49%">
+</p>
+
+[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-brand)
 
 ## Use it
 

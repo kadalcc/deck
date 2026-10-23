@@ -1,10 +1,12 @@
 # @kadal/deck-qwik
 
+The Qwik renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Qwik code as an island on a slide, loaded only when its slide appears.
+
+[Qwik islands guide](https://deck.kadal.cc/docs/islands/qwik/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-qwik)
+
 ```sh
 npm install @kadal/deck-qwik @qwik.dev/core
 ```
-
-Part of [Kadal Deck](https://deck.kadal.cc/docs/) — see the islands guide for how a framework component lands on a slide.
 
 Qwik components on a deck slide, with **no Qwik Vite optimizer**.
 
@@ -82,4 +84,4 @@ Built against `@qwik.dev/core` **2.0.0-rc.0**, which is the Qwik that supports V
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
-[LICENSING.md](../deck/LICENSING.md).
+[LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

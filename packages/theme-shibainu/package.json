@@ -10,7 +10,7 @@
     "theme",
     "slidev-port"
   ],
-  "homepage": "https://deck.kadal.cc/docs/",
+  "homepage": "https://deck.kadal.cc/themes/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kadalcc/deck.git",
@@ -20,7 +20,7 @@
     "url": "https://github.com/kadalcc/deck/issues"
   },
   "license": "MIT",
-  "author": "Mithunish Prabhakaran <pmithunish@gmail.com>",
+  "author": "Kadal <hello@kadal.cc> (https://kadal.cc)",
   "type": "module",
   "files": [
     "style.css",
