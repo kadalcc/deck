@@ -34,6 +34,7 @@ const SELECTOR = [
 /** The deck's own chrome that holds controls (beside the current slide). */
 const CHROME = [
   ".deck-controls",
+  ".deck-corner-tools",
   ".deck-nav-custom",
   ".deck-theme-menu",
   ".deck-follow",
