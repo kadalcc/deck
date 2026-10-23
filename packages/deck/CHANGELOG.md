@@ -1,5 +1,56 @@
 # @kadal/deck
 
+## 0.4.3
+
+### Patch Changes
+
+- 75231f0: The audience page (`/join`) numbers slides as the deck does. When a viewer was not following the presenter, the bar showed the column (Slide 11 of 115) instead of the slide's place in the deck (29 of 115).
+- 75231f0: The catalog (`kadal-deck info`, the MCP server, the VS Code extension) lists `<FlipBoard>`, which is now a built-in component (still exported from `@kadal/deck/backgrounds` as well). Summaries describe what each component and key does without naming other tools; the importer and the migration notes keep the names where they matter.
+- 75231f0: `kadal-deck check` knows the deck's own code runners. A `{monaco-run}` block in a language registered in `setup/code-runners.ts` or with `registerCodeRunner(...)` is no longer reported as having no runner; the check and the runner registry now share one list of built-in languages and aliases.
+- 75231f0: `kadal-deck check` reads the headmatter as the deck's settings. A key both the deck and a slide take is checked against the deck's meaning at the top of deck.mdx, so `narration: { engine: browser, rate: 1.1 }` (or `zoom: true`) no longer fails as "expected false".
+- 75231f0: A Comark block's YAML props (`---` lines straight after `::card`) no longer cut the slide in two. The splitter, and the Prettier plugin's copy of it, skip `---` inside a Comark block that is closed; a block left open still ends at the next separator.
+- 75231f0: `kadal-deck import slidev` fixes:
+
+  - With `mdc: true` (or `comark: true`), Comark attribute lists such as `[text]{.red}`, `**bold**{.accent}` and `:badge[New]{tone="good"}` are kept as written instead of escaped into text.
+  - `mdc`, `monacoTypesSource`, `monacoTypesAdditionalPackages` and `monacoTypesIgnorePackages` are translated (to `comark`, `monacoTypes`, `monacoPackages`, `monacoTypesIgnore`) and no longer copied as well, so `check` has nothing to flag in the converted headmatter.
+  - A `{monaco-run}` block that imports a package is no longer reported: the runner fetches packages from the deck's `monacoRunImports` CDN. Imports of the deck's own files and of Node's modules are still reported, since those do fail.
+
+- 75231f0: The MCP server's instructions name the design guide by the URI it is served at, `kadal-deck://guide/design-guide`.
+- 3baec91: Presenter-view fixes from launch testing.
+
+  - **Drawings stay.** A stroke or shape now stays on the slide until it is erased or cleared, in the presenter view, the play window and on every phone. It used to fade a few seconds after it was drawn unless the pin on the toolbar was on, which looked like changing the colour or the tool had wiped the slide. The pin still turns strokes into fading scribbles, and that choice is remembered.
+  - **Typing in a text field never drives the deck.** Single-key shortcuts (L, T, D, C, the arrows…) were taken from a field inside a shadow root, such as a host's side panel, because the deck looked only at the event's target. It now looks at where the key was really typed.
+  - **The pen's toolbar sits above the narration bar** in the presenter view instead of covering the play and seek controls.
+  - **Escape closes the theme menu while the pen is on**, instead of turning the pen off and leaving the menu open.
+  - **The overview opens in the presenter view.** Esc, O and an Overview button used to change a state nothing showed (and Space then closed it instead of moving on). It is the presenter's own: the audience keeps the current slide until a tile is picked.
+  - **The spotlight works without the laser.** The Spotlight button on its own lit nothing; it now follows the cursor on the presenter's screen and every follower's. Under the spotlight the lit circle is the pointer.
+  - **The window that opens the presenter view follows it**, even after it had been moved by hand first. Before, a deck you had clicked through and then pressed S on stayed where it was while you presented.
+  - **`/stats` opened in a new tab** shows the presenter's sign-in (the passcode, or the author's sign-in) in the deck's styling, and the stats once it is passed, instead of a line of unstyled text.
+  - The current part of the speaker notes is marked with a light wash and an underline rather than a selection-blue block, and notes without `[click]` markers are not marked at all.
+
+- ece124f: Refresh READMEs and package metadata: each package page says what the package is, how to install and use it, and links its docs; theme pages show the theme; the author is now Kadal (hello@kadal.cc), with homepages pointing at each package's own docs page.
+- 75231f0: `kadal-deck screenshot --slide` counts from 1, as `export --range` and the deck's own slide counter do, and takes ranges (`--slide 2-4`) and ids. Files are named from 1 too (`slide-001.png` is the first slide) and `--json` reports the same numbers. `--slide 0` is still read as the first slide, with a note. Both commands' help says how they count.
+- 75231f0: A relative import inside a slide (`import data from "./data.ts"` in deck.mdx) resolves from the file the slide is written in: deck.mdx, or the file a `src:` include brings in. It used to fail the build with `UNRESOLVED_IMPORT`, because a slide is compiled as a virtual module with no folder of its own.
+- ece124f: The starter deck says to press S for the presenter view (P goes back a slide), and its README lists what each file is for and how to ship the deck.
+- 75231f0: `npm run typecheck` passes in a new deck. The starter's `vite.config.ts` read `process.env`, which needs `@types/node`, and a fresh scaffold does not have it; it now reads the environment through Vite's `loadEnv(mode, false, "")`.
+- 6c20c1b: Transition, navigation and room fixes, found by stepping the tour's transitions frame by frame.
+
+  - **Stepping back a click no longer replays the slide's entrance.** The stage's direction followed every click, the arriving slide's animation is keyed on it, and a changed animation restarts, so a click back made the whole slide slide in again (and so did the first click forward after arriving backward). The slide's direction now changes only when the slide does; the background layer follows the same rule.
+  - **Up a stack, a slide no longer flashes all its steps.** The slide above waits pre-rendered at its last step; `up` lands on its first, and the steps used to fade out under the transition. A slide now takes the step it arrived at at once.
+  - **`view-transition` leaves nothing behind.** The slide that left stayed visible under the new one for the length of a transition (and played its own fade afterwards); now it's gone at once, as with `none`.
+  - **Backgrounds follow the slide.** A slide that cuts in (`transition: none`) or uses `view-transition` changes its background with it instead of cross-fading under it; `backgroundTransition: zoom` zooms (it used to slide sideways); a slide's `transitionSpeed` applies to its background; and a sliding background moves up and down a stack instead of sideways.
+  - **`clicksStart` works.** A slide with `clicksStart: 1` opens at step 1, stepping back stops there, and print, export and the scroll view start from it. Before, the slide opened at 0 and its first step showed nothing.
+  - **`<Toc mode="onlySiblings">`** lists the current slide's own branch: its ancestors, their siblings and its children. It used to list every entry at its level across the whole deck. Depth limits now apply after the tree is worked out, so `minDepth={2}` with `onlySiblings` lists the slides of the current chapter.
+  - **A presenter view forgotten in a background tab stops presenting.** After 15 minutes hidden, with no session running and no phone remote paired, it reconnects to the room as a viewer, so viewers stop being offered to follow it and new viewers no longer land on its slide. It becomes the presenter again the moment it's shown, or when a phone pairs or a session starts.
+  - **/stats and /export no longer join the room**, and only the deck itself and /join count as views: a visit to the stats used to count as a view of the deck.
+  - **A link to a slide's id with a step (`#/slide-id/3`) lands on that step.** The deck writes such links itself (`fragmentInURL`, ids), but reading one dropped the step.
+  - The `blur` click effect is in the catalog and the `ClickEffect` type (it was in the stylesheet only).
+
+- 75231f0: A video background loops by default, as documented (`background: /clip.mp4`). `{ video, loop: false }` or `backgroundVideoLoop: false` plays it once.
+- Updated dependencies [75231f0]
+- Updated dependencies [ece124f]
+  - @kadal/prettier-plugin@0.4.3
+
 ## 0.4.2
 
 ### Patch Changes

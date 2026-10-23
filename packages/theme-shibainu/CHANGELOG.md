@@ -1,5 +1,27 @@
 # @kadal/theme-shibainu
 
+## 0.4.3
+
+### Patch Changes
+
+- ece124f: Refresh READMEs and package metadata: each package page says what the package is, how to install and use it, and links its docs; theme pages show the theme; the author is now Kadal (hello@kadal.cc), with homepages pointing at each package's own docs page.
+- Updated dependencies [75231f0]
+- Updated dependencies [75231f0]
+- Updated dependencies [75231f0]
+- Updated dependencies [75231f0]
+- Updated dependencies [75231f0]
+- Updated dependencies [75231f0]
+- Updated dependencies [75231f0]
+- Updated dependencies [3baec91]
+- Updated dependencies [ece124f]
+- Updated dependencies [75231f0]
+- Updated dependencies [75231f0]
+- Updated dependencies [ece124f]
+- Updated dependencies [75231f0]
+- Updated dependencies [6c20c1b]
+- Updated dependencies [75231f0]
+  - @kadal/deck@0.4.3
+
 ## 0.4.2
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @kadal/prettier-plugin
 
+## 0.4.3
+
+### Patch Changes
+
+- 75231f0: A Comark block's YAML props (`---` lines straight after `::card`) no longer cut the slide in two. The splitter, and the Prettier plugin's copy of it, skip `---` inside a Comark block that is closed; a block left open still ends at the next separator.
+- ece124f: Refresh READMEs and package metadata: each package page says what the package is, how to install and use it, and links its docs; theme pages show the theme; the author is now Kadal (hello@kadal.cc), with homepages pointing at each package's own docs page.
+
 ## 0.4.2
 
 No changes in this release.

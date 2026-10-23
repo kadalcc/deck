@@ -1,5 +1,13 @@
 # @kadal/create-deck
 
+## 0.4.3
+
+### Patch Changes
+
+- ece124f: Refresh READMEs and package metadata: each package page says what the package is, how to install and use it, and links its docs; theme pages show the theme; the author is now Kadal (hello@kadal.cc), with homepages pointing at each package's own docs page.
+- ece124f: The starter deck says to press S for the presenter view (P goes back a slide), and its README lists what each file is for and how to ship the deck.
+- 75231f0: `npm run typecheck` passes in a new deck. The starter's `vite.config.ts` read `process.env`, which needs `@types/node`, and a fresh scaffold does not have it; it now reads the environment through Vite's `loadEnv(mode, false, "")`.
+
 ## 0.4.2
 
 No changes in this release.
