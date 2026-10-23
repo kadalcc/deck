@@ -101,11 +101,13 @@ jobs:
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           USE_ENTRA: ${{ vars.AZURE_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' }}
+        # The vsce the extension already depends on (the same one that packaged it): `npx` at the repo
+        # root answered "vsce: not found", since this workspace installs it under packages/vscode.
         run: |
           if [ "$USE_ENTRA" = "true" ]; then
-            npx -y @vscode/vsce@4.0.0 publish --packagePath "$RUNNER_TEMP/kadal-deck.vsix" --azure-credential --skip-duplicate
+            bun run --cwd packages/vscode vsce publish --packagePath "$RUNNER_TEMP/kadal-deck.vsix" --azure-credential --skip-duplicate
           elif [ -n "$VSCE_PAT" ]; then
-            npx -y @vscode/vsce@4.0.0 publish --packagePath "$RUNNER_TEMP/kadal-deck.vsix" --skip-duplicate
+            bun run --cwd packages/vscode vsce publish --packagePath "$RUNNER_TEMP/kadal-deck.vsix" --skip-duplicate
           else
             echo "::notice::Marketplace skipped: set AZURE_CLIENT_ID + AZURE_TENANT_ID (Entra ID) or the VSCE_PAT secret."
           fi
