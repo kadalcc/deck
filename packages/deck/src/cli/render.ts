@@ -279,6 +279,18 @@ export class SlideRenderer {
       url.searchParams.set("print-pdf", "");
       await page.goto(url.toString(), { waitUntil: "load", timeout: 120_000 });
       await page.waitForSelector(".deck-print-pages[data-ready]", { timeout: 120_000 });
+      // On screen the print view spaces its pages 16px apart, centred, with a shadow. At the
+      // picture's scale (1280/1920 by default) 16px is 10.67 device pixels, so every page started
+      // mid-pixel and its last column and row were half shadow: a grey edge on every picture.
+      // Butted together at the left edge, page n starts at 1080n, a whole pixel at any width that
+      // is a multiple of 16.
+      await page.evaluate(() => {
+        const style = document.createElement("style");
+        style.textContent =
+          ".deck-print-pages{margin:0!important;padding:0!important}" +
+          ".deck-print-page{margin:0!important;box-shadow:none!important}";
+        document.head.append(style);
+      });
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
       await page.waitForTimeout(400);
       const info = await page.evaluate(() =>

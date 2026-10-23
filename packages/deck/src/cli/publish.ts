@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, extname, join, relative, sep } from "node:path";
 
-import { HostError, request } from "./host.ts";
+import { DEFAULT_HOST, HostError, request } from "./host.ts";
 
 /**
  * `kadal-deck publish`, the host's five steps:
@@ -126,14 +126,29 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     done = (await commit()).data;
   }
   return {
-    deck,
+    deck: { ...deck, url: publicUrl(o.host, deck.url || deck.base) },
     version: created.version,
-    url: done.url,
+    url: publicUrl(o.host, done.url || deck.base),
     files: files.length,
     uploaded: created.missing.length,
     bytes,
     uploadedBytes,
   };
+}
+
+/** Where decks live when the default host answers with only a path. */
+export const DEFAULT_DECKS_URL = "https://decks.kadal.cc";
+
+/**
+ * The deck's address as a person can open it. A host whose decks origin is unset answers with a
+ * bare path (`/@ana/talk/`), which printed on its own is no use to anyone: the path is resolved
+ * against the decks origin for the default host, and against the host's own origin otherwise
+ * (where a self-hosted host without a separate decks origin serves them).
+ */
+export function publicUrl(host: string, url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  const origin = host === DEFAULT_HOST ? DEFAULT_DECKS_URL : new URL(host).origin;
+  return new URL(url, `${origin}/`).toString();
 }
 
 function missingOf(body: unknown): string[] {
