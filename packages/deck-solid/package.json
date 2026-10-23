@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-solid",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "The Solid renderer for Kadal Deck (@kadal/deck): Solid components as islands on a slide.",
   "keywords": [
     "kadal-deck",
@@ -61,7 +61,7 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.4.6",
+    "@kadal/deck": "^0.4.7",
     "solid-js": "^1.9.0"
   }
 }
