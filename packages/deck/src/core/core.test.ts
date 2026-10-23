@@ -248,6 +248,35 @@ describe("click registry under StrictMode", () => {
   });
 });
 
+describe("click registry when a spec changes", () => {
+  test("a block whose steps arrive late takes them, and the elements after it move along", async () => {
+    const r = createClickRegistry(0);
+    const seen: number[] = [];
+    r.onChange((t) => seen.push(t));
+    // First render: the magic-move data has not loaded, so the block reserves nothing.
+    const block = r.allocate("block", { at: 0 });
+    const after = r.allocate("after", {});
+    expect([block.start, block.last, after.start, r.total()]).toEqual([0, 0, 1, 1]);
+    await Promise.resolve();
+    // The data lands: three steps. Same objects, laid out again in document order.
+    expect(r.allocate("block", { span: 3 })).toBe(block);
+    expect([block.start, block.last, after.start, r.total()]).toEqual([1, 3, 4, 4]);
+    // The other element re-reading its unchanged spec keeps the new layout.
+    expect(r.allocate("after", {})).toBe(after);
+    expect(after.start).toBe(4);
+    await Promise.resolve();
+    expect(seen.at(-1)).toBe(4);
+  });
+
+  test("an equal spec (a new object with the same values) changes nothing", () => {
+    const r = createClickRegistry(0);
+    const a = r.allocate("a", { at: [2, 4] });
+    r.allocate("b", {});
+    expect(r.allocate("a", { at: [2, 4] })).toBe(a);
+    expect([a.start, a.end, r.total()]).toEqual([2, 4, 5]);
+  });
+});
+
 describe("autoSlideDelay", () => {
   test("a slide's own interval wins, and 0 there means it waits", () => {
     expect(autoSlideDelay(3000, 8000, true)).toBe(3000);

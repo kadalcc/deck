@@ -48,6 +48,7 @@ export interface ClickRegistry {
 
 export function createClickRegistry(base = 0): ClickRegistry {
   const ranges = new Map<string, ClickRange>();
+  const specs = new Map<string, ClickSpec>();
   const active = new Set<string>();
   const listeners = new Set<(total: number) => void>();
   let cursor = base;
@@ -66,6 +67,27 @@ export function createClickRegistry(base = 0): ClickRegistry {
     for (const l of listeners) l(t);
   };
 
+  // Resolve a spec against the cursor (the last step taken so far) into `target`; moves the cursor on.
+  const place = (spec: ClickSpec, target: ClickRange) => {
+    let start: number;
+    let end = Number.POSITIVE_INFINITY;
+    const at = spec.at;
+    if (Array.isArray(at)) {
+      start = at[0];
+      end = at[1];
+    } else if (typeof at === "number") start = at;
+    else if (typeof at === "string" && /^[+-]\d+$/.test(at)) start = cursor + Number(at);
+    else if (typeof at === "string" && /^\d+$/.test(at)) start = Number(at);
+    else start = cursor + 1;
+    const span = Math.max(1, spec.span ?? 1);
+    target.start = start;
+    target.end = end;
+    target.hide = !!spec.hide;
+    target.last = Number.isFinite(end) ? end : start + span - 1;
+    cursor = Math.max(cursor, target.last);
+    return target;
+  };
+
   return {
     allocate(id, spec) {
       const existing = ranges.get(id);
@@ -75,24 +97,21 @@ export function createClickRegistry(base = 0): ClickRegistry {
           active.add(id);
           queueMicrotask(notify);
         }
+        if (sameSpec(specs.get(id)!, spec)) return existing;
+        // The element asks for something else now: a magic-move block whose steps arrived after
+        // its first render. Lay every element out again in document order (the order they first
+        // registered in), so the ones after it move along rather than overlap it. The ranges are
+        // updated in place: their elements hold them and read them on their next render.
+        specs.set(id, { ...spec });
+        cursor = base;
+        for (const [other, range] of ranges) place(specs.get(other)!, range);
+        queueMicrotask(notify);
         return existing;
       }
-      let start: number;
-      let end = Number.POSITIVE_INFINITY;
-      const at = spec.at;
-      if (Array.isArray(at)) {
-        start = at[0];
-        end = at[1];
-      } else if (typeof at === "number") start = at;
-      else if (typeof at === "string" && /^[+-]\d+$/.test(at)) start = cursor + Number(at);
-      else if (typeof at === "string" && /^\d+$/.test(at)) start = Number(at);
-      else start = cursor + 1;
-      const span = Math.max(1, spec.span ?? 1);
-      const last = Number.isFinite(end) ? end : start + span - 1;
-      const range: ClickRange = { start, end, hide: !!spec.hide, last };
+      const range = place(spec, { start: 0, end: 0, hide: false, last: 0 });
       ranges.set(id, range);
+      specs.set(id, { ...spec });
       active.add(id);
-      cursor = Math.max(cursor, last);
       queueMicrotask(notify);
       return range;
     },
@@ -108,6 +127,13 @@ export function createClickRegistry(base = 0): ClickRegistry {
       };
     },
   };
+}
+
+const sameAt = (a: ClickAt, b: ClickAt) =>
+  Array.isArray(a) && Array.isArray(b) ? a[0] === b[0] && a[1] === b[1] : a === b;
+
+function sameSpec(a: ClickSpec, b: ClickSpec): boolean {
+  return sameAt(a.at, b.at) && !!a.hide === !!b.hide && (a.span ?? 1) === (b.span ?? 1);
 }
 
 /** Is an element with this range shown at the current click? */

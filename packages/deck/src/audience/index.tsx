@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import * as N from "../core/navigation.ts";
 import { key as navKey } from "../core/navigation.ts";
 import { readItem, writeItem } from "../core/storage.ts";
+import { AUDIENCE_TABS, type AudienceTab, audienceMemory } from "./memory.ts";
 import { createSwipeTracker } from "../core/touch.ts";
 import { createStore, useStore } from "../core/store.ts";
 import { copyText, shareLink } from "../live/analytics.tsx";
@@ -42,8 +43,9 @@ export function AudiencePage() {
   const status = useRoomStatus();
   const room = useStore(live?.client.state ?? noRoom);
   const [name, setName] = useState(nickname());
-  const [tab, setTab] = useState<"follow" | "ask" | "polls" | "notes" | "mine">("follow");
-  const [question, setQuestion] = useState("");
+  const memory = useMemo(() => audienceMemory(deck.config.slug), [deck.config.slug]);
+  const [tab, setTab] = useState<AudienceTab>(() => memory.read().tab);
+  const [question, setQuestion] = useState(() => memory.read().draft);
   const [pace, setPace] = useState<-1 | 0 | 1>(0);
   const [hand, setHand] = useState(false);
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
@@ -66,6 +68,7 @@ export function AudiencePage() {
   useEffect(() => {
     writeItem(`deck.bookmarks.${deck.config.slug}`, JSON.stringify(bookmarks));
   }, [bookmarks, deck.config.slug]);
+  useEffect(() => memory.write(tab, question), [memory, tab, question]);
   useEffect(() => {
     if (!live) return;
     return live.client.on((m) => {
@@ -289,7 +292,7 @@ export function AudiencePage() {
       </section>
 
       <nav className="deck-audience-tabs">
-        {(["follow", "ask", "polls", "notes", "mine"] as const).map((t) => (
+        {AUDIENCE_TABS.map((t) => (
           <button
             key={t}
             type="button"

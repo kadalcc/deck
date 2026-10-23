@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 import { HostError, loadCredentials, saveCredentials } from "./host.ts";
 import { login } from "./login.ts";
-import { manifestOf, publish, slugFrom, titleFrom } from "./publish.ts";
+import { manifestOf, publicUrl, publish, slugFrom, titleFrom } from "./publish.ts";
 
 /** A fake host speaking the /api/v1 contract, keeping just enough state to check the client. */
 const TOKEN = "kd_test";
@@ -114,6 +114,17 @@ describe("kadal-deck publish", () => {
     const denied = await publish({ host, token: "nope", workspace: "ana", slug: "x", outDir: join(dir, "b4"), build }).catch((e) => e);
     expect((denied as HostError).status).toBe(401);
     expect((denied as HostError).message).toContain("kadal-deck login");
+  });
+});
+
+describe("the published URL", () => {
+  test("a bare path from the host prints as a full address", () => {
+    // deck.kadal.cc with its decks origin unset answered "/@ana/talk/", and that was all it printed.
+    expect(publicUrl("https://deck.kadal.cc", "/@ana/talk/")).toBe("https://decks.kadal.cc/@ana/talk/");
+    expect(publicUrl("http://localhost:8787", "/@ana/talk/")).toBe("http://localhost:8787/@ana/talk/");
+    expect(publicUrl("https://decks.example.org/api", "@ana/talk/")).toBe("https://decks.example.org/@ana/talk/");
+    // The host's own full answer always wins.
+    expect(publicUrl("https://deck.kadal.cc", "https://decks.kadal.cc/@ana/talk/")).toBe("https://decks.kadal.cc/@ana/talk/");
   });
 });
 
