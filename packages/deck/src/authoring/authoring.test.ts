@@ -421,6 +421,41 @@ describe("lint", () => {
   });
 });
 
+describe("check knows the deck's own code runners", () => {
+  const runnerInfo = async (lang: string, extensions: ReturnType<typeof readExtensions>) =>
+    (
+      await lintDeck({
+        files: files(
+          { "/d/deck.mdx": `# A\n\n\`\`\`${lang} {monaco-run}\nx\n\`\`\`\n` },
+          "/d/deck.mdx",
+        ),
+        root: "/d",
+        extensions,
+      })
+    ).diagnostics.filter((d) => d.code === "code-runner").length;
+
+  test("built-ins, setup/code-runners.ts keys and registerCodeRunner calls all count", async () => {
+    const none = readExtensions(null);
+    expect(await runnerInfo("TS", none)).toBe(0);
+    expect(await runnerInfo("sql", none)).toBe(1);
+    const setup = readExtensions(
+      null,
+      ['registerCodeRunner(["sh", "bash"], run);'],
+      'import { defineCodeRunners } from "@kadal/deck";\nexport default defineCodeRunners({\n  // a comment\n  async sql(code) { return { text: code }; },\n  "c++": (code) => ({ text: code }),\n  ruby: run,\n});\n',
+    );
+    expect(setup.runners).toEqual(["sh", "bash", "sql", "c++", "ruby"]);
+    for (const lang of ["sql", "c++", "ruby", "bash", "sh"])
+      expect(await runnerInfo(lang, setup)).toBe(0);
+    expect(await runnerInfo("go", setup)).toBe(1);
+  });
+
+  test("a setup file that builds its map in a function silences the note", async () => {
+    const fn = readExtensions(null, [], "export default defineCodeRunners(async () => load());\n");
+    expect(fn.runnersOpen).toBe(true);
+    expect(await runnerInfo("go", fn)).toBe(0);
+  });
+});
+
 describe("review regressions (PR #6)", () => {
   const THREE = "# A\n\n---\n\n## B\n\n---\n\n## C\n";
 

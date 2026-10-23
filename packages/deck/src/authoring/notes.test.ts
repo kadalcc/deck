@@ -149,3 +149,23 @@ describe("lint knows the timer keys", () => {
     expect((await lint("timer: sometimes")).map((d) => d.code)).toContain("frontmatter-type");
   });
 });
+
+describe("lint reads the headmatter as the deck's settings", () => {
+  const lint = async (head: string, body = "# A\n") => {
+    const { lintDeck } = await import("./index.ts");
+    return (await lintDeck({ files: files(`---\n${head}\n---\n\n${body}`) })).diagnostics;
+  };
+  test("a narration object and zoom: true pass in the headmatter", async () => {
+    expect(await lint("narration:\n  engine: browser\n  rate: 1.1\n  gap: 600")).toEqual([]);
+    expect(await lint("narration: true\nzoom: true")).toEqual([]);
+  });
+  test("a wrong narration type in the headmatter is still an error", async () => {
+    expect((await lint("narration:\n  rate: fast")).map((d) => d.code)).toContain("frontmatter-type");
+  });
+  test("a later slide still takes only the slide setting", async () => {
+    const codes = (await lint("title: T", "# A\n\n---\nnarration:\n  rate: 1\n---\n\n# B\n")).map(
+      (d) => d.code,
+    );
+    expect(codes).toContain("frontmatter-type");
+  });
+});

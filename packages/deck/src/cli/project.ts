@@ -231,7 +231,12 @@ export async function checkProject(
   const others = sourcesUnder(join(project.dir, "src"))
     .filter((f) => f !== componentsFile)
     .map((f) => project.files.read(f) ?? "");
-  const extensions = readExtensions(project.files.read(componentsFile), others);
+  // setup/code-runners.* as the Vite plugin finds it (vite/monaco.ts setupFile).
+  const runnersSource =
+    ["ts", "mts", "js", "mjs", "tsx", "jsx"]
+      .map((e) => project.files.read(join(project.dir, "setup", `code-runners.${e}`)))
+      .find((t) => t != null) ?? null;
+  const extensions = readExtensions(project.files.read(componentsFile), others, runnersSource);
   // Theme and addon packages: their layouts and components are the deck's too, and a theme that
   // resolves is one the deck ships (its CSS comes in through the Vite plugin).
   const pk = await packageExtensions(project);

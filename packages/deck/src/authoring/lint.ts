@@ -13,6 +13,7 @@ import {
 } from "../compiler/split.ts";
 import { extractRegion, parseSnippetLine } from "../compiler/snippets.ts";
 import { comarkEnabled } from "../compiler/setup.ts";
+import { BUILTIN_RUNNER_LANGS, runnerLang } from "../monaco/runner-langs.ts";
 import { resolveBackground, splitTransition } from "../core/model.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
@@ -80,6 +81,10 @@ export interface DeckExtensions {
   transitions?: string[];
   /** True when the components map could not be read completely (a spread, a computed key). */
   open: boolean;
+  /** `{monaco-run}` languages the deck registers: registerCodeRunner calls, setup/code-runners.ts. */
+  runners?: string[];
+  /** True when setup/code-runners.ts builds its map in a way that cannot be read without running it. */
+  runnersOpen?: boolean;
 }
 
 export interface LintOptions {
@@ -180,7 +185,6 @@ function esmNames(code: string): string[] {
 }
 
 const TWOSLASH_LANGS = new Set(["ts", "tsx", "js", "jsx", "typescript", "javascript", "mts", "cts"]);
-const RUNNABLE = new Set(["js", "javascript", "mjs", "cjs", "ts", "typescript", "mts", "cts", "py", "python", "python3"]);
 
 /**
  * The slide's lines as MDX will see them: `<<<` imports and `::code-group` markers are the
@@ -224,6 +228,9 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
   const root = options.root ?? dirOf(files.entry);
   const exists = options.exists ?? ((p: string) => files.read(p) !== null);
   const ext = options.extensions ?? { components: [], layouts: [], backgrounds: [], open: false };
+  // Built in, registered by the deck (registerCodeRunner, setup/code-runners.ts), or unknowable.
+  const runners = new Set([...BUILTIN_RUNNER_LANGS, ...(ext.runners ?? []).map(runnerLang)]);
+  const runnable = (lang: string) => ext.runnersOpen === true || runners.has(runnerLang(lang));
   const diagnostics: Diagnostic[] = [];
   const add = (d: Diagnostic) => diagnostics.push(d);
   /** Iconify sets already reported as not installed (once per run each). */
@@ -282,7 +289,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         code: "code-twoslash",
         message: `\`twoslash\` works on TypeScript and JavaScript blocks; this \`${lang || "text"}\` block renders without it.`,
       });
-    if (parsed.monaco === "run" && !RUNNABLE.has(lang.toLowerCase()))
+    if (parsed.monaco === "run" && !runnable(lang))
       add({
         ...at,
         severity: "info",
@@ -377,7 +384,11 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
     for (const [key, value] of Object.entries(s.frontmatter)) {
       const sk = slideKeys.get(key);
       const dk = deckKeys.get(key);
-      const def = sk ?? dk;
+      // The headmatter configures the deck and the first slide: a key both take (narration, zoom,
+      // transition) is the deck setting there, as $defs.headmatter in the schema has it, and a
+      // value either reading accepts is fine (`narration: { rate: 1.1 }`, a custom transition).
+      const def = head ? (dk ?? sk) : (sk ?? dk);
+      const also = head && dk && sk ? sk : null;
       // A layout of the deck's own is read from frontmatter by its author's code: its keys are
       // the layout's business, not unknown.
       const ownLayout = typeof s.frontmatter.layout === "string" && ext.layouts.includes(s.frontmatter.layout);
@@ -411,7 +422,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
           hint: "Change it in deck.config.ts, or remove it there to let the headmatter decide.",
         });
       const why = checkValue(def.type, value);
-      if (why)
+      if (why && !(also && !checkValue(also.type, value)))
         add({ ...at, severity: "error", code: "frontmatter-type", message: `"${key}": ${why}.` });
     }
     // `duration: 30min` is a string the schema cannot check: read it as the timer does.
@@ -887,6 +898,7 @@ export function formatDiagnostics(
 export function readExtensions(
   componentsSource: string | null,
   otherSources: string[] = [],
+  codeRunnersSource: string | null = null,
 ): DeckExtensions {
   const out: DeckExtensions = { components: [], layouts: [], backgrounds: [], open: false };
   if (componentsSource) {
@@ -895,26 +907,9 @@ export function readExtensions(
       out.components.push(m[1]!);
     const obj = /export\s+const\s+components\b[^=]*=\s*\{/.exec(src);
     if (obj) {
-      let depth = 0;
-      let i = obj.index + obj[0].length - 1;
-      const start = i + 1;
-      for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}" && --depth === 0) break;
-      }
-      // Comments out: a comment line above a key became part of that key's text and hid it.
-      const body = src
-        .slice(start, i)
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/^\s*\/\/[^\n]*$/gm, "");
-      // Top-level keys only: strip nested braces/brackets/parens first.
-      let flat = body;
-      for (let k = 0; k < 6; k++) flat = flat.replace(/\{[^{}]*\}|\[[^[\]]*\]|\([^()]*\)/g, "");
-      if (/\.\.\./.test(flat) || /\[[^\]]*\]\s*:/.test(body)) out.open = true;
-      for (const part of flat.split(",")) {
-        const key = /^\s*(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$]*))\s*(?::|$)/.exec(part);
-        const name = key?.[1] ?? key?.[2] ?? key?.[3];
-        if (!name) continue;
+      const keys = objectKeys(src, obj.index + obj[0].length - 1);
+      if (keys.open) out.open = true;
+      for (const name of keys.names) {
         if (name.startsWith("layout:")) out.layouts.push(name.slice("layout:".length));
         else out.components.push(name);
       }
@@ -925,6 +920,50 @@ export function readExtensions(
       out.backgrounds.push(m[1]!);
     for (const m of s.matchAll(/registerTransition\(\s*["']([^"']+)["']/g))
       (out.transitions ??= []).push(m[1]!);
+    // registerCodeRunner("sql", …) or registerCodeRunner(["sh", "bash"], …)
+    for (const m of s.matchAll(/registerCodeRunner\(\s*(\[[^\]]*\]|["'][^"']+["'])/g))
+      for (const l of m[1]!.matchAll(/["']([^"']+)["']/g)) (out.runners ??= []).push(l[1]!);
+  }
+  // setup/code-runners.ts: `export default defineCodeRunners({ sql(code) { … } })`, or a plain
+  // object. A function that returns the map is only known by running it.
+  if (codeRunnersSource) {
+    const src = codeRunnersSource;
+    const at = /export\s+default\s+(?:defineCodeRunners\(\s*)?/.exec(src);
+    const brace = at ? at.index + at[0].length : -1;
+    if (brace >= 0 && src[brace] === "{") {
+      const keys = objectKeys(src, brace);
+      (out.runners ??= []).push(...keys.names);
+      if (keys.open) out.runnersOpen = true;
+    } else out.runnersOpen = true;
   }
   return out;
+}
+
+/**
+ * The top-level keys of the object literal whose `{` is at `src[open]`, and whether some cannot be
+ * read (a spread, a computed key).
+ */
+function objectKeys(src: string, open: number): { names: string[]; open: boolean } {
+  let depth = 0;
+  let i = open;
+  for (; i < src.length; i++) {
+    if (src[i] === "{") depth++;
+    else if (src[i] === "}" && --depth === 0) break;
+  }
+  // Comments out: a comment line above a key became part of that key's text and hid it.
+  const body = src
+    .slice(open + 1, i)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/[^\n]*$/gm, "");
+  // Top-level keys only: strip nested braces/brackets/parens first.
+  let flat = body;
+  for (let k = 0; k < 6; k++) flat = flat.replace(/\{[^{}]*\}|\[[^[\]]*\]|\([^()]*\)/g, "");
+  const names: string[] = [];
+  for (const part of flat.split(",")) {
+    // `sql(code) {…}` and `async sql(…) {…}` lose their parens and body above: `sql`, `async sql`.
+    const key = /^\s*(?:async\s+)?(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$]*))\s*(?::|$)/.exec(part);
+    const name = key?.[1] ?? key?.[2] ?? key?.[3];
+    if (name) names.push(name);
+  }
+  return { names, open: /\.\.\./.test(flat) || /\[[^\]]*\]\s*:/.test(body) };
 }
