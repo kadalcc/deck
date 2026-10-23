@@ -603,8 +603,7 @@
   background: #dc2626;
   border-color: #dc2626;
 }
-/* The three columns share the width 1.6 : 1 : 0.9 (notes-left swaps the first two; next-big is
-   1 : 1.3 : 0.9). The notes/next pane is sized in pixels from that share rather than as a
+/* The three columns share the width 1.6 : 1 : 0.9 (notes-left swaps the first two). The notes/next pane is sized in pixels from that share rather than as a
    fraction, so when the room collapses to its rail the pane keeps its width and the slide alone
    takes the room. */
 .deck-presenter-main {
@@ -625,13 +624,6 @@
   grid-template-areas:
     "notes current room"
     "next current room";
-}
-.deck-presenter.layout-next-big .deck-presenter-main {
-  --pane: calc((100vw - 48px) * 1.3 / 3.2);
-  grid-template-columns: 1fr var(--pane) 0.9fr;
-  grid-template-areas:
-    "current next room"
-    "notes next room";
 }
 .deck-presenter-current {
   grid-area: current;
@@ -2042,9 +2034,6 @@
 }
 .deck-presenter.room-collapsed.layout-notes-left .deck-presenter-main {
   grid-template-columns: var(--pane) 1fr 52px;
-}
-.deck-presenter.room-collapsed.layout-next-big .deck-presenter-main {
-  grid-template-columns: 1fr var(--pane) 52px;
 }
 .deck-presenter.room-collapsed .deck-presenter-room {
   overflow: visible;

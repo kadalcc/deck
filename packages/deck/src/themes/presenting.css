@@ -335,14 +335,15 @@
 .deck-timer.is-overtime .deck-timer-progress i {
   background: #ef4444;
 }
+/* This slide's slot in the plan (react/pacing.ts `plannedSlot`): a band with a cap at each end. */
 .deck-timer-progress b {
   position: absolute;
   top: -3px;
-  width: 2px;
+  min-width: 2px;
   height: 9px;
-  margin-left: -1px;
-  background: var(--deck-fg);
-  opacity: 0.6;
+  box-sizing: border-box;
+  border-inline: 2px solid color-mix(in oklab, var(--deck-fg) 60%, transparent);
+  background: color-mix(in oklab, var(--deck-fg) 18%, transparent);
 }
 /* The schedule beside the audience's pace votes (presenter/Sidebar.tsx). */
 .deck-side-schedule {

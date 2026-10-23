@@ -663,8 +663,8 @@ await step("presenter: current, next, notes for the click, timer, L", async () =
     const before = await nav(page);
     for (const [vw, vh] of [[1280, 720], [1440, 900], [1920, 1080]]) {
       await page.setViewportSize({ width: vw, height: vh });
-      for (const layout of ["notes-right", "notes-left", "next-big"]) {
-        for (let i = 0; i < 3 && (await page.locator(`.deck-presenter.layout-${layout}`).count()) === 0; i++)
+      for (const layout of ["notes-right", "notes-left"]) {
+        for (let i = 0; i < 2 && (await page.locator(`.deck-presenter.layout-${layout}`).count()) === 0; i++)
           await page.keyboard.press("l");
         expect((await page.locator(`.deck-presenter.layout-${layout}`).count()) === 1, `L never reached ${layout}`);
         await page.waitForTimeout(700);
@@ -685,7 +685,7 @@ await step("presenter: current, next, notes for the click, timer, L", async () =
     expect(after.h === before.h && after.click === before.click, `L moved the deck (${before.h}/${before.click} → ${after.h}/${after.click})`);
     expect((await page.evaluate(() => String(getSelection()))) === "", "text is selected on the presenter page");
     await page.setViewportSize({ width: 1440, height: 900 });
-    for (let i = 0; i < 3 && (await page.locator(".deck-presenter.layout-notes-right").count()) === 0; i++) await page.keyboard.press("l");
+    for (let i = 0; i < 2 && (await page.locator(".deck-presenter.layout-notes-right").count()) === 0; i++) await page.keyboard.press("l");
     await page.waitForTimeout(700);
     await page.screenshot({ path: join(out, `presenter-${scheme}.png`) });
     for (const p of take()) expect(false, `${scheme}: ${p}`);

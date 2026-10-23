@@ -65,6 +65,25 @@ export function expectedElapsed(
   return sum;
 }
 
+/**
+ * This slide's slot in the plan, in seconds from the start: when the talk should reach it and when
+ * it should leave it. The first slide's slot starts at 0 and the last one's ends at the plan's end,
+ * so a mark drawn from it spans the whole bar between them. Null without a plan.
+ */
+export function plannedSlot(
+  deck: Pick<DeckRuntime, "columns" | "options" | "config">,
+  at: { h: number; v: number },
+): { start: number; end: number } | null {
+  const start = expectedElapsed(deck, at);
+  if (start === null) return null;
+  const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
+  const length = deck.config.totalTime ?? deck.config.duration;
+  const own = length
+    ? length / total
+    : (deck.options.get(navKey(at.h, at.v))?.timing ?? deck.config.defaultTiming ?? 0);
+  return { start, end: start + own };
+}
+
 /** Ahead, on time or behind, with the 30-second grace the presenter's timer has always given. */
 export function paceTone(pace: number | null): "" | "is-behind" | "is-ahead" | "is-ok" {
   return pace === null ? "" : pace > 30 ? "is-behind" : pace < -30 ? "is-ahead" : "is-ok";

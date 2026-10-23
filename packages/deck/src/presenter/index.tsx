@@ -47,15 +47,16 @@ const Narration = lazy(() => import("../narrate/Narration.tsx"));
  * windows stay in step over the window bus (core/windows.ts), and the room follows the presenter.
  *
  * Layouts (the switch in the bar, or L): notes-left (the default: notes over the next slide, the
- * current slide beside them), notes-right, next-big. Each window keeps the one it was left on.
+ * current slide beside them) and notes-right. Each window keeps the one it was left on. A third,
+ * next-big, gave the next slide most of the screen and squeezed the current one into a short,
+ * pillarboxed strip; it went, and a window that had it saved opens notes-left.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-type PresenterLayout = "notes-left" | "notes-right" | "next-big";
+type PresenterLayout = "notes-left" | "notes-right";
 
 const LAYOUTS: { id: PresenterLayout; icon: string; label: string }[] = [
   { id: "notes-left", icon: "panel-left", label: "Notes and next on the left" },
   { id: "notes-right", icon: "panel-right", label: "Notes and next on the right" },
-  { id: "next-big", icon: "layout-panel-top", label: "A big next slide" },
 ];
 
 function savedLayout(): PresenterLayout {
@@ -491,7 +492,7 @@ export function NotesPanel() {
   );
 }
 
-/** The three layouts as one segmented switch in the bar; L steps through them too. */
+/** The layouts as one segmented switch in the bar; L flips between them too. */
 function LayoutSwitch({
   layout,
   setLayout,

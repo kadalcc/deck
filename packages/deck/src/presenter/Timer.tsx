@@ -26,6 +26,7 @@ import { type DeckRuntime, useDeck } from "../react/context.ts";
 import { useNav } from "../react/hooks.ts";
 import {
   expectedElapsed,
+  plannedSlot,
   formatPace,
   paceTone,
   plannedLength,
@@ -41,8 +42,8 @@ import {
  * The state machine is core/timer.ts; this is its face in the presenter's top bar:
  *
  *   ⏸ 00:12:34  +2m  ↺  ⌄         the time (click: pause / resume), the pacing badge, reset,
- *   ▬▬▬▬▬▬▬▬▬▬▬▬▬|▬▬▬▬            and the settings; along the bar's bottom edge, the progress
- *                                   through the talk with a tick where this slide should be
+ *   ▬▬▬▬▬▬▬▬▬▬▬▬▬[▬]▬▬▬           and the settings; along the bar's bottom edge, the progress
+ *                                   through the talk with this slide's slot in the plan marked
  *
  * `timer: countdown` and `duration: 30min` in the headmatter choose the mode and the length; the
  * settings popover changes both for this talk. The talk's length is otherwise its plan
@@ -162,6 +163,7 @@ export function PresenterTimer() {
   const [menu, setMenu] = useState(false);
   const r = readTimer(timer, now);
   const expected = expectedElapsed(deck, nav);
+  const slot = plannedSlot(deck, nav);
   const pace = expected === null ? null : r.elapsed - expected;
   const length = timer.mode === "countdown" ? countdownFrom(timer) : timer.duration;
   const countdown = timer.mode === "countdown";
@@ -243,9 +245,16 @@ export function PresenterTimer() {
           aria-valuenow={Math.round(Math.min(1, r.progress ?? 0) * 100)}
         >
           <i style={{ width: `${Math.min(100, (r.progress ?? 0) * 100)}%` }} />
-          {expected !== null && length ? (
-            // Where the talk should be by now, by the plan for this slide.
-            <b style={{ left: `${Math.min(100, (expected / length) * 100)}%` }} />
+          {slot && length ? (
+            // This slide's slot in the plan: from when the talk should reach it to when it should
+            // leave it. A tick at the slot's start sat a whole slide short of the end on the last
+            // slide, while the first slide's sat exactly on the start.
+            <b
+              style={{
+                left: `${Math.min(100, (slot.start / length) * 100)}%`,
+                width: `${Math.max(0, Math.min(100, (slot.end / length) * 100) - Math.min(100, (slot.start / length) * 100))}%`,
+              }}
+            />
           ) : null}
         </div>
       ) : null}
