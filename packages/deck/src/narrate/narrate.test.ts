@@ -28,19 +28,21 @@ describe("text", () => {
   });
 
   test("speakable strips markup and addresses", () => {
-    expect(speakable("Use `<Toc />` and **bold** — see [the docs](https://x.y) at https://a.b/c ."))
-      .toBe("Use and bold — see the docs at.");
+    expect(
+      speakable("Use `<Toc />` and **bold** — see [the docs](https://x.y) at https://a.b/c ."),
+    ).toBe("Use and bold — see the docs at.");
     expect(speakable("a {1+1} b")).toBe("a 1+1 b");
   });
 
   test("frontmatter: narration false silences, say replaces", () => {
     expect(slideSegments({ notesText: "Hi", frontmatter: { narration: false } })).toEqual([]);
-    expect(slideSegments({ notesText: "Hi", frontmatter: { say: "Hello [click] there" } })).toEqual([
-      "Hello",
-      "there",
-    ]);
+    expect(slideSegments({ notesText: "Hi", frontmatter: { say: "Hello [click] there" } })).toEqual(
+      ["Hello", "there"],
+    );
     // A headmatter-style object is not an override.
-    expect(slideSegments({ notesText: "Hi", frontmatter: { narration: { voice: "x" } } })).toEqual(["Hi"]);
+    expect(slideSegments({ notesText: "Hi", frontmatter: { narration: { voice: "x" } } })).toEqual([
+      "Hi",
+    ]);
     expect(slideSegments({ notesText: "[click] [click]" })).toEqual([]);
   });
 
@@ -71,7 +73,11 @@ describe("text", () => {
       [{ notesText: "one two [click] three" }, { text: "" }, { notesText: "four" }],
       { rate: 1, gap: 100, silent: 1000 },
     );
-    expect(t.slides.map((s) => s.start)).toEqual([0, t.slides[0]!.duration, t.slides[0]!.duration + 1100]);
+    expect(t.slides.map((s) => s.start)).toEqual([
+      0,
+      t.slides[0]!.duration,
+      t.slides[0]!.duration + 1100,
+    ]);
     expect(t.slides[1]!.ms).toEqual([1000]);
     expect(t.total).toBe(t.slides.reduce((n, s) => n + s.duration, 0));
     const measured = timelineOf([{ notesText: "four" }], {
@@ -111,12 +117,23 @@ describe("narration.json", () => {
 describe("engine choice", () => {
   test("auto: baked, then kokoro when ready, else the browser while kokoro loads", () => {
     const have = { baked: false, kokoro: "idle" as const, browser: true };
-    expect(chooseEngine("auto", { ...have, baked: true })).toEqual({ engine: "baked", loadKokoro: false });
+    expect(chooseEngine("auto", { ...have, baked: true })).toEqual({
+      engine: "baked",
+      loadKokoro: false,
+    });
     expect(chooseEngine("auto", have)).toEqual({ engine: "browser", loadKokoro: true });
-    expect(chooseEngine("auto", { ...have, kokoro: "loading" })).toEqual({ engine: "browser", loadKokoro: false });
+    expect(chooseEngine("auto", { ...have, kokoro: "loading" })).toEqual({
+      engine: "browser",
+      loadKokoro: false,
+    });
     expect(chooseEngine("auto", { ...have, kokoro: "ready" }).engine).toBe("kokoro");
-    expect(chooseEngine("auto", { ...have, kokoro: "unavailable" })).toEqual({ engine: "browser", loadKokoro: false });
-    expect(chooseEngine("auto", { ...have, browser: false, kokoro: "error" }).engine).toBe("silent");
+    expect(chooseEngine("auto", { ...have, kokoro: "unavailable" })).toEqual({
+      engine: "browser",
+      loadKokoro: false,
+    });
+    expect(chooseEngine("auto", { ...have, browser: false, kokoro: "error" }).engine).toBe(
+      "silent",
+    );
     expect(chooseEngine("browser", { ...have, baked: true }).engine).toBe("browser");
     expect(chooseEngine("baked", have).engine).toBe("browser");
   });
@@ -262,7 +279,11 @@ describe("narrator", () => {
 
   test("each state it passes through puts the timeline further on, never back", async () => {
     // The real clock: every state is read at the moment it is published, as the bar reads it.
-    const slides = [{ notesText: "one two [click] three" }, { notesText: "four" }, { notesText: "five six" }];
+    const slides = [
+      { notesText: "one two [click] three" },
+      { notesText: "four" },
+      { notesText: "five six" },
+    ];
     const { n, voice } = narrator(slides, [1, 0, 0], { gap: 20, estimate: () => 30 });
     const timeline = timelineOf(slides, { rate: 1, gap: 20, silent: "skip", measured: () => 30 });
     const seen: number[] = [];
@@ -308,14 +329,18 @@ describe("narrator", () => {
 
   test("play from a slide goes there first; silent slides dwell (or skip)", async () => {
     const dwells: number[] = [];
-    const { n, deck, voice } = narrator([{ notesText: "a" }, { text: "no notes" }, { notesText: "c" }], [0, 0, 0], {
-      silent: 5,
-      setTimer: (fn, ms) => {
-        dwells.push(ms);
-        return setTimeout(fn, 0);
+    const { n, deck, voice } = narrator(
+      [{ notesText: "a" }, { text: "no notes" }, { notesText: "c" }],
+      [0, 0, 0],
+      {
+        silent: 5,
+        setTimer: (fn, ms) => {
+          dwells.push(ms);
+          return setTimeout(fn, 0);
+        },
+        clearTimer: (h) => clearTimeout(h as never),
       },
-      clearTimer: (h) => clearTimeout(h as never),
-    });
+    );
     await n.play(1);
     expect(deck.nav.index).toBe(1);
     await until(() => voice.said.length === 1);
@@ -332,6 +357,49 @@ describe("narrator", () => {
     voice.finish();
     await until(() => voice.said.length === 3);
     expect(voice.said).toEqual(["a", "b", "c"]);
+  });
+
+  test("a seek moves the deck and leaves playing alone", async () => {
+    const { n, deck, voice } = narrator(
+      [{ notesText: "zero" }, { notesText: "one" }, { notesText: "two" }],
+      [0, 0, 0],
+    );
+    // Idle: the deck goes there, nothing is said, and play starts from there.
+    await n.seek(2);
+    await tick();
+    expect(deck.nav.index).toBe(2);
+    expect(n.state.get()).toMatchObject({ playing: false, phase: "idle", slide: 2 });
+    expect(voice.said).toEqual([]);
+    await n.play();
+    await until(() => voice.said.length === 1);
+    expect(voice.said).toEqual(["two"]);
+    // Paused stays paused.
+    n.pause();
+    await n.seek(1);
+    await tick();
+    expect(deck.nav.index).toBe(1);
+    expect(n.state.get()).toMatchObject({ playing: false, phase: "paused", slide: 1 });
+    expect(voice.said).toEqual(["two"]);
+    // Playing plays on, from the new place.
+    await n.play();
+    await until(() => voice.said.length === 2);
+    await n.seek(0);
+    await until(() => voice.said.length === 3);
+    expect(voice.said).toEqual(["two", "one", "zero"]);
+    expect(n.state.get().playing).toBe(true);
+  });
+
+  test("a seek after the end waits there; play goes on from it, not from the top", async () => {
+    const { n, voice } = narrator([{ notesText: "zero" }, { notesText: "one" }], [0, 0]);
+    await n.play(1);
+    await until(() => voice.said.length === 1);
+    voice.finish();
+    await until(() => n.state.get().phase === "ended", 3000);
+    await n.seek(1);
+    expect(n.state.get()).toMatchObject({ playing: false, phase: "idle", slide: 1 });
+    await n.play();
+    await until(() => voice.said.length === 2);
+    expect(voice.said).toEqual(["one", "one"]);
   });
 
   test("follow off reads on without moving the deck", async () => {
@@ -381,9 +449,21 @@ describe("narrator", () => {
 
   test("the silent engine takes as long as the estimate", async () => {
     const e = silentEngine(() => 5);
-    const u = e.speak("hello", { voice: "v", browserVoice: null, rate: 1, volume: 1, muted: false });
+    const u = e.speak("hello", {
+      voice: "v",
+      browserVoice: null,
+      rate: 1,
+      volume: 1,
+      muted: false,
+    });
     expect(await u.done).toBe("ended");
-    const v = e.speak("hello", { voice: "v", browserVoice: null, rate: 1, volume: 1, muted: false });
+    const v = e.speak("hello", {
+      voice: "v",
+      browserVoice: null,
+      rate: 1,
+      volume: 1,
+      muted: false,
+    });
     v.cancel();
     expect(await v.done).toBe("cancelled");
   });
@@ -397,7 +477,9 @@ describe("kadal-deck narrate", () => {
     expect(new TextDecoder().decode(wav.slice(0, 4))).toBe("RIFF");
     expect(v.getUint32(24, true)).toBe(24_000);
     expect(v.getUint32(40, true)).toBe(8);
-    expect([v.getInt16(44, true), v.getInt16(46, true), v.getInt16(48, true)]).toEqual([0, 32767, -32768]);
+    expect([v.getInt16(44, true), v.getInt16(46, true), v.getInt16(48, true)]).toEqual([
+      0, 32767, -32768,
+    ]);
   });
 
   test("lists the texts the deck will ask for: includes, say:, hidden and silent slides", async () => {
@@ -416,7 +498,10 @@ describe("kadal-deck narrate", () => {
         "---\nsrc: ./more.mdx\n---\n",
       ].join("\n\n---\n"),
     );
-    writeFileSync(join(dir, "more.mdx"), "# Three\n\n<Notes>Included. [click] Hello there.</Notes>\n");
+    writeFileSync(
+      join(dir, "more.mdx"),
+      "# Three\n\n<Notes>Included. [click] Hello there.</Notes>\n",
+    );
     const { texts } = deckSegments(join(dir, "deck.mdx"));
     expect(texts).toEqual(["Hello there.", "Next link.", "Custom words.", "Included."]);
   });

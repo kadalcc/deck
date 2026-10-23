@@ -198,6 +198,26 @@ export class Narrator {
     void this.sayHere();
   }
 
+  /**
+   * Go to the start of slide `index` and leave playing alone: playing plays on from there; idle or
+   * paused waits there, and play starts from there. Only play and pause start and stop the voice;
+   * the timeline used to play from wherever it was clicked, so looking around while paused talked.
+   */
+  async seek(index: number): Promise<void> {
+    const to = clamp(Math.round(index), 0, Math.max(0, this.host.slides.length - 1));
+    const playing = this.state.get().playing;
+    if (playing) this.interrupt();
+    if (this.state.get().follow) {
+      const at = this.host.where();
+      // Already there: a goto that moves nothing would wait out move()'s transition grace.
+      if (at.index !== to || at.click !== 0) await this.move("nav.goto", { index: to });
+      this.syncToDeck();
+    } else this.set({ slide: to, segment: 0 });
+    // The end is behind us now: play goes on from here rather than starting the talk over.
+    if (this.state.get().phase === "ended") this.set({ phase: "idle" });
+    if (playing && this.state.get().playing) void this.sayHere();
+  }
+
   pause(): void {
     this.interrupt();
     if (this.state.get().playing || this.state.get().phase !== "idle")

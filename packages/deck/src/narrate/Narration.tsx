@@ -10,13 +10,27 @@ import { cmd, useCommand } from "../react/commands.ts";
 import { type DeckRuntime, useDeck } from "../react/context.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { Listbox, type ListboxGroup } from "../react/Listbox.tsx";
+import { RenderContextProvider } from "../react/render-context.ts";
 import { SlideFrame } from "../react/SlideFrame.tsx";
-import { type Chapter, chapterOfSlide, chaptersOf, clock, slideAtTime, slideRange } from "./chapters.ts";
+import {
+  type Chapter,
+  chapterOfSlide,
+  chaptersOf,
+  clock,
+  slideAtTime,
+  slideRange,
+} from "./chapters.ts";
 import { chooseEngine, ENGINE_CHOICES, type EngineChoice, silentEngine } from "./engine.ts";
-import { BakedClips, browserEngine, browserVoices, hasSpeechSynthesis, KokoroClient } from "./engines.ts";
+import {
+  BakedClips,
+  browserEngine,
+  browserVoices,
+  hasSpeechSynthesis,
+  KokoroClient,
+} from "./engines.ts";
 import { isKokoroVoice, KOKORO_VOICES } from "./kokoro-protocol.ts";
 import { type NarrationState, Narrator, type NarratorHost, RATES } from "./player.ts";
-import { narrationPosition, steadyPosition } from "./progress.ts";
+import { barFill, barSpan, narrationPosition, steadyPosition } from "./progress.ts";
 import { speechMs, type Timeline, timelineOf } from "./text.ts";
 
 /**
@@ -80,7 +94,12 @@ function useNarrator(rt: DeckRuntime) {
       run: (id, params) => rt.commands.run(id, params, "api"),
       onMove: (listener) =>
         rt.nav.subscribe((s, prev) => {
-          if (s.h !== prev.h || s.v !== prev.v || s.click !== prev.click || s.totals !== prev.totals)
+          if (
+            s.h !== prev.h ||
+            s.v !== prev.v ||
+            s.click !== prev.click ||
+            s.totals !== prev.totals
+          )
             listener();
         }),
       async engineFor(text, state) {
@@ -171,10 +190,39 @@ function useNarrateCommands(narrator: Narrator, slideCount: number, total: () =>
         "Read the speaker notes aloud and turn the pages: each click's notes, then the next step. From the current step, or from the start of slide `from` (0-based).",
       group,
       params: z
-        .object({ from: z.number().int().min(0).max(Math.max(0, slideCount - 1)).optional() })
+        .object({
+          from: z
+            .number()
+            .int()
+            .min(0)
+            .max(Math.max(0, slideCount - 1))
+            .optional(),
+        })
         .strict(),
       run: async (p) => {
         await narrator.play(p.from);
+        return state();
+      },
+    }),
+  );
+  useCommand(
+    cmd({
+      id: "narrate.seek",
+      title: "Narration: go to a slide",
+      description:
+        "Go to the start of slide `to` (0-based) and leave playing alone: playing goes on from there, paused or stopped waits there.",
+      group,
+      params: z
+        .object({
+          to: z
+            .number()
+            .int()
+            .min(0)
+            .max(Math.max(0, slideCount - 1)),
+        })
+        .strict(),
+      run: async (p) => {
+        await narrator.seek(p.to);
         return state();
       },
     }),
@@ -259,7 +307,9 @@ function useNarrateCommands(narrator: Narrator, slideCount: number, total: () =>
       title: "Narration volume",
       description: "Volume 0–1, and optionally mute or unmute.",
       group,
-      params: z.object({ volume: z.number().min(0).max(1), muted: z.boolean().optional() }).strict(),
+      params: z
+        .object({ volume: z.number().min(0).max(1), muted: z.boolean().optional() })
+        .strict(),
       run: (p) => {
         narrator.setVolume(p.volume, p.muted);
         return state();
@@ -294,7 +344,9 @@ function useNarrateCommands(narrator: Narrator, slideCount: number, total: () =>
       description:
         'Which voice says the notes: "auto" (recorded clips, else Kokoro once downloaded, else the browser\'s), "baked", "kokoro", "browser", or "silent" (timing only).',
       group,
-      params: z.object({ engine: z.enum(["auto", "baked", "kokoro", "browser", "silent"]) }).strict(),
+      params: z
+        .object({ engine: z.enum(["auto", "baked", "kokoro", "browser", "silent"]) })
+        .strict(),
       run: (p) => {
         narrator.setEngine(p.engine);
         return state();
@@ -305,7 +357,8 @@ function useNarrateCommands(narrator: Narrator, slideCount: number, total: () =>
     cmd({
       id: "narrate.follow",
       title: "Follow the narrator",
-      description: "On: the narration turns the deck's pages. Off: it reads on and leaves the deck alone.",
+      description:
+        "On: the narration turns the deck's pages. Off: it reads on and leaves the deck alone.",
       group,
       params: z.object({ on: z.boolean().optional() }).strict(),
       run: (p) => {
@@ -318,7 +371,8 @@ function useNarrateCommands(narrator: Narrator, slideCount: number, total: () =>
     cmd({
       id: "narrate.state",
       title: "Narration state",
-      description: "Whether it is playing, where, which engine and voice, the speed and volume, and the estimated length.",
+      description:
+        "Whether it is playing, where, which engine and voice, the speed and volume, and the estimated length.",
       group: "query",
       readOnly: true,
       run: state,
@@ -351,7 +405,8 @@ export default function Narration({
         slides.map((x) => ({
           h: x.h,
           title: x.title,
-          section: resolveSlideOptions(x.frontmatter, rt.config, x.index === 0).layout === "section",
+          section:
+            resolveSlideOptions(x.frontmatter, rt.config, x.index === 0).layout === "section",
         })),
         timeline,
       ),
@@ -387,11 +442,15 @@ export default function Narration({
   void now;
   const raw = narrationPosition(timeline, c.gap, s, Date.now());
   const last = useRef<{ at: number; slide: number; segment: number } | null>(null);
-  const elapsed = steadyPosition(last.current, { at: raw, slide: s.slide, segment: s.segment }, s.playing);
+  const elapsed = steadyPosition(
+    last.current,
+    { at: raw, slide: s.slide, segment: s.segment },
+    s.playing,
+  );
   // Only a move back skips the fill's easing: forward it glides, back it jumps.
   const back = last.current !== null && elapsed < last.current.at - 1;
   last.current = { at: elapsed, slide: s.slide, segment: s.segment };
-  const pct = timeline.total ? (elapsed / timeline.total) * 100 : 0;
+  const pct = barFill(timeline, elapsed, s) * 100;
   const chapterNow = chapterOfSlide(chapters, s.slide);
   const current = chapters[chapterNow];
 
@@ -430,7 +489,11 @@ export default function Narration({
         ? [
             {
               label: "This browser",
-              options: voices.map((v) => ({ value: `browser:${v.name}`, label: v.name, detail: v.lang })),
+              options: voices.map((v) => ({
+                value: `browser:${v.name}`,
+                label: v.name,
+                detail: v.lang,
+              })),
             },
           ]
         : []),
@@ -452,7 +515,8 @@ export default function Narration({
       // A button pressed with Space or Enter is that button, not the deck's next step too.
       onKeyDown={(e) => {
         const t = e.target as HTMLElement;
-        if ((e.key === " " || e.key === "Enter") && t.closest("button, select, input")) e.stopPropagation();
+        if ((e.key === " " || e.key === "Enter") && t.closest("button, select, input"))
+          e.stopPropagation();
       }}
     >
       <Track
@@ -463,11 +527,16 @@ export default function Narration({
         pct={pct}
         jump={back}
         titleOf={(i) => timeline.slides[i]?.title ?? null}
-        go={(from) => run("narrate.play", { from })}
+        go={(to) => run("narrate.seek", { to })}
       />
       <div className="deck-narration-controls">
         <div className="deck-narration-group">
-          <button type="button" onClick={() => run("narrate.prev")} aria-label="Previous step" title="Previous step">
+          <button
+            type="button"
+            onClick={() => run("narrate.prev")}
+            aria-label="Previous step"
+            title="Previous step"
+          >
             <Icon name="skip-back" />
           </button>
           <button
@@ -480,10 +549,20 @@ export default function Narration({
           >
             <Icon name={s.playing ? "pause" : "play"} />
           </button>
-          <button type="button" onClick={() => run("narrate.next")} aria-label="Next step" title="Next step">
+          <button
+            type="button"
+            onClick={() => run("narrate.next")}
+            aria-label="Next step"
+            title="Next step"
+          >
             <Icon name="skip-forward" />
           </button>
-          <button type="button" onClick={() => run("narrate.stop")} aria-label="Stop narration" title="Stop">
+          <button
+            type="button"
+            onClick={() => run("narrate.stop")}
+            aria-label="Stop narration"
+            title="Stop"
+          >
             <Icon name="square" />
           </button>
         </div>
@@ -519,7 +598,11 @@ export default function Narration({
               aria-pressed={s.muted}
               title={s.muted ? "Unmute" : "Mute"}
             >
-              <Icon name={s.muted || s.volume === 0 ? "volume-x" : s.volume < 0.5 ? "volume-1" : "volume-2"} />
+              <Icon
+                name={
+                  s.muted || s.volume === 0 ? "volume-x" : s.volume < 0.5 ? "volume-1" : "volume-2"
+                }
+              />
             </button>
             <input
               className="deck-narration-volume"
@@ -528,8 +611,12 @@ export default function Narration({
               max={1}
               step={0.05}
               value={s.muted ? 0 : s.volume}
-              style={{ "--deck-range-fill": `${(s.muted ? 0 : s.volume) * 100}%` } as React.CSSProperties}
-              onChange={(e) => run("narrate.volume", { volume: Number(e.target.value), muted: false })}
+              style={
+                { "--deck-range-fill": `${(s.muted ? 0 : s.volume) * 100}%` } as React.CSSProperties
+              }
+              onChange={(e) =>
+                run("narrate.volume", { volume: Number(e.target.value), muted: false })
+              }
               aria-label="Volume"
             />
           </span>
@@ -540,7 +627,11 @@ export default function Narration({
             minWidth={240}
             value={voiceValue}
             display={voiceShown}
-            onChange={(v) => run("narrate.voice", { voice: v.startsWith("browser:") ? v.slice(8) || "default" : v })}
+            onChange={(v) =>
+              run("narrate.voice", {
+                voice: v.startsWith("browser:") ? v.slice(8) || "default" : v,
+              })
+            }
             groups={voiceGroups}
           />
           <Listbox
@@ -558,7 +649,8 @@ export default function Narration({
                   {
                     value: "kokoro",
                     label: "Kokoro",
-                    detail: s.kokoro.state === "unavailable" ? "not installed" : "neural, in the browser",
+                    detail:
+                      s.kokoro.state === "unavailable" ? "not installed" : "neural, in the browser",
                     disabled: s.kokoro.state === "unavailable",
                   },
                   { value: "browser", label: "Browser", detail: "system voice" },
@@ -601,8 +693,9 @@ const DOT_GAP = 7;
 /**
  * The timeline: a thin progress line with a small point for every slide and a larger one where
  * each chapter starts. Hovering anywhere says where a click would land — a picture of that slide,
- * its number, title and time, or over a chapter point the chapter — and a click plays from there.
- * As a slider: arrows step a slide, Page keys (or Shift+arrows) a chapter, Home/End the ends.
+ * its number, title and time, or over a chapter point the chapter — and a click goes there (playing
+ * or not, as it was). As a slider: arrows step a slide, Page keys (or Shift+arrows) a chapter,
+ * Home/End the ends. The bar runs from the first slide's start to the last's (progress.ts).
  */
 function Track({
   timeline,
@@ -626,11 +719,13 @@ function Track({
 }) {
   const track = useRef<HTMLDivElement>(null);
   const tip = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState<{ x: number; slide: number; chapter: number | null } | null>(null);
+  const [hover, setHover] = useState<{ x: number; slide: number; chapter: number | null } | null>(
+    null,
+  );
   const [shift, setShift] = useState(0);
   const [width, setWidth] = useState(0);
-  const total = timeline.total;
-  const at = (ms: number) => (total ? (ms / total) * 100 : 0);
+  const total = barSpan(timeline);
+  const at = (ms: number) => (total ? Math.min(100, (ms / total) * 100) : 0);
   const chapterNow = chapterOfSlide(chapters, slide);
   const chapterStarts = useMemo(() => new Set(chapters.map((c) => c.first)), [chapters]);
 
@@ -670,9 +765,15 @@ function Track({
     const point = el?.closest?.("[data-chapter]");
     const chapter = point ? Number(point.getAttribute("data-chapter")) : null;
     if (chapter != null)
-      return { x: (at(chapters[chapter]!.start) / 100) * box.width, slide: chapters[chapter]!.first, chapter };
+      return {
+        x: (at(chapters[chapter]!.start) / 100) * box.width,
+        slide: chapters[chapter]!.first,
+        chapter,
+      };
     const dot = el?.closest?.("[data-slide]");
-    const hit = dot ? Number(dot.getAttribute("data-slide")) : slideAtTime(timeline, (x / box.width) * total);
+    const hit = dot
+      ? Number(dot.getAttribute("data-slide"))
+      : slideAtTime(timeline, (x / box.width) * total);
     const start = timeline.slides[hit]?.start ?? 0;
     // Over a dot, the marker sits on the dot; elsewhere it follows the pointer.
     return { x: dot ? (at(start) / 100) * box.width : x, slide: hit, chapter: null };
@@ -691,8 +792,16 @@ function Track({
   }, [hover]);
 
   const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const byChapter = e.key === "PageUp" || e.key === "PageDown" || (e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"));
-    const dir = e.key === "ArrowRight" || e.key === "PageDown" ? 1 : e.key === "ArrowLeft" || e.key === "PageUp" ? -1 : 0;
+    const byChapter =
+      e.key === "PageUp" ||
+      e.key === "PageDown" ||
+      (e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"));
+    const dir =
+      e.key === "ArrowRight" || e.key === "PageDown"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "PageUp"
+          ? -1
+          : 0;
     let target: number | null = null;
     if (e.key === "Home") target = 0;
     else if (e.key === "End") target = count - 1;
@@ -778,34 +887,117 @@ function Track({
           ref={tip}
           className="deck-narration-tip"
           role="presentation"
-          style={{ left: hover.x, transform: `translateX(calc(-50% + ${shift}px))` }}
+          style={{
+            left: hover.x,
+            width: THUMB_W,
+            transform: `translateX(calc(-50% + ${shift}px))`,
+          }}
         >
           <SlideThumb index={hover.slide} />
           {hc ? (
             <>
-              <strong>
-                Chapter {hc.n + 1} · {hc.title ?? "Untitled"}
-              </strong>
-              <span>
-                {slideRange(hc)} · starts {clock(hc.start)}
-              </span>
+              <TipRow
+                className="is-title"
+                lead={`Chapter ${hc.n + 1} ·`}
+                text={hc.title ?? "Untitled"}
+              />
+              <TipRow lead={null} text={`${slideRange(hc)} · starts ${clock(hc.start)}`} />
             </>
           ) : (
             <>
-              <strong>
-                {hs.index + 1}. {hs.title ?? "Untitled"}
-              </strong>
-              <span>
-                {clock(hs.start)}
-                {chapters.length > 1
-                  ? ` · ${chapters[chapterOfSlide(chapters, hs.index)]!.title ?? `chapter ${chapterOfSlide(chapters, hs.index) + 1}`}`
-                  : ""}
-              </span>
+              <TipRow
+                className="is-title"
+                lead={`${hs.index + 1}.`}
+                text={hs.title ?? "Untitled"}
+              />
+              <TipRow
+                lead={chapters.length > 1 ? `${clock(hs.start)} ·` : clock(hs.start)}
+                text={
+                  chapters.length > 1
+                    ? (chapters[chapterOfSlide(chapters, hs.index)]!.title ??
+                      `chapter ${chapterOfSlide(chapters, hs.index) + 1}`)
+                    : null
+                }
+              />
             </>
           )}
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * A line of the tooltip: a part that stays put ("7.", "0:36 ·") and the text after it, cut off with
+ * an ellipsis when it does not fit. Text that does not fit glides along to show the rest, waits,
+ * and glides back (with reduced motion it stays cut off).
+ */
+function TipRow({
+  className,
+  lead,
+  text,
+}: {
+  className?: string;
+  lead: string | null;
+  text: string | null;
+}) {
+  return (
+    <div className={["deck-narration-tip-row", className].filter(Boolean).join(" ")}>
+      {lead ? <span className="deck-narration-tip-lead">{lead}</span> : null}
+      {text ? <Marquee text={text} /> : null}
+    </div>
+  );
+}
+
+/** Pixels a second the overflowing text glides at, and how long it rests at each end. */
+const GLIDE_SPEED = 28;
+const GLIDE_REST = 1400;
+
+function Marquee({ text }: { text: string }) {
+  const box = useRef<HTMLSpanElement>(null);
+  const [over, setOver] = useState(0);
+  // "rest" shows the start with an ellipsis; "out" glides to the end; "back" glides home.
+  const [leg, setLeg] = useState<"rest" | "out" | "back">("rest");
+
+  useLayoutEffect(() => {
+    setLeg("rest");
+    // The box's own scroll width: the text inside is inline at rest, and an inline box has none.
+    const b = box.current;
+    setOver(b ? Math.max(0, Math.ceil(b.scrollWidth - b.clientWidth)) : 0);
+  }, [text]);
+
+  const still =
+    typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const glide = Math.max(800, (over / GLIDE_SPEED) * 1000);
+  useEffect(() => {
+    if (!over || still) return;
+    const next = leg === "rest" ? "out" : leg === "out" ? "back" : "rest";
+    const wait = leg === "rest" ? GLIDE_REST : leg === "out" ? glide + GLIDE_REST : glide;
+    const t = setTimeout(() => setLeg(next), wait);
+    return () => clearTimeout(t);
+  }, [over, still, leg, glide]);
+
+  const moving = over > 0 && !still && leg !== "rest";
+  return (
+    <span
+      ref={box}
+      className={["deck-narration-marquee", moving ? "is-moving" : ""].filter(Boolean).join(" ")}
+      title={over ? text : undefined}
+    >
+      <span
+        className="deck-narration-marquee-text"
+        style={
+          moving
+            ? {
+                transform: `translateX(${leg === "out" ? -over : 0}px)`,
+                transitionDuration: `${glide}ms`,
+              }
+            : undefined
+        }
+      >
+        {text}
+      </span>
+    </span>
   );
 }
 
@@ -837,17 +1029,20 @@ function SlideThumb({ index }: { index: number }) {
           style={{ width: W, height: H, transform: `scale(${THUMB_W / W})` }}
         >
           <BackgroundLayer bg={options.background} active={false} />
-          <SlideFrame
-            key={`${meta.h},${meta.v}`}
-            meta={meta}
-            options={options}
-            h={meta.h}
-            v={meta.v}
-            active={false}
-            click={999}
-            preview
-            className="is-tile"
-          />
+          {/* A picture of the slide, as an overview tile is: `<RenderWhen context="overview">` holds. */}
+          <RenderContextProvider value="overview">
+            <SlideFrame
+              key={`${meta.h},${meta.v}`}
+              meta={meta}
+              options={options}
+              h={meta.h}
+              v={meta.v}
+              active={false}
+              click={999}
+              preview
+              className="is-tile"
+            />
+          </RenderContextProvider>
         </div>
       ) : null}
     </div>

@@ -50,7 +50,9 @@
   height: 4px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--deck-fg) 14%, transparent);
-  transition: height 0.15s ease, top 0.15s ease;
+  transition:
+    height 0.15s ease,
+    top 0.15s ease;
 }
 .deck-narration-track:hover .deck-narration-rail,
 .deck-narration-track:focus-visible .deck-narration-rail {
@@ -84,7 +86,9 @@
   border-radius: 50%;
   background: var(--deck-bg);
   box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--deck-fg) 38%, transparent);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .deck-narration-point.is-past {
   background: var(--deck-accent);
@@ -143,33 +147,63 @@
 .deck-narration-fill.is-jump {
   transition: none;
 }
+/* The tooltip: exactly as wide as its picture of the slide (the width is set where the picture's
+   is), with the same padding on every side. Its text styles live on its rows, never on the box:
+   the picture is a real slide, and white-space or a font size set here would reach into it. */
 .deck-narration-tip {
   position: absolute;
   bottom: calc(100% + 8px);
   z-index: 2;
+  box-sizing: content-box;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-width: min(320px, calc(100vw - 16px));
-  padding: 6px 10px;
+  padding: 8px;
   border: 1px solid var(--deck-border);
   border-radius: 8px;
   background: var(--deck-bg);
   color: var(--deck-fg);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  font-size: 12px;
-  line-height: 1.35;
-  white-space: nowrap;
   pointer-events: none;
 }
-.deck-narration-tip strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
+.deck-narration-tip-row {
+  display: flex;
+  gap: 0.3em;
+  min-width: 0;
+  font: 12px/1.35 var(--deck-body-font);
+  white-space: nowrap;
+}
+.deck-narration-tip-row.is-title {
   font-weight: 600;
 }
-.deck-narration-tip span {
+.deck-narration-tip-row:not(.is-title) {
   color: var(--deck-muted);
   font-variant-numeric: tabular-nums;
+}
+.deck-narration-tip-lead {
+  flex: none;
+}
+/* The rest of the line: cut off with an ellipsis; when it is too long it glides to show the end
+   and back (Narration.tsx's Marquee), and while gliding it is a block that can move. */
+.deck-narration-marquee {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deck-narration-marquee.is-moving {
+  text-overflow: clip;
+}
+.deck-narration-marquee.is-moving .deck-narration-marquee-text {
+  display: inline-block;
+  transition-property: transform;
+  transition-timing-function: ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-narration-marquee-text {
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
 /* The controls: transport and where we are on the left, the settings on the right. */
@@ -204,7 +238,9 @@
   color: inherit;
   font: inherit;
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
 }
 .deck-narration-controls button:hover {
   background: color-mix(in oklab, var(--deck-fg) 8%, transparent);
@@ -382,8 +418,9 @@
 /* The tooltip's picture of the slide: the deck's own rendering, scaled down, nothing running. */
 .deck-narration-thumb {
   position: relative;
+  flex: none;
   overflow: hidden;
-  margin: 0 -4px 4px;
+  margin-bottom: 6px;
   border-radius: 5px;
   background: var(--deck-surface);
   outline: 1px solid var(--deck-border);
@@ -397,4 +434,20 @@
   pointer-events: none;
   background: var(--deck-bg);
   color: var(--deck-fg);
+  /* Text renders here as it does on the stage: the bar's and the tooltip's typography stops at this
+     edge (a paragraph that wraps on the slide stayed on one line here, cut off, under the tooltip's
+     nowrap). The slide sets its own size and leading; the rest goes back to what the stage has. */
+  font: 400 medium/normal var(--deck-body-font);
+  font-variant-numeric: normal;
+  font-feature-settings: normal;
+  letter-spacing: normal;
+  word-spacing: normal;
+  white-space: normal;
+  text-align: start;
+  text-indent: 0;
+  text-transform: none;
+  text-shadow: none;
+  text-overflow: clip;
+  word-break: normal;
+  overflow-wrap: normal;
 }

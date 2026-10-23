@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { narrationPosition, type PositionState, steadyPosition } from "./progress.ts";
+import {
+  barFill,
+  barSpan,
+  narrationPosition,
+  type PositionState,
+  steadyPosition,
+} from "./progress.ts";
 import { segmentPartIndexes, type Timeline } from "./text.ts";
 
 const GAP = 500;
@@ -59,29 +65,117 @@ describe("where the narration is on the timeline", () => {
   });
 
   test("a whole play never steps back; a seek back does", () => {
-    const frames: { phase: PositionState["phase"]; slide: number; segment: number; part: number; startedAt: number; expectedMs: number; now: number }[] = [
+    const frames: {
+      phase: PositionState["phase"];
+      slide: number;
+      segment: number;
+      part: number;
+      startedAt: number;
+      expectedMs: number;
+      now: number;
+    }[] = [
       { phase: "loading", slide: 0, segment: 0, part: 0, startedAt: 0, expectedMs: 2000, now: 0 },
-      { phase: "speaking", slide: 0, segment: 0, part: 0, startedAt: 100, expectedMs: 1500, now: 1700 },
+      {
+        phase: "speaking",
+        slide: 0,
+        segment: 0,
+        part: 0,
+        startedAt: 100,
+        expectedMs: 1500,
+        now: 1700,
+      },
       { phase: "gap", slide: 0, segment: 0, part: 0, startedAt: 1700, expectedMs: GAP, now: 1800 },
-      { phase: "loading", slide: 0, segment: 1, part: 1, startedAt: 2300, expectedMs: 1000, now: 2300 },
-      { phase: "speaking", slide: 0, segment: 1, part: 1, startedAt: 2400, expectedMs: 1800, now: 4000 },
+      {
+        phase: "loading",
+        slide: 0,
+        segment: 1,
+        part: 1,
+        startedAt: 2300,
+        expectedMs: 1000,
+        now: 2300,
+      },
+      {
+        phase: "speaking",
+        slide: 0,
+        segment: 1,
+        part: 1,
+        startedAt: 2400,
+        expectedMs: 1800,
+        now: 4000,
+      },
       { phase: "gap", slide: 0, segment: 1, part: 1, startedAt: 4200, expectedMs: GAP, now: 4300 },
-      { phase: "loading", slide: 1, segment: 0, part: 0, startedAt: 4700, expectedMs: 3000, now: 4700 },
-      { phase: "speaking", slide: 1, segment: 0, part: 0, startedAt: 4800, expectedMs: 2000, now: 6000 },
-      { phase: "dwell", slide: 2, segment: 0, part: -1, startedAt: 7400, expectedMs: 4000, now: 9000 },
+      {
+        phase: "loading",
+        slide: 1,
+        segment: 0,
+        part: 0,
+        startedAt: 4700,
+        expectedMs: 3000,
+        now: 4700,
+      },
+      {
+        phase: "speaking",
+        slide: 1,
+        segment: 0,
+        part: 0,
+        startedAt: 4800,
+        expectedMs: 2000,
+        now: 6000,
+      },
+      {
+        phase: "dwell",
+        slide: 2,
+        segment: 0,
+        part: -1,
+        startedAt: 7400,
+        expectedMs: 4000,
+        now: 9000,
+      },
       { phase: "ended", slide: 2, segment: 0, part: -1, startedAt: 0, expectedMs: 0, now: 12_000 },
     ];
     let prev: { at: number; slide: number; segment: number } | null = null;
     let last = -1;
     for (const f of frames) {
       const raw = narrationPosition(timeline, GAP, f, f.now);
-      const shown = steadyPosition(prev, { at: raw, slide: f.slide, segment: f.segment }, f.phase !== "ended");
+      const shown = steadyPosition(
+        prev,
+        { at: raw, slide: f.slide, segment: f.segment },
+        f.phase !== "ended",
+      );
       expect(shown).toBeGreaterThanOrEqual(last);
       last = shown;
       prev = { at: shown, slide: f.slide, segment: f.segment };
     }
     expect(last).toBe(timeline.total);
     // A seek back to slide 0 is shown at once.
-    expect(steadyPosition({ at: 9000, slide: 2, segment: 0 }, { at: 0, slide: 0, segment: 0 }, true)).toBe(0);
+    expect(
+      steadyPosition({ at: 9000, slide: 2, segment: 0 }, { at: 0, slide: 0, segment: 0 }, true),
+    ).toBe(0);
+  });
+});
+
+describe("the bar's scale", () => {
+  test("ends at the last slide's start: its point is the far end", () => {
+    expect(barSpan(timeline)).toBe(7500);
+    // Slide 1's point sits at 4000 / 7500 of the bar, as the hover maps it back.
+    expect(4000 / barSpan(timeline)).toBeCloseTo(0.5333, 3);
+  });
+
+  test("fills across the slides before the last, and is full on the last in any phase", () => {
+    expect(barFill(timeline, 0, { phase: "idle", slide: 0 })).toBe(0);
+    expect(barFill(timeline, 3750, { phase: "speaking", slide: 0 })).toBe(0.5);
+    expect(barFill(timeline, 7499, { phase: "gap", slide: 1 })).toBeCloseTo(1, 3);
+    for (const phase of ["idle", "paused", "loading", "dwell"] as const)
+      expect(barFill(timeline, 7500, { phase, slide: 2 })).toBe(1);
+    expect(barFill(timeline, 12_000, { phase: "ended", slide: 2 })).toBe(1);
+  });
+
+  test("a one-slide deck's bar is that slide's own talk", () => {
+    const one: Timeline = { slides: [timeline.slides[0]!], total: 4000 };
+    expect(barSpan(one)).toBe(4000);
+    expect(barFill(one, 0, { phase: "idle", slide: 0 })).toBe(0);
+    expect(barFill(one, 2000, { phase: "speaking", slide: 0 })).toBe(0.5);
+    expect(barFill(one, 4000, { phase: "ended", slide: 0 })).toBe(1);
+    expect(barFill({ slides: [], total: 0 }, 0, { phase: "idle", slide: 0 })).toBe(0);
   });
 });
