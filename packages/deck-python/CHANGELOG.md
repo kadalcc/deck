@@ -1,5 +1,12 @@
 # @kadal/deck-python
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [d100cb4]
+  - @kadal/deck@0.5.1
+
 ## 0.5.0
 
 ### Patch Changes
