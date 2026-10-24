@@ -100,6 +100,47 @@ describe("the code kit in the browser", () => {
     expect(second.diagnostics).toEqual([]);
   });
 
+  test("a kit's snippet files are read like `files`, which win over them", async () => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const deck = "# One\n\n<<< @/snippets/a.ts#r\n";
+    const snippets = {
+      "snippets/a.ts": "// #region r\nexport const fromKit = 1\n// #endregion r\n",
+    };
+    const out = await compileDeck(deck, { modules: {}, snippets });
+    expect(out.missing).toEqual([]);
+    expect(out.diagnostics).toEqual([]);
+    const Slide = (await out.manifest.slides[0]!.load()).default;
+    expect(renderToStaticMarkup(createElement(Slide))).toContain("fromKit");
+    const edited = await compileDeck(deck, {
+      modules: {},
+      snippets,
+      files: { "snippets/a.ts": "// #region r\nexport const fromFiles = 2\n// #endregion r\n" },
+    });
+    const Edited = (await edited.manifest.slides[0]!.load()).default;
+    expect(renderToStaticMarkup(createElement(Edited))).toContain("fromFiles");
+  });
+
+  test("in a kit, a snippet its CLI build did not read is an error that says what to do", async () => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const message =
+      "`snippets/new.ts` isn't part of this deck's last CLI build. Add it in your project and run `kadal-deck publish`.";
+    for (const kit of [{ modules: {} }, { modules: {}, snippets: { "snippets/a.ts": "x" } }]) {
+      const out = await compileDeck("# One\n\n<<< @/snippets/new.ts\n", kit);
+      expect(out.ok).toBe(false);
+      expect(out.diagnostics).toEqual([
+        { severity: "error", message, file: "deck.mdx", line: 1, slide: null },
+      ]);
+      const Slide = (await out.manifest.slides[0]!.load()).default;
+      expect(renderToStaticMarkup(createElement(Slide))).toContain("last CLI build");
+    }
+    // Without a kit it stays the generic shell's warning (the shell fetches the file and retries).
+    const plain = await compileDeck("# One\n\n<<< @/snippets/new.ts\n");
+    expect(plain.ok).toBe(true);
+    expect(plain.diagnostics[0]!.severity).toBe("warning");
+  });
+
   test("custom transformers run after the notation ones", async () => {
     let ran = 0;
     const out = await compileDeck("```ts\nconst a = 1\n```", {
@@ -191,7 +232,9 @@ Theirs
     };
     const out = await compileDeck(text, { files, modules });
     expect(out.diagnostics).toEqual([]);
-    const html = renderToStaticMarkup(createElement((await out.manifest.slides[1]!.load()).default));
+    const html = renderToStaticMarkup(
+      createElement((await out.manifest.slides[1]!.load()).default),
+    );
     expect(html).toContain("<b>chart 3</b>");
     expect(html).toContain("kg");
 

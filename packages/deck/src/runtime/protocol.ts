@@ -42,7 +42,7 @@ export type FromPreview =
       type: "ready";
       version: string;
       /** Present when this is a deck's own editing kit, not the generic shell. */
-      kit?: { kitVersion: number; engine: string; modules: string[] };
+      kit?: { kitVersion: number; engine: string; modules: string[]; snippets?: string[] };
     }
   | {
       kadal: 1;

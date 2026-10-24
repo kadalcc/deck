@@ -24,11 +24,14 @@ import type { DeckPackageSet } from "./packages.ts";
  *     main.tsx gave it, and the slides come from the editor's text over the preview protocol;
  *   · with a MODULE MAP of every module the deck's MDX imports, pre-bundled and registered under
  *     its import key (runtime/kit-imports.ts `moduleKey`), so those imports compile in the page;
- *   · with the deck's theme and addon packages registered with the runtime compiler.
+ *   · with the deck's theme and addon packages registered with the runtime compiler;
+ *   · with the text of every file its `<<<` snippet imports read (`snippets/tide.ts`): code, so
+ *     neither the editable source nor the builder has it, and a quick-edited deck still shows it.
+ *     A snippet the build did not read fails in the builder as an unknown import does.
  *
  * It lands in `<out>/__kadal/kit/` (relative base, no `public/` copy: the deck's assets are in the
  * main build) with `kit.json`, the catalog the builder and its agent read:
- *   { engine, kitVersion, components, layouts, modules, editable }
+ *   { engine, kitVersion, components, layouts, modules, snippets, editable }
  * Kit files are ordinary built files — public like the deck's own JS, no secrets in them.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -44,6 +47,8 @@ export interface KitJson {
   components: string[];
   layouts: string[];
   modules: string[];
+  /** The `<<<` snippet files the kit carries (deck-root relative): read-only in the builder. */
+  snippets: string[];
   editable: string[];
 }
 
@@ -94,6 +99,8 @@ export function kitModuleCode(o: {
   packages: DeckPackageSet;
   packagesCode: { imports: string; value: string };
   resolved: Map<string, string>;
+  /** Snippet files by deck-root relative path, with their text. */
+  snippets?: Record<string, string>;
   monaco: string | null;
   codeRunners: string | null;
   engine: string;
@@ -129,6 +136,7 @@ export function kitModuleCode(o: {
   );
   lines.push(`export default kitManifest({
   modules: { ${entries.join(", ")} },
+  snippets: ${JSON.stringify(o.snippets ?? {})},
   layers: __kadal_packages.layers,
   routes: __kadal_packages.routes,
   monaco: ${o.monaco ?? "null"},
@@ -143,6 +151,7 @@ export function kitModuleCode(o: {
 export function kitJson(o: {
   deckDir: string;
   modules: string[];
+  snippets?: string[];
   packages: DeckPackageSet;
   engine: string;
 }): KitJson {
@@ -160,6 +169,7 @@ export function kitJson(o: {
     components: uniq([...ext.components, ...pkComponents]),
     layouts: uniq([...ext.layouts, ...pkLayouts]),
     modules: uniq(o.modules),
+    snippets: uniq(o.snippets ?? []),
     editable: [...EDITABLE_GLOBS],
   };
 }
@@ -167,6 +177,22 @@ export function kitJson(o: {
 export function writeKitJson(outDir: string, kit: KitJson): void {
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "kit.json"), `${JSON.stringify(kit, null, 2)}\n`);
+}
+
+/**
+ * The files a deck's `<<<` snippet imports read (PreparedSlide.snippets), with their text, for
+ * the kit to carry. A file that cannot be read now was a notice in the build too: left out.
+ */
+export function kitSnippets(
+  slides: Array<{ snippets?: string[] }>,
+  read: (path: string) => string | null,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const path of [...new Set(slides.flatMap((s) => s.snippets ?? []))].sort()) {
+    const text = read(path);
+    if (text !== null) out[path] = text;
+  }
+  return out;
 }
 
 /** The import keys of a deck's slides, and where each was written. */

@@ -38,7 +38,15 @@ import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts"
 declare const __KADAL_DECK_VERSION__: string | undefined;
 const VERSION = typeof __KADAL_DECK_VERSION__ === "string" ? __KADAL_DECK_VERSION__ : "dev";
 
-const MODE_SEGMENTS = new Set(["presenter", "join", "audience", "notes", "stats", "remote", "export"]);
+const MODE_SEGMENTS = new Set([
+  "presenter",
+  "join",
+  "audience",
+  "notes",
+  "stats",
+  "remote",
+  "export",
+]);
 // The engine's own pages (react/OverviewPage.tsx, react/NotesEditPage.tsx,
 // presenter/Teleprompter.tsx).
 MODE_SEGMENTS.add("overview");
@@ -70,6 +78,11 @@ export interface ShellOptions {
 export interface KitOptions {
   /** Every module the deck's MDX imports, by key (runtime/kit-imports.ts). */
   modules: ModuleMap;
+  /**
+   * The text of every file the deck's `<<<` snippet imports read at that build, by deck-root
+   * relative path: code the builder does not edit (and the host does not keep as source).
+   */
+  snippets?: Record<string, string>;
   /** The deck's layer files and routes (`global-top.tsx`, `routes.tsx`), as its build had them. */
   layers?: NonNullable<DeckManifest["packages"]>["layers"];
   routes?: NonNullable<DeckManifest["packages"]>["routes"];
@@ -87,7 +100,12 @@ export function kitManifest(kit: KitOptions): DeckManifest {
     const preview = new URLSearchParams(location.search).has("preview");
     const injected = (window as unknown as { __KADAL_DECK__?: { base?: unknown } }).__KADAL_DECK__;
     return (
-      <DeckShell deck={deck} base={shellBase(location.pathname, injected?.base)} preview={preview} kit={kit} />
+      <DeckShell
+        deck={deck}
+        base={shellBase(location.pathname, injected?.base)}
+        preview={preview}
+        kit={kit}
+      />
     );
   };
   return { headmatter: {}, slides: [], kit: { Shell: KitShell as ComponentType<unknown> } };
@@ -151,6 +169,10 @@ export interface DeckShellProps {
   kit?: KitOptions;
 }
 
+/** What the runtime compiler takes from a kit: its module map and its snippet files. */
+const kitCompile = (kit: KitOptions | undefined) =>
+  kit ? { modules: kit.modules, snippets: kit.snippets ?? {} } : {};
+
 /** A kit's build-time parts laid over a compiled manifest. */
 function withKit(manifest: DeckManifest, kit: KitOptions | undefined): DeckManifest {
   if (!kit) return manifest;
@@ -178,7 +200,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
     pendingAt = null;
     const load = async (text: string, files: Record<string, string> = {}, at?: number) => {
       const t0 = performance.now();
-      const compiled = await compileDeck(text, { files, ...(kit ? { modules: kit.modules } : {}) });
+      const compiled = await compileDeck(text, { files, ...kitCompile(kit) });
       if (!alive) return;
       pendingAt = at ?? null;
       setState({ phase: "ready", compiled, key: ++key });
@@ -218,10 +240,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
             .__KADAL_DECK__?.files;
           if (Array.isArray(listed)) await fetchAll(listed.filter((f) => typeof f === "string"));
           for (let round = 0; round < 3; round++) {
-            const { missing } = await compileDeck(text, {
-              files,
-              ...(kit ? { modules: kit.modules } : {}),
-            });
+            const { missing } = await compileDeck(text, { files, ...kitCompile(kit) });
             const todo = missing.filter((m) => !(m in files) && !tried.has(m));
             if (!todo.length) break;
             await fetchAll(todo);
@@ -229,7 +248,10 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
           await load(text, files);
         } catch (err) {
           if (alive)
-            setState({ phase: "failed", message: err instanceof Error ? err.message : String(err) });
+            setState({
+              phase: "failed",
+              message: err instanceof Error ? err.message : String(err),
+            });
         }
       })();
       return () => {
@@ -253,11 +275,16 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
           });
           return;
         }
-        void rt.commands.run(m.id, m.params, "agent").then((result) =>
-          post({ kadal: 1, type: "command:result", seq: m.seq, result }),
-        );
+        void rt.commands
+          .run(m.id, m.params, "agent")
+          .then((result) => post({ kadal: 1, type: "command:result", seq: m.seq, result }));
       } else if (m.type === "commands") {
-        post({ kadal: 1, type: "commands:list", seq: m.seq, commands: runtime()?.commands.list() ?? [] });
+        post({
+          kadal: 1,
+          type: "commands:list",
+          seq: m.seq,
+          commands: runtime()?.commands.list() ?? [],
+        });
       } else if (m.type === "pick") picking = m.on;
     };
     let picking = false;
@@ -290,7 +317,16 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       kadal: 1,
       type: "ready",
       version: VERSION,
-      ...(kit ? { kit: { kitVersion: kit.kitVersion, engine: kit.engine, modules: Object.keys(kit.modules) } } : {}),
+      ...(kit
+        ? {
+            kit: {
+              kitVersion: kit.kitVersion,
+              engine: kit.engine,
+              modules: Object.keys(kit.modules),
+              snippets: Object.keys(kit.snippets ?? {}),
+            },
+          }
+        : {}),
     });
     return () => {
       alive = false;
@@ -331,13 +367,19 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
     };
   }, [preview, state]);
 
-  if (state.phase === "loading")
-    return <div className="deck-shell-status" aria-busy="true" />;
+  if (state.phase === "loading") return <div className="deck-shell-status" aria-busy="true" />;
   if (state.phase === "failed")
     return (
       <div className="deck-shell-status" role="alert">
         <strong>This deck could not load.</strong> {state.message}
       </div>
     );
-  return <DeckRuntimeView key={state.key} {...deck} manifest={withKit(state.compiled.manifest, kit)} base={base} />;
+  return (
+    <DeckRuntimeView
+      key={state.key}
+      {...deck}
+      manifest={withKit(state.compiled.manifest, kit)}
+      base={base}
+    />
+  );
 }

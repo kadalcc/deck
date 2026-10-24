@@ -70,6 +70,8 @@ export interface SnippetOptions {
   dirOf: (file: string) => string;
   /** A `<<<` that could not be resolved: the slide shows a notice in its place. */
   onProblem?: (message: string, slide: RawSlide) => void;
+  /** How to word a file that is not there (default: "… could not be read"). */
+  missingMessage?: (path: string) => string;
 }
 
 export interface PrepareOptions extends SplitOptions {
@@ -97,7 +99,12 @@ export function prepareDeck(text: string, options: PrepareOptions): PreparedDeck
     let body = s.content;
     let snippets: string[] = [];
     if (snip) {
-      const expanded = expandSnippets(body, snip.dirOf(s.source.file), snip.read);
+      const expanded = expandSnippets(
+        body,
+        snip.dirOf(s.source.file),
+        snip.read,
+        snip.missingMessage,
+      );
       body = expanded.text;
       snippets = expanded.used;
       for (const p of expanded.problems) snip.onProblem?.(p, s);
