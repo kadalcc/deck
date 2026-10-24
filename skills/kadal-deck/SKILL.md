@@ -118,10 +118,37 @@ layout: section
 
 `npx kadal-deck info --search <words>` searches all of it; add `--json` for data.
 
+## Web edits and conflicts
+
+A published deck can also be edited on the web (quick edit in the builder, agents through the
+remote MCP). `kadal-deck publish` uploads the editable source (deck.mdx, `pages/`, `slides/`, YAML,
+`data/`, `drawings/` — privately) so it can, and `.kadal-deck/` remembers the version this folder
+last synced with.
+
+- **Always `npx kadal-deck status` before editing a published deck.** "The web has N newer
+  versions" → `npx kadal-deck pull` first, then edit.
+- **Pull before you publish.** `publish` exits **4** (`error.code: "diverged"`) when the deck
+  changed on the web since your last sync. Never answer that with `--force` unless the person says
+  so: it replaces their web edits (they stay in the version history; `pull --version N` brings
+  them back).
+- `pull` merges slide by slide: what only one side changed is taken, both sides' new slides are
+  kept. The same lines changed both ways become git-style markers and exit **5**:
+  `<<<<<<< local (your files)` … `=======` … `>>>>>>> web v14 (quick edit by Asha, …)`.
+- Resolve by reading both sides (`npx kadal-deck resolve --list`, or the file): prefer keeping
+  both sides' intent — `resolve deck.mdx#3 --both`, then edit the slide to blend them; `--ours` /
+  `--theirs` keep one side. Ask the person when the two edits contradict. Never delete either
+  side's content silently. Then `check`, then `publish`. `publish` refuses while any marker is left.
+- MCP: `deck_sync_status` → `deck_pull` → `deck_conflicts` → `deck_resolve` → `deck_check` →
+  `deck_publish` (which returns `{ok:false, reason:"diverged"}` instead of failing).
+- `--no-source` keeps the source off the host (quick edit off; it sticks until `--source`).
+  `.kadaldeckignore` (gitignore syntax) leaves files out.
+
 ## CLI facts for scripts
 
 Every command but `dev`, `build` and `mcp` takes `--json` (one JSON object on stdout, logs on
 stderr) and `--dir <path>`. Exit codes: 0 ok · 1 failed (check found errors) · 2 usage ·
-3 not signed in · 4 missing prerequisite (no deck.mdx, dependencies or Chromium not installed).
+3 not signed in · 4 missing prerequisite (no deck.mdx, dependencies or Chromium not installed),
+or from `publish`: the deck changed on the web (`error.code` "diverged") · 5 unresolved merge
+conflicts (`pull`, `resolve`, `publish`).
 `screenshot` flags: `--slide N` (repeatable, or `all`), `--scheme light|dark`, `--theme <name>`,
 `--width <px>`, `--dev` (skip the production build). Each picture shows the slide with every click revealed.

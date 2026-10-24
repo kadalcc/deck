@@ -12,7 +12,12 @@ npx kadal-deck info components   # what is built in; also: layouts, backgrounds,
 npx kadal-deck build             # static site in dist/
 npx kadal-deck export --png      # PDF (+ PNGs) in export/
 npx kadal-deck publish           # live URL with an audience room (the user runs `npx kadal-deck login` first)
+npx kadal-deck status            # published already? see whether the web has newer edits first
+npx kadal-deck pull              # merge the web's edits in (exit 5 = conflicts: resolve, then check)
 ```
+
+A published deck can be quick-edited on the web. Before editing one, run `status`; pull before
+publishing; never `publish --force` unless the user says so (it replaces their web edits).
 
 Add `--json` to any of them (except dev/build) for machine-readable output.
 

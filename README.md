@@ -207,7 +207,8 @@ Writing, presenting, the presenter view, export and a static build need nothing 
 and stay free. The **live room** needs a server holding a WebSocket per deck.
 
 - **[deck.kadal.cc](https://deck.kadal.cc)**: `npx kadal-deck publish` gives the deck a URL, a live
-  room, analytics, passcodes, version history and teams. There is a [free plan](https://deck.kadal.cc/pricing/),
+  room, analytics, passcodes, version history and teams, and quick edit on the web that
+  `kadal-deck pull` merges back into your files slide by slide. There is a [free plan](https://deck.kadal.cc/pricing/),
   and the paid plans fund the engine.
 - **Your own host**: `kadal-deck build` output runs on any static host (`kadal-deck ci` writes the
   deploy files for GitHub Pages, Netlify, Vercel, Cloudflare or Docker). The room protocol is typed
