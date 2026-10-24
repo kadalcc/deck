@@ -1,5 +1,28 @@
 # @kadal/theme-classic
 
+## 0.4.8
+
+### Patch Changes
+
+- a3db811: Every deck's theme menu (T) now offers all sixteen first-party themes, whatever the deck declares.
+
+  - **Nothing to install.** @kadal/deck ships a copy of each of the thirteen theme packages
+    (`dist/themes/<name>`), so a deck with only the engine installed can pick any of them, or name
+    one (`theme: ocean`). An installed `@kadal/theme-<name>` still wins over the copy.
+  - **`themes:` orders the menu; it does not narrow it.** The deck's `theme` comes first, then its
+    `themes` in order, then every first-party theme it did not name.
+  - **No heavier first paint.** A theme the deck did not name loads its stylesheet and layouts only
+    when someone picks it (or points at its row). Its code keeps the deck's colours; name it in
+    `themes:` to give its code its own Shiki colours.
+  - **Swatches before the CSS.** Theme packages gain `kadal.theme.swatch`, two colours the menu
+    paints before the theme's stylesheet has loaded.
+  - The prebuilt shell (the builder) offers all sixteen too.
+
+- Updated dependencies [a3db811]
+- Updated dependencies [cc70774]
+- Updated dependencies [dd72e9b]
+  - @kadal/deck@0.4.8
+
 ## 0.4.7
 
 ### Patch Changes
