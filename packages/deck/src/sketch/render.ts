@@ -67,9 +67,21 @@ const FAMILY: Record<number, string> = {
 };
 let modulePromise: Promise<ExcalidrawModule> | null = null;
 
-/** Where the fonts are: `<deck base>/excalidraw/`, absolute so the package resolves it plainly. */
+/**
+ * Where the fonts are: `<deck base>/excalidraw/`, absolute so the package resolves it plainly.
+ * A build with a relative base (the prebuilt shell, a deck's editing kit) may be served from
+ * anywhere — a host's preview route serves the kit's index.html at another path — so its fonts
+ * are found from this module's own file, in `<build>/assets/`, not from the page's address.
+ */
 function assetPath(): string {
   const base = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
+  if (base.startsWith(".")) {
+    try {
+      return new URL("../excalidraw/", import.meta.url).toString();
+    } catch {
+      /* not a module URL (a test): the page's */
+    }
+  }
   return new URL(`${base.replace(/\/?$/, "/")}excalidraw/`, window.location.href).toString();
 }
 

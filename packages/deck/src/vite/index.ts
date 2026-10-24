@@ -610,7 +610,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
             engine: engineVersion(),
           }),
         );
-        return;
+        // The kit draws sketches too: its own font copy, which a content-addressed host stores
+        // once (byte for byte the deck's and the shell's).
       }
       const dist = excalidrawDist();
       if (!dist) return;

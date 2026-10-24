@@ -71,17 +71,17 @@ export type FromPreview =
       element: string;
     }
   /**
-   * A button on a conflicted slide's card was pressed: settle that block of that file
-   * (`resolveConflict(text, choice, block)` from `@kadal/deck/sync`) and send the source again.
-   * `slide` is the flat index of the slide the card was on.
+   * A button on a conflicted slide's card was pressed: settle that conflict of that file
+   * (`resolveConflict(text, choice, which)` from `@kadal/deck/sync`; `which` counts the file's
+   * conflicts from 0) and send the source again. `slide` is the flat index of the card's slide.
    */
   | {
       kadal: 1;
       type: "conflict:resolve";
-      file: string;
-      slide: number;
-      block: number;
+      file?: string;
+      which: number;
       choice: "ours" | "theirs" | "both";
+      slide?: number;
     };
 
 export const isToPreview = (data: unknown): data is ToPreview =>

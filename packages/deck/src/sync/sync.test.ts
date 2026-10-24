@@ -676,15 +676,14 @@ describe("manifest", () => {
     expect(ignored("data/sub/data/big.csv")).toBe(false);
   });
 
-  test("the hash is of the sorted [path, sha] pairs", async () => {
+  test("the hash is of the sorted path<TAB>sha lines", async () => {
     const m = await sourceManifest({ "pages/a.mdx": "a", "deck.mdx": "é" });
     expect(m["deck.mdx"]!.size).toBe(2);
     expect(m["deck.mdx"]!.sha256).toBe(await sha256Hex("é"));
     expect(canonicalManifest(m)).toBe(
-      JSON.stringify([
-        ["deck.mdx", m["deck.mdx"]!.sha256],
-        ["pages/a.mdx", m["pages/a.mdx"]!.sha256],
-      ]),
+      `deck.mdx	${m["deck.mdx"]!.sha256}
+pages/a.mdx	${m["pages/a.mdx"]!.sha256}
+`,
     );
     expect(await sourceHash(m)).toBe(await sha256Hex(canonicalManifest(m)));
     expect(await sourceHash({ b: { sha256: "1" }, a: { sha256: "2" } })).toBe(

@@ -11,7 +11,7 @@ import { inside, readBody, sameOrigin, send } from "./notes-dev.ts";
  * /__kadal/resolve  —  THE CONFLICT CARD'S BUTTONS (`kadal-deck dev` only)
  * ─────────────────────────────────────────────────────────────────────────────
  *
- *   POST <base>__kadal/resolve  { file, block, choice: "ours" | "theirs" | "both" }
+ *   POST <base>__kadal/resolve  { file, which, choice: "ours" | "theirs" | "both" }
  *        200 { ok: true, left }     the block is settled in the file; `left` blocks remain in it
  *        400 / 403 / 404 / 409 { error }
  *
@@ -36,12 +36,12 @@ export function resolveEndpoint(
       return send(res, 403, { error: "Conflicts can only be resolved from the deck's own pages." });
     void readBody(req)
       .then((raw) => {
-        const body = JSON.parse(raw) as { file?: unknown; block?: unknown; choice?: unknown };
+        const body = JSON.parse(raw) as { file?: unknown; which?: unknown; choice?: unknown };
         const choice = body.choice;
         if (choice !== "ours" && choice !== "theirs" && choice !== "both")
           return send(res, 400, { error: "choice must be ours, theirs or both." });
-        if (typeof body.file !== "string" || !Number.isInteger(body.block))
-          return send(res, 400, { error: "file and block are required." });
+        if (typeof body.file !== "string" || !Number.isInteger(body.which))
+          return send(res, 400, { error: "file and which are required." });
         const root = realpathSync(dirname(options.entry()));
         const file = resolve(root, body.file);
         if (file !== resolve(options.entry()) && !inside(root, file))
@@ -49,9 +49,9 @@ export function resolveEndpoint(
         if (!existsSync(file)) return send(res, 404, { error: `${body.file} does not exist.` });
         const text = readFileSync(file, "utf8");
         const blocks = markerBlocks(text);
-        if ((body.block as number) >= blocks.length)
+        if ((body.which as number) >= blocks.length)
           return send(res, 409, { error: "That conflict is not in the file any more; reload." });
-        const out = resolveConflict(text, choice, body.block as number);
+        const out = resolveConflict(text, choice, body.which as number);
         // The side that deleted the whole file was chosen: delete it (the deck file itself stays).
         if (out === "" && file !== resolve(options.entry())) rmSync(file);
         else writeFileSync(file, out);

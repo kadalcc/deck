@@ -22,11 +22,13 @@
  *   kadal-deck logout                     forget the saved token
  *   kadal-deck whoami                     who and which workspace the token is for
  *   kadal-deck publish [--slug s] [--workspace handle] [--title t]
+ *   kadal-deck pull | status | resolve    two-way sync with the web's quick edits (cli/sync.ts)
  *   kadal-deck narrate [--voice v]        bake the notes as speech (Kokoro) into public/narration/
  *   kadal-deck mcp                        a Model Context Protocol server on stdio, for AI agents
  *
  * Every command but dev, build and mcp takes --json: one JSON object on stdout, everything else
- * on stderr. Exit codes: 0 ok · 1 failed · 2 usage · 3 not signed in · 4 missing prerequisite.
+ * on stderr. Exit codes: 0 ok · 1 failed · 2 usage · 3 not signed in · 4 missing prerequisite, or
+ * (publish) the deck changed on the web — `error.code` "diverged" · 5 unresolved merge conflicts.
  * KADAL_DECK_TOKEN and KADAL_DECK_HOST (default https://deck.kadal.cc) override the saved
  * credentials, which is how CI publishes.
  */
@@ -46,7 +48,7 @@ import {
 import { NoDeckError } from "./project.ts";
 import { MissingDependencyError, keepStdoutClean, runVite } from "./vite.ts";
 
-export const EXIT = { ok: 0, failed: 1, usage: 2, auth: 3, missing: 4 } as const;
+export const EXIT = { ok: 0, failed: 1, usage: 2, auth: 3, missing: 4, diverged: 4, conflicts: 5 } as const;
 
 export const HELP = `kadal-deck <command> [options]
 
@@ -107,6 +109,18 @@ export const HELP = `kadal-deck <command> [options]
               --no-thumbnail  skip the picture of slide 1 the host shows in its lists
               --without-notes  publish without the speaker notes
               --pwa  keep the deck's service worker (left out on the host by default)
+              --no-source  don't upload the editable source (turns quick edit off; it sticks —
+              --source turns it back on). The source is private: only your workspace reads it
+              --force  replace web edits made since your last sync (they stay in the history)
+              --showcase / --no-showcase  list the deck in the public showcase, or take it out
+              Exits 4 when the deck changed on the web (run pull), 5 while conflicts are left
+  pull        merge the web's edits (quick edit, agents) into your files, slide by slide
+              --version <n>  that version instead of the newest   --dry-run  say what would change
+              --ours / --theirs  settle every conflict that way instead of leaving markers
+              Changed files are backed up to .kadal-deck/sync/backup/ first. Exit 5 on conflicts
+  status      your files vs your last sync vs the web: newer web versions, local changes,
+              conflicts, an unpublished web draft   (--json for agents)
+  resolve     settle conflicts: resolve [file[#slide]] --ours | --theirs | --both   (--list)
   narrate     bake the narration: every notes segment spoken by Kokoro into public/narration/
               --voice <id> (default af_heart)  --dtype <fp32|fp16|q8|q4|q4f16>  --force (redo all)
               --setup  install kokoro-js into the deck first (an optional, ~400 MB dependency)
@@ -114,7 +128,8 @@ export const HELP = `kadal-deck <command> [options]
               --allow-outside  let tools read and write outside --dir (off by default)
 
 Global: --dir <path> (-C) runs in another folder · --json prints one JSON object on stdout ·
---help · --version.  Exit codes: 0 ok, 1 failed, 2 usage, 3 not signed in, 4 missing prerequisite.
+--help · --version.  Exit codes: 0 ok, 1 failed, 2 usage, 3 not signed in, 4 missing prerequisite
+(publish: the deck changed on the web), 5 unresolved merge conflicts.
 
 Docs: https://deck.kadal.cc/docs/`;
 
@@ -170,6 +185,25 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     thumbnail: { kind: "boolean" },
     "without-notes": { kind: "boolean" },
     pwa: { kind: "boolean" },
+    source: { kind: "boolean" },
+    force: { kind: "boolean" },
+    showcase: { kind: "boolean" },
+  },
+  pull: {
+    slug: { kind: "string" },
+    workspace: { kind: "string" },
+    host: { kind: "string" },
+    version: { kind: "number" },
+    ours: { kind: "boolean" },
+    theirs: { kind: "boolean" },
+    "dry-run": { kind: "boolean" },
+  },
+  status: { slug: { kind: "string" }, workspace: { kind: "string" }, host: { kind: "string" } },
+  resolve: {
+    ours: { kind: "boolean" },
+    theirs: { kind: "boolean" },
+    both: { kind: "boolean" },
+    list: { kind: "boolean" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
   // Mirrors IMPORT_FLAGS in import.ts, which is imported only when the command runs.
@@ -214,8 +248,13 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
   try {
     return await run(command, rest, cwd, { json, say, emit });
   } catch (e) {
+    const name = (e as Error)?.name;
     const code =
-      e instanceof UsageError || (e as Error)?.name === "TargetNotEmptyError"
+      name === "DivergedError"
+        ? EXIT.diverged
+        : name === "ConflictsError"
+          ? EXIT.conflicts
+          : e instanceof UsageError || name === "TargetNotEmptyError"
         ? EXIT.usage
         : e instanceof MissingDependencyError ||
             e instanceof NoDeckError ||
@@ -230,8 +269,22 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
       emit({
         ok: false,
         error: {
+          ...(name === "DivergedError"
+            ? {
+                head: (e as { head?: unknown }).head,
+                base: (e as { base?: unknown }).base,
+                next: ["kadal-deck pull", "kadal-deck publish --force"],
+              }
+            : {}),
+          ...(name === "ConflictsError" ? { conflicts: (e as { conflicts?: unknown }).conflicts } : {}),
           code:
-            e instanceof HostError
+            name === "DivergedError"
+              ? "diverged"
+              : name === "ConflictsError"
+                ? "conflicts"
+                : name === "NoSourceError"
+                  ? "no_source"
+                  : e instanceof HostError
               ? e.code
               : code === EXIT.usage
                 ? "usage"
@@ -604,6 +657,12 @@ async function run(
     }
     case "publish":
       return publishCommand(dir, flags, io);
+    case "pull":
+    case "status":
+    case "resolve": {
+      const { syncCommand } = await import("./sync-command.ts");
+      return syncCommand(command, dir, flags, positionals, io);
+    }
     case "import": {
       const { importCommand } = await import("./import.ts");
       return importCommand(positionals, flags, cwd, io);
@@ -869,7 +928,8 @@ export async function publishCommand(
     else say(message);
     return EXIT.auth;
   }
-  const { formatBytes, publish, slugFrom, titleFrom } = await import("./publish.ts");
+  const { formatBytes, slugFrom, titleFrom, describeVersion } = await import("./publish.ts");
+  const sync = await import("./sync.ts");
   const hostFlag = str(flags.host);
   const host = hostFlag ? hostFrom(process.env, hostFlag) : creds.host;
   let workspace = str(flags.workspace) ?? creds.workspace;
@@ -882,8 +942,8 @@ export async function publishCommand(
   let title = str(flags.title);
   if (!title) title = titleFrom(await readFile(join(dir, "deck.mdx"), "utf8").catch(() => ""));
   const outDir = resolve(dir, ".kadal-deck", "publish");
-  say(`publish  @${workspace}/${slug} → ${host}`);
-  const result = await publish({
+  const { result, prep, hash, kitBuilt, replaced } = await sync.publishWithSync({
+    dir,
     host,
     token: creds.token,
     workspace,
@@ -891,7 +951,11 @@ export async function publishCommand(
     title,
     outDir,
     log: say,
-    build: async (base, out) => {
+    source: flags.source === false ? false : flags.source === true ? true : undefined,
+    force: flags.force === true,
+    showcase: typeof flags.showcase === "boolean" ? flags.showcase : undefined,
+    meta: await deckMeta(dir),
+    build: async (base, out, kitDir) => {
       await rm(out, { recursive: true, force: true });
       // `--without-notes`: the deck's plugin builds no notes (vite/index.ts reads this).
       if (flags["without-notes"] === true) process.env.KADAL_DECK_WITHOUT_NOTES = "1";
@@ -900,6 +964,14 @@ export async function publishCommand(
       process.env.KADAL_DECK_TARGET = "host";
       if (flags.pwa === true) process.env.KADAL_DECK_PWA = "1";
       await runVite(dir, ["build", "--base", base, "--outDir", out, "--emptyOutDir"]);
+      if (!kitDir) return;
+      // The deck's editing kit (vite/kit.ts), so the web builder can render its own components.
+      process.env.KADAL_DECK_KIT = "1";
+      try {
+        await runVite(dir, ["build", "--base", "./", "--outDir", kitDir, "--emptyOutDir"]);
+      } finally {
+        delete process.env.KADAL_DECK_KIT;
+      }
     },
   });
   // The picture the host lists the deck by. Never a reason for the publish to fail.
@@ -929,12 +1001,38 @@ export async function publishCommand(
       bytes: result.bytes,
       uploadedBytes: result.uploadedBytes,
       thumbnail,
+      source: prep.source ? { files: prep.source.length, sourceHash: hash } : null,
+      kit: kitBuilt,
+      ...(replaced ? { replaced: { ...replaced, restore: `kadal-deck pull --version ${replaced.version}` } } : {}),
     });
   else {
     say(
       `\nPublished version ${result.version}: ${result.files} files (${formatBytes(result.bytes)}), ${result.uploaded} uploaded.`,
     );
+    if (replaced)
+      say(`Replaced the web's ${describeVersion(replaced)}. It is still in the version history: \`kadal-deck pull --version ${replaced.version}\` brings it back.`);
+    if (prep.off) say("Source not uploaded (--no-source): quick edit on the web is off for this deck.");
     say(result.url);
   }
   return EXIT.ok;
+}
+
+/** The deck's resolved theme and slide count, for the host's lists and the showcase. */
+async function deckMeta(dir: string): Promise<{ theme: string; slides: number } | null> {
+  try {
+    const { openProject } = await import("./project.ts");
+    const { readDeck } = await import("../authoring/index.ts");
+    const project = openProject(dir);
+    const deck = readDeck(project.files, { root: project.dir });
+    let theme = typeof deck.headmatter.theme === "string" ? deck.headmatter.theme : "minimal";
+    try {
+      const { deckPackageSet } = await import("../vite/packages.ts");
+      theme = deckPackageSet(deck.headmatter, dir).theme.name;
+    } catch {
+      /* the name as written */
+    }
+    return { theme, slides: deck.slides.length };
+  } catch {
+    return null;
+  }
 }

@@ -115,8 +115,8 @@ export interface CompiledConflict {
   slide: number | null;
   /** 1-based line of its `<<<<<<<`. */
   line: number;
-  /** Its 0-based position among the file's conflict blocks: `resolveConflict(text, choice, block)`. */
-  block: number;
+  /** Its 0-based position among the file's conflicts: `resolveConflict(text, choice, which)`. */
+  which: number;
 }
 
 export interface CompiledDeck {
@@ -365,7 +365,7 @@ export async function compileDeck(
         .filter(({ b }) => b.start >= s.range.start && b.start < s.range.end);
       if (mine.length) {
         for (const { b, block } of mine) {
-          conflicts.push({ file: s.range.file, slide: i, line: b.start + 1, block });
+          conflicts.push({ file: s.range.file, slide: i, line: b.start + 1, which: block });
           push({
             message: `Unresolved merge conflict on slide ${i + 1} (${s.range.file}:${b.start + 1})`,
             file: s.range.file,
@@ -489,7 +489,7 @@ export async function compileDeck(
   for (const [name, blocks] of blocksByFile)
     if (!slideFiles.has(name))
       blocks.forEach((b, block) => {
-        conflicts.push({ file: name, slide: null, line: b.start + 1, block });
+        conflicts.push({ file: name, slide: null, line: b.start + 1, which: block });
         push({ message: `Unresolved merge conflict in ${name}:${b.start + 1}`, file: name, line: b.start + 1, slide: null });
       });
 

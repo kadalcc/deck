@@ -8,9 +8,10 @@
  * edits them, and the CLI pulls the edits back. The globs below are the contract between the
  * CLI (what it uploads) and a host (what it accepts); both import them from here.
  *
- * `sourceHash` names a whole source tree in one string: SHA-256 (hex) of the JSON array of
- * `[path, sha256]` pairs sorted by path (UTF-16 code-unit order, as `Array#sort` does), e.g.
- * `[["deck.mdx","ab12…"],["pages/a.mdx","cd34…"]]`. Equal hashes mean nothing editable changed.
+ * `sourceHash` names a whole source tree in one string: SHA-256 (hex) of the lines
+ * `<path>\t<sha256>\n`, one per file, sorted by path (UTF-16 code-unit order, as `Array#sort`
+ * does) and joined with nothing between them — the host computes the same. Equal hashes mean
+ * nothing editable changed.
  * Web Crypto only (browsers, Workers, Node ≥ 20 have it as `globalThis.crypto`).
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -111,11 +112,10 @@ export async function sha256Hex(data: string | Uint8Array): Promise<string> {
 
 /** The canonical form `sourceHash` hashes (exported so a host can check it agrees). */
 export function canonicalManifest(manifest: Record<string, { sha256: string }>): string {
-  return JSON.stringify(
-    Object.keys(manifest)
-      .sort()
-      .map((p) => [p, manifest[p]!.sha256]),
-  );
+  return Object.keys(manifest)
+    .sort()
+    .map((p) => `${p}\t${manifest[p]!.sha256}\n`)
+    .join("");
 }
 
 /** One hash for a whole source manifest: equal hashes, same editable files. */

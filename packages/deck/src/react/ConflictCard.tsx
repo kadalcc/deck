@@ -37,10 +37,11 @@ export interface ConflictSlideProps {
 }
 
 export type ConflictChoice = "ours" | "theirs" | "both";
+/** `which` is the conflict's 0-based position among its file's conflicts (`resolveConflict`'s). */
 export type ConflictResolver = (r: {
   file: string;
   slide: number;
-  block: number;
+  which: number;
   choice: ConflictChoice;
 }) => void | Promise<void>;
 
@@ -70,7 +71,7 @@ export function ConflictSlide({ file, slide, blocks }: ConflictSlideProps) {
   const choose = (block: number, choice: ConflictChoice) => {
     if (!resolver) return;
     setBusy(block);
-    void Promise.resolve(resolver({ file, slide, block, choice })).finally(() => setBusy(null));
+    void Promise.resolve(resolver({ file, slide, which: block, choice })).finally(() => setBusy(null));
   };
   const button = (block: number, choice: ConflictChoice, label: string) =>
     h(

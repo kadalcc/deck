@@ -155,7 +155,7 @@ Theirs
     const { createElement } = await import("react");
     const out = await compileDeck(conflicted);
     expect(out.ok).toBe(false);
-    expect(out.conflicts).toEqual([{ file: "deck.mdx", slide: 1, line: 11, block: 0 }]);
+    expect(out.conflicts).toEqual([{ file: "deck.mdx", slide: 1, line: 11, which: 0 }]);
     expect(out.diagnostics.map((d) => d.message)).toEqual([
       "Unresolved merge conflict on slide 2 (deck.mdx:11)",
     ]);
