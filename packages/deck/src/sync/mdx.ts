@@ -327,6 +327,33 @@ function align(base: Info[], side: Info[]): Array<number | undefined> {
       usedBase.add(i);
     }
   }
+  // 4 · in place: a run of slides still unpaired, between two paired neighbours (or an end of
+  // the file), pairs in order with the unpaired base slides between those neighbours when there
+  // are as many of them. `# Hi` edited to `# Hello` shares too few letters to match, yet it is
+  // the same slide; called new, an edit of it on both sides would come out as two slides instead
+  // of a conflict. A slide added where the base had none has no partner here, so an add on both
+  // sides still keeps both.
+  for (let j = 0; j < side.length;) {
+    if (out[j] !== undefined) {
+      j++;
+      continue;
+    }
+    let k = j;
+    while (k < side.length && out[k] === undefined) k++;
+    const lo = j > 0 ? out[j - 1]! : -1;
+    const hi = k < side.length ? out[k]! : base.length;
+    const gap: number[] = [];
+    for (let i = lo + 1; i < hi; i++) if (!usedBase.has(i)) gap.push(i);
+    if (gap.length === k - j)
+      gap.forEach((i, d) => {
+        const a = base[i]!;
+        const b = side[j + d]!;
+        if (a.id && b.id && a.id !== b.id) return;
+        out[j + d] = i;
+        usedBase.add(i);
+      });
+    j = k;
+  }
   return out;
 }
 
