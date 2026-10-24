@@ -470,6 +470,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         server?: { https?: object; fs?: { allow: string[] }; allowedHosts?: string[] };
         resolve?: { dedupe: string[] };
         optimizeDeps?: { include: string[] };
+        define?: Record<string, string>;
       } = {};
       // A theme or addon package (or a layer file) brings modules from outside the deck's own
       // tree: one React, one engine for all of them, and a `../my-theme` the dev server may serve.
@@ -484,7 +485,11 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         }
       }
       // The kit (vite/kit.ts) rides beside the deck's own build, whose public/ files it shares.
-      if (kitMode() && env.command === "build") out.build = { copyPublicDir: false };
+      // The engine's version, said in the preview's `ready` as the prebuilt shell says it.
+      if (kitMode() && env.command === "build") {
+        out.build = { copyPublicDir: false };
+        out.define = { __KADAL_DECK_VERSION__: JSON.stringify(engineVersion()) };
+      }
       // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
       // only an ES-module worker can do. A deck that set its own worker format keeps it.
       if (!user.worker?.format) out.worker = { format: "es" };
