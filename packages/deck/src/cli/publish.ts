@@ -8,10 +8,16 @@ import { DEFAULT_HOST, HostError, request } from "./host.ts";
  * `kadal-deck publish`, the host's five steps:
  *
  *   1. POST /workspaces/:ws/decks {slug, title}      → the deck (create-or-get) and its `base`
- *   2. build with Vite `base` = that base
- *   3. POST /decks/:id/versions {files: manifest}      → {version, missing: [sha256]}
- *   4. PUT /blobs/:sha256 for each missing file        (content-addressed: unchanged files never travel)
- *   5. POST /decks/:id/versions/:v/commit             → {url}
+ *   2. build with Vite `base` = that base (and the deck's editing kit, cli/sync.ts)
+ *   3. POST /decks/:id/versions {files, source?, base, baseSourceHash?, force?, origin, kit?,
+ *      meta?, showcase?}                               → 201 {version, missing: [sha256], sourceHash, base}
+ *      409 {error: "diverged", head, base}             checked here already, before any upload
+ *   4. PUT /blobs/:sha256 for each missing file        (content-addressed: unchanged files never travel;
+ *                                                      source blobs too — the host never serves them)
+ *   5. POST /decks/:id/versions/:v/commit[?force=1] {base, baseSourceHash?, force?}
+ *                                                      → {url, version}
+ *      409 {error: "diverged", head, base}             the deck changed on the web since `base`
+ *      409 {error: "missing_blobs", missing}           send those, commit again
  */
 
 export interface PublishedDeck {
@@ -29,6 +35,61 @@ export interface ManifestEntry {
   type: string;
 }
 
+/** One editable source file, with its text (cli/sync.ts collects them). */
+export interface SourceEntry {
+  path: string;
+  size: number;
+  sha256: string;
+  text: string;
+}
+
+/** The head the host reports when a commit's `base` is not the deck's current version. */
+export interface DivergedHead {
+  version: number;
+  origin?: string | null;
+  by?: string | null;
+  at?: number | string | null;
+  sourceHash?: string | null;
+}
+
+/** 409 diverged: the deck changed on the web since the version this tree last synced with. */
+export class DivergedError extends Error {
+  constructor(
+    readonly head: DivergedHead,
+    readonly base: number | null,
+  ) {
+    super(divergedMessage(head));
+    this.name = "DivergedError";
+  }
+}
+
+const ORIGIN_WORDS: Record<string, string> = {
+  builder: "quick edit",
+  mcp: "an agent's edit",
+  rollback: "rollback",
+  cli: "a CLI publish",
+};
+
+/** "v14 (quick edit by Asha, 25 Oct 14:02)" */
+export function describeVersion(h: DivergedHead): string {
+  const what = (h.origin && ORIGIN_WORDS[h.origin]) || h.origin || "an edit";
+  const at = h.at ? when(h.at) : null;
+  return `v${h.version} (${[`${what}${h.by ? ` by ${h.by}` : ""}`, at].filter(Boolean).join(", ")})`;
+}
+
+/** A timestamp (ms, s or ISO) as "25 Oct 14:02". */
+export function when(at: number | string): string {
+  const n = typeof at === "number" ? (at < 1e12 ? at * 1000 : at) : Date.parse(at);
+  if (!Number.isFinite(n)) return String(at);
+  const d = new Date(n);
+  const month = d.toLocaleString("en-GB", { month: "short" });
+  return `${d.getDate()} ${month} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+export function divergedMessage(h: DivergedHead): string {
+  return `The deck changed on the web since your last sync: ${describeVersion(h)}. Run \`kadal-deck pull\` to merge their edits, or \`kadal-deck publish --force\` to replace them (they stay in version history).`;
+}
+
 export interface PublishOptions {
   host: string;
   token: string;
@@ -42,6 +103,24 @@ export interface PublishOptions {
   retries?: number;
   fetch?: typeof fetch;
   log?: (line: string) => void;
+  /** The deck's editable source (cli/sync.ts), stored privately beside the build. */
+  source?: SourceEntry[] | null;
+  /**
+   * The version the local tree last synced with (null: never), and that version's source hash,
+   * for the host's compare-and-swap. A 0.5+ CLI always sends `base`: its absence is how the host
+   * tells a 0.4 CLI, which publishes without the check.
+   */
+  base?: (deck: PublishedDeck) => { version: number | null; sourceHash: string | null };
+  /** Replace the head even when it moved (`--force`). */
+  force?: boolean;
+  /** kit.json, when the build made a kit. */
+  kit?: () => unknown;
+  /** For the host's lists and the showcase: the resolved theme and the slide count. */
+  meta?: { theme: string; slides: number } | null;
+  /** `--showcase` / `--no-showcase`; undefined leaves the setting alone. */
+  showcase?: boolean;
+  /** Called once the deck is known, before the build (cli/sync.ts warns about web drafts). */
+  onDeck?: (deck: PublishedDeck) => Promise<void> | void;
 }
 
 export interface PublishResult {
@@ -65,6 +144,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     { ...http, json: { slug: o.slug, ...(o.title ? { title: o.title } : {}) } },
   );
   log(`deck     ${deck.id}  ${deck.base}`);
+  await o.onDeck?.(deck);
 
   // 2 · the build, for where the host serves it
   await o.build(deck.base, o.outDir);
@@ -75,21 +155,62 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     throw new Error(`The build in ${o.outDir} has no index.html — is this a deck folder?`);
   const bytes = files.reduce((n, f) => n + f.size, 0);
   log(`manifest ${files.length} files, ${formatBytes(bytes)}`);
+  const synced = o.base ? o.base(deck) : undefined;
+  const base = synced?.version;
+  // The compare-and-swap fields, on create (checked early, before any upload) and on commit.
+  const cas = synced
+    ? {
+        base: synced.version,
+        ...(synced.sourceHash ? { baseSourceHash: synced.sourceHash } : {}),
+        ...(o.force ? { force: true } : {}),
+      }
+    : {};
+  const diverged = (e: unknown): never => {
+    const body = (e as HostError).body as { error?: string; head?: DivergedHead; base?: number | null } | null;
+    if (e instanceof HostError && e.status === 409 && body?.error === "diverged" && body.head)
+      throw new DivergedError(body.head, body.base ?? base ?? null);
+    throw e;
+  };
+  const kit = o.kit?.() ?? null;
   const { data: created } = await request<{ version: number; missing: string[] }>(
     o.host,
-    `/decks/${encodeURIComponent(deck.id)}/versions`,
-    { ...http, json: { files } },
-  );
+    `/decks/${encodeURIComponent(deck.id)}/versions${o.force ? "?force=1" : ""}`,
+    {
+      ...http,
+      json: {
+        files,
+        origin: "cli",
+        ...(o.source ? { source: o.source.map(({ path, size, sha256 }) => ({ path, size, sha256 })) } : {}),
+        ...cas,
+        ...(kit ? { kit } : {}),
+        ...(o.meta ? { meta: o.meta } : {}),
+        ...(o.showcase !== undefined ? { showcase: o.showcase } : {}),
+      },
+    },
+  ).catch(diverged);
 
   // 4 · only what the host has never seen
-  const bySha = new Map(files.map((f) => [f.sha256, f]));
+  type Upload = { sha256: string; size: number; type: string; read: () => Promise<Uint8Array> };
+  const bySha = new Map<string, Upload>();
+  for (const s of o.source ?? [])
+    bySha.set(s.sha256, {
+      sha256: s.sha256,
+      size: s.size,
+      type: "text/plain; charset=utf-8",
+      read: async () => new TextEncoder().encode(s.text),
+    });
+  for (const f of files)
+    bySha.set(f.sha256, {
+      ...f,
+      read: async () => new Uint8Array(await readFile(join(o.outDir, ...f.path.split("/")))),
+    });
   const upload = async (shas: string[]) => {
-    const queue = shas.map((s) => bySha.get(s)).filter((f): f is ManifestEntry => !!f);
+    const queue = shas.map((s) => bySha.get(s)).filter((f): f is Upload => !!f);
     let next = 0;
     const worker = async () => {
       while (next < queue.length) {
-        const f = queue[next++];
-        const body = new Uint8Array(await readFile(join(o.outDir, ...f.path.split("/"))));
+        const f = queue[next++]!;
+        const body = await f.read();
         await withRetries(
           () =>
             request(o.host, `/blobs/${f.sha256}`, {
@@ -108,13 +229,14 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   let uploadedBytes = await upload(created.missing);
   log(`upload   ${created.missing.length} new file(s), ${formatBytes(uploadedBytes)}`);
 
-  // 5 · make it current (once more if the host says something didn't arrive)
+  // 5 · make it current (once more if the host says something didn't arrive), against `base`:
+  // the host refuses with 409 diverged when the deck moved on the web, unless forced.
   const commit = () =>
     request<{ url: string; version: number }>(
       o.host,
-      `/decks/${encodeURIComponent(deck.id)}/versions/${created.version}/commit`,
-      { ...http, method: "POST", json: {} },
-    );
+      `/decks/${encodeURIComponent(deck.id)}/versions/${created.version}/commit${o.force ? "?force=1" : ""}`,
+      { ...http, method: "POST", json: cas },
+    ).catch(diverged);
   let done: { url: string; version: number };
   try {
     done = (await commit()).data;

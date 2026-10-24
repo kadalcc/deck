@@ -63,6 +63,14 @@ export {
   useUi,
 } from "./react/hooks.ts";
 export { SlideFrame, loadSlide } from "./react/SlideFrame.tsx";
+export {
+  type ConflictBlockView,
+  type ConflictChoice,
+  type ConflictResolver,
+  type ConflictSlideProps,
+  ConflictSlide,
+  setConflictResolver,
+} from "./react/ConflictCard.tsx";
 export { BackgroundLayer, registerBackground, backgroundComponent } from "./react/Backgrounds.tsx";
 export {
   type TransitionDefinition,
@@ -72,6 +80,23 @@ export {
   transitionNames,
 } from "./core/transitions.ts";
 export { LAYOUTS, type LayoutProps } from "./react/layouts.tsx";
+export {
+  PREMIUM_PREFIX,
+  isPremiumName,
+  parseCatalog,
+  premiumBase,
+  type PremiumEntry,
+  type PremiumFailure,
+  type PremiumKind,
+} from "./core/premium.ts";
+export {
+  type DeckRuntimeGlobal,
+  type ItemState as PremiumItemState,
+  PremiumLoader,
+  installRuntime,
+  premiumLoader,
+  usePremiumItem,
+} from "./react/premium.tsx";
 export * from "./components/index.ts";
 export {
   DEFAULT_CONFIG,
@@ -222,12 +247,7 @@ export {
 export { plannedLength, presenterTimer } from "./react/pacing.ts";
 export { DEFAULT_FILTERS, filterCss, type DisplayFilters } from "./core/filters.ts";
 export { filtersStore, setFilters } from "./react/DisplaySettings.tsx";
-export {
-  registerIcons,
-  requestIcon,
-  setIconifyApi,
-  type IconState,
-} from "./icons/registry.ts";
+export { registerIcons, requestIcon, setIconifyApi, type IconState } from "./icons/registry.ts";
 export { iconFromTag, parseIconName, type IconData, type IconifySet } from "./icons/data.ts";
 export {
   RenderContextProvider,
@@ -237,4 +257,13 @@ export {
 } from "./react/render-context.ts";
 export { useEffectiveScheme, type RenderWhenContext } from "./components/Contextual.tsx";
 export { switchRanges } from "./components/Switch.tsx";
+export {
+  DEFAULT_EMOJI_BASE,
+  EMOJI_SETS,
+  emojiKey,
+  emojiSlug,
+  emojiUrl,
+  gifPlaceholder,
+  memeLayout,
+} from "./components/media.tsx";
 export { type MarkType } from "./components/mark-geometry.ts";

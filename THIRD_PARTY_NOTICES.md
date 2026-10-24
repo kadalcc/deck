@@ -82,3 +82,13 @@ the `monaco-editor` package) with it.
 
 The CSS for TwoSlash's popups and the notation marks is written for this engine (it uses the class
 names TwoSlash and Shiki's transformers emit); no stylesheet of theirs is copied.
+
+## Stickers, emoji, GIFs and memes (`<Emoji>`, `<Gif>`, `<Meme>`)
+
+Nothing is bundled. `<Emoji>` loads its images at run time from a host (by default
+https://decks.kadal.cc/emoji), which serves the sets under their own licences: Microsoft Fluent
+Emoji (MIT), Noto Emoji images (Apache-2.0), Noto Animated Emoji (CC BY 4.0) and Twemoji, the
+jdecked fork (graphics CC BY 4.0); the host's credits page carries the notices. `<Gif>` hot-links
+the provider's media (KLIPY) and never copies it — exports draw a link card instead. `<Meme>`
+fetches Anton (SIL Open Font License 1.1) from Google Fonts at run time; meme templates are
+hot-linked from Imgflip with a link back.

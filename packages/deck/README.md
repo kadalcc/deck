@@ -49,14 +49,16 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | `kadal-deck screenshot [--slide N\|all] [--out dir] [--scheme light\|dark] [--theme t] [--width px] [--dev] [--url u]` | PNG of each slide in `screenshots/` (build + preview, headless Chromium). `--slide` counts from 1, as `export --range` does |
 | `kadal-deck export [--format pdf,png,pptx,pptx-editable,md] [--range 1,3-5] [--dark] [--no-with-clicks] [--omit-background] [--per-slide] [--out dir] [--output name] [--scale n] [--url u]` | PDF (and PNG, PPTX, editable PPTX, Markdown) into `export/` — install `playwright`. Each PDF page is a picture of the slide with its text over it as real text, so it looks the same in every viewer and stays searchable, with bookmarks from the slide titles; `--vector-pdf` prints with the browser alone. See [Export](#export) |
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser) |
-| `kadal-deck publish [--slug] [--workspace] [--title] [--host] [--without-notes] [--pwa]` | build for the host and publish; only changed files are uploaded |
+| `kadal-deck publish [--slug] [--workspace] [--title] [--host] [--without-notes] [--pwa] [--no-source] [--force] [--showcase\|--no-showcase]` | build for the host and publish; only changed files are uploaded. The editable source goes too (privately) for quick edit on the web; see [Edit on the web, sync back](#edit-on-the-web-sync-back) |
+| `kadal-deck pull [--version n] [--ours\|--theirs] [--dry-run]` / `status` / `resolve [file[#slide]] --ours\|--theirs\|--both` | bring web edits into your files slide by slide, see where you stand, settle conflicts |
 | `kadal-deck narrate [--voice id] [--dtype q8\|fp32…] [--force] [--setup]` | bake the narration: each notes segment spoken by Kokoro into `public/narration/` (MP3/Opus with ffmpeg, else WAV) + `public/narration.json`; skips clips that exist. `--setup` installs `kokoro-js` |
 | `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |
 
 Every command takes `--dir <path>` (`-C`) and, except `dev`, `build` and `mcp`, `--json`: one JSON
 object on stdout, progress on stderr. Flags accept `--flag value` and `--flag=value`; switches
 take `--no-` to turn off. Exit codes: **0** ok (check: no errors) · **1** failed · **2** usage ·
-**3** not signed in · **4** missing prerequisite (no `deck.mdx`, dependencies or Chromium).
+**3** not signed in · **4** missing prerequisite (no `deck.mdx`, dependencies or Chromium), or
+from `publish`: the deck changed on the web since your last sync · **5** unresolved merge conflicts.
 
 `KADAL_DECK_TOKEN` (an API token from the dashboard) and `KADAL_DECK_HOST` override the saved
 login, which is how CI publishes.
@@ -421,6 +423,34 @@ route copies, and no service worker unless `publish --pwa`. deck.kadal.cc serves
 (below), and a browser gives an opaque origin no service worker at all; the flag is for a host of
 your own that serves decks on a real origin, where the worker keeps the deck offline and still
 leaves the room and the host's `/api` alone.
+
+### Edit on the web, sync back
+
+`publish` also uploads the deck's **editable source** — `deck.mdx`, `pages/**` and `slides/**`
+(`.mdx`/`.md`), YAML at the top and under `data/`, `data/**` CSV and JSON, `drawings/**` — and
+keeps it private to your workspace (never served on the decks host). Code (`src/`, configs,
+`package.json`, `public/`) stays on your machine; instead the build adds the deck's **editing kit**
+under `__kadal/kit/`: the prebuilt shell with your components, styles, config, theme packages and
+every module your MDX imports, plus `kit.json` (what the builder and its agent may use). So the
+deck can be quick-edited in the web builder, and from the presenter view's Edit button.
+
+The two sides then meet in the middle without losing work:
+
+```sh
+npx kadal-deck status     # web has 2 newer versions (v13 quick edit by Asha, …); local changes in deck.mdx (3 slides)
+npx kadal-deck pull       # three-way merge, slide by slide, against .kadal-deck/'s snapshot; backups first
+npx kadal-deck resolve deck.mdx#4 --both    # or --ours / --theirs; --list shows what is left
+npx kadal-deck publish    # refused (exit 4) if the web moved since your last sync; exit 5 while conflicts are left
+```
+
+The merge (`@kadal/deck/sync`, the same one the web builder runs) aligns slides by `id:` or by
+content, so reorders, insertions and edits to different slides merge cleanly; the same lines
+edited both ways are left as git-style conflict markers, which `check`, the dev server (a
+"Yours / Web" card with Keep buttons), the builder and `publish` all refuse to ship. `--force`
+replaces the web's edits — they stay in the version history, and `pull --version N` brings them
+back. `--no-source` keeps the source local (quick edit off; it sticks until `--source`), and a
+`.kadaldeckignore` (gitignore syntax) leaves files out. Keep `.kadal-deck/` out of git (the
+starter's `.gitignore` does).
 
 ### Sandboxed hosting (opaque origins)
 

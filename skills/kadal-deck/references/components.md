@@ -100,6 +100,7 @@ A block you place by hand. `pos` is "x,y,w,h[,rotation]" in stage pixels (`_` he
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `pos` | `string` |  | "x,y,w,h[,r]" in stage pixels (`_` height: automatic), or a name in the frontmatter's `dragPos`. |
+| `place` | `string` |  | Where it sits while `pos` says nothing, in the same "x,y,w,h[,r]" form — how `<Sticker x y size>` places itself. The source still has no position, so the first drag writes `pos`. |
 | `at` | `ClickAt` |  | A click step, as `<Click at>`. |
 | `hide` | `boolean` |  | Start shown and hide at the step. |
 | `effect` | `string` | `"fade-in"` | The reveal effect with `at` (see `<Click effect>`). |
@@ -742,6 +743,45 @@ A Bluesky post, through Bluesky's embed, in the slide's colour scheme; `deck exp
 | `scale` | `string \| number` | `1` | Scale factor. |
 | `poster` | `string` |  | Stands in for the post in print, the overview and while it loads. |
 
+#### `<Emoji>`
+
+One emoji as an image from an open set (Fluent 3D/Color/Flat, Noto, Noto Animated, Twemoji), served by the host (`https://decks.kadal.cc/emoji` by default). `char` is exact; `name` is looked up in the host's index. Animated Noto shows a still under reduced motion and in print.
+
+```mdx
+<Emoji name="party-popper" />  <Emoji char="👍🏽" set="twemoji" size={96} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `name` | `string` |  | Its name in the host's index ("party-popper"); `char` wins when both are given. |
+| `char` | `string` |  | The emoji itself ("🎉", "👍🏽"): exact, no lookup. Children work too: <Emoji>🎉</Emoji>. |
+| `set` | `"fluent-3d" \| "fluent-color" \| "fluent-flat" \| "noto" \| "noto-animated" \| "twemoji"` |  | fluent-3d (default), fluent-color, fluent-flat, noto, noto-animated, twemoji. |
+| `size` | `string \| number` | `"1.2em"` | CSS size (a number is px). Default 1.2em: it sits in a line of text. |
+| `alt` | `string` |  | Alternative text (default: the name). |
+| `children` | `ReactNode` |  |  |
+
+#### `<Gif>`
+
+A GIF from a provider (KLIPY), hot-linked exactly as the provider returned it, with a small credit on hover. Print and every export (PDF, PNG, PPTX) show a card with its title and a link instead of the media — the providers' terms don't allow copying it.
+
+```mdx
+<Gif provider="klipy" slug="hello-hi-662" src="https://static.klipy.com/ii/…/hello.gif" title="Hello" width={498} height={498} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `provider` | `string` | `"klipy"` | Who it came from: "klipy" (GIPHY and others later). |
+| `id` | `string` |  | The provider's id. |
+| `slug` | `string` |  | The provider's slug (builds the link back). |
+| `src` * | `string` |  | The media URL exactly as the provider returned it (GIF, WebP, or MP4/WebM). |
+| `title` | `string` |  | Title: the alt text, the credit and the export card. |
+| `creator` | `string` |  | Who made it, for the credit. |
+| `width` | `number` |  | Width in px (with height: the aspect ratio). |
+| `height` | `number` |  | Height in px. |
+| `still` | `string` |  | A still frame from the provider, shown under reduced motion. |
+| `href` | `string` |  | The page to link to in the credit and the export card (default: the provider's page for it). |
+| `alt` | `string` |  |  |
+
 #### `<Iframe>`
 
 An embedded page, loaded only while its slide is near, behind a click-to-interact shield; a poster stands in for print and previews.
@@ -775,6 +815,42 @@ The `img` mapping (every `![alt](src)`), lazy-loaded; also usable as a tag. `pre
 | `alt` | `string` | `""` | Alternative text (always write one). |
 | `preview` | `string \| boolean` |  | true, or a larger image's URL, to open a lightbox on click. |
 | `fit` | `string` |  | CSS object-fit (cover, contain…). |
+
+#### `<Meme>`
+
+Image-macro captions over a picture: white Anton with a black outline by default, as real text. `template` records where the picture came from (Imgflip) and shows the link back on hover and in every export.
+
+```mdx
+<Meme src="https://i.imgflip.com/30b1gx.jpg" template={{ provider: "imgflip", id: "181913649", url: "https://imgflip.com/memetemplate/181913649" }} captions={[{ text: "Writing slides by hand", x: 52, y: 6, width: 45 }, { text: "Kadal Deck", x: 52, y: 56, width: 45 }]} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `src` * | `string` |  | The image. |
+| `alt` | `string` |  | Alternative text (default: the captions). |
+| `template` | `MemeTemplate` |  | { provider: "imgflip", id, url, name } — the source, credited with a link. |
+| `captions` | `MemeCaption[]` |  | [{ text, x, y, width, size, align, color, stroke }]: x/y/width in % of the image (defaults 5, 4, 90), size in % of its width (default 9), align left\|center\|right, colours CSS (default white on black). |
+| `width` | `string \| number` |  | CSS width (a number is px). Default: as wide as the image, up to its box. |
+
+#### `<Sticker>`
+
+An image placed over the slide in stage pixels — a PNG cut-out, an animated GIF/WebP/APNG. Centred unless `x`/`y` say otherwise; in `kadal-deck dev` double-click it to move, resize or turn it and the position is written back as `pos`.
+
+```mdx
+<Sticker src="/stickers/rocket.webp" x={1480} y={140} size={260} rotate={-8} shadow />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `src` * | `string` |  | Image URL (public/ path or https). |
+| `alt` | `string` | `""` | Alternative text (empty: decorative). |
+| `size` | `number` |  | Width in stage pixels (default 240); the height follows the image. |
+| `x` | `number` |  | Left edge in stage pixels (default: centred). |
+| `y` | `number` |  | Top edge in stage pixels (default: centred). |
+| `rotate` | `number` |  | Degrees, clockwise. |
+| `flip` | `boolean \| "x" \| "y"` |  | Mirror it: true or "x" left↔right, "y" upside down. |
+| `shadow` | `boolean` |  | A soft drop shadow that follows the image's outline. |
+| `pos` | `string` |  | "x,y,w,h[,r]" — what dragging it in `kadal-deck dev` writes; wins over x/y/size/rotate. |
 
 #### `<Tweet>`
 

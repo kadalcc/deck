@@ -12,6 +12,7 @@ import {
 import type { TransitionDefinition } from "./transitions.ts";
 import type { ManifestPackages } from "../theming/contract.ts";
 import type { FontsInput } from "../theming/fonts.ts";
+import { isPremiumName, premiumBase } from "./premium.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -73,6 +74,11 @@ export interface SlideMeta {
 export interface DeckManifest {
   headmatter: Frontmatter;
   slides: SlideMeta[];
+  /**
+   * Set only by a deck's editing kit (runtime/shell.tsx `kitManifest`): the component `<Deck>`
+   * renders instead of itself — the shell that compiles the slides from an editor's text.
+   */
+  kit?: { Shell: unknown };
   /** The deck's `glossary.yaml`, parsed at build time; absent in a deck without one. */
   glossary?: GlossaryEntry[];
   /**
@@ -786,7 +792,10 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
   };
   if (typeof raw === "string") {
     const s = raw.trim();
-    if (GRADIENT.test(s)) base.gradient = s;
+    // A host's library item (core/premium.ts): a component by name, before the image test below
+    // reads its slash as a path.
+    if (isPremiumName(s)) base.component = s;
+    else if (GRADIENT.test(s)) base.gradient = s;
     else if (/\.(mp4|webm|mov|ogv)(\?|$)/i.test(s)) base.video = s;
     else if (
       /^(https?:)?\/\/|\/|\.\/|\.(png|jpe?g|gif|webp|svg|avif)(\?|$)/i.test(s) &&
@@ -1004,6 +1013,22 @@ export interface HostOverride {
    * the deck's own, a URL (https, or a same-site path) points a deck's button at the host's copy.
    */
   download?: boolean | string;
+  /**
+   * Where the host quick-edits this deck (an http(s) URL): the presenter view's Edit button and
+   * `present.edit` open it with `?slide=h.v` (presenter/EditButton.tsx). Absent: no Edit button.
+   */
+  edit?: string;
+  /**
+   * Where the host serves its premium library (`pro/` backgrounds and layouts, core/premium.ts):
+   * an http(s) URL or a same-site path, under which `catalog.json` and the item modules sit.
+   * Absent: `pro/` names fall back to the theme's own, and nothing is fetched.
+   */
+  premium?: string;
+  /**
+   * Where `<Emoji>` finds its image sets (components/media.tsx): an https URL or a same-site path
+   * (`/emoji`). Without one, `https://decks.kadal.cc/emoji`, so a deck works anywhere.
+   */
+  emoji?: string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -1020,6 +1045,18 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (typeof o.download === "boolean") out.download = o.download;
   else if (typeof o.download === "string" && /^(https:\/\/|\/(?!\/))\S+$/.test(o.download))
     out.download = o.download;
+  if (typeof o.edit === "string" && /^https?:\/\/[^\s/]+\S*$/.test(o.edit)) {
+    try {
+      const u = new URL(o.edit);
+      if (u.protocol === "https:" || u.protocol === "http:") out.edit = u.toString();
+    } catch {
+      /* not a URL: ignored */
+    }
+  }
+  const premium = premiumBase(o.premium);
+  if (premium) out.premium = premium;
+  if (typeof o.emoji === "string" && /^(https?:\/\/[^\s"'<>]+|\/(?!\/)[\w./-]*)$/.test(o.emoji))
+    out.emoji = o.emoji.replace(/\/+$/, "");
   return out;
 }
 

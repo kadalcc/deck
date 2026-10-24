@@ -123,6 +123,69 @@ body {
   height: 100%;
   border: 0;
 }
+/* A `pro/` background from the host's library (react/premium.tsx): it arrives after the slide,
+   so it fades in over the theme's own fill rather than popping. */
+.deck-premium-item {
+  position: absolute;
+  inset: 0;
+  animation: deck-premium-in 0.45s ease-out both;
+}
+@keyframes deck-premium-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-premium-item {
+    animation: none;
+  }
+}
+/* The author's note on a slide whose Pro item did not load (dev server, builder preview only). */
+/* Sized in stage pixels (the slide is 1920 wide and scaled to fit), so it stays readable in a
+   builder's small preview as well as full screen. */
+.deck-premium-chip {
+  position: absolute;
+  z-index: 40;
+  right: 32px;
+  bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px 12px 22px;
+  border-radius: 999px;
+  font: 500 30px/1.2 system-ui, sans-serif;
+  color: #1c1917;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+  pointer-events: auto;
+}
+.deck-premium-chip a {
+  color: inherit;
+  font-weight: 650;
+}
+.deck-premium-chip button {
+  all: unset;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  text-align: center;
+  line-height: 40px;
+  font-size: 30px;
+}
+.deck-premium-chip button:hover,
+.deck-premium-chip button:focus-visible {
+  background: rgb(0 0 0 / 0.08);
+}
+@media print {
+  .deck-premium-chip {
+    display: none;
+  }
+  .deck-premium-item {
+    animation: none;
+  }
+}
 .deck-background-video {
   object-fit: cover;
 }
@@ -2436,4 +2499,104 @@ pre.deck-code.has-lines .line::before {
     position: static;
     overflow: visible;
   }
+}
+
+/*
+ * A slide with an unresolved merge conflict (react/ConflictCard.tsx): both versions side by
+ * side, and a choice. Its own colours on purpose — it must read on any theme, light or dark.
+ */
+.deck-conflict {
+  --c-ours: #2563eb;
+  --c-theirs: #c2410c;
+  display: grid;
+  align-content: start;
+  gap: 0.8em;
+  height: 100%;
+  overflow: auto;
+  padding: 4% 5%;
+  box-sizing: border-box;
+  font-family: var(--deck-font-sans, system-ui, sans-serif);
+  font-size: 0.7em;
+  text-align: left;
+  color: #1f2937;
+  background: #fffbeb;
+}
+.deck-conflict__head {
+  display: grid;
+  gap: 0.2em;
+}
+.deck-conflict__head strong {
+  font-size: 1.6em;
+  color: #92400e;
+}
+.deck-conflict__block {
+  display: grid;
+  gap: 0.5em;
+  padding: 0.8em;
+  border: 1px solid #fcd34d;
+  border-radius: 0.5em;
+  background: #fff;
+}
+.deck-conflict__where {
+  font-family: var(--deck-font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+.deck-conflict__sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8em;
+}
+.deck-conflict__side {
+  margin: 0;
+  min-width: 0;
+  border-top: 4px solid var(--c-ours);
+  border-radius: 0.3em;
+  background: #f8fafc;
+}
+.deck-conflict__side.is-theirs {
+  border-top-color: var(--c-theirs);
+}
+.deck-conflict__side figcaption {
+  padding: 0.4em 0.6em;
+  font-size: 0.85em;
+  color: #475569;
+}
+.deck-conflict__side figcaption b {
+  color: var(--c-ours);
+}
+.deck-conflict__side.is-theirs figcaption b {
+  color: var(--c-theirs);
+}
+.deck-conflict__side pre {
+  margin: 0;
+  padding: 0.6em;
+  max-height: 14em;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: var(--deck-font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  color: #0f172a;
+  background: none;
+}
+.deck-conflict__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}
+.deck-conflict__choice {
+  font: inherit;
+  padding: 0.35em 0.9em;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+}
+.deck-conflict__choice:hover:not(:disabled) {
+  border-color: #0f172a;
+}
+.deck-conflict__choice:disabled {
+  opacity: 0.5;
+  cursor: progress;
 }
