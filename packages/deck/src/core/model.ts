@@ -73,6 +73,11 @@ export interface SlideMeta {
 export interface DeckManifest {
   headmatter: Frontmatter;
   slides: SlideMeta[];
+  /**
+   * Set only by a deck's editing kit (runtime/shell.tsx `kitManifest`): the component `<Deck>`
+   * renders instead of itself — the shell that compiles the slides from an editor's text.
+   */
+  kit?: { Shell: unknown };
   /** The deck's `glossary.yaml`, parsed at build time; absent in a deck without one. */
   glossary?: GlossaryEntry[];
   /**

@@ -63,6 +63,14 @@ export {
   useUi,
 } from "./react/hooks.ts";
 export { SlideFrame, loadSlide } from "./react/SlideFrame.tsx";
+export {
+  type ConflictBlockView,
+  type ConflictChoice,
+  type ConflictResolver,
+  type ConflictSlideProps,
+  ConflictSlide,
+  setConflictResolver,
+} from "./react/ConflictCard.tsx";
 export { BackgroundLayer, registerBackground, backgroundComponent } from "./react/Backgrounds.tsx";
 export {
   type TransitionDefinition,

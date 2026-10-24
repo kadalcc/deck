@@ -22,6 +22,8 @@ import { checkSlidevLeftovers } from "./lint-slidev.ts";
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
 import { checkValue, closest } from "./validate.ts";
 import { parseDuration } from "../core/timer.ts";
+import { findConflicts } from "../sync/mdx.ts";
+import { hasConflictMarkers, markerBlocks } from "../sync/markers.ts";
 import { type IconSetLoader, checkIcons } from "./lint-icons.ts";
 
 /**
@@ -325,7 +327,32 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
     });
     return finish(diagnostics, 0);
   }
-  for (const p of deck.problems)
+  // ── merge conflicts (sync/markers.ts): before anything else reads the slides they are in ───
+  const conflicted = new Set<number>();
+  /** Files and 0-based line spans of conflict blocks, so the YAML errors they cause stay quiet. */
+  const conflictSpans: Array<{ file: string; from: number; to: number }> = [];
+  for (const file of new Set([files.entry, ...deck.slides.map((s) => s.range.file)])) {
+    const text = file === files.entry ? deck.text : files.read(file);
+    if (!text || !hasConflictMarkers(text)) continue;
+    for (const b of markerBlocks(text)) conflictSpans.push({ file, from: b.start, to: b.end });
+    for (const c of findConflicts(text, file)) {
+      const at = (c.line ?? 1) - 1;
+      const slide = deck.slides.find((s) => s.range.file === file && at >= s.range.start && at < s.range.end);
+      if (slide) conflicted.add(slide.index);
+      add({
+        severity: "error",
+        code: "merge-conflict",
+        message: `Unresolved merge conflict on slide ${(slide?.index ?? 0) + 1} (${file}:${c.line ?? 1}).`,
+        hint: "Keep one side or both with `kadal-deck resolve` (or the deck_resolve tool), or edit the file and delete the marker lines. Publishing waits until none are left.",
+        file,
+        line: c.line ?? 1,
+        ...(slide ? { slide: slide.index } : {}),
+      });
+    }
+  }
+  const inConflict = (file: string, line: number) =>
+    conflictSpans.some((c) => c.file === file && line - 1 >= c.from && line - 1 <= c.to + 1);
+  for (const p of deck.problems.filter((p) => !inConflict(p.file, p.line)))
     add({
       severity: "error",
       code: /outside the deck folder/.test(p.message)
@@ -635,6 +662,8 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       return l;
     };
     for (const s of deck.slides) {
+      // Two versions of the slide in one: compiling it says nothing the conflict does not.
+      if (conflicted.has(s.index)) continue;
       const raw = linesOf(s.range.file).slice(s.range.body, s.range.end).join("\n");
       const offset = s.range.body;
       const file = s.range.file;

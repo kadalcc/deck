@@ -39,7 +39,11 @@ import {
 } from "../compiler/setup.ts";
 import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
 import { sourceFromFiles } from "../draw/source.ts";
+import { dirOf, joinPath } from "../authoring/source.ts";
+import { ConflictSlide } from "../react/ConflictCard.tsx";
+import { type ModuleMap, remarkKitImports } from "./kit-imports.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
+import { type MarkerBlock, hasConflictMarkers, markerBlocks } from "../sync/markers.ts";
 import { applySlideDefaults, slideDefaultLayers } from "../theming/merge.ts";
 import {
   type PackageRegistry,
@@ -96,11 +100,30 @@ export interface CompileDeckOptions extends DeckSetup {
    * warning; `false` skips packages entirely (the headmatter's theme names a stylesheet).
    */
   packages?: PackageRegistry | false;
+  /**
+   * The deck's own modules, by import key (runtime/kit-imports.ts): a deck's editing kit passes
+   * the map its CLI build made, and the slides' `import`s then resolve from it. Without it, a slide
+   * with an `import` does not compile (there is no bundler in the page).
+   */
+  modules?: ModuleMap;
+}
+
+/** A merge conflict still in the source (sync/markers.ts), where an editor can settle it. */
+export interface CompiledConflict {
+  file: string;
+  /** The flat index of the slide it is on; null in a file that is not slides (glossary.yaml). */
+  slide: number | null;
+  /** 1-based line of its `<<<<<<<`. */
+  line: number;
+  /** Its 0-based position among the file's conflict blocks: `resolveConflict(text, choice, block)`. */
+  block: number;
 }
 
 export interface CompiledDeck {
   manifest: DeckManifest;
   diagnostics: Diagnostic[];
+  /** Unresolved merge conflicts; each conflicted slide renders as a "Yours / Web" card. */
+  conflicts: CompiledConflict[];
   /**
    * Files the deck asked for that were not in `files`: `src:` includes, and a glossary the
    * headmatter names. A caller that can fetch them does, then compiles again.
@@ -187,14 +210,17 @@ async function compileToComponent(
   source: string,
   plugins: ReturnType<typeof mdxPlugins>,
   format: "mdx" | "md" = "mdx",
+  kit?: { modules: ModuleMap; from: string },
 ): Promise<ComponentType> {
-  // Imports cannot resolve without a bundler; say so instead of failing somewhere deeper.
-  if (/^\s*import\s/m.test(source.replace(/```[\s\S]*?```/g, "")))
+  // Imports cannot resolve without a bundler (or a kit's module map); say so instead of failing
+  // somewhere deeper.
+  if (!kit && /^\s*import\s/m.test(source.replace(/```[\s\S]*?```/g, "")))
     throw new Error(
       "`import` is not available here: slides compiled in the browser can use the engine's components only.",
     );
   const code = await compile(source, {
     ...plugins,
+    ...(kit ? { remarkPlugins: [...(plugins.remarkPlugins ?? []), remarkKitImports(kit)] } : {}),
     outputFormat: "function-body",
     // Any value makes the compiled slide ask `useMDXComponents` (passed to `run`) for its tags.
     providerImportSource: "@kadal/deck/mdx-provider",
@@ -205,7 +231,8 @@ async function compileToComponent(
     ...(jsxRuntime as unknown as Parameters<typeof run>[1]),
     useMDXComponents,
     baseUrl: typeof location === "undefined" ? undefined : location.href,
-  });
+    ...(kit ? { __kadalModules: kit.modules } : {}),
+  } as Parameters<typeof run>[1]);
   return mod.default as ComponentType;
 }
 
@@ -226,6 +253,16 @@ export async function compileDeck(
 
   let themes = codeThemes(options.shiki, null);
 
+  // Merge conflicts, per file, before anything reads the slides: a conflicted slide is shown as
+  // both versions (react/ConflictCard.tsx), never compiled, and the YAML errors its markers cause
+  // in a frontmatter block are the conflict's, not reported again.
+  const blocksByFile = new Map<string, MarkerBlock[]>();
+  for (const [name, body] of [[file, text] as const, ...Object.entries(files)])
+    if (typeof body === "string" && hasConflictMarkers(body)) blocksByFile.set(name, markerBlocks(body));
+  const inConflict = (f: string, line: number) =>
+    (blocksByFile.get(f) ?? []).some((b) => line - 1 >= b.start && line - 1 <= b.end + 1);
+  const conflicts: CompiledConflict[] = [];
+
   let prepared: { headmatter: Record<string, unknown>; slides: PreparedSlide[]; styles: string };
   try {
     prepared = prepareDeck(text, {
@@ -233,13 +270,17 @@ export async function compileDeck(
       withoutNotes: options.withoutNotes,
       defaults: options.defaults,
       file,
-      resolveInclude: (path) => {
-        const clean = path.replace(/^\.\//, "");
+      // Relative to the including file, as the Vite plugin resolves it (slides/a.mdx including
+      // ./extras.mdx means slides/extras.mdx).
+      resolveInclude: (path, from) => {
+        const clean = joinPath(from === file ? "" : dirOf(from), path);
         if (clean in files) return { file: clean, text: files[clean]! };
         missing.add(clean);
         return null;
       },
-      onError: (e) => push({ message: e.message, file: e.file, line: e.line, slide: null }),
+      onError: (e) => {
+        if (!inConflict(e.file, e.line)) push({ message: e.message, file: e.file, line: e.line, slide: null });
+      },
       // `<<<` imports read from `files` too; one that is not there is reported as missing, so a
       // caller that can fetch it (the shell does) fetches it and compiles again.
       snippets: {
@@ -258,6 +299,7 @@ export async function compileDeck(
     return {
       manifest: { headmatter: {}, slides: [] },
       diagnostics,
+      conflicts,
       missing: [...missing],
       ok: false,
     };
@@ -317,6 +359,50 @@ export async function compileDeck(
   const slides: SlideMeta[] = await Promise.all(
     prepared.slides.map(async (s, i): Promise<SlideMeta> => {
       const where = `${s.source.file}:${s.source.line}`;
+      const fileBlocks = blocksByFile.get(s.range.file) ?? [];
+      const mine = fileBlocks
+        .map((b, block) => ({ b, block }))
+        .filter(({ b }) => b.start >= s.range.start && b.start < s.range.end);
+      if (mine.length) {
+        for (const { b, block } of mine) {
+          conflicts.push({ file: s.range.file, slide: i, line: b.start + 1, block });
+          push({
+            message: `Unresolved merge conflict on slide ${i + 1} (${s.range.file}:${b.start + 1})`,
+            file: s.range.file,
+            line: b.start + 1,
+            slide: i,
+          });
+        }
+        const props = {
+          file: s.range.file,
+          slide: i,
+          blocks: mine.map(({ b, block }) => ({
+            block,
+            line: b.start + 1,
+            oursLabel: b.oursLabel,
+            theirsLabel: b.theirsLabel,
+            ours: b.ours.join("\n"),
+            theirs: b.theirs.join("\n"),
+          })),
+        };
+        const Card = () => createElement(ConflictSlide, props);
+        return {
+          index: i,
+          h: s.h,
+          v: s.v,
+          id: typeof s.frontmatter.id === "string" ? s.frontmatter.id : `s${i}`,
+          title: titleOf(s),
+          level: levelOf(s),
+          frontmatter: s.frontmatter,
+          hasNotes: false,
+          text: plainText(s.content),
+          notesText: null,
+          source: s.source,
+          load: () => Promise.resolve({ default: Card } as SlideModule),
+          loadNotes: null,
+          loadMagic: null,
+        };
+      }
       const warn = (message: string) =>
         push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: i });
       const loose = unclosedSettings(s.content);
@@ -339,15 +425,16 @@ export async function compileDeck(
           twoslash: null,
           onTwoslashMissing: noteTwoslash,
         });
+        const kit = options.modules ? { modules: options.modules, from: s.source.file } : undefined;
         try {
-          const Component = await compileToComponent(source, plugins);
+          const Component = await compileToComponent(source, plugins, "mdx", kit);
           return { default: Component } as SlideModule;
         } catch (err) {
           // Notes written for a Markdown parser (Slidev's) are often not valid MDX: read them as
           // plain Markdown rather than lose them, and say so.
           if (notes) {
             try {
-              const Component = await compileToComponent(source, plugins, "md");
+              const Component = await compileToComponent(source, plugins, "md", kit);
               warn(
                 `The notes are not valid MDX (${err instanceof Error ? err.message.split("\n")[0] : String(err)}); they were read as plain Markdown.`,
               );
@@ -397,7 +484,17 @@ export async function compileDeck(
     }),
   );
 
+  // Conflicts outside any slide: the glossary, data, a drawing.
+  const slideFiles = new Set(prepared.slides.map((s) => s.range.file));
+  for (const [name, blocks] of blocksByFile)
+    if (!slideFiles.has(name))
+      blocks.forEach((b, block) => {
+        conflicts.push({ file: name, slide: null, line: b.start + 1, block });
+        push({ message: `Unresolved merge conflict in ${name}:${b.start + 1}`, file: name, line: b.start + 1, slide: null });
+      });
+
   return {
+    conflicts,
     manifest: {
       headmatter: manifestHeadmatter(prepared.headmatter, options),
       slides,

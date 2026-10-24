@@ -1,5 +1,5 @@
 import type { CommandInfo, CommandResult } from "../core/commands.ts";
-import type { Diagnostic } from "./compile.ts";
+import type { CompiledConflict, Diagnostic } from "./compile.ts";
 
 /**
  * The preview bridge: what an editor page and the shell in its iframe (`?preview`) say to each
@@ -37,7 +37,13 @@ export type ToPreview =
 
 /** Shell → editor. */
 export type FromPreview =
-  | { kadal: 1; type: "ready"; version: string }
+  | {
+      kadal: 1;
+      type: "ready";
+      version: string;
+      /** Present when this is a deck's own editing kit, not the generic shell. */
+      kit?: { kitVersion: number; engine: string; modules: string[] };
+    }
   | {
       kadal: 1;
       type: "compiled";
@@ -45,6 +51,8 @@ export type FromPreview =
       diagnostics: Diagnostic[];
       outline: OutlineEntry[];
       ms: number;
+      /** Unresolved merge conflicts left in the source (absent from shells before 0.5). */
+      conflicts?: CompiledConflict[];
     }
   | { kadal: 1; type: "nav"; index: number; click: number; clicks: number; total: number }
   | { kadal: 1; type: "command:result"; seq: number; result: CommandResult }
@@ -61,6 +69,19 @@ export type FromPreview =
       text: string;
       /** The clicked element's tag and classes, e.g. "h2.title". */
       element: string;
+    }
+  /**
+   * A button on a conflicted slide's card was pressed: settle that block of that file
+   * (`resolveConflict(text, choice, block)` from `@kadal/deck/sync`) and send the source again.
+   * `slide` is the flat index of the slide the card was on.
+   */
+  | {
+      kadal: 1;
+      type: "conflict:resolve";
+      file: string;
+      slide: number;
+      block: number;
+      choice: "ours" | "theirs" | "both";
     };
 
 export const isToPreview = (data: unknown): data is ToPreview =>

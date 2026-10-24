@@ -4,9 +4,11 @@ import { createRoot } from "react-dom/client";
 import type { DeckConfigInput, DeckManifest } from "../core/model.ts";
 import { flatIndex, totalSlides } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
+import { setConflictResolver } from "../react/ConflictCard.tsx";
 import type { DeckRuntime, ViewMode } from "../react/context.ts";
-import { Deck } from "../react/Deck.tsx";
+import { DeckRuntimeView, type DeckProps } from "../react/Deck.tsx";
 import { type CompiledDeck, compileDeck } from "./compile.ts";
+import type { ModuleMap } from "./kit-imports.ts";
 import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts";
 
 /**
@@ -22,6 +24,14 @@ import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts"
  * In `?preview` the shell is an editor's live view: it answers on `postMessage` with compile
  * diagnostics and the outline, reports where the viewer is, runs commands for the editor (the
  * same registry the keyboard uses), and can report a click on the slide for a comment pin.
+ *
+ * ONE SHELL, TWO BUILDS. `DeckShell` is the whole of it, and two builds wrap it:
+ *   · the prebuilt shell (packages/deck-shell): `startShell` with the engine's components only;
+ *   · a deck's own EDITING KIT (`kadal-deck publish`, KADAL_DECK_TARGET=host → `__kadal/kit/`):
+ *     the deck's own src/main.tsx, built with `virtual:deck` as `kitManifest(…)` (vite/kit.ts).
+ *     `<Deck>` sees the kit manifest and renders `DeckShell` with everything main.tsx gave it —
+ *     its components, config, pages, shortcuts, styles — plus the module map of what the deck's
+ *     MDX imports, so the builder previews a CLI deck as the CLI builds it.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -56,6 +66,33 @@ export interface ShellOptions {
   providers?: ComponentType<{ children?: React.ReactNode }>;
 }
 
+/** What a deck's kit adds to the shell (vite/kit.ts writes the call). */
+export interface KitOptions {
+  /** Every module the deck's MDX imports, by key (runtime/kit-imports.ts). */
+  modules: ModuleMap;
+  /** The deck's layer files and routes (`global-top.tsx`, `routes.tsx`), as its build had them. */
+  layers?: NonNullable<DeckManifest["packages"]>["layers"];
+  routes?: NonNullable<DeckManifest["packages"]>["routes"];
+  monaco?: DeckManifest["monaco"];
+  codeRunners?: DeckManifest["codeRunners"];
+  /** The kit's format version and engine, said in the preview's `ready`. */
+  kitVersion: number;
+  engine: string;
+}
+
+/** The `virtual:deck` of a kit build: an empty manifest that tells `<Deck>` to be the shell. */
+export function kitManifest(kit: KitOptions): DeckManifest {
+  const KitShell = (props: DeckProps) => {
+    const { manifest: _m, base: _b, ...deck } = props;
+    const preview = new URLSearchParams(location.search).has("preview");
+    const injected = (window as unknown as { __KADAL_DECK__?: { base?: unknown } }).__KADAL_DECK__;
+    return (
+      <DeckShell deck={deck} base={shellBase(location.pathname, injected?.base)} preview={preview} kit={kit} />
+    );
+  };
+  return { headmatter: {}, slides: [], kit: { Shell: KitShell as ComponentType<unknown> } };
+}
+
 type State =
   | { phase: "loading" }
   | { phase: "failed"; message: string }
@@ -88,21 +125,51 @@ export function startShell(options: ShellOptions): void {
   const injected = (window as unknown as { __KADAL_DECK__?: { base?: unknown } }).__KADAL_DECK__;
   const base = shellBase(location.pathname, injected?.base);
   const root = createRoot(options.root);
+  const Providers = options.providers;
   root.render(
     <StrictMode>
-      <Shell {...options} base={base} preview={preview} />
+      <DeckShell
+        deck={{
+          config: options.config,
+          components: options.components,
+          pages: options.pages,
+          children: Providers ? <Providers /> : null,
+        }}
+        base={base}
+        preview={preview}
+      />
     </StrictMode>,
   );
 }
 
-function Shell({
-  config,
-  components,
-  pages,
-  providers: Providers,
-  base,
-  preview,
-}: ShellOptions & { base: string; preview: boolean }) {
+export interface DeckShellProps {
+  /** Everything `<Deck>` takes but the manifest (which the shell compiles) and the base. */
+  deck: Omit<DeckProps, "manifest" | "base">;
+  base: string;
+  preview: boolean;
+  /** Set in a deck's kit: its module map and the rest of what its build had. */
+  kit?: KitOptions;
+}
+
+/** A kit's build-time parts laid over a compiled manifest. */
+function withKit(manifest: DeckManifest, kit: KitOptions | undefined): DeckManifest {
+  if (!kit) return manifest;
+  const packages = manifest.packages
+    ? {
+        ...manifest.packages,
+        layers: { ...kit.layers, ...manifest.packages.layers },
+        routes: manifest.packages.routes ?? kit.routes ?? null,
+      }
+    : manifest.packages;
+  return {
+    ...manifest,
+    ...(packages ? { packages } : {}),
+    ...(kit.monaco ? { monaco: kit.monaco } : {}),
+    ...(kit.codeRunners ? { codeRunners: kit.codeRunners } : {}),
+  };
+}
+
+export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
   const [state, setState] = useState<State>({ phase: "loading" });
 
   useEffect(() => {
@@ -111,7 +178,7 @@ function Shell({
     pendingAt = null;
     const load = async (text: string, files: Record<string, string> = {}, at?: number) => {
       const t0 = performance.now();
-      const compiled = await compileDeck(text, { files });
+      const compiled = await compileDeck(text, { files, ...(kit ? { modules: kit.modules } : {}) });
       if (!alive) return;
       pendingAt = at ?? null;
       setState({ phase: "ready", compiled, key: ++key });
@@ -122,6 +189,7 @@ function Shell({
         diagnostics: compiled.diagnostics,
         outline: outlineOf(compiled.manifest),
         ms: Math.round(performance.now() - t0),
+        conflicts: compiled.conflicts,
       });
     };
 
@@ -150,7 +218,10 @@ function Shell({
             .__KADAL_DECK__?.files;
           if (Array.isArray(listed)) await fetchAll(listed.filter((f) => typeof f === "string"));
           for (let round = 0; round < 3; round++) {
-            const { missing } = await compileDeck(text, { files });
+            const { missing } = await compileDeck(text, {
+              files,
+              ...(kit ? { modules: kit.modules } : {}),
+            });
             const todo = missing.filter((m) => !(m in files) && !tried.has(m));
             if (!todo.length) break;
             await fetchAll(todo);
@@ -213,13 +284,21 @@ function Shell({
     };
     window.addEventListener("message", onMessage);
     window.addEventListener("click", onClick, true);
-    post({ kadal: 1, type: "ready", version: VERSION });
+    // A conflicted slide's buttons (react/ConflictCard.tsx) ask the editor, which has the text.
+    setConflictResolver((r) => post({ kadal: 1, type: "conflict:resolve", ...r }));
+    post({
+      kadal: 1,
+      type: "ready",
+      version: VERSION,
+      ...(kit ? { kit: { kitVersion: kit.kitVersion, engine: kit.engine, modules: Object.keys(kit.modules) } } : {}),
+    });
     return () => {
       alive = false;
+      setConflictResolver(null);
       window.removeEventListener("message", onMessage);
       window.removeEventListener("click", onClick, true);
     };
-  }, [base, preview]);
+  }, [base, preview, kit]);
 
   // Tell the editor where the viewer is, as they move.
   useEffect(() => {
@@ -260,17 +339,5 @@ function Shell({
         <strong>This deck could not load.</strong> {state.message}
       </div>
     );
-  const deck = (
-    <Deck
-      key={state.key}
-      manifest={state.compiled.manifest}
-      config={config}
-      components={components}
-      pages={pages}
-      base={base}
-    >
-      {Providers ? <Providers /> : null}
-    </Deck>
-  );
-  return deck;
+  return <DeckRuntimeView key={state.key} {...deck} manifest={withKit(state.compiled.manifest, kit)} base={base} />;
 }

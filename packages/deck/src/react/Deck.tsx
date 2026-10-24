@@ -218,7 +218,18 @@ function modeFromLocation(base: string): ViewMode {
   return "play";
 }
 
-export function Deck({
+/**
+ * The deck. A kit's manifest (runtime/shell.tsx `kitManifest`: the deck's own entry built as its
+ * editing kit) has no slides of its own — the shell compiles them from the editor's text — so it
+ * renders the shell with these same props instead.
+ */
+export function Deck(props: DeckProps) {
+  const Shell = props.manifest.kit?.Shell as ComponentType<DeckProps> | undefined;
+  return Shell ? <Shell {...props} /> : <DeckRuntimeView {...props} />;
+}
+
+/** The deck itself, from a manifest with slides. */
+export function DeckRuntimeView({
   manifest,
   config: configIn,
   components = {},
