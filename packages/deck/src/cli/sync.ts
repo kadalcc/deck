@@ -475,6 +475,13 @@ async function pullMedia(
 
 /* ── pull ──────────────────────────────────────────────────────────────────── */
 
+/** Equal but for line endings and a byte-order mark. */
+const sameText = (a: string | undefined, b: string | undefined) =>
+  a !== undefined &&
+  b !== undefined &&
+  a.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n") ===
+    b.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+
 export interface PullOptions extends HostCtx {
   dir: string;
   slug: string;
@@ -685,7 +692,7 @@ export async function pullDeck(o: PullOptions): Promise<PullResult> {
       );
   }
   log(
-    `pull     v${version} ${merged.clean ? "merged cleanly" : `— ${merged.conflicts.length} conflict(s)`}`,
+    `pull     v${version}${o.dryRun ? " (dry run)" : ""} ${merged.clean ? "merges cleanly" : `— ${merged.conflicts.length} conflict(s)`}`,
   );
   return {
     deckId,
@@ -750,7 +757,8 @@ export async function deckStatus(
   const changes: StatusResult["local"] = [];
   if (state)
     for (const path of [...new Set([...Object.keys(base), ...Object.keys(local)])].sort()) {
-      if (base[path] === local[path]) continue;
+      // Line endings alone are no change: git's autocrlf checks a pulled LF file out as CRLF.
+      if (base[path] === local[path] || sameText(base[path], local[path])) continue;
       const change = !(path in base) ? "added" : !(path in local) ? "deleted" : "modified";
       changes.push({
         path,

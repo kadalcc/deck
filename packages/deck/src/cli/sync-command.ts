@@ -6,6 +6,7 @@ import type { Io } from "./index.ts";
 import { slugFrom } from "./publish.ts";
 import {
   type HostCtx,
+  type PullResult,
   conflictsMessage,
   deckStatus,
   loadSync,
@@ -118,19 +119,43 @@ export async function syncCommand(
     log: json ? () => {} : say,
   });
   if (json) emit({ ok: r.clean, ...r });
-  else {
-    for (const n of r.notes) say(`note     ${n}`);
-    if (!r.files.length) say(`Already up to date with v${r.version}.`);
-    for (const f of r.files)
-      say(
-        `${(r.dryRun ? `would ${f.change === "conflict" ? "conflict" : f.change.replace(/d$/, "")}` : f.change).padEnd(9)}${f.path}${f.slides?.length ? `  (slide${f.slides.length === 1 ? "" : "s"} ${f.slides.join(", ")})` : ""}`,
-      );
-    for (const m of r.media) say(`${r.dryRun ? "would download " : "media    "}${m.path}`);
-    if (r.backup) say(`backup   ${r.backup}`);
-    if (!r.clean) say(`\n${conflictsMessage(r.conflicts, "Publishing waits")}`);
-    else if (r.files.length && !r.dryRun)
-      say(`\nMerged v${r.version}. Check it (kadal-deck dev), then publish.`);
-  }
+  else for (const line of pullLines(r)) say(line);
   if (!r.clean) return EXIT.conflicts;
   return EXIT.ok;
+}
+
+const DRY: Record<PullResult["files"][number]["change"], string> = {
+  updated: "would update",
+  merged: "would merge",
+  added: "would add",
+  deleted: "would delete",
+  conflict: "would conflict",
+};
+
+/** What `pull` says, line by line (a dry run says what it would do, and writes nothing). */
+export function pullLines(r: PullResult): string[] {
+  const out = r.notes.map((n) => `note     ${n}`);
+  if (!r.files.length) out.push(`Already up to date with v${r.version}.`);
+  const width = r.dryRun ? 16 : 9;
+  for (const f of r.files) {
+    const what = r.dryRun ? DRY[f.change] : f.change;
+    const slides = f.slides?.length
+      ? `  (slide${f.slides.length === 1 ? "" : "s"} ${f.slides.join(", ")})`
+      : "";
+    out.push(`${what.padEnd(width)}${f.path}${slides}`);
+  }
+  for (const m of r.media)
+    out.push(`${(r.dryRun ? "would download" : "media").padEnd(width)}${m.path}`);
+  if (r.backup) out.push(`backup   ${r.backup}`);
+  if (!r.clean)
+    out.push(
+      r.dryRun
+        ? `\n${r.conflicts.length} conflict${r.conflicts.length === 1 ? "" : "s"} to resolve if you pull. Nothing was written (--dry-run).`
+        : `\n${conflictsMessage(r.conflicts, "Publishing waits")}`,
+    );
+  else if (r.dryRun && (r.files.length || r.media.length))
+    out.push(`\nNothing was written (--dry-run).`);
+  else if (r.files.length)
+    out.push(`\nMerged v${r.version}. Check it (kadal-deck dev), then publish.`);
+  return out;
 }

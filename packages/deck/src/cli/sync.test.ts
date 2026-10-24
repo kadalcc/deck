@@ -13,6 +13,7 @@ import { join } from "node:path";
 
 import { hasConflictMarkers } from "../sync/markers.ts";
 import { FakeHost } from "./fake-host.ts";
+import { pullLines } from "./sync-command.ts";
 import { DivergedError } from "./publish.ts";
 import {
   ConflictsError,
@@ -420,6 +421,48 @@ describe("web edits, both ways", () => {
     expect(lines.join("\n")).toContain(
       "Someone is editing this deck on the web (unpublished, Asha)",
     );
+  });
+
+  test("status: line endings alone are not a local change (git autocrlf)", async () => {
+    await publishNow();
+    const offline = { dir, slug: "talk", host: "", token: "", workspace: "", offline: true };
+    write("deck.mdx", `\uFEFF${DECK.replace(/\n/g, "\r\n")}`);
+    expect((await deckStatus(offline)).local).toEqual([]);
+    write("deck.mdx", DECK.replace("Line c", "y").replace(/\n/g, "\r\n"));
+    expect((await deckStatus(offline)).local).toEqual([
+      { path: "deck.mdx", change: "modified", slides: [3] },
+    ]);
+  });
+
+  test("pull --dry-run says what it would do, in words, and writes nothing", async () => {
+    const r = {
+      deckId: "d1",
+      version: 4,
+      base: 3,
+      files: [
+        { path: "deck.mdx", change: "conflict" as const, slides: [2] },
+        { path: "pages/new.mdx", change: "added" as const },
+        { path: "pages/old.mdx", change: "deleted" as const },
+      ],
+      conflicts: [],
+      clean: true,
+      backup: null,
+      media: [{ path: "public/assets/media/a.png", size: 3 }],
+      notes: [],
+      dryRun: true,
+    };
+    expect(pullLines(r)).toEqual([
+      "would conflict  deck.mdx  (slide 2)",
+      "would add       pages/new.mdx",
+      "would delete    pages/old.mdx",
+      "would download  public/assets/media/a.png",
+      "\nNothing was written (--dry-run).",
+    ]);
+    expect(pullLines({ ...r, dryRun: false }).slice(0, 2)).toEqual([
+      "conflict deck.mdx  (slide 2)",
+      "added    pages/new.mdx",
+    ]);
+    expect(pullLines({ ...r, files: [], media: [] })).toEqual(["Already up to date with v4."]);
   });
 
   test("status offline: local changes by slide, conflicts", async () => {
