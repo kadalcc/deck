@@ -12,8 +12,15 @@ import { useActions, useUi } from "./hooks.ts";
  * `T` opens it; the palette button does the same. A theme not loaded yet starts loading when
  * the pointer reaches its row, and its swatch comes from its metadata (`kadal.theme.swatch`).
  */
+/** Built-in themes whose name is an initialism: "rla" reads "RLA", not "Rla". */
+const BUILT_IN_TITLES: Record<string, string> = { rla: "RLA" };
+
 export function themeLabel(name: string, title?: string): string {
-  return title ?? name.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    title ??
+    BUILT_IN_TITLES[name] ??
+    name.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
 }
 
 export function ThemeMenu({ compact = false }: { compact?: boolean }) {
