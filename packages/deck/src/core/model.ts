@@ -12,6 +12,7 @@ import {
 import type { TransitionDefinition } from "./transitions.ts";
 import type { ManifestPackages } from "../theming/contract.ts";
 import type { FontsInput } from "../theming/fonts.ts";
+import { isPremiumName, premiumBase } from "./premium.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -791,7 +792,10 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
   };
   if (typeof raw === "string") {
     const s = raw.trim();
-    if (GRADIENT.test(s)) base.gradient = s;
+    // A host's library item (core/premium.ts): a component by name, before the image test below
+    // reads its slash as a path.
+    if (isPremiumName(s)) base.component = s;
+    else if (GRADIENT.test(s)) base.gradient = s;
     else if (/\.(mp4|webm|mov|ogv)(\?|$)/i.test(s)) base.video = s;
     else if (
       /^(https?:)?\/\/|\/|\.\/|\.(png|jpe?g|gif|webp|svg|avif)(\?|$)/i.test(s) &&
@@ -1014,6 +1018,12 @@ export interface HostOverride {
    * `present.edit` open it with `?slide=h.v` (presenter/EditButton.tsx). Absent: no Edit button.
    */
   edit?: string;
+  /**
+   * Where the host serves its premium library (`pro/` backgrounds and layouts, core/premium.ts):
+   * an http(s) URL or a same-site path, under which `catalog.json` and the item modules sit.
+   * Absent: `pro/` names fall back to the theme's own, and nothing is fetched.
+   */
+  premium?: string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -1038,6 +1048,8 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
       /* not a URL: ignored */
     }
   }
+  const premium = premiumBase(o.premium);
+  if (premium) out.premium = premium;
   return out;
 }
 

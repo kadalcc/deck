@@ -123,6 +123,69 @@ body {
   height: 100%;
   border: 0;
 }
+/* A `pro/` background from the host's library (react/premium.tsx): it arrives after the slide,
+   so it fades in over the theme's own fill rather than popping. */
+.deck-premium-item {
+  position: absolute;
+  inset: 0;
+  animation: deck-premium-in 0.45s ease-out both;
+}
+@keyframes deck-premium-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-premium-item {
+    animation: none;
+  }
+}
+/* The author's note on a slide whose Pro item did not load (dev server, builder preview only). */
+/* Sized in stage pixels (the slide is 1920 wide and scaled to fit), so it stays readable in a
+   builder's small preview as well as full screen. */
+.deck-premium-chip {
+  position: absolute;
+  z-index: 40;
+  right: 32px;
+  bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px 12px 22px;
+  border-radius: 999px;
+  font: 500 30px/1.2 system-ui, sans-serif;
+  color: #1c1917;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+  pointer-events: auto;
+}
+.deck-premium-chip a {
+  color: inherit;
+  font-weight: 650;
+}
+.deck-premium-chip button {
+  all: unset;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  text-align: center;
+  line-height: 40px;
+  font-size: 30px;
+}
+.deck-premium-chip button:hover,
+.deck-premium-chip button:focus-visible {
+  background: rgb(0 0 0 / 0.08);
+}
+@media print {
+  .deck-premium-chip {
+    display: none;
+  }
+  .deck-premium-item {
+    animation: none;
+  }
+}
 .deck-background-video {
   object-fit: cover;
 }

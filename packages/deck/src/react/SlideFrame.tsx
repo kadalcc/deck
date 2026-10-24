@@ -16,6 +16,8 @@ import { SlideContext, type SlideContextValue, useDeck } from "./context.ts";
 import { useUi } from "./hooks.ts";
 import { LayerSlot, layerProps, layersShown } from "./Layers.tsx";
 import { layoutFor } from "./layouts.tsx";
+import { PremiumNotice } from "./premium.tsx";
+import { isPremiumName } from "../core/premium.ts";
 import { MDXProvider } from "./mdx.tsx";
 import { Watermark } from "./Watermark.tsx";
 
@@ -459,6 +461,14 @@ export function SlideFrame({
         )}
         {layer("slide-top")}
         {layer("global-top")}
+        {active &&
+        !preview &&
+        (isPremiumName(options.layout) || isPremiumName(options.background?.component)) ? (
+          <PremiumNotice
+            background={options.background?.component ?? null}
+            layout={options.layout}
+          />
+        ) : null}
         {children}
         {deck.config.badge ? <Watermark /> : null}
       </section>
