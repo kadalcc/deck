@@ -721,3 +721,16 @@
     transition: none;
   }
 }
+
+/* ── a slide with its own background ───────────────────────────────────────
+   `background:` on a slide (a colour, a picture, a built-in or library background) is the
+   author's: the engine marks the slide `has-background` and the theme's decorative backdrop for
+   that layout steps aside, instead of painting over it or stacking a second set of art on it. */
+.theme-swiss .deck-slide.has-background.layout-section::before {
+  display: none;
+}
+/* the section's words were set for the signal ground; on the author's background they are the deck's */
+.theme-swiss .deck-slide.has-background .deck-layout-section,
+.theme-swiss .deck-slide.has-background .deck-layout-section :is(h1, h2) {
+  color: var(--deck-fg);
+}

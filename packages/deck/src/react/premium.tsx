@@ -225,7 +225,7 @@ export class PremiumLoader {
     const item = readPremiumModule(await ns, id, kind);
     if (!item) throw new Failure("bad-module");
     if (item.css) this.deps.addStyle?.(id, item.css);
-    return item;
+    return entry.scheme ? { ...item, scheme: entry.scheme } : item;
   }
 }
 

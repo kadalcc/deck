@@ -408,3 +408,14 @@
 .theme-crisp .deck-progress span {
   background: var(--deck-fg);
 }
+
+/* ── a slide with its own background ───────────────────────────────────────
+   `background:` on a slide (a colour, a picture, a built-in or library background) is the
+   author's: the engine marks the slide `has-background` and the theme's decorative backdrop for
+   that layout steps aside, instead of painting over it or stacking a second set of art on it. */
+.theme-crisp .deck-slide.has-background.layout-end {
+  background: none;
+}
+.theme-crisp .deck-slide.has-background .deck-layout-end {
+  color: var(--deck-fg);
+}

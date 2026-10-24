@@ -16,7 +16,7 @@ import { SlideContext, type SlideContextValue, useDeck } from "./context.ts";
 import { useUi } from "./hooks.ts";
 import { LayerSlot, layerProps, layersShown } from "./Layers.tsx";
 import { layoutFor } from "./layouts.tsx";
-import { PremiumNotice } from "./premium.tsx";
+import { PremiumNotice, usePremiumItem } from "./premium.tsx";
 import { isPremiumName } from "../core/premium.ts";
 import { MDXProvider } from "./mdx.tsx";
 import { Watermark } from "./Watermark.tsx";
@@ -404,6 +404,15 @@ export function SlideFrame({
   );
 
   const Layout = layoutFor(options.layout, deck.components);
+  // A library background drawn for one scheme (a chalkboard is dark) gives its slide that scheme,
+  // unless the slide chose its own: a light deck's dark text on a dark board read as nothing.
+  const premiumBg = usePremiumItem(
+    isPremiumName(options.background?.component) ? options.background!.component : null,
+    "background",
+  );
+  const colorScheme =
+    options.colorScheme ??
+    (premiumBg?.status === "ready" ? (premiumBg.item.scheme ?? null) : null);
   // A slide that forces a scheme wears the theme's class too: the theme's tokens for that scheme
   // are keyed `.theme-x[data-color-scheme]`, which only an element carrying both can match.
   const theme = useUi((s) => s.theme);
@@ -422,7 +431,9 @@ export function SlideFrame({
           "deck-slide",
           `layout-${options.layout}`,
           options.className,
-          options.colorScheme ? `theme-${theme}` : "",
+          colorScheme ? `theme-${theme}` : "",
+          // Its own background: a theme's decorative backdrop on this layout steps aside for it.
+          options.ownBackground ? "has-background" : "",
           stateClasses,
           className,
         ]
@@ -436,7 +447,7 @@ export function SlideFrame({
         data-active={active ? "true" : undefined}
         data-click={click}
         data-nav-direction={navDirection}
-        data-color-scheme={options.colorScheme ?? undefined}
+        data-color-scheme={colorScheme ?? undefined}
         aria-hidden={active ? undefined : true}
         style={{ ...style, ...(options.zoom !== 1 ? { zoom: options.zoom } : null) }}
       >

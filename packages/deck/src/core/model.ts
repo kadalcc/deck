@@ -678,6 +678,12 @@ export interface SlideOptions {
   colorScheme: "dark" | "light" | null;
   zoom: number;
   background: SlideBackground | null;
+  /**
+   * Whether the author gave this slide a background of its own (`background:` and friends), as
+   * opposed to the transparent one a forced `colorScheme` adds. The slide wears `has-background`
+   * for it, and a theme's decorative backdrop (a cover fill, a sun, a block image) steps aside.
+   */
+  ownBackground: boolean;
 }
 
 export interface SlideBackground {
@@ -896,6 +902,7 @@ export function resolveSlideOptions(
   const transitionSpeed = str(fm.transitionSpeed) as TransitionSpeed | null;
   const colorScheme =
     fm.colorScheme === "dark" || fm.colorScheme === "light" ? fm.colorScheme : null;
+  const own = resolveBackground(fm);
   return {
     layout: str(fm.layout) ?? (isFirst ? "cover" : "default"),
     className: Array.isArray(fm.class) ? fm.class.join(" ") : (str(fm.class) ?? ""),
@@ -923,10 +930,11 @@ export function resolveSlideOptions(
     zoom: num(fm.zoom) ?? 1,
     background: colorScheme
       ? {
-          ...(resolveBackground(fm) ?? resolveBackground({ background: "transparent" })!),
+          ...(own ?? resolveBackground({ background: "transparent" })!),
           scheme: colorScheme,
         }
-      : resolveBackground(fm),
+      : own,
+    ownBackground: own !== null,
   };
 }
 

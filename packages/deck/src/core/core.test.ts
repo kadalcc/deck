@@ -373,6 +373,27 @@ describe("a slide that forces a colour scheme", () => {
   });
 });
 
+describe("a slide with its own background", () => {
+  // The slide wears `has-background`, and a theme's decorative backdrop (brand's cover fill,
+  // neon's sun) steps aside: a library background on a brand cover used to render as nothing.
+  test("is marked, whatever kind of background it is", () => {
+    for (const background of [
+      "#123",
+      "/a.png",
+      "linear-gradient(red, blue)",
+      { component: "glows" },
+      { component: "pro/candles" },
+    ])
+      expect(resolveSlideOptions({ background }, DEFAULT_CONFIG, true).ownBackground).toBe(true);
+    expect(resolveSlideOptions({}, DEFAULT_CONFIG, true).ownBackground).toBe(false);
+  });
+  test("but the transparent layer a forced scheme adds is not the author's", () => {
+    const forced = resolveSlideOptions({ colorScheme: "dark" }, DEFAULT_CONFIG, false);
+    expect(forced.background).not.toBeNull();
+    expect(forced.ownBackground).toBe(false);
+  });
+});
+
 describe("typing in a field", () => {
   // Elements as the DOM shapes them, enough for isEditable (no DOM in these tests).
   const el = (tagName: string, extra: Record<string, unknown> = {}) => ({

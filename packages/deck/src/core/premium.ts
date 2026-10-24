@@ -45,6 +45,11 @@ export interface PremiumEntry {
   /** The module's path, relative to the catalog (or absolute under the same base). */
   module: string;
   title?: string;
+  /**
+   * An item drawn for one scheme only (a chalkboard is dark): the slide it is on takes that
+   * scheme, so a light deck's dark text never lands on it. Absent: it suits both.
+   */
+  scheme?: "light" | "dark";
 }
 
 /** A base URL the host gave, normalised to end in `/`; null for anything not http(s). */
@@ -85,6 +90,7 @@ export function parseCatalog(json: unknown): PremiumEntry[] {
       kind: e.kind,
       module: e.module,
       ...(typeof e.title === "string" ? { title: e.title } : {}),
+      ...(e.scheme === "light" || e.scheme === "dark" ? { scheme: e.scheme } : {}),
     });
   }
   return out;
@@ -109,6 +115,8 @@ export interface LoadedItem {
   component: unknown;
   poster: unknown;
   css: string | null;
+  /** The catalog's `scheme`, when the item is drawn for one scheme only. */
+  scheme?: "light" | "dark";
 }
 
 const isComponent = (c: unknown) =>
