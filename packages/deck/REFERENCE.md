@@ -1400,7 +1400,7 @@ Links glossary mentions inside a plain string at render time — for words that 
 
 Theme and addon packages: `theme: seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then the package `seriph`; `theme: ./theme` is a folder beside deck.mdx; `addons: [qr]` the same with addon-. The Vite plugin imports their CSS and modules; their layouts, components and layers merge in under the deck's own; `themeConfig` keys become `--theme-<kebab>` CSS variables. `kadal-deck info themes` lists the ones installed, `kadal-deck new --theme <name>` makes one, `kadal-deck theme eject` copies one into the deck. The contract: THEMES.md in @kadal/deck.
 
-First-party theme packages (install one, then `theme: <name>`; the prebuilt shell has them all):
+First-party theme packages (`theme: <name>` with nothing to install: @kadal/deck ships them, and every deck's theme menu offers all sixteen, the deck's own `theme` and `themes` first; the prebuilt shell has them all):
 
 - **classic** (light and dark) — Avenir Next, light headings, square bullets, dashed links, a cyan primary; a dimmed picture under the cover. `@kadal/theme-classic`, from Slidev's `default`. Adds layouts `cover`.
 - **seriph** (light and dark) — PT Serif throughout, headings in the primary colour (themeConfig.primary, slate teal), a centred cover. `@kadal/theme-seriph`, from Slidev's `seriph`. Adds layouts `cover`.
@@ -1667,7 +1667,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `scrollSnap` | `false \| "mandatory" \| "proximity"` | `"mandatory"` | Scroll snapping in the scroll view. Values: `mandatory` `proximity` `false` |
 | `scrollActivationWidth` | `number` | `0` | Viewport width under which the scroll view switches on by itself; 0 (the default) never does — a phone gets the same stage, letterboxed, and `?view=scroll` stays an explicit choice. |
 | `theme` | `string` | `"minimal"` | The theme: a built-in (minimal, rla, stack, none), a package (`seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then a package of that name), a folder (`./theme`), or a class your own CSS defines (.theme-<name>). The Vite plugin imports a package's CSS and module for you; `kadal-deck theme eject` copies it into the deck. Values: e.g. `minimal` `rla` `stack` |
-| `themes` | `string[]` | `["minimal","rla","stack"]` | The themes the theme menu offers, besides `theme`: built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines. |
+| `themes` | `string[]` | `["minimal","rla","stack"]` | The themes the deck ships besides `theme`, first in its theme menu and in this order: built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines. The menu then offers every first-party theme not listed (sixteen in all), each loaded only when picked; a list orders the menu, it does not narrow it. |
 | `colorScheme` | `ColorScheme` | `"auto"` | "auto" (follow the system), "light" or "dark". Values: `light` `dark` `auto` |
 | `pdfSeparateFragments` | `boolean` | `true` | A page per click step in print/PDF. |
 | `pdfMaxPagesPerSlide` | `number` | `1` | Pages a tall slide may spill onto. |

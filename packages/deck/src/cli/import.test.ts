@@ -55,8 +55,8 @@ describe("kadal-deck import slidev", () => {
     expect(json.ok).toBe(true);
     expect(json.out).toBe(join(work, "talk-kadal"));
     expect(json.slides).toBe(16);
-    // before `npm install` the theme package is the next step, not a problem
-    expect(json.check.afterInstall.map((d) => d.code)).toContain("theme-missing");
+    // the first-party theme ships inside @kadal/deck, so it resolves before `npm install`
+    expect(json.check.afterInstall.map((d) => d.code)).not.toContain("theme-missing");
     expect(json.check.afterInstall.every((d) => d.code.endsWith("-missing"))).toBe(true);
     expect(json.check.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
 

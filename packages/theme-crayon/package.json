@@ -53,6 +53,10 @@
       "title": "Crayon",
       "description": "A playful pastel theme for workshops and classrooms: rounded shapes, a friendly display face, and sticker-like callouts.",
       "colorScheme": "both",
+      "swatch": [
+        "#c62f6b",
+        "#2f63c9"
+      ],
       "config": {
         "transition": "slide",
         "fonts": {

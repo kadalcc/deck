@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { THEME_PACKAGES } from "../catalog/reference.ts";
 import { registryCode, scanPackages } from "../vite/packages.ts";
-import { normalizeModule, readMeta } from "./contract.ts";
+import { BUILTIN_THEMES, FIRST_PARTY_THEMES, normalizeModule, readMeta } from "./contract.ts";
 import { LAYOUT_CLASSES, THEME_TOKENS } from "./scaffold.ts";
 
 /**
@@ -63,6 +63,19 @@ describe("first-party theme packages", () => {
       .filter((f) => f.kind === "theme")
       .map((f) => readMeta("theme", f.pkg, "").name);
     expect(found.sort()).toEqual(THEME_PACKAGES.map((t) => t.name).sort());
+  });
+  test("FIRST_PARTY_THEMES is the built-ins and these packages, and each has a swatch", () => {
+    const builtins = Object.keys(BUILTIN_THEMES).filter((n) => n !== "none");
+    expect([...FIRST_PARTY_THEMES].sort()).toEqual(
+      [...builtins, ...THEME_PACKAGES.map((t) => t.name)].sort(),
+    );
+    for (const name of builtins) expect(BUILTIN_THEMES[name]!.swatch).toHaveLength(2);
+    for (const t of THEME_PACKAGES) {
+      const pkg = JSON.parse(
+        readFileSync(join(packagesDir, `theme-${t.name}`, "package.json"), "utf8"),
+      );
+      expect((readMeta("theme", pkg, t.name) as { swatch?: string[] }).swatch).toHaveLength(2);
+    }
   });
 
   for (const t of THEME_PACKAGES) {

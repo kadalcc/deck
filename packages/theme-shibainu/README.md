@@ -11,6 +11,9 @@ each a different arrangement of the blobs. Dark only.
 
 [All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-shibainu)
 
+@kadal/deck ships this theme, so `theme: shibainu` works with nothing else installed. Install the
+package only to give the deck a copy of its own, at a version you pick:
+
 ```bash
 npm install @kadal/theme-shibainu
 ```

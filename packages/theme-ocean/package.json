@@ -53,6 +53,10 @@
       "title": "Ocean",
       "description": "Kadal's own theme: the sea's palette from sunlit shallows to midnight water, calm gradients and polished type.",
       "colorScheme": "both",
+      "swatch": [
+        "#1d63a8",
+        "#13908e"
+      ],
       "config": {
         "transition": "fade",
         "fonts": {

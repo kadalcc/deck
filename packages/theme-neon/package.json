@@ -53,6 +53,10 @@
       "title": "Neon",
       "description": "A dark synthwave theme for meetups and launches: a sunset horizon, glows that stay legible, and a solid print fallback.",
       "colorScheme": "dark",
+      "swatch": [
+        "#ff3ec8",
+        "#2de2e6"
+      ],
       "config": {
         "transition": "fade",
         "fonts": {

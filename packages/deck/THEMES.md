@@ -27,6 +27,7 @@ same for an addon. `kadal-deck theme eject` copies an existing theme (a built-in
       "name": "seriph",                    // the CSS class (.theme-seriph) and the menu's name
       "title": "Seriph",                   // optional display name
       "colorScheme": "both",               // "both" | "light" | "dark" (one scheme = the deck's default)
+      "swatch": ["#5d8392", "#4d7534"],    // the menu's swatch: accent, second accent
       "defaults": { "class": "…" },        // slide frontmatter defaults (lowest layer)
       "config": { "transition": "fade", "fonts": { "sans": "Inter" } }, // headmatter defaults
       "themeConfig": { "primary": "#5d8392" },  // defaults for --theme-* variables
@@ -39,9 +40,17 @@ same for an addon. `kadal-deck theme eject` copies an existing theme (a built-in
 }
 ```
 
+`swatch` is the two colours the theme menu paints for the theme (its `--deck-accent` and
+`--deck-accent-2` in the light scheme). Every deck's menu lists every first-party theme, most of
+them before their stylesheet has loaded, so the menu takes the colours from here; a theme without
+a swatch gets one from its stylesheet once that has loaded.
+
 First-party themes live in `packages/theme-<name>` as `@kadal/theme-<name>`. They need no build
-step and no edit anywhere else: the prebuilt shell's `deckPackages()` plugin finds every
-`packages/theme-*` and `packages/addon-*` and registers it (lazily) with the in-browser compiler.
+step and almost no edit anywhere else: the prebuilt shell's `deckPackages()` plugin finds every
+`packages/theme-*` and `packages/addon-*` and registers it (lazily) with the in-browser compiler,
+and @kadal/deck's build copies each one into its own `dist/themes/<name>`
+(`tools/bundle-themes.mjs`). The one edit: add the name to `FIRST_PARTY_THEMES` in
+`src/theming/contract.ts`, the list every theme menu offers (a test fails until you do).
 
 ## 2. The module (optional)
 
@@ -195,8 +204,8 @@ presenter view; a phone-width scroll view (`?view=scroll`); contrast of `--deck-
 ## 4. Resolution and where it runs
 
 `theme: seriph` → a built-in (minimal · rla · stack · none) → `@kadal/theme-seriph` →
-`kadal-theme-seriph` → the package `seriph`. `./theme`, `../shared/theme`, `/abs/theme` are folders
-beside deck.mdx. `addons: [qr]` → `@kadal/addon-qr` → `kadal-addon-qr` → `qr`. A bare name the deck's
+`kadal-theme-seriph` → the package `seriph` → for a first-party name, the copy @kadal/deck ships.
+`./theme`, `../shared/theme`, `/abs/theme` are folders beside deck.mdx. `addons: [qr]` → `@kadal/addon-qr` → `kadal-addon-qr` → `qr`. A bare name the deck's
 own CSS defines (`.theme-mine`) still works as before.
 
 `theme`, `themes` and `addons` are read from the headmatter: that is where packages are resolved
@@ -208,9 +217,16 @@ watched).
   of every listed theme and addon, the active theme's and the addons' modules eagerly, the other
   themes' modules lazily; `global-top.tsx` (and the other three) beside deck.mdx or in `src/` are
   picked up. A missing package fails the build with what was tried and the install command.
+- **The menu's other themes**: after the themes the deck lists, the theme menu offers every
+  first-party theme it did not list (`FIRST_PARTY_THEMES`: the deck's own install of
+  `@kadal/theme-<name>`, else the engine's copy). Their stylesheet and module load together, only
+  when the theme is picked, so they add nothing to the first paint; their code keeps the deck's
+  Shiki colours. Listing a theme in `themes:` moves it up, loads its CSS with the deck and gives
+  its code its own colours. A third-party theme or a folder appears only when the deck lists it.
 - **The prebuilt shell / runtime compiler**: resolves against the packages the page bundled
   (`registerTheme`, or the generated `virtual:kadal-packages`); an unknown theme falls back to
-  minimal with a dismissible notice and a console warning.
+  minimal with a dismissible notice and a console warning. Its menu adds the first-party themes
+  the page registered, the same way.
 
 ## 5. Testing
 
@@ -222,7 +238,8 @@ watched).
 
 ## 6. First-party themes, and Slidev's
 
-Install one (`npm i @kadal/theme-<name>`) and name it (`theme: <name>`); the prebuilt shell has
+Name one (`theme: <name>`): @kadal/deck ships all thirteen packages, and every deck's theme menu
+offers them; `npm i @kadal/theme-<name>` gives a deck a copy of its own. The prebuilt shell has
 them all. Five are ports of Slidev's official themes, with the same layouts, layout names,
 frontmatter, slots, components, `themeConfig` keys, colour schemes and Shiki themes, so a Slidev
 deck (or `kadal-deck import slidev`) only changes the theme's name:

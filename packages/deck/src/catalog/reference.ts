@@ -285,9 +285,9 @@ export const THEMES: ThemeInfo[] = [
 ];
 
 /**
- * The first-party theme packages (packages/theme-*). Not built in: a Vite deck installs one
- * (`npm i @kadal/theme-seriph`) and names it (`theme: seriph`); the prebuilt shell bundles them
- * all. The ports keep their Slidev theme's layouts, frontmatter and look (THEMES.md has the
+ * The first-party theme packages (packages/theme-*). Their own packages, and copies inside
+ * @kadal/deck too: a deck names one (`theme: seriph`) with nothing installed, and every deck's
+ * theme menu offers them all; the prebuilt shell bundles them all. The ports keep their Slidev theme's layouts, frontmatter and look (THEMES.md has the
  * name mapping, for decks moving over). Eight more are Kadal's own designs, with no `slidev`
  * field.
  */

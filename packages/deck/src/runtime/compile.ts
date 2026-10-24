@@ -284,10 +284,12 @@ export async function compileDeck(
         runtimePackages.packages.addons,
       ),
     );
+    // The themes the deck names colour its code; the first-party ones the menu adds on its own
+    // keep the deck's colours (each would add a Shiki theme to every token).
     themes = codeThemes(
       options.shiki,
       runtimePackages.packages.theme,
-      runtimePackages.packages.themes,
+      runtimePackages.packages.themes.filter((t) => !t.implicit),
     );
   }
 

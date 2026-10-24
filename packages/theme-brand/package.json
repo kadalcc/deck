@@ -53,6 +53,10 @@
       "title": "Brand",
       "description": "A corporate theme a company brands without CSS: primary and secondary colours, a logo and a footer line, all from themeConfig, on a clean and trustworthy layout.",
       "colorScheme": "both",
+      "swatch": [
+        "#2453d4",
+        "#0f9d8a"
+      ],
       "config": {
         "transition": "slide",
         "fonts": {

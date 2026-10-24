@@ -53,6 +53,10 @@
       "title": "Swiss",
       "description": "A bold International-style theme for design talks: huge grotesk headings on a strict twelve-column grid, one signal colour.",
       "colorScheme": "both",
+      "swatch": [
+        "#d70017",
+        "#111111"
+      ],
       "config": {
         "transition": "fade",
         "fonts": {

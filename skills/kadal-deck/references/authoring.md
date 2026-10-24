@@ -152,7 +152,9 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
 ## Look and feel
 
 - Themes: `theme: minimal | rla | stack` in the headmatter, or a package — `theme: seriph` finds
-  `@kadal/theme-seriph`, then `kadal-theme-seriph` (install it first) — or a folder, `theme: ./theme`.
+  `@kadal/theme-seriph`, then `kadal-theme-seriph` — or a folder, `theme: ./theme`. The sixteen
+  first-party themes need no install (@kadal/deck ships them), and every deck's theme menu (T)
+  offers all sixteen, the deck's own first; `themes: [...]` only orders that menu.
   The Vite plugin brings in its CSS, layouts and components; `kadal-deck info themes` lists what is
   installed with each theme's layouts. `themeConfig: { primary: "#0f766e" }` sets the theme's knobs
   (its README says which). `addons: [name]` adds addon packages the same way.

@@ -7,6 +7,7 @@ import {
   type PackageModule,
   type PackageRef,
   type ThemeMeta,
+  implicitThemes,
   isPathSpec,
   normalizeModule,
   packageCandidates,
@@ -27,7 +28,8 @@ import {
  *   built-in → @kadal/theme-<name> → kadal-theme-<name> → the name as a package
  *
  * A theme it cannot find falls back to minimal and says so (`manifest.packages.warnings`, which
- * the deck shows the presenter, and a console line). Loading is lazy: a registered package costs
+ * the deck shows the presenter, and a console line). After the themes the deck names, the menu
+ * offers every first-party theme the page registered (FIRST_PARTY_THEMES), as `implicit` refs. Loading is lazy: a registered package costs
  * nothing until a deck names it, so the shell's first paint carries only the built-in themes.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -140,7 +142,8 @@ export interface RuntimePackages {
 /**
  * The headmatter's theme, themes and addons against a registry. The active theme and every addon
  * are loaded before this resolves (their layouts are needed for the first paint); the other
- * themes the menu offers load when chosen.
+ * themes the menu offers — the named ones, then the first-party ones it did not name — load
+ * when chosen.
  */
 export async function resolveRuntimePackages(
   headmatter: Record<string, unknown>,
@@ -177,6 +180,18 @@ export async function resolveRuntimePackages(
   for (const spec of want.themes.slice(1)) {
     const ref = await themeRef(spec, false);
     if (ref && !themes.some((t) => t.name === ref.name)) themes.push(ref);
+  }
+  // Then every first-party theme the deck did not name, when this page has it: lazy, quietly
+  // left out when it does not.
+  for (const name of implicitThemes(themes.map((t) => t.name))) {
+    if (BUILTIN_THEMES[name]) {
+      themes.push({ ...builtinRef(name, name), implicit: true });
+      continue;
+    }
+    const entry =
+      registry.find("theme", `@kadal/theme-${name}`) ??
+      registry.list("theme").find((e) => e.name === name);
+    if (entry?.name === name) themes.push({ ...entryRef(entry, name, null), implicit: true });
   }
 
   const addons: PackageRef[] = [];

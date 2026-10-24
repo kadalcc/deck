@@ -11,6 +11,9 @@
 
 ## Use it
 
+@kadal/deck ships this theme, so `theme: lecture` works with nothing else installed. Install the
+package only to give the deck a copy of its own, at a version you pick:
+
 ```bash
 npm install @kadal/theme-lecture
 ```
@@ -25,7 +28,7 @@ themeConfig:            # all optional
 ---
 ```
 
-The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Source Serif 4 (headings, serif), Source Sans 3 (text), Source Code Pro (code), loaded through the theme's `config.fonts`. Code colours: Shiki's github-light / github-dark-dimmed. To show it beside other themes in the theme menu (<kbd>T</kbd>), list it: `themes: [lecture, minimal]`.
+The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Source Serif 4 (headings, serif), Source Sans 3 (text), Source Code Pro (code), loaded through the theme's `config.fonts`. Code colours: Shiki's github-light / github-dark-dimmed. Every deck's theme menu (<kbd>T</kbd>) offers it already; list it (`themes: [lecture, minimal]`) to put it near the top, load its stylesheet with the deck, and give code its own colours when it is picked.
 
 ## themeConfig
 

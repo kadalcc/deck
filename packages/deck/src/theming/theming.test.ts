@@ -8,6 +8,8 @@ import { LAYOUTS } from "../react/layouts.tsx";
 import { compileDeck } from "../runtime/compile.ts";
 import { deckPackageSet, packagesCode, registryCode, scanPackages } from "../vite/packages.ts";
 import {
+  FIRST_PARTY_THEMES,
+  implicitThemes,
   isPathSpec,
   normalizeModule,
   packageCandidates,
@@ -32,8 +34,10 @@ import {
 import { createPackageRegistry, resolveRuntimePackages } from "./registry.ts";
 import {
   PackageResolveError,
+  bundledTheme,
   deckDefinesTheme,
   listInstalledPackages,
+  resolveImplicitTheme,
   resolvePackage,
 } from "./resolve.ts";
 import {
@@ -109,6 +113,20 @@ describe("the contract's names", () => {
       },
     );
   });
+  test("a swatch is two colours, or nothing", () => {
+    const meta = (swatch: unknown) =>
+      readMeta("theme", { kadal: { theme: { name: "x", swatch } } }, "x") as { swatch?: unknown };
+    expect(meta(["#123", " #456 "]).swatch).toEqual(["#123", "#456"]);
+    expect(meta(["#123"]).swatch).toBeUndefined();
+    expect(meta("#123").swatch).toBeUndefined();
+  });
+  test("the menu adds the first-party themes a deck did not name, in their order", () => {
+    expect(FIRST_PARTY_THEMES).toHaveLength(16);
+    expect(implicitThemes(["seriph", "minimal"])).toEqual(
+      FIRST_PARTY_THEMES.filter((t) => t !== "seriph" && t !== "minimal"),
+    );
+    expect(implicitThemes(FIRST_PARTY_THEMES)).toEqual([]);
+  });
   test("modules: a default export, or named exports", () => {
     const L = () => null;
     expect(normalizeModule({ default: { layouts: { a: L } } })).toEqual({ layouts: { a: L } });
@@ -178,17 +196,41 @@ describe("resolving on disk", () => {
     writeFileSync(join(dir, "pnpm-lock.yaml"), "");
     let err: unknown;
     try {
-      resolvePackage("theme", "seriph", dir);
+      resolvePackage("theme", "sakura", dir);
     } catch (e) {
       err = e;
     }
     expect(err).toBeInstanceOf(PackageResolveError);
     const msg = (err as Error).message;
-    expect(msg).toContain("@kadal/theme-seriph (not installed)");
-    expect(msg).toContain("kadal-theme-seriph (not installed)");
+    expect(msg).toContain("@kadal/theme-sakura (not installed)");
+    expect(msg).toContain("kadal-theme-sakura (not installed)");
     expect(msg).toContain("built-in theme: minimal");
-    expect(msg).toContain("pnpm add @kadal/theme-seriph");
+    expect(msg).toContain("pnpm add @kadal/theme-sakura");
     expect(() => resolvePackage("theme", "./nope", dir)).toThrow(/is not a folder/);
+  });
+  test("a first-party theme the deck did not install: the copy inside @kadal/deck", () => {
+    const dir = deckDir("bundled");
+    for (const spec of ["seriph", "@kadal/theme-seriph"]) {
+      const r = resolvePackage("theme", spec, dir);
+      expect(r).toMatchObject({ name: "seriph", package: "@kadal/theme-seriph", builtin: false });
+      expect(r.root).toBe(bundledTheme("seriph")!);
+      expect(r.css).toBe(join(r.root!, "style.css"));
+      expect(r.module).toBe(join(r.root!, "index.tsx"));
+    }
+    // An installed package of that name still wins over the copy.
+    const installed = deckDir("bundled-installed", { "@kadal/theme-seriph": themeFixture });
+    expect(resolvePackage("theme", "seriph", installed).root).toContain(
+      join("@kadal", "theme-seriph"),
+    );
+    // Only the first-party names have a copy.
+    expect(bundledTheme("sakura")).toBeNull();
+    expect(bundledTheme("minimal")).toBeNull();
+  });
+  test("the menu's implicit themes: the deck's own install, else the copy, never a stranger", () => {
+    const dir = deckDir("implicit", { "kadal-theme-ocean": themeFixture });
+    expect(resolveImplicitTheme("ocean", dir)?.root).toBe(bundledTheme("ocean")!);
+    expect(resolveImplicitTheme("rla", dir)).toMatchObject({ builtin: true, name: "rla" });
+    expect(resolveImplicitTheme("sakura", dir)).toBeNull();
   });
   test("a theme the deck's own CSS defines is still a theme (plain CSS, no package)", () => {
     const dir = deckDir("own-css");
@@ -231,6 +273,28 @@ describe("the manifest's packages (Vite)", () => {
     expect(code.imports).not.toContain("kadal-theme-fixture/index.tsx");
     expect(code.value).toContain('() => import("');
     expect(code.value).toContain('"global-top":');
+  });
+  test("every first-party theme the deck did not name joins the menu, CSS and all lazy", () => {
+    const dir = deckDir("menu-all", { "kadal-theme-fixture": themeFixture });
+    const set = deckPackageSet({ theme: "fixture", themes: ["ocean", "rla"] }, dir);
+    expect(set.themes.map((t) => t.name)).toEqual(["fixture", "ocean", "rla"]);
+    expect(set.more!.map((t) => t.name)).toEqual(
+      FIRST_PARTY_THEMES.filter((t) => t !== "ocean" && t !== "rla"),
+    );
+    const code = packagesCode(set);
+    // Named: eager CSS. Not named: nothing eager, the stylesheet inside the lazy load.
+    expect(code.imports).toContain(`import "${join(bundledTheme("ocean")!, "style.css")}";`);
+    expect(code.imports).not.toContain(join(bundledTheme("folio")!, "style.css"));
+    expect(code.imports).not.toContain("@kadal/deck/themes/stack.css");
+    expect(code.value).toContain(
+      `load: () => Promise.all([import("${join(bundledTheme("folio")!, "style.css")}"), import("${join(bundledTheme("folio")!, "index.tsx")}")]).then((m) => m[m.length - 1]), implicit: true`,
+    );
+    expect(code.value).toContain(
+      'load: () => import("@kadal/deck/themes/stack.css").then(() => null), implicit: true',
+    );
+    // Every theme of the menu, the deck's own order first.
+    const names = [...code.value.matchAll(/kind: "theme", name: "([\w-]+)"/g)].map((m) => m[1]);
+    expect(names).toEqual(["fixture", "ocean", "rla", ...set.more!.map((t) => t.name)]);
   });
   test("the shell's registry module registers every package behind a lazy import", () => {
     const found = scanPackages({ dirs: [fixtures] });
@@ -461,6 +525,21 @@ describe("the runtime registry (the shell)", () => {
     },
   });
   registry.register({
+    kind: "theme",
+    name: "ocean",
+    package: "@kadal/theme-ocean",
+    meta: {
+      name: "ocean",
+      colorScheme: "both",
+      swatch: ["#1d63a8", "#13908e"],
+      shiki: { light: "night-owl-light", dark: "night-owl" },
+    },
+    load: async () => {
+      loaded++;
+      return null;
+    },
+  });
+  registry.register({
     kind: "addon",
     name: "qr",
     package: "@kadal/addon-qr",
@@ -489,11 +568,39 @@ describe("the runtime registry (the shell)", () => {
     expect(r.warnings).toEqual([]);
     expect(Object.keys(r.packages.theme!.module!.layouts!)).toEqual(["quote"]);
     expect(Object.keys(r.packages.addons[0]!.module!.components!)).toEqual(["Qr"]);
-    expect(r.packages.themes.map((t) => t.name)).toEqual(["seriph", "minimal", "rla", "stack"]);
+    expect(r.packages.themes.map((t) => t.name)).toEqual([
+      "seriph",
+      "minimal",
+      "rla",
+      "stack",
+      "ocean",
+    ]);
+    expect(r.packages.themes.map((t) => !!t.implicit)).toEqual([false, false, false, false, true]);
     const lazy = await resolveRuntimePackages({ theme: "rla", themes: ["seriph"] }, registry);
     expect(lazy.packages.themes[1]).toMatchObject({ name: "seriph", module: null });
     expect(typeof lazy.packages.themes[1]!.load).toBe("function");
+    // Named first, then the first-party ones this page has, in their order.
+    expect(lazy.packages.themes.map((t) => t.name)).toEqual([
+      "rla",
+      "seriph",
+      "minimal",
+      "stack",
+      "ocean",
+    ]);
+    expect(lazy.packages.themes.at(-1)).toMatchObject({ implicit: true, module: null });
     expect(loaded).toBe(1);
+  });
+  test("a theme the menu adds on its own keeps the deck's code colours", async () => {
+    const out = await compileDeck("---\ntheme: minimal\n---\n\n```ts\nconst a = 1\n```\n", {
+      packages: registry,
+    });
+    expect(out.manifest.packages?.themes.map((t) => t.name)).toContain("ocean");
+    expect(out.manifest.codeThemes?.menu.ocean).toBeUndefined();
+    const named = await compileDeck(
+      "---\ntheme: minimal\nthemes: [ocean]\n---\n\n```ts\nconst a = 1\n```\n",
+      { packages: registry },
+    );
+    expect(named.manifest.codeThemes?.menu.ocean).toBeDefined();
   });
   test("compileDeck resolves against it: defaults, Shiki and the fallback warning", async () => {
     const ok = await compileDeck(
@@ -716,7 +823,7 @@ describe("the CLI", () => {
     );
     const r = await cli(["check", "-C", ok, "--json"]);
     expect(JSON.parse(r.out)).toMatchObject({ ok: true, errors: 0, warnings: 0 });
-    const bad = deckDir("cli-check-bad", {}, "---\ntheme: seriph\naddons: [qr]\n---\n\n# Hi\n");
+    const bad = deckDir("cli-check-bad", {}, "---\ntheme: sakura\naddons: [qr]\n---\n\n# Hi\n");
     const b = JSON.parse((await cli(["check", "-C", bad, "--no-compile", "--json"])).out);
     expect(b.diagnostics.map((d: { code: string }) => d.code)).toEqual([
       "theme-missing",

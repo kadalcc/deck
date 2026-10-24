@@ -39,6 +39,10 @@
       "title": "Classic",
       "description": "Slidev's default theme: Avenir Next, light headings, square bullets.",
       "colorScheme": "both",
+      "swatch": [
+        "#3ab9d5",
+        "#2993a3"
+      ],
       "themeConfig": {
         "primary": "#3ab9d5"
       },

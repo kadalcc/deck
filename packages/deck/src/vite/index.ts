@@ -757,7 +757,8 @@ function isWithin(dir: string, p: string): boolean {
 /**
  * The deck's packages as the config hook needs them — before the manifest exists, and without
  * failing: a theme that does not resolve is reported when the manifest is built, with the full
- * message, not here. Null for a deck with only built-in themes and no layer files.
+ * message, not here. Null when every theme the menu offers is built in and the deck has no addons
+ * or layer files.
  */
 function peekPackages(file: string): DeckPackageSet | null {
   if (!existsSync(file)) return null;
@@ -767,8 +768,10 @@ function peekPackages(file: string): DeckPackageSet | null {
       resolveInclude: () => null,
     });
     const set = deckPackageSet(headmatter, dirname(file));
+    // `more` counts: the theme menu offers every first-party theme, whose modules import React
+    // and the engine from inside @kadal/deck's own folder.
     const external =
-      set.themes.some((t) => !t.builtin) ||
+      [...set.themes, ...(set.more ?? [])].some((t) => !t.builtin) ||
       set.addons.length > 0 ||
       Object.keys(set.layers).length > 0;
     return external ? set : null;
