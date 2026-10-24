@@ -191,6 +191,16 @@ for frontmatter.
   that runs Prettier. `kadal-deck format` runs the same formatter with no setup.
 - **In the browser**: press <kbd>E</kbd> in `kadal-deck dev` for a side editor on the slide you're on.
 
+## How it works
+
+<p align="center">
+  <img src=".github/assets/how-it-works.svg" alt="deck.mdx goes through the Vite plugin, one module per slide, into the Deck runtime, which joins the live room over a WebSocket; the room keeps the presenter view, the projector and the audience's phones in step" width="100%">
+</p>
+
+Each slide is its own module, so an edit re-renders one slide, not the deck. The drawing is an
+[Excalidraw file](.github/assets/how-it-works.excalidraw), drawn with the same sketch DSL a slide's
+`<Sketch>` uses.
+
 ## Hosted or self-hosted
 
 Writing, presenting, the presenter view, export and a static build need nothing but this engine,

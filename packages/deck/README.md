@@ -13,6 +13,10 @@ server for AI agents.
 [![Licence](https://img.shields.io/badge/licence-AGPL--3.0--or--later-0e7490)](https://github.com/kadalcc/deck/blob/main/LICENSING.md)
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/pmithunish)
 
+<p align="center">
+  <img src="https://deck.kadal.cc/diagrams/how-it-works.svg" alt="deck.mdx goes through the Vite plugin, one module per slide, into the Deck runtime, which joins the live room over a WebSocket; the room keeps the presenter view, the projector and the audience's phones in step" width="100%">
+</p>
+
 ## Start a deck
 
 ```sh
