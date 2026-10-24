@@ -257,4 +257,13 @@ export {
 } from "./react/render-context.ts";
 export { useEffectiveScheme, type RenderWhenContext } from "./components/Contextual.tsx";
 export { switchRanges } from "./components/Switch.tsx";
+export {
+  DEFAULT_EMOJI_BASE,
+  EMOJI_SETS,
+  emojiKey,
+  emojiSlug,
+  emojiUrl,
+  gifPlaceholder,
+  memeLayout,
+} from "./components/media.tsx";
 export { type MarkType } from "./components/mark-geometry.ts";

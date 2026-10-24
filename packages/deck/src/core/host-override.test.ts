@@ -35,6 +35,17 @@ describe("host override", () => {
     expect(readHostOverride({ __KADAL_DECK__: "room" })).toBeNull();
   });
 
+  test("the emoji base: an http(s) URL or a same-site path, nothing else", () => {
+    const of = (emoji: unknown) => readHostOverride({ __KADAL_DECK__: { emoji } })?.emoji;
+    expect(of("https://decks.kadal.cc/emoji/")).toBe("https://decks.kadal.cc/emoji");
+    expect(of("/emoji")).toBe("/emoji");
+    expect(of("//evil.test/emoji")).toBeUndefined();
+    expect(of("javascript:alert(1)")).toBeUndefined();
+    expect(of(42)).toBeUndefined();
+    // Not part of the config: the media components read it themselves.
+    expect(withHostOverride(built, { emoji: "/emoji" })).toBe(built);
+  });
+
   test("badge defaults off", () => {
     expect(built.badge).toBe(false);
   });

@@ -1024,6 +1024,11 @@ export interface HostOverride {
    * Absent: `pro/` names fall back to the theme's own, and nothing is fetched.
    */
   premium?: string;
+  /**
+   * Where `<Emoji>` finds its image sets (components/media.tsx): an https URL or a same-site path
+   * (`/emoji`). Without one, `https://decks.kadal.cc/emoji`, so a deck works anywhere.
+   */
+  emoji?: string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -1050,6 +1055,8 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   }
   const premium = premiumBase(o.premium);
   if (premium) out.premium = premium;
+  if (typeof o.emoji === "string" && /^(https?:\/\/[^\s"'<>]+|\/(?!\/)[\w./-]*)$/.test(o.emoji))
+    out.emoji = o.emoji.replace(/\/+$/, "");
   return out;
 }
 

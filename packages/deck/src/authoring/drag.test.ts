@@ -77,6 +77,19 @@ describe("drag sites", () => {
     expect(out.replace("11,22,333,_", "10,20,300,_")).toBe(body);
   });
 
+  test("a <Sticker> is a site of its own: numbered, and its first move writes pos", async () => {
+    const text = '<Drag>A</Drag>\n\n<Sticker src="/s.png" x={10} y={20} size={300} />\n';
+    const sites = dragSites(text);
+    expect(sites.map((s) => s.tag)).toEqual(["Drag", "Sticker"]);
+    const code = String(await compile(text, { jsx: true, remarkPlugins: [remarkDrag] }));
+    expect(code).toContain('data-drag-index="1"');
+    expect(code).toContain("<Sticker");
+    // No pos yet (x/y only say where it starts): the editor expects none and one is added.
+    expect(rewriteDragPos(text, 1, "40,50,300,_", "")).toContain(
+      '<Sticker pos="40,50,300,_" src="/s.png" x={10} y={20} size={300} />',
+    );
+  });
+
   test("a source that changed since the slide was loaded is refused", () => {
     expect(() => rewriteDragPos(body, 0, "1,1,1,1", "999,0,0,0")).toThrow(/changed/);
     expect(() => rewriteDragPos(body, 9, "1,1,1,1")).toThrow(/no draggable element/);

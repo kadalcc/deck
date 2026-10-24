@@ -23,6 +23,7 @@
  *   kadal-deck whoami                     who and which workspace the token is for
  *   kadal-deck publish [--slug s] [--workspace handle] [--title t]
  *   kadal-deck pull | status | resolve    two-way sync with the web's quick edits (cli/sync.ts)
+ *   kadal-deck media list | add <id|name>  the workspace's uploaded stickers and images (cli/media.ts)
  *   kadal-deck narrate [--voice v]        bake the notes as speech (Kokoro) into public/narration/
  *   kadal-deck mcp                        a Model Context Protocol server on stdio, for AI agents
  *
@@ -104,6 +105,8 @@ export const HELP = `kadal-deck <command> [options]
   login       sign in to a Kadal Deck host (opens the browser)   --host <url>
   logout      forget the saved token on this machine
   whoami      show the signed-in account and workspace
+  media       the workspace's media library: media list [--kind k] [--q text]
+              media add <id|name> [--to public/stickers/] [--force]  download one into the project
   publish     build and publish the deck; prints its URL
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
               --no-thumbnail  skip the picture of slide 1 the host shows in its lists
@@ -206,6 +209,14 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     list: { kind: "boolean" },
   },
   mcp: { "allow-outside": { kind: "boolean" } },
+  media: {
+    kind: { kind: "string" },
+    q: { kind: "string" },
+    to: { kind: "string" },
+    force: { kind: "boolean" },
+    workspace: { kind: "string" },
+    host: { kind: "string" },
+  },
   // Mirrors IMPORT_FLAGS in import.ts, which is imported only when the command runs.
   import: {
     out: { kind: "string", short: "o" },
@@ -662,6 +673,10 @@ async function run(
     case "resolve": {
       const { syncCommand } = await import("./sync-command.ts");
       return syncCommand(command, dir, flags, positionals, io);
+    }
+    case "media": {
+      const { mediaCommand } = await import("./media.ts");
+      return mediaCommand(positionals, flags, dir, io);
     }
     case "import": {
       const { importCommand } = await import("./import.ts");

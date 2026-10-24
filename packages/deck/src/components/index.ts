@@ -39,6 +39,19 @@ export {
 } from "./content.tsx";
 export { Mark } from "./Mark.tsx";
 export { Video } from "./Video.tsx";
+export {
+  Emoji,
+  Gif,
+  Meme,
+  Sticker,
+  type EmojiProps,
+  type EmojiSet,
+  type GifProps,
+  type MemeCaption,
+  type MemeProps,
+  type MemeTemplate,
+  type StickerProps,
+} from "./media.tsx";
 export { FlipBoard } from "./FlipBoard.tsx";
 export { BlueSky } from "./BlueSky.tsx";
 export { Case, Switch } from "./Switch.tsx";
