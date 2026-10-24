@@ -2300,6 +2300,64 @@ pre.deck-code.has-lines .line::before {
   padding: 0.4em;
 }
 
+/* ── the corner row above the theme pill (react/chrome.tsx `CornerTools`) ───────────────────
+   The engine's "back to the start", then the deck's own buttons (the layer below, drawn inline
+   here), in the theme pill's look: 34px pills 18px in, 8px above it, faint until the pointer or
+   the keyboard reaches them — the arrows' manners. `:where` keeps the look at zero specificity,
+   so a layer's own classes win. */
+.deck-corner-tools {
+  position: absolute;
+  z-index: 60;
+  left: 18px;
+  bottom: 58px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.deck-corner-tools:hover,
+.deck-corner-tools:focus-within {
+  opacity: 1;
+}
+:where(.deck-corner-tools) :where(button, a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: color-mix(in oklab, var(--deck-bg) 85%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--deck-fg);
+  font: 13px var(--deck-body-font);
+  text-decoration: none;
+  cursor: pointer;
+}
+:where(.deck-corner-tools) :where(button, a):focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+.deck-corner-tools .deck-icon {
+  width: 15px;
+  height: 15px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-corner-tools {
+    transition: none;
+  }
+}
+@media print {
+  .deck-corner-tools {
+    display: none !important;
+  }
+}
+
 /* ── the custom-nav-controls layer (react/Layers.tsx `NavControlsLayer`) ─────────────────────
    A deck's (or theme's, or addon's) own buttons beside the controls: a row at the bottom-left,
    just above the theme button, faint until the pointer or the keyboard reaches it — the arrows'

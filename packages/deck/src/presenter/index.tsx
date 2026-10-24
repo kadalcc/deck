@@ -16,7 +16,7 @@ import { roomIdOf } from "../core/model.ts";
 import { useDeck } from "../react/context.ts";
 import { useActions, useCurrentSlide, useNav, useUi } from "../react/hooks.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
-import { Toast } from "../react/chrome.tsx";
+import { StartButton, Toast } from "../react/chrome.tsx";
 import { Icon } from "../components/bling.tsx";
 import { ConfettiLayer } from "../react/ConfettiLayer.tsx";
 import { HintLayer } from "../react/Hints.tsx";
@@ -693,6 +693,7 @@ function PresenterTools({
       >
         <Icon name="chart-column" /> Stats
       </a>
+      <StartButton label />
       <NavControlsLayer placement="toolbar" />
     </div>
   );

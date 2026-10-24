@@ -10,6 +10,7 @@ import { ThemeMenu } from "./ThemeMenu.tsx";
 import { useActions, useCurrentSlide, useNav, useUi } from "./hooks.ts";
 import { loadSlide } from "./SlideFrame.tsx";
 import { MDXProvider } from "./mdx.tsx";
+import { Icon } from "../components/bling.tsx";
 
 /**
  * The chrome around the slides: arrows, progress, the slide number, the pause curtain, the
@@ -21,7 +22,7 @@ export function Chrome() {
   return (
     <>
       {deck.config.controls === true ? <Controls /> : null}
-      <NavControlsLayer />
+      <CornerTools />
       {deck.config.progress ? <Progress /> : null}
       {/* The pill of arrows carries the number itself (Controls). */}
       {slideNumberShown(deck) &&
@@ -142,6 +143,43 @@ const NAV_TITLES = {
   up: "Up the stack (↑)",
   down: "Down the stack (↓)",
 } as const;
+
+/**
+ * The row above the theme pill, bottom-left: the engine's own "back to the start" (from the
+ * second slide on), then the deck's, its theme's and its addons' buttons (the custom-nav-controls
+ * layer), all in the pill look. Hidden under the overview, which covers the stage; never in a
+ * projector window.
+ */
+export function CornerTools() {
+  const deck = useDeck();
+  const overview = useNav((s) => s.overview);
+  const away = useNav((s) => s.h > 0 || s.v > 0 || s.click > 0);
+  const custom = !!deck.layers?.["custom-nav-controls"].length;
+  if (deck.projector || (!away && !custom)) return null;
+  return (
+    <div className="deck-corner-tools" hidden={overview || undefined}>
+      {away ? <StartButton /> : null}
+      {custom ? <NavControlsLayer placement="toolbar" /> : null}
+    </div>
+  );
+}
+
+/** Back to the first slide: the play view's corner row, and the presenter's toolbar (`label`). */
+export function StartButton({ label = false }: { label?: boolean }) {
+  const actions = useActions();
+  return (
+    <button
+      type="button"
+      className="deck-start-button"
+      onClick={() => actions.first()}
+      aria-label="Back to the start"
+      title="Back to the start (Home)"
+    >
+      <Icon name="arrow-left-to-line" />
+      {label ? " Start" : null}
+    </button>
+  );
+}
 
 export function Progress() {
   const deck = useDeck();
