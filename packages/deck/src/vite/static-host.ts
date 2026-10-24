@@ -32,6 +32,7 @@ export const DECK_ROUTES = [
   "join",
   "notes",
   "notes-edit",
+  "teleprompter",
   "overview",
   "stats",
   "remote",

@@ -47,6 +47,13 @@ export interface NotesViewProps {
    * (/notes, where the whole page scrolls).
    */
   scroll?: "panel" | "page";
+  /**
+   * Where in the scroller the current part's first line is kept, as a fraction of its height from
+   * the top: the teleprompter's reading line (1/3). Default: just below the top edge. The scroller is the
+   * nearest `[data-notes-scroller]` around the notes when there is one (the teleprompter scrolls
+   * the notes and the next slide's together), else the panel's own.
+   */
+  keepAt?: number;
 }
 
 type Status =
@@ -67,6 +74,7 @@ export function NotesView({
   alwaysEditing = false,
   empty = "No notes for this slide.",
   scroll = "panel",
+  keepAt,
 }: NotesViewProps) {
   const editor = useNotesEditor();
   const { Notes, revision } = useSlideNotes(meta);
@@ -202,17 +210,22 @@ export function NotesView({
       return;
     }
     // Inside the panel only: scrollIntoView would also move whatever is around it.
-    const scroller = el.closest<HTMLElement>(".deck-notes-scroll");
+    const scroller =
+      el.closest<HTMLElement>("[data-notes-scroller]") ??
+      el.closest<HTMLElement>(".deck-notes-scroll");
     if (!scroller || scroller.scrollHeight <= scroller.clientHeight + 1) return;
+    // The first line's box: a part that runs over several lines is an inline span of them all.
+    const box = target.getClientRects()[0] ?? target.getBoundingClientRect();
+    const offset = box.top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    // On a reading line, the part's first line is centred on it (the marker sits mid-line).
     const top =
-      now === 0
-        ? 0
-        : target.getBoundingClientRect().top -
-          scroller.getBoundingClientRect().top +
-          scroller.scrollTop -
-          24;
+      keepAt !== undefined
+        ? offset + box.height / 2 - scroller.clientHeight * keepAt
+        : now === 0
+          ? 0
+          : offset - 24;
     scroller.scrollTo({ top: Math.max(0, top), behavior });
-  }, [click, Notes, revision, editing, scroll]);
+  }, [click, Notes, revision, editing, scroll, keepAt]);
 
   const onBodyClick = (e: React.MouseEvent) => {
     const marker = (e.target as HTMLElement).closest<HTMLElement>(".deck-click-marker[data-click]");

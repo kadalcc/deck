@@ -1792,6 +1792,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `Shift F` — Fullscreen
 - `B .` — Pause: black out the screen
 - `S` — Open the presenter view
+- `Shift T` — The teleprompter window (from the presenter view)
 - `?` — This help
 - `: g` — Jump to a slide by number (:12), or gg for the first
 - `/ Ctrl Shift F` — Search the deck
@@ -1814,6 +1815,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `/<slug>/join` — The audience page (also /audience): follow along, react, ask, vote.
 - `/<slug>/remote` — The phone remote: next/back, blackout, focus labels, a slide list, pen, zoom, a laser aimed by touch on a live copy of the slide or by moving the phone, the notes for this step, the timer and a wake lock. Paired from the presenter view's Phone remote QR, a one-time code that changes every 30 seconds: `remote#pair=CODE` with a room, `remote?pair=CODE` on `kadal-deck dev` or a `kadal-deck relay` (plus `&relay=…` when the presenter view was pointed at the relay by its address). One phone at a time; the newest to scan takes over. Pass `remote: RemotePage` (from `@kadal/deck/remote`) in `<Deck pages>`.
 - `/<slug>/notes` — Every speaker note on one page, following the presenter: the current part marked, markers jump to their step; editable per slide under `kadal-deck dev`.
+- `/<slug>/teleprompter` — The teleprompter: this slide's notes alone, big, in a window for another screen, following the presenter's slide and step (the current part on a reading line a third of the way down, earlier parts dimmed, the next slide's first lines below). Opened from the presenter view's Teleprompter button (a menu of this computer's screens where the browser can place windows), Shift T or `present.teleprompter`. Text size, line width, mirror for a prompter's glass, a reading guide, auto-scroll (Space, ↑ ↓ speed), light or dark, fullscreen; a strip with the slide, the presenter's timer and pace, and the room's hands, pace votes, viewers and open questions. It does not join the room. Every deck has it.
 - `/<slug>/notes-edit` — The batch notes editor: every slide's notes as Markdown on one scrolling page, saved into deck.mdx as you type (`kadal-deck dev`, or a host's `notesEditor`; read-only elsewhere).
 - `/<slug>/overview` — Every slide in order with a slider through its click steps and its notes beside it (editable under `kadal-deck dev`); a thumbnail opens the deck at that step.
 - `/<slug>/export` — The browser exporter, on every deck (hosted ones too; no Playwright): PDF through the browser's print of the print view, a zip of PNGs, an image-per-slide PPTX file with the notes, or Markdown with the PNGs. Range, a page per click step, colour scheme, notes, picture size and a transparent background, with a live preview, progress and Cancel.

@@ -25,7 +25,8 @@ import type { ViteDevServer } from "vite";
  * address is public and the dev server can write the deck's files.
  *
  * What it guards:
- *   <base>presenter, notes, notes-edit, overview       a password page first (the speaker's views)
+ *   <base>presenter, notes, notes-edit, overview,      a password page first (the speaker's views)
+ *         teleprompter
  *   <base>__kadal/*  (notes, source, monaco-write…)   401 without it (they read and write the deck)
  * Everything else — the deck itself, the audience page, the phone remote (which pairs with a code
  * from the presenting screen) — stays open, as a published deck is.
@@ -104,7 +105,7 @@ export function originOf(
   return "local";
 }
 
-const GUARDED_PAGES = ["presenter", "notes", "notes-edit", "overview"];
+const GUARDED_PAGES = ["presenter", "notes", "notes-edit", "overview", "teleprompter"];
 
 /** Whether `path` (no query) is a page or an endpoint the password guards. */
 export function guarded(path: string, base: string): "page" | "api" | null {

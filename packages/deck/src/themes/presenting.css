@@ -207,8 +207,19 @@
 .deck-presenter-bar {
   position: relative;
 }
-.deck-timer {
-  display: inline-flex;
+/* Two rows, no taller than the toolbar's two: the time, then its buttons, the pace and the clock.
+   Scoped to the bar: `.deck-timer` is also the <Timer> component's class on a slide (base.css). */
+.deck-presenter-bar .deck-timer {
+  flex: none;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 4px;
+  min-width: 170px;
+  max-width: 210px;
+  font-family: var(--deck-body-font);
+}
+.deck-timer-row {
+  display: flex;
   align-items: center;
   gap: 4px;
 }
@@ -216,13 +227,24 @@
 .deck-timer-btn {
   display: inline-grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 7px;
   border: 1px solid var(--deck-border);
   background: var(--deck-surface);
   color: inherit;
   cursor: pointer;
+}
+.deck-timer-play .deck-icon,
+.deck-timer-btn .deck-icon {
+  width: 14px;
+  height: 14px;
+}
+.deck-timer-play:focus-visible,
+.deck-timer-btn:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
 }
 .deck-timer.is-paused .deck-timer-play {
   background: var(--deck-accent);
@@ -239,11 +261,11 @@
   color: #ef4444;
 }
 .deck-timer-flag {
-  font: 600 10px var(--deck-body-font);
+  font: 600 9px/16px var(--deck-body-font);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 0 5px;
+  border-radius: 5px;
   background: var(--deck-surface);
   color: var(--deck-muted);
 }
@@ -753,4 +775,498 @@ button.deck-remote-timer:disabled {
   margin-left: auto;
   font: 11px var(--deck-mono-font);
   color: var(--deck-muted);
+}
+
+/* ── the teleprompter's button in the presenter's toolbar (presenter/TeleprompterControl.tsx) ─ */
+.deck-tp-control {
+  position: relative;
+  display: inline-flex;
+}
+.deck-tp-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+  display: grid;
+  gap: 2px;
+}
+.deck-tp-menu-head {
+  margin: 4px 8px 6px;
+  font: 600 11px var(--deck-body-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+}
+.deck-tp-menu-note {
+  margin: 4px 8px 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--deck-muted);
+}
+/* Not the toolbar's chip buttons: rows, as a menu's are. */
+.deck-presenter-tools .deck-tp-menu-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  font: 13px var(--deck-body-font);
+}
+.deck-presenter-tools .deck-tp-menu-item:hover,
+.deck-presenter-tools .deck-tp-menu-item:focus-visible {
+  background: var(--deck-surface);
+  outline: none;
+}
+.deck-presenter-tools .deck-tp-menu-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--deck-accent);
+}
+.deck-presenter-tools .deck-tp-menu-item .deck-icon {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+.deck-tp-menu-item > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.deck-tp-menu-item b {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-tp-menu-item small {
+  font-size: 11px;
+  color: var(--deck-muted);
+}
+.deck-presenter-tools .deck-tp-menu-item.is-last {
+  box-shadow: inset 3px 0 0 var(--deck-accent);
+}
+.deck-presenter-tools .deck-tp-menu-item.is-close {
+  margin-top: 4px;
+  border-top: 1px solid var(--deck-border);
+  border-radius: 0 0 8px 8px;
+}
+
+/* ── the teleprompter (presenter/Teleprompter.tsx) ────────────────────────────
+   Dark is its own high contrast — near-black and near-white over the deck's dark tokens — and
+   light is the deck's light scheme as it is. The current part sits on the reading line a third of
+   the way down. */
+.deck-prompter {
+  --tp-bg: var(--deck-bg);
+  --tp-fg: var(--deck-fg);
+  --tp-muted: var(--deck-muted);
+  --tp-line: var(--deck-border);
+  --tp-surface: var(--deck-surface);
+  --tp-accent: var(--deck-accent, #2563eb);
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--tp-bg);
+  color: var(--tp-fg);
+  font-family: var(--deck-body-font);
+}
+.deck-prompter.is-dark {
+  --tp-bg: color-mix(in oklab, var(--deck-bg) 12%, #000);
+  --tp-fg: color-mix(in oklab, var(--deck-fg) 10%, #fff);
+  --tp-muted: color-mix(in oklab, var(--tp-fg) 62%, var(--tp-bg));
+  --tp-line: color-mix(in oklab, var(--tp-fg) 16%, transparent);
+  --tp-surface: color-mix(in oklab, var(--tp-fg) 9%, transparent);
+  --tp-accent: color-mix(in oklab, var(--deck-accent, #60a5fa) 70%, #fff);
+}
+.deck-prompter.is-idle {
+  cursor: none;
+}
+.deck-prompter.is-mirrored .deck-prompter-status,
+.deck-prompter.is-mirrored .deck-prompter-read {
+  transform: scaleX(-1);
+}
+
+/* The strip along the top: where in the deck, the time, the room. */
+.deck-prompter-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--tp-line);
+  font-size: 15px;
+}
+.deck-prompter-where {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.deck-prompter-where b {
+  font: 600 15px var(--deck-mono-font);
+  font-variant-numeric: tabular-nums;
+}
+.deck-prompter-where span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tp-muted);
+}
+.deck-prompter-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.deck-prompter-timer b {
+  font: 600 22px var(--deck-mono-font);
+  font-variant-numeric: tabular-nums;
+}
+.deck-prompter-timer.is-paused b {
+  opacity: 0.55;
+}
+.deck-prompter-timer.is-overtime b {
+  color: #dc2626;
+}
+.deck-prompter.is-dark .deck-prompter-timer.is-overtime b {
+  color: #f87171;
+}
+.deck-prompter-timer.is-quiet {
+  font-size: 13px;
+  color: var(--tp-muted);
+}
+.deck-prompter-timer em {
+  font: 700 11px/18px var(--deck-body-font);
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--tp-surface);
+  color: var(--tp-muted);
+}
+.deck-prompter-timer em.is-over {
+  background: #dc2626;
+  color: #fff;
+}
+.deck-prompter-pace {
+  font: 600 13px/20px var(--deck-mono-font);
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--tp-surface);
+}
+.deck-prompter-pace.is-ok {
+  color: #16a34a;
+}
+.deck-prompter-pace.is-behind {
+  color: #dc2626;
+}
+.deck-prompter-pace.is-ahead {
+  color: #2563eb;
+}
+.deck-prompter.is-dark .deck-prompter-pace.is-ok {
+  color: #4ade80;
+}
+.deck-prompter.is-dark .deck-prompter-pace.is-behind {
+  color: #f87171;
+}
+.deck-prompter.is-dark .deck-prompter-pace.is-ahead {
+  color: #93c5fd;
+}
+.deck-prompter-room {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.deck-prompter-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--tp-muted);
+}
+.deck-prompter-stat b {
+  font: 600 16px var(--deck-mono-font);
+  color: var(--tp-fg);
+}
+.deck-prompter-stat .deck-icon {
+  width: 17px;
+  height: 17px;
+}
+/* A hand up: impossible to miss from the lectern, and it keeps asking until it is answered. */
+.deck-prompter-stat.is-alert {
+  background: #f59e0b;
+  color: #111;
+  animation: deck-prompter-pulse 1.6s ease-in-out infinite;
+}
+.deck-prompter-stat.is-alert b {
+  color: #111;
+}
+@keyframes deck-prompter-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+  }
+}
+.deck-prompter-gauge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tp-muted);
+}
+.deck-prompter-gauge small {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.deck-prompter-gauge-track {
+  position: relative;
+  width: 84px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa, var(--tp-surface) 50%, #f59e0b);
+}
+.deck-prompter-gauge-track i {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--tp-fg);
+  transform: translate(-50%, -50%);
+  transition: left 0.3s ease;
+}
+.deck-prompter-gauge-track i.is-idle {
+  opacity: 0.35;
+}
+
+/* The notes, and the next slide's under them, in one scroller. */
+.deck-prompter-read {
+  position: relative;
+  min-height: 0;
+}
+.deck-prompter-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 0 6vw;
+  scrollbar-width: thin;
+}
+/* Room above the first line to bring it down to the reading line, and below the last to take it
+   up past it: in the scroller's own height (padding in vh outgrew a short window). */
+.deck-prompter-scroll::before,
+.deck-prompter-scroll::after {
+  content: "";
+  display: block;
+}
+.deck-prompter-scroll::before {
+  height: 36%;
+}
+.deck-prompter-scroll::after {
+  height: 70%;
+}
+.deck-prompter-scroll:focus-visible {
+  outline: 2px solid var(--tp-accent);
+  outline-offset: -4px;
+}
+.deck-prompter-current,
+.deck-prompter-next {
+  max-width: var(--tp-measure, 40ch);
+  margin: 0 auto;
+}
+.deck-prompter-current {
+  line-height: 1.35;
+  font-weight: 500;
+}
+.deck-prompter .deck-notes-scroll {
+  overflow: visible;
+  padding: 0;
+}
+.deck-prompter .deck-notes-rendered p,
+.deck-prompter .deck-notes-rendered li {
+  margin: 0 0 0.5em;
+}
+.deck-prompter .deck-notes-segment {
+  transition: opacity 0.25s;
+}
+.deck-prompter .deck-notes-segment.is-past {
+  opacity: 0.3;
+}
+.deck-prompter .deck-notes-segment.is-future {
+  opacity: 0.72;
+}
+.deck-prompter .deck-notes-segment.is-current {
+  background: none;
+  box-shadow: none;
+  opacity: 1;
+  color: var(--tp-fg);
+}
+.deck-prompter .deck-click-marker {
+  font-size: 0.42em;
+  background: var(--tp-surface);
+  color: var(--tp-muted);
+  box-shadow: none;
+}
+.deck-prompter .deck-click-marker.is-current {
+  background: var(--tp-accent);
+  color: var(--tp-bg);
+}
+.deck-prompter-empty h1 {
+  margin: 0 0 0.3em;
+  font-size: 1.2em;
+  line-height: 1.2;
+}
+.deck-prompter-empty p {
+  margin: 0;
+  font-size: 0.5em;
+  color: var(--tp-muted);
+}
+.deck-prompter-next {
+  margin-top: 2.4em;
+  padding-top: 1em;
+  border-top: 1px solid var(--tp-line);
+  opacity: 0.5;
+  line-height: 1.35;
+}
+.deck-prompter-next h2 {
+  margin: 0 0 0.4em;
+  font-size: 1em;
+  font-weight: 600;
+}
+.deck-prompter-next h2 span {
+  font-size: 0.7em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tp-muted);
+  margin-right: 0.4em;
+}
+/* Its first lines only, fading out. */
+.deck-prompter-next .deck-notes-rendered {
+  max-height: 4.1em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(#000 45%, transparent);
+  mask-image: linear-gradient(#000 45%, transparent);
+}
+/* The reading line: a band at a third of the way down, with the classic prompter's arrows. */
+.deck-prompter-guide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% / 3 - var(--tp-size, 44px) * 0.75);
+  height: calc(var(--tp-size, 44px) * 1.5);
+  pointer-events: none;
+  background: color-mix(in oklab, var(--tp-accent) 9%, transparent);
+  border-block: 1px solid color-mix(in oklab, var(--tp-accent) 35%, transparent);
+}
+.deck-prompter-guide::before,
+.deck-prompter-guide::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  border: 10px solid transparent;
+  transform: translateY(-50%);
+}
+.deck-prompter-guide::before {
+  left: 6px;
+  border-left-color: var(--tp-accent);
+}
+.deck-prompter-guide::after {
+  right: 6px;
+  border-right-color: var(--tp-accent);
+}
+
+/* The controls: a pill along the bottom that fades while the pointer rests. */
+.deck-prompter-controls {
+  position: fixed;
+  z-index: 5;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 10px;
+  padding: 6px 8px;
+  border-radius: 14px;
+  border: 1px solid var(--tp-line);
+  background: color-mix(in oklab, var(--tp-bg) 88%, var(--tp-fg));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  font: 13px var(--deck-body-font);
+  transition: opacity 0.3s ease;
+}
+.deck-prompter.is-idle .deck-prompter-controls:not(:focus-within):not(:hover) {
+  opacity: 0;
+}
+.deck-prompter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.deck-prompter-group + .deck-prompter-group {
+  padding-left: 10px;
+  border-left: 1px solid var(--tp-line);
+}
+.deck-prompter-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 30px;
+  height: 30px;
+  justify-content: center;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tp-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.deck-prompter-controls button:hover {
+  background: var(--tp-surface);
+}
+.deck-prompter-controls button:focus-visible {
+  outline: 2px solid var(--tp-accent);
+  outline-offset: 1px;
+}
+.deck-prompter-controls button.is-on {
+  background: var(--tp-fg);
+  color: var(--tp-bg);
+}
+.deck-prompter-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.deck-prompter-controls .deck-icon {
+  width: 15px;
+  height: 15px;
+}
+.deck-prompter-controls output {
+  min-width: 2ch;
+  text-align: center;
+  font: 12px var(--deck-mono-font);
+  color: var(--tp-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-prompter-stat.is-alert {
+    animation: none;
+  }
+  .deck-prompter-controls,
+  .deck-prompter .deck-notes-segment,
+  .deck-prompter-gauge-track i {
+    transition: none;
+  }
 }

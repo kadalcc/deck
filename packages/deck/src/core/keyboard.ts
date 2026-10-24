@@ -19,6 +19,7 @@ export type KeyAction =
   | "fullscreen"
   | "pause"
   | "presenter"
+  | "teleprompter"
   | "help"
   | "jump"
   | "search"
@@ -112,6 +113,12 @@ export const KEY_BINDINGS: KeyBinding[] = [
     description: "Pause: black out the screen",
   },
   { keys: ["KeyS"], action: "presenter", label: "S", description: "Open the presenter view" },
+  {
+    keys: ["Shift+KeyT"],
+    action: "teleprompter",
+    label: "Shift T",
+    description: "The teleprompter window (from the presenter view)",
+  },
   { keys: ["Shift+Slash"], action: "help", label: "?", description: "This help" },
   {
     keys: ["KeyG", "Shift+Semicolon"],

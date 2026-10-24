@@ -40,6 +40,7 @@ import { pageRelay } from "./socket.ts";
 const DENIED = new Set([
   "view.presenter",
   "view.projector",
+  "present.teleprompter",
   "view.fullscreen",
   "remote.pair",
   "remote.disconnect",

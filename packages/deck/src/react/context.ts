@@ -15,6 +15,9 @@ import type {
 import type { NavState } from "../core/navigation.ts";
 import type { ShortcutRegistry } from "../core/shortcuts.ts";
 import type { Store } from "../core/store.ts";
+import type { WindowPlace } from "../core/teleprompter.ts";
+import type { WindowMessage } from "../core/window-messages.ts";
+import type { Via } from "../core/windows.ts";
 import type { MenuRegistry } from "./menu.ts";
 import type { NotesEditor } from "./notes.ts";
 import type { GlossaryEntry } from "../glossary/model.ts";
@@ -34,6 +37,8 @@ export type ViewMode =
   | "overview"
   /** Every slide's notes, editable on one scrolling page (react/NotesEditPage.tsx). */
   | "notes-edit"
+  /** The current slide's notes, big, following the presenter (presenter/Teleprompter.tsx). */
+  | "teleprompter"
   /** A page of the deck's own, at a path its routes name (react/routes.tsx). */
   | "page";
 
@@ -69,6 +74,8 @@ export interface UiState {
   theme: string;
   /** Whether this window has a projector window of its own open (the presenter's share button). */
   projectorOpen: boolean;
+  /** Whether this window has a teleprompter window of its own open (the presenter's button). */
+  teleprompterOpen: boolean;
   /** The presenter's switch: term cards opened here also open on every screen in the room. */
   termSync: boolean;
 }
@@ -110,6 +117,12 @@ export interface DeckActions {
    * share on a call — or close the one this window opened. See `Flags.projector`.
    */
   toggleProjector(force?: boolean): void;
+  /**
+   * Open the teleprompter window (presenter/Teleprompter.tsx) — at a place on a screen, or as a
+   * plain popup to drag — or, when it is open, move it there and bring it forward.
+   */
+  openTeleprompter(place?: WindowPlace | null): void;
+  closeTeleprompter(): void;
   toggleOverview(force?: boolean): void;
   togglePause(force?: boolean): void;
   toggleHelp(force?: boolean): void;
@@ -201,6 +214,19 @@ export interface DeckRuntime {
   notesEditor: NotesEditor | null;
   /** The deck's own pages (react/routes.tsx): `api.addRoute` adds to it. */
   routes?: import("./routes.tsx").RouteRegistry;
+  /**
+   * This deck's other windows in this browser, for what is said besides positions (the runtime
+   * keeps those in step itself): the presenter's timer and room for the teleprompter
+   * (core/window-messages.ts). `post` will not send a `nav`. Absent when a runtime is made by hand.
+   */
+  windows?: DeckWindows;
+}
+
+export interface DeckWindows {
+  post(message: Exclude<WindowMessage, { type: "nav" }>): void;
+  subscribe(
+    listener: (message: Exclude<WindowMessage, { type: "nav" }>, via: Via) => void,
+  ): () => void;
 }
 
 export interface StageInset {

@@ -31,6 +31,7 @@ import { NotesView } from "../react/NotesView.tsx";
 import { RemoteHost } from "../remote/host.tsx";
 import { useNarrationOn } from "../react/NarrationGate.tsx";
 import { PresenterSidebar } from "./Sidebar.tsx";
+import { TeleprompterControl, usePresenterStateFeed } from "./TeleprompterControl.tsx";
 import { PresenterTimer } from "./Timer.tsx";
 
 /** The narration bar is its own chunk, fetched when the presenter view opens on a deck with notes. */
@@ -45,6 +46,8 @@ const Narration = lazy(() => import("../narrate/Narration.tsx"));
  * a timer with pacing, the clock, the drawing and pointer tools, and the room — who is watching,
  * the pace they want, their questions, the polls to open. Opened with `S` from the deck; both
  * windows stay in step over the window bus (core/windows.ts), and the room follows the presenter.
+ * Its Teleprompter button (Shift T) opens the notes alone, big, in a window for another screen
+ * (presenter/Teleprompter.tsx); the notes stay here too.
  *
  * Layouts (the switch in the bar, or L): notes-left (the default: notes over the next slide, the
  * current slide beside them) and notes-right. Each window keeps the one it was left on. A third,
@@ -74,6 +77,7 @@ export function PresenterPage() {
   const [mirror, setMirror] = useState(false);
   const [roomOpen, setRoomOpen] = useState(() => readItem("deck.presenter.room") !== "closed");
   const narrate = useNarrationOn();
+  usePresenterStateFeed();
   useEffect(() => {
     writeItem("deck.presenter.layout", layout);
     writeItem("deck.presenter.room", roomOpen ? "open" : "closed");
@@ -107,9 +111,11 @@ export function PresenterPage() {
         .join(" ")}
     >
       <header className="deck-presenter-bar">
-        <strong>{deck.config.title}</strong>
+        {/* Two lines at most, like the timer beside it; the whole title is in the tooltip. */}
+        <strong className="deck-presenter-title" title={deck.config.title}>
+          {deck.config.title}
+        </strong>
         <PresenterTimer />
-        <Clock />
         <LayoutSwitch layout={layout} setLayout={setLayout} />
         <span className="deck-presenter-spacer" />
         <PresenterTools mirror={mirror} setMirror={setMirror} />
@@ -520,23 +526,6 @@ function LayoutSwitch({
   );
 }
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function Clock() {
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <span className="deck-presenter-clock">
-      {pad(now.getHours())}:{pad(now.getMinutes())}
-    </span>
-  );
-}
-
 function PresenterTools({
   mirror,
   setMirror,
@@ -658,6 +647,7 @@ function PresenterTools({
       >
         <Icon name="projector" /> Share window
       </button>
+      <TeleprompterControl />
       {/* The camera bubble on the slide (every window) and the recorder: src/media/. */}
       <CameraControl />
       <RecordControl />

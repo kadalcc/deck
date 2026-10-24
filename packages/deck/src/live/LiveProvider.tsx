@@ -44,12 +44,16 @@ export function LiveProvider({ children }: { children?: ReactNode }) {
     // The phone remote opens its own presenter socket (src/remote/link.ts); it is not a viewer.
     // /stats and /export read the host's API and follow nobody: in the room they were one more
     // viewer, and every visit to the stats counted as a view of the deck.
+    // The teleprompter is the presenter's own window: in the room it would be a viewer (one more
+    // view, no presenter's rights). It hears the room through the presenter view instead
+    // (core/window-messages.ts `presenter:state`).
     if (
       !api ||
       deck.mode === "print" ||
       deck.mode === "remote" ||
       deck.mode === "stats" ||
-      deck.mode === "export"
+      deck.mode === "export" ||
+      deck.mode === "teleprompter"
     )
       return null;
     const siteKey = deck.config.live.turnstile;

@@ -39,11 +39,16 @@ import {
  * THE PRESENTER'S TIMER  —  stopwatch or countdown, pause, reset, progress, pacing
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * The state machine is core/timer.ts; this is its face in the presenter's top bar:
+ * The state machine is core/timer.ts; this is its face in the presenter's top bar, two rows no
+ * taller than the toolbar's two beside it:
  *
- *   ⏸ 00:12:34  +2m  ↺  ⌄         the time (click: pause / resume), the pacing badge, reset,
- *   ▬▬▬▬▬▬▬▬▬▬▬▬▬[▬]▬▬▬           and the settings; along the bar's bottom edge, the progress
- *                                   through the talk with this slide's slot in the plan marked
+ *   00:12:34 [PAUSED]               the time (click: pause / resume), and why it is not moving
+ *   ⏸ ↺ ⌄  +2m   23:37             play/pause, reset, the settings; the pacing badge; the clock
+ *   ▬▬▬▬▬▬▬▬▬▬▬▬▬[▬]▬▬▬            along the bar's bottom edge, the progress through the talk
+ *                                   with this slide's slot in the plan marked
+ *
+ * It was one long row — buttons, a 22px time, the badge, the flag, then the clock on its own —
+ * and with the title beside it took a third of a 1440px bar; stacked, it takes about 190px.
  *
  * `timer: countdown` and `duration: 30min` in the headmatter choose the mode and the length; the
  * settings popover changes both for this talk. The talk's length is otherwise its plan
@@ -53,8 +58,8 @@ import {
  *
  * It is kept for the life of the TAB (sessionStorage), not the page load: a reload mid-talk — a
  * new build, a slide that would not load — carries on where it was, paused or running. The phone
- * remote, the sidebar's schedule line and the `present.timer` command read the same state through
- * `presenterTimer` (react/pacing.ts).
+ * remote, the sidebar's schedule line, the teleprompter (through the window bus) and the
+ * `present.timer` command read the same state through `presenterTimer` (react/pacing.ts).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -144,6 +149,21 @@ function usePresenterTimer() {
   return { timer, setTimer, apply };
 }
 
+/** The time of day, beside the talk's: when the room has to be out by is a wall-clock time. */
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    <span className="deck-presenter-clock" title="The time now">
+      {pad(now.getHours())}:{pad(now.getMinutes())}
+    </span>
+  );
+}
+
 /** A clock that re-renders twice a second while `on`. */
 function useNow(on = true) {
   const [now, setNow] = useState(() => Date.now());
@@ -185,55 +205,59 @@ export function PresenterTimer() {
     >
       <button
         type="button"
-        className="deck-timer-play"
-        onClick={() => apply(toggle)}
-        aria-label={r.running ? "Pause the timer" : "Resume the timer"}
-        title={r.running ? "Pause" : "Resume"}
-      >
-        <Icon name={r.running ? "pause" : "play"} />
-      </button>
-      <button
-        type="button"
         className={["deck-presenter-timer", paceTone(pace)].join(" ")}
         onClick={() => apply(toggle)}
         title={`${label} — click to ${r.running ? "pause" : "resume"}`}
         aria-label={label}
       >
         <span className="deck-timer-time">{formatClock(r.shown, countdown && r.overtime)}</span>
+        {!r.running ? <span className="deck-timer-flag">paused</span> : null}
+        {r.overtime && !countdown ? <span className="deck-timer-flag is-over">over</span> : null}
+      </button>
+      <div className="deck-timer-row">
+        <button
+          type="button"
+          className="deck-timer-play"
+          onClick={() => apply(toggle)}
+          aria-label={r.running ? "Pause the timer" : "Resume the timer"}
+          title={r.running ? "Pause" : "Resume"}
+        >
+          <Icon name={r.running ? "pause" : "play"} />
+        </button>
+        <button
+          type="button"
+          className="deck-timer-btn"
+          onClick={() => apply(reset)}
+          aria-label="Reset the timer"
+          title="Reset to zero"
+        >
+          <Icon name="rotate-ccw" />
+        </button>
+        <div className="deck-timer-menu-wrap">
+          <button
+            type="button"
+            className="deck-timer-btn"
+            onClick={() => setMenu((m) => !m)}
+            aria-label="Timer settings"
+            aria-haspopup="dialog"
+            aria-expanded={menu}
+            title="Stopwatch or countdown, and the talk's length"
+          >
+            <Icon name="chevron-down" />
+          </button>
+          {menu ? (
+            <TimerSettings timer={timer} onChange={setTimer} onClose={() => setMenu(false)} />
+          ) : null}
+        </div>
         {pace !== null ? (
           <small
+            className={["deck-timer-pace", paceTone(pace)].join(" ")}
             title={pace > 0 ? "Behind the plan for this slide" : "Ahead of the plan for this slide"}
           >
             {formatPace(pace)}
           </small>
         ) : null}
-        {!r.running ? <span className="deck-timer-flag">paused</span> : null}
-        {r.overtime && !countdown ? <span className="deck-timer-flag is-over">over</span> : null}
-      </button>
-      <button
-        type="button"
-        className="deck-timer-btn"
-        onClick={() => apply(reset)}
-        aria-label="Reset the timer"
-        title="Reset to zero"
-      >
-        <Icon name="rotate-ccw" />
-      </button>
-      <div className="deck-timer-menu-wrap">
-        <button
-          type="button"
-          className="deck-timer-btn"
-          onClick={() => setMenu((m) => !m)}
-          aria-label="Timer settings"
-          aria-haspopup="dialog"
-          aria-expanded={menu}
-          title="Stopwatch or countdown, and the talk's length"
-        >
-          <Icon name="chevron-down" />
-        </button>
-        {menu ? (
-          <TimerSettings timer={timer} onChange={setTimer} onClose={() => setMenu(false)} />
-        ) : null}
+        <Clock />
       </div>
       {length ? (
         <div

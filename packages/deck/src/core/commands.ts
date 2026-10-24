@@ -226,6 +226,7 @@ export const KEY_COMMANDS = {
   fullscreen: "view.fullscreen",
   pause: "present.blackout",
   presenter: "view.presenter",
+  teleprompter: "present.teleprompter",
   help: "view.help",
   jump: "view.jump",
   search: "view.search",
