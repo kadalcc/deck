@@ -240,6 +240,11 @@ const HANDLES: Array<{ id: string; sx: -1 | 0 | 1; sy: -1 | 0 | 1; cursor: strin
 export interface DragProps {
   /** "x,y,w,h[,r]" in stage pixels (`_` height: automatic), or a name in the frontmatter's `dragPos`. */
   pos?: string;
+  /**
+   * Where it sits while `pos` says nothing, in the same "x,y,w,h[,r]" form — how `<Sticker x y
+   * size>` places itself. The source still has no position, so the first drag writes `pos`.
+   */
+  place?: string;
   /** A click step, as `<Click at>`. */
   at?: ClickAt;
   /** Start shown and hide at the step. */
@@ -255,6 +260,7 @@ export interface DragProps {
 
 export function Drag({
   pos,
+  place,
   at,
   hide,
   effect = "fade-in",
@@ -268,13 +274,13 @@ export function Drag({
   const source = useDragSource(pos, rest["data-drag-index"]);
   const canEdit = useCanEdit(source);
   const [box, setBox] = useState<DragBox | null>(() =>
-    parseDragPos(saved.get(source.key) ?? source.written),
+    parseDragPos(saved.get(source.key) ?? source.written ?? place),
   );
   const { save, preview, status } = useSaver(source, (pos) => setBox(parseDragPos(pos)));
   // A recompiled deck (a reload, a hot update) with a new position written: show that one.
   useEffect(() => {
-    if (!saved.has(source.key)) setBox(parseDragPos(source.written));
-  }, [source.written, source.key]);
+    if (!saved.has(source.key)) setBox(parseDragPos(source.written ?? place));
+  }, [source.written, source.key, place]);
   const [editing, setEditing] = useState(false);
   const el = useRef<HTMLElement>(null);
   const k = useRef(1);

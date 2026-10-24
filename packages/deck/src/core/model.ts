@@ -1004,6 +1004,11 @@ export interface HostOverride {
    * the deck's own, a URL (https, or a same-site path) points a deck's button at the host's copy.
    */
   download?: boolean | string;
+  /**
+   * Where `<Emoji>` finds its image sets (components/media.tsx): an https URL or a same-site path
+   * (`/emoji`). Without one, `https://decks.kadal.cc/emoji`, so a deck works anywhere.
+   */
+  emoji?: string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -1020,6 +1025,8 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (typeof o.download === "boolean") out.download = o.download;
   else if (typeof o.download === "string" && /^(https:\/\/|\/(?!\/))\S+$/.test(o.download))
     out.download = o.download;
+  if (typeof o.emoji === "string" && /^(https?:\/\/[^\s"'<>]+|\/(?!\/)[\w./-]*)$/.test(o.emoji))
+    out.emoji = o.emoji.replace(/\/+$/, "");
   return out;
 }
 

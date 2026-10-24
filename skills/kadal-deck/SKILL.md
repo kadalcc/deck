@@ -103,6 +103,9 @@ layout: section
   `deck.config.ts` overrides the headmatter — change a setting where it is actually set.
 - Built-in components need no import; the deck's own go in `src/components.tsx`.
 - Images and videos live in `public/` and are referenced as `/name.png`.
+- Fun media: `<Sticker src x y size />` (over the slide, draggable in dev), `<Emoji name="party-popper" />`,
+  `<Gif provider="klipy" src title />` (hot-linked; exports show a link card), `<Meme src captions />` —
+  see "Stickers, emoji, GIFs and memes" in references/authoring.md.
 
 ## Reference (load when needed)
 

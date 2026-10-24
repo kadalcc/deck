@@ -150,6 +150,29 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
   print as a poster (`kadal-deck export --posters` captures them, and those for `<Youtube>` and
   `<Tweet>` too).
 
+## Stickers, emoji, GIFs and memes
+
+```mdx
+<Sticker src="/stickers/rocket.webp" x={1480} y={140} size={260} rotate={-8} shadow />
+Ship it <Emoji name="party-popper" /> — or exactly: <Emoji char="👍🏽" set="twemoji" />
+<Gif provider="klipy" slug="hello-hi-662" src="https://static.klipy.com/…" title="Hello" width={498} height={498} />
+<Meme src="https://i.imgflip.com/30b1gx.jpg"
+  template={{ provider: "imgflip", id: "181913649", url: "https://imgflip.com/memetemplate/181913649" }}
+  captions={[{ text: "Slides by hand", x: 52, y: 6, width: 45 }, { text: "Kadal Deck", x: 52, y: 56, width: 45 }]} />
+```
+
+- `<Sticker>` sits over the slide in stage pixels (centred without `x`/`y`); in `dev`,
+  double-click to move it and `pos="x,y,w,h,r"` is written onto the tag. GIF/WebP/APNG animate.
+- `<Emoji>` sets: `fluent-3d` (default), `fluent-color`, `fluent-flat`, `noto`, `noto-animated`,
+  `twemoji`, served from https://decks.kadal.cc/emoji (a host may point elsewhere). `char` is exact;
+  `name` is the index's slug. Noto Animated is a still under reduced motion and in print.
+- `<Gif>` is hot-linked from the provider — never download a provider's GIF into `public/`. Every
+  export (PDF, PNG, PPTX) shows a card "GIF: <title> — via KLIPY" with the link instead.
+- `<Meme>` captions: `x`/`y`/`width` in % of the image, `size` in % of its width (default 9); keep
+  `template` so the "Template via imgflip.com" link back stays.
+- The workspace's uploaded stickers: `kadal-deck media list`, then `kadal-deck media add <name>`
+  (downloads into `public/stickers/` and prints the `<Sticker>` line).
+
 ## Look and feel
 
 - Themes: `theme: minimal | rla | stack` in the headmatter, or a package — `theme: seriph` finds
