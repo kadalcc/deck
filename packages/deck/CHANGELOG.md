@@ -1,5 +1,27 @@
 # @kadal/deck
 
+## 0.4.8
+
+### Patch Changes
+
+- a3db811: Every deck's theme menu (T) now offers all sixteen first-party themes, whatever the deck declares.
+
+  - **Nothing to install.** @kadal/deck ships a copy of each of the thirteen theme packages
+    (`dist/themes/<name>`), so a deck with only the engine installed can pick any of them, or name
+    one (`theme: ocean`). An installed `@kadal/theme-<name>` still wins over the copy.
+  - **`themes:` orders the menu; it does not narrow it.** The deck's `theme` comes first, then its
+    `themes` in order, then every first-party theme it did not name.
+  - **No heavier first paint.** A theme the deck did not name loads its stylesheet and layouts only
+    when someone picks it (or points at its row). Its code keeps the deck's colours; name it in
+    `themes:` to give its code its own Shiki colours.
+  - **Swatches before the CSS.** Theme packages gain `kadal.theme.swatch`, two colours the menu
+    paints before the theme's stylesheet has loaded.
+  - The prebuilt shell (the builder) offers all sixteen too.
+
+- cc70774: On the export page (`/export`, also reached from the right-click menu), the options panel stays fixed and only the pages scroll. The panel was meant to stick but scrolled away with the pages. On a phone the page still scrolls as one column, and printing still prints every page.
+- dd72e9b: Every deck now has a **back to the start** button. In the play view it sits above the theme button at the bottom-left, from the second slide on, beside any buttons of the deck's own. In the presenter view it is in the toolbar as Start. Home does the same from the keyboard. The tour's own custom buttons are now just its ↗ Source link.
+- @kadal/prettier-plugin@0.4.8
+
 ## 0.4.7
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-crayon",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Crayon, a theme for Kadal Deck (@kadal/deck). A playful pastel theme for workshops and classrooms: rounded shapes, a friendly display face, and sticker-like callouts.",
   "keywords": [
     "kadal-theme",
@@ -91,7 +91,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.4.7",
+    "@kadal/deck": "^0.4.8",
     "react": "^19.2.0"
   },
   "devDependencies": {
