@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { hasConflictMarkers } from "../sync/markers.ts";
 import { FakeHost } from "./fake-host.ts";
 import { pullLines } from "./sync-command.ts";
-import { DivergedError } from "./publish.ts";
+import { DivergedError, divergedMessage } from "./publish.ts";
 import {
   ConflictsError,
   NoSourceError,
@@ -193,8 +193,11 @@ describe("web edits, both ways", () => {
       origin: "builder",
       by: "Asha",
     });
-    expect((err as Error).message).toContain(
-      "Run `kadal-deck pull` to merge their edits, or `kadal-deck publish --force`",
+    expect((err as Error).message).toStartWith(
+      "The deck changed on the web since your last sync (v1): v2 (quick edit by Asha, ",
+    );
+    expect((err as Error).message).toEndWith(
+      "Run `kadal-deck pull` to merge it into your files, or `kadal-deck publish --force` to replace it (it stays in version history).",
     );
     const r = await pull();
     expect(r.clean).toBe(true);
@@ -242,6 +245,45 @@ describe("web edits, both ways", () => {
     const p = await publishNow();
     expect(p.result.version).toBe(3);
     expect(host.deckBySlug("talk")!.versions[2]!.body.base).toBe(2);
+  });
+
+  test("diverged is worded by what moved the deck: web, agent, another copy, rollback", () => {
+    const head = (origin: string) => ({ version: 20, origin, by: "Ravi", at: null });
+    const advice =
+      " Run `kadal-deck pull` to merge it into your files, or `kadal-deck publish --force` to replace it (it stays in version history).";
+    expect(divergedMessage(head("builder"), 18)).toBe(
+      `The deck changed on the web since your last sync (v18): v20 (quick edit by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("mcp"), 18)).toBe(
+      `The deck changed on the web since your last sync (v18): v20 (an agent's edit by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("cli"), 18)).toBe(
+      `The deck was published from another copy since your last sync (v18): v20 (a CLI publish by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("rollback"), 18)).toBe(
+      `The deck was rolled back since your last sync (v18): v20 (rollback by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("cli"), null)).toBe(
+      `This folder has never synced with the published deck (now v20 (a CLI publish by Ravi)).${advice}`,
+    );
+  });
+
+  test("another copy's publish, and a folder that never synced, are said as such", async () => {
+    await publishNow();
+    host.webEdit("talk", { "deck.mdx": DECK.replace("Line c", "teammate") }, "Ravi", "cli");
+    const err = (await publishNow().catch((e: unknown) => e)) as DivergedError;
+    expect(err).toBeInstanceOf(DivergedError);
+    expect(err.message).toStartWith(
+      "The deck was published from another copy since your last sync (v1): v2 (a CLI publish by Ravi, ",
+    );
+    rmSync(join(dir, ".kadal-deck"), { recursive: true, force: true });
+    const fresh = (await publishNow().catch((e: unknown) => e)) as DivergedError;
+    expect(fresh).toBeInstanceOf(DivergedError);
+    expect(fresh.base).toBeNull();
+    expect(fresh.message).toStartWith(
+      "This folder has never synced with the published deck (now v2 (a CLI publish by Ravi, ",
+    );
+    expect(fresh.message).toContain("Run `kadal-deck pull`");
   });
 
   test("--force replaces the web's version, and pull --version brings it back", async () => {

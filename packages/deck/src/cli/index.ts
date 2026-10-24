@@ -29,7 +29,7 @@
  *
  * Every command but dev, build and mcp takes --json: one JSON object on stdout, everything else
  * on stderr. Exit codes: 0 ok · 1 failed · 2 usage · 3 not signed in · 4 missing prerequisite, or
- * (publish) the deck changed on the web — `error.code` "diverged" · 5 unresolved merge conflicts.
+ * (publish) the published deck moved since your last sync — `error.code` "diverged" · 5 unresolved merge conflicts.
  * KADAL_DECK_TOKEN and KADAL_DECK_HOST (default https://deck.kadal.cc) override the saved
  * credentials, which is how CI publishes.
  */
@@ -114,9 +114,9 @@ export const HELP = `kadal-deck <command> [options]
               --pwa  keep the deck's service worker (left out on the host by default)
               --no-source  don't upload the editable source (turns quick edit off; it sticks —
               --source turns it back on). The source is private: only your workspace reads it
-              --force  replace web edits made since your last sync (they stay in the history)
+              --force  replace what was published since your last sync (it stays in the history)
               --showcase / --no-showcase  list the deck in the public showcase, or take it out
-              Exits 4 when the deck changed on the web (run pull), 5 while conflicts are left
+              Exits 4 when the deck moved since your last sync (run pull), 5 while conflicts are left
   pull        merge the web's edits (quick edit, agents) into your files, slide by slide
               --version <n>  that version instead of the newest   --dry-run  say what would change
               --ours / --theirs  settle every conflict that way instead of leaving markers
@@ -132,7 +132,7 @@ export const HELP = `kadal-deck <command> [options]
 
 Global: --dir <path> (-C) runs in another folder · --json prints one JSON object on stdout ·
 --help · --version.  Exit codes: 0 ok, 1 failed, 2 usage, 3 not signed in, 4 missing prerequisite
-(publish: the deck changed on the web), 5 unresolved merge conflicts.
+(publish: the published deck moved since your last sync), 5 unresolved merge conflicts.
 
 Docs: https://deck.kadal.cc/docs/`;
 
