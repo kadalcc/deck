@@ -1,4 +1,16 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Download,
+  FileImage,
+  FileText,
+  type LucideIcon,
+  Moon,
+  NotebookText,
+  Presentation,
+  Printer,
+  Sun,
+} from "lucide-react";
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { parseRange } from "../../core/print-options.ts";
 import { useDeck } from "../../react/context.ts";
@@ -39,24 +51,68 @@ import {
 type Format = "pdf" | "png" | "pptx" | "md";
 type Notes = "none" | "box" | "page";
 
-const FORMATS: { id: Format; label: string; hint: string }[] = [
+const FORMATS: { id: Format; label: string; file: string; icon: LucideIcon; hint: string }[] = [
   {
     id: "pdf",
     label: "PDF",
-    hint: "Prints the pages below with your browser: choose “Save as PDF”.",
+    file: ".pdf",
+    icon: FileText,
+    hint: "Prints the pages with your browser: choose “Save as PDF”.",
   },
-  { id: "png", label: "PNG images", hint: "A zip with a picture of every page." },
+  {
+    id: "png",
+    label: "PNG images",
+    file: ".zip of .png",
+    icon: FileImage,
+    hint: "A zip with a picture of every page.",
+  },
   {
     id: "pptx",
     label: "PowerPoint",
+    file: ".pptx",
+    icon: Presentation,
     hint: "A slide per page, each a picture, with the speaker notes.",
   },
   {
     id: "md",
     label: "Markdown",
+    file: ".zip of .md",
+    icon: NotebookText,
     hint: "A zip: a .md file of the pictures, each slide’s notes under it.",
   },
 ];
+
+/** A row of choices that reads as one control: radios underneath, so arrows and Tab work. */
+function Choice<T extends string | number>({
+  name,
+  labelledBy,
+  value,
+  options,
+  onChange,
+}: {
+  name: string;
+  labelledBy: string;
+  value: T;
+  options: { id: T; label: ReactNode }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="deck-export-seg" role="radiogroup" aria-labelledby={labelledBy}>
+      {options.map((o) => (
+        <label key={o.id} className={value === o.id ? "is-on" : ""}>
+          <input
+            type="radio"
+            name={name}
+            value={o.id}
+            checked={value === o.id}
+            onChange={() => onChange(o.id)}
+          />
+          {o.label}
+        </label>
+      ))}
+    </div>
+  );
+}
 
 export function ExportPage() {
   const deck = useDeck();
@@ -68,6 +124,7 @@ export function ExportPage() {
     status: useId(),
     scale: useId(),
     notes: useId(),
+    scheme: useId(),
   };
 
   const [format, setFormat] = useState<Format>("pdf");
@@ -135,6 +192,26 @@ export function ExportPage() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [width]);
+
+  // How many pages come out: the print view's, counted once it settles (clicks and notes pages
+  // make it more than the slides).
+  const [pageCount, setPageCount] = useState<number | null>(null);
+  useEffect(() => {
+    const el = pane.current;
+    if (!el) return;
+    const count = () => {
+      const pages = el.querySelector(".deck-print-pages");
+      setPageCount(
+        pages?.hasAttribute("data-ready")
+          ? pages.querySelectorAll(".deck-print-page").length
+          : null,
+      );
+    };
+    count();
+    const mo = new MutationObserver(count);
+    mo.observe(el, { subtree: true, childList: true, attributeFilter: ["data-ready"] });
+    return () => mo.disconnect();
+  }, []);
 
   const slides = useMemo(
     () => flat.map((m) => ({ title: m.title, notes: plainNotes(m.notesText) })),
@@ -217,120 +294,145 @@ export function ExportPage() {
     }
   };
 
-  const hint = FORMATS.find((f) => f.id === format)!.hint;
+  const current = FORMATS.find((f) => f.id === format)!;
   const pictures = format !== "pdf";
   // Notes are printed on the pages for a PDF or PNGs; PowerPoint and Markdown carry them as text.
   const onPages = format === "pdf" || format === "png";
+  const size = pictures ? `${width * scale}×${height * scale}` : `${width}×${height}`;
+  const Go = format === "pdf" ? Printer : Download;
   return (
     <div className="deck-export">
       <aside className="deck-export-panel" aria-label="Export options">
-        <header>
-          <a className="deck-export-back" href={deck.base}>
-            ← Back to the deck
-          </a>
-          <h1>Export</h1>
-          <p className="deck-export-title">{title}</p>
-        </header>
+        <div className="deck-export-scroll">
+          <header>
+            <a className="deck-export-back" href={deck.base}>
+              <ArrowLeft aria-hidden="true" />
+              Back to the deck
+            </a>
+            <h1>Export</h1>
+            <p className="deck-export-title">{title}</p>
+          </header>
 
-        <fieldset disabled={!!busy}>
-          <legend>Format</legend>
-          <div className="deck-export-formats" role="radiogroup" aria-label="Format">
-            {FORMATS.map((f) => (
-              <label key={f.id} className={format === f.id ? "is-on" : ""}>
-                <input
-                  type="radio"
-                  name="deck-export-format"
-                  value={f.id}
-                  checked={format === f.id}
-                  onChange={() => setFormat(f.id)}
-                />
-                {f.label}
-              </label>
-            ))}
-          </div>
-          <p className="deck-export-hint">{hint}</p>
-        </fieldset>
+          <fieldset disabled={!!busy}>
+            <legend>Format</legend>
+            <div className="deck-export-formats" role="radiogroup" aria-label="Format">
+              {FORMATS.map(({ id, label, file, icon: Icon }) => (
+                <label key={id} className={format === id ? "is-on" : ""}>
+                  <input
+                    type="radio"
+                    name="deck-export-format"
+                    value={id}
+                    checked={format === id}
+                    onChange={() => setFormat(id)}
+                  />
+                  <Icon aria-hidden="true" />
+                  <span className="deck-export-format-name">{label}</span>
+                  <span className="deck-export-format-file">{file}</span>
+                </label>
+              ))}
+            </div>
+            <p className="deck-export-hint">{current.hint}</p>
+          </fieldset>
 
-        <fieldset disabled={!!busy}>
-          <legend>Pages</legend>
-          <label htmlFor={ids.range}>Slides</label>
-          <input
-            id={ids.range}
-            type="text"
-            inputMode="numeric"
-            placeholder={`All ${flat.length}, or e.g. 1,3-5`}
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            aria-invalid={!!rangeError || undefined}
-            aria-describedby={ids.rangeHelp}
-          />
-          <p id={ids.rangeHelp} className={rangeError ? "deck-export-error" : "deck-export-hint"}>
-            {rangeError ?? `${chosen} of ${flat.length} slides.`}
-          </p>
-          <label className="deck-export-check">
-            <input type="checkbox" checked={clicks} onChange={(e) => setClicks(e.target.checked)} />
-            A page for every click step
-          </label>
-        </fieldset>
+          <fieldset disabled={!!busy}>
+            <legend>Pages</legend>
+            <label htmlFor={ids.range}>Slides</label>
+            <input
+              id={ids.range}
+              type="text"
+              inputMode="numeric"
+              placeholder={`All ${flat.length}, or e.g. 1,3-5`}
+              value={range}
+              onChange={(e) => setRange(e.target.value)}
+              aria-invalid={!!rangeError || undefined}
+              aria-describedby={ids.rangeHelp}
+            />
+            <p id={ids.rangeHelp} className={rangeError ? "deck-export-error" : "deck-export-hint"}>
+              {rangeError ?? `${chosen} of ${flat.length} slides.`}
+            </p>
+            <label className="deck-export-check">
+              <input
+                type="checkbox"
+                checked={clicks}
+                onChange={(e) => setClicks(e.target.checked)}
+              />
+              A page for every click step
+            </label>
+          </fieldset>
 
-        <fieldset disabled={!!busy}>
-          <legend>Look</legend>
-          <div className="deck-export-row" role="radiogroup" aria-label="Colour scheme">
-            {(["light", "dark"] as const).map((s) => (
-              <label key={s} className={scheme === s ? "is-on" : ""}>
-                <input
-                  type="radio"
-                  name="deck-export-scheme"
-                  value={s}
-                  checked={scheme === s}
-                  onChange={() => setScheme(s)}
+          <fieldset disabled={!!busy}>
+            <legend>Look</legend>
+            <span className="deck-export-label" id={ids.scheme}>
+              Colours
+            </span>
+            <Choice
+              name="deck-export-scheme"
+              labelledBy={ids.scheme}
+              value={scheme}
+              onChange={setScheme}
+              options={[
+                {
+                  id: "light",
+                  label: (
+                    <>
+                      <Sun aria-hidden="true" /> Light
+                    </>
+                  ),
+                },
+                {
+                  id: "dark",
+                  label: (
+                    <>
+                      <Moon aria-hidden="true" /> Dark
+                    </>
+                  ),
+                },
+              ]}
+            />
+            <span className="deck-export-label" id={ids.notes}>
+              Speaker notes
+            </span>
+            <Choice<Notes>
+              name="deck-export-notes"
+              labelledBy={ids.notes}
+              value={notes}
+              onChange={(v) => {
+                notesTouched.current = true;
+                setNotes(v);
+              }}
+              options={[
+                { id: "none", label: "Leave out" },
+                { id: "box", label: onPages ? "On slides" : "Include" },
+                ...(onPages ? [{ id: "page" as const, label: "Own pages" }] : []),
+              ]}
+            />
+            {pictures ? (
+              <>
+                <span className="deck-export-label" id={ids.scale}>
+                  Picture size
+                </span>
+                <Choice<number>
+                  name="deck-export-scale"
+                  labelledBy={ids.scale}
+                  value={scale}
+                  onChange={setScale}
+                  options={[1, 2, 3].map((n) => ({ id: n, label: `${n}×` }))}
                 />
-                {s === "light" ? "Light" : "Dark"}
-              </label>
-            ))}
-          </div>
-          <label htmlFor={ids.notes}>Speaker notes</label>
-          <select
-            id={ids.notes}
-            value={notes}
-            onChange={(e) => {
-              notesTouched.current = true;
-              setNotes(e.target.value as Notes);
-            }}
-          >
-            <option value="none">Leave out</option>
-            <option value="box">{onPages ? "On each slide" : "Include"}</option>
-            {onPages ? <option value="page">On pages of their own</option> : null}
-          </select>
-          {pictures ? (
-            <>
-              <label htmlFor={ids.scale}>Picture size</label>
-              <select
-                id={ids.scale}
-                value={scale}
-                onChange={(e) => setScale(Number(e.target.value))}
-              >
-                <option value={1}>
-                  1× — {width}×{height}
-                </option>
-                <option value={2}>
-                  2× — {width * 2}×{height * 2}
-                </option>
-                <option value={3}>
-                  3× — {width * 3}×{height * 3}
-                </option>
-              </select>
-              <label className="deck-export-check">
-                <input
-                  type="checkbox"
-                  checked={transparent}
-                  onChange={(e) => setTransparent(e.target.checked)}
-                />
-                Transparent background
-              </label>
-            </>
-          ) : null}
-        </fieldset>
+                <p className="deck-export-hint">
+                  {width * scale}×{height * scale} pixels a page.
+                </p>
+                <label className="deck-export-check">
+                  <input
+                    type="checkbox"
+                    checked={transparent}
+                    onChange={(e) => setTransparent(e.target.checked)}
+                  />
+                  Transparent background
+                </label>
+              </>
+            ) : null}
+          </fieldset>
+        </div>
 
         <div className="deck-export-actions">
           {busy ? (
@@ -347,10 +449,14 @@ export function ExportPage() {
             </>
           ) : (
             <button type="button" className="is-primary" onClick={run} disabled={!!rangeError}>
-              {format === "pdf"
-                ? "Print to PDF…"
-                : `Export ${FORMATS.find((f) => f.id === format)!.label}`}
+              <Go aria-hidden="true" />
+              {format === "pdf" ? "Print to PDF…" : `Export ${current.label}`}
             </button>
+          )}
+          {status ? null : (
+            <p className="deck-export-summary">
+              {rangeError ? "" : `${pageCount ?? "…"} page${pageCount === 1 ? "" : "s"} · ${size}`}
+            </p>
           )}
           <p id={ids.status} className="deck-export-status" role="status" aria-live="polite">
             {status}
@@ -359,6 +465,10 @@ export function ExportPage() {
       </aside>
 
       <main className="deck-export-preview" ref={pane} aria-label="Preview">
+        <div className="deck-export-preview-bar" aria-hidden="true">
+          <span>Preview</span>
+          <span>{pageCount == null ? "Laying out…" : `${pageCount} pages`}</span>
+        </div>
         <PrintView
           zoom={zoom}
           options={{

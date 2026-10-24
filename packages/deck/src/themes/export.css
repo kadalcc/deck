@@ -23,77 +23,125 @@ html.deck-print-transparent .deck-root,
 /* ── /export ─────────────────────────────────────────────────────────────── */
 /* The options stay put and only the pages scroll. The page is exactly the window's height with
    the preview as its scroller: position: sticky on the panel never held, because the deck's
-   root (#root) clips with overflow: hidden, so the panel scrolled away with the pages. */
+   root (#root) clips with overflow: hidden, so the panel scrolled away with the pages.
+   Everything is drawn from the deck's own tokens, so the exporter wears the deck's theme. */
 .deck-export {
+  --deck-export-line: var(--deck-border, color-mix(in oklab, var(--deck-fg) 12%, transparent));
+  --deck-export-well: color-mix(in oklab, var(--deck-fg) 5%, var(--deck-bg));
+  --deck-export-on: color-mix(in oklab, var(--deck-accent) 9%, var(--deck-bg));
   display: grid;
-  grid-template-columns: minmax(280px, 340px) 1fr;
+  grid-template-columns: minmax(300px, 360px) 1fr;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background: var(--deck-surface, #f5f5f5);
+  background: color-mix(in oklab, var(--deck-fg) 4%, var(--deck-bg));
   color: var(--deck-fg);
   font: 14px/1.45 var(--deck-body-font, system-ui, sans-serif);
 }
+.deck-export svg.lucide {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
 .deck-export-panel {
   min-height: 0;
-  overflow-y: auto;
-  padding: 20px 20px 28px;
+  display: flex;
+  flex-direction: column;
   background: var(--deck-bg);
-  border-inline-end: 1px solid var(--deck-border, #e5e5e5);
+  border-inline-end: 1px solid var(--deck-export-line);
+}
+.deck-export-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 .deck-export-panel h1 {
-  margin: 6px 0 0;
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  margin: 14px 0 0;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .deck-export-title {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   color: var(--deck-muted);
 }
 .deck-export-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: -8px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
   color: var(--deck-muted);
   font-size: 13px;
   text-decoration: none;
 }
+.deck-export-back svg.lucide {
+  width: 14px;
+  height: 14px;
+}
 .deck-export-back:hover,
 .deck-export-back:focus-visible {
   color: var(--deck-fg);
-  text-decoration: underline;
+  background: var(--deck-export-well);
 }
 .deck-export-panel fieldset {
   margin: 0;
-  padding: 0;
+  padding: 16px 0 0;
   border: 0;
+  border-block-start: 1px solid var(--deck-export-line);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
+/* A legend sits on its fieldset's border unless it floats; this one is a heading inside. */
 .deck-export-panel legend {
+  float: left;
+  width: 100%;
   padding: 0;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 650;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--deck-muted);
 }
-.deck-export-panel label {
-  font-weight: 500;
+.deck-export-panel legend + * {
+  clear: both;
 }
-.deck-export-panel input[type="text"],
-.deck-export-panel select {
+.deck-export-panel label,
+.deck-export-label {
+  font-weight: 550;
+}
+.deck-export-label {
+  margin-top: 6px;
+}
+.deck-export-panel input[type="text"] {
   font: inherit;
   color: inherit;
   background: var(--deck-bg);
-  border: 1px solid var(--deck-border, #e5e5e5);
-  border-radius: 8px;
-  padding: 7px 10px;
-  min-height: 36px;
+  border: 1px solid var(--deck-export-line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  min-height: 40px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.deck-export-panel input[type="text"]::placeholder {
+  color: var(--deck-muted);
+  opacity: 0.8;
+}
+.deck-export-panel input[type="text"]:focus {
+  outline: none;
+  border-color: var(--deck-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--deck-accent) 22%, transparent);
 }
 .deck-export-panel input[aria-invalid="true"] {
   border-color: #dc2626;
@@ -102,35 +150,99 @@ html.deck-print-transparent .deck-root,
   outline: 2px solid var(--deck-accent);
   outline-offset: 2px;
 }
-.deck-export-formats,
-.deck-export-row {
+
+/* Format: four cards, an icon, a name and what lands on disk. */
+.deck-export-formats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 8px;
 }
-.deck-export-formats > label,
-.deck-export-row > label {
+.deck-export-formats > label {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--deck-export-line);
+  border-radius: 12px;
+  background: var(--deck-bg);
+  cursor: pointer;
+}
+.deck-export-formats > label svg.lucide {
+  grid-row: span 2;
+  width: 18px;
+  height: 18px;
+  color: var(--deck-muted);
+}
+.deck-export-format-name {
+  font-weight: 600;
+  line-height: 1.25;
+}
+.deck-export-format-file {
+  grid-column: 2;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--deck-muted);
+  font-family: var(--deck-mono-font, ui-monospace, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deck-export-formats > label:hover {
+  border-color: color-mix(in oklab, var(--deck-fg) 28%, transparent);
+}
+.deck-export-formats > label.is-on {
+  border-color: var(--deck-accent);
+  background: var(--deck-export-on);
+}
+.deck-export-formats > label.is-on svg.lucide {
+  color: var(--deck-accent);
+}
+
+/* The other choices: one segmented control each, the chosen part raised out of a well. */
+.deck-export-seg {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--deck-export-well);
+  border: 1px solid var(--deck-export-line);
+}
+.deck-export-seg > label {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
-  padding: 6px 10px;
-  border: 1px solid var(--deck-border, #e5e5e5);
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 8px;
   border-radius: 8px;
-  cursor: pointer;
+  color: var(--deck-muted);
+  font-weight: 550;
   text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.deck-export-formats > label.is-on,
-.deck-export-row > label.is-on {
-  border-color: var(--deck-accent);
-  background: color-mix(in oklab, var(--deck-accent) 10%, transparent);
-  color: var(--deck-accent);
-  font-weight: 600;
+.deck-export-seg > label:hover {
+  color: var(--deck-fg);
+}
+.deck-export-seg > label.is-on {
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow:
+    0 0 0 1px var(--deck-export-line),
+    0 1px 2px color-mix(in oklab, black 12%, transparent);
+}
+.deck-export-seg > label svg.lucide {
+  width: 14px;
+  height: 14px;
 }
 /* The radio itself stays in the accessibility tree and takes focus; the label is its face. */
 .deck-export-formats input,
-.deck-export-row input {
+.deck-export-seg input {
   position: absolute;
   opacity: 0;
   inset: 0;
@@ -138,45 +250,59 @@ html.deck-print-transparent .deck-root,
   cursor: pointer;
 }
 .deck-export-formats > label:has(input:focus-visible),
-.deck-export-row > label:has(input:focus-visible) {
+.deck-export-seg > label:has(input:focus-visible) {
   outline: 2px solid var(--deck-accent);
   outline-offset: 2px;
+}
+.deck-export-panel fieldset:disabled label {
+  cursor: default;
+  opacity: 0.6;
 }
 .deck-export-check {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 10px;
+  margin-top: 6px;
   cursor: pointer;
 }
 .deck-export-check input {
   width: 16px;
   height: 16px;
+  margin: 0;
   accent-color: var(--deck-accent);
 }
 .deck-export-hint,
 .deck-export-error {
   margin: 0;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--deck-muted);
 }
 .deck-export-error {
   color: #dc2626;
 }
+
+/* The button and what it will make, pinned under the options. */
 .deck-export-actions {
-  margin-top: auto;
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
+  padding: 14px 22px 18px;
+  border-block-start: 1px solid var(--deck-export-line);
+  background: var(--deck-bg);
 }
 .deck-export-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font: inherit;
   font-weight: 600;
-  min-height: 40px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--deck-border, #e5e5e5);
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--deck-export-line);
   background: var(--deck-bg);
   color: var(--deck-fg);
   cursor: pointer;
@@ -184,11 +310,17 @@ html.deck-print-transparent .deck-root,
 .deck-export-actions button.is-primary {
   flex: 1;
   background: var(--deck-accent);
-  border-color: var(--deck-accent);
+  border-color: transparent;
   color: var(--deck-bg);
+  box-shadow:
+    0 1px 2px color-mix(in oklab, black 18%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 18%, transparent);
+}
+.deck-export-actions button.is-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--deck-accent) 88%, var(--deck-fg));
 }
 .deck-export-actions button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 .deck-export-actions progress {
@@ -196,19 +328,54 @@ html.deck-print-transparent .deck-root,
   height: 8px;
   accent-color: var(--deck-accent);
 }
+.deck-export-summary,
 .deck-export-status {
   flex-basis: 100%;
   margin: 0;
-  min-height: 1.4em;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--deck-muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
+.deck-export-status:empty {
+  margin-top: -8px;
+}
+
+/* The pages, under a quiet bar that says how many. */
 .deck-export-preview {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 16px 24px 40px;
+  padding: 0 24px 40px;
+}
+.deck-export-preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 -24px 16px;
+  padding: 12px 24px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--deck-muted);
+  background: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--deck-fg) 4%, var(--deck-bg)) 82%,
+    transparent
+  );
+  backdrop-filter: blur(12px);
+  border-block-end: 1px solid var(--deck-export-line);
+}
+.deck-export-preview-bar span:last-child {
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
 }
 .deck-export-preview .deck-print-pages {
   margin: 0 auto;
@@ -220,25 +387,39 @@ html.deck-print-transparent .deck-root,
     height: auto;
     overflow: visible;
   }
-  .deck-export-preview {
-    overflow: visible;
-  }
   .deck-export-panel {
-    height: auto;
-    overflow: visible;
     border-inline-end: 0;
-    border-block-end: 1px solid var(--deck-border, #e5e5e5);
+    border-block-end: 1px solid var(--deck-export-line);
+  }
+  .deck-export-scroll {
+    overflow: visible;
+    padding: 16px 16px 20px;
+  }
+  .deck-export-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    padding: 12px 16px 14px;
   }
   .deck-export-preview {
-    padding: 12px 16px 32px;
+    overflow: visible;
+    padding: 0 16px 32px;
+  }
+  .deck-export-preview-bar {
+    position: static;
+    margin: 0 -16px 12px;
+    padding: 10px 16px;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
   .deck-export-formats > label,
-  .deck-export-row > label {
+  .deck-export-seg > label,
+  .deck-export-actions button {
     transition:
       background 0.15s,
-      border-color 0.15s;
+      border-color 0.15s,
+      box-shadow 0.15s,
+      color 0.15s;
   }
 }
 @media print {
@@ -249,7 +430,8 @@ html.deck-print-transparent .deck-root,
     overflow: visible;
     background: none;
   }
-  .deck-export-panel {
+  .deck-export-panel,
+  .deck-export-preview-bar {
     display: none !important;
   }
   .deck-export-preview {
