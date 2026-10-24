@@ -64,7 +64,8 @@ const check = JSON.parse(sh("npx", ["kadal-deck", "check", "--json"], app));
 if (!check.ok) throw new Error(`kadal-deck check found problems in the starter: ${JSON.stringify(check.diagnostics)}`);
 const info = JSON.parse(sh("npx", ["kadal-deck", "info", "components", "Poll", "--json"], app));
 if (info.entry?.name !== "Poll") throw new Error("kadal-deck info did not find <Poll>");
-for (const f of ["skill/SKILL.md", "schema/frontmatter.json", "template/deck.mdx", "REFERENCE.md"])
+// …and the first-party themes every deck's theme menu offers (packages/deck/tools/bundle-themes.mjs).
+for (const f of ["skill/SKILL.md", "schema/frontmatter.json", "template/deck.mdx", "REFERENCE.md", "dist/themes/ocean/style.css", "dist/themes/bricks/assets"])
   if (!existsSync(join(app, "node_modules", "@kadal", "deck", f))) throw new Error(`@kadal/deck ships without ${f}`);
 writeFileSync(
   join(app, "mcp-smoke.mjs"),

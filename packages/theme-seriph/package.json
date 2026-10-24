@@ -39,6 +39,10 @@
       "title": "Seriph",
       "description": "Slidev's seriph theme: PT Serif, headings in the primary colour, a centred cover.",
       "colorScheme": "both",
+      "swatch": [
+        "#5d8392",
+        "#4d7534"
+      ],
       "themeConfig": {
         "primary": "#5d8392"
       },

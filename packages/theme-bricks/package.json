@@ -41,6 +41,10 @@
       "title": "Bricks",
       "description": "Building blocks on a cream page: Sigmar One headings, a block arrangement per layout, Polygon1–11.",
       "colorScheme": "light",
+      "swatch": [
+        "#f07a6b",
+        "#72a6e2"
+      ],
       "themeConfig": {},
       "config": {
         "fonts": {

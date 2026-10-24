@@ -40,6 +40,10 @@
       "title": "Shibainu",
       "description": "Soft blobs in a shiba's browns: Titillium Web, a different arrangement for each of fourteen layouts.",
       "colorScheme": "dark",
+      "swatch": [
+        "#bf926b",
+        "#8c6645"
+      ],
       "themeConfig": {
         "primary": "#402312"
       },

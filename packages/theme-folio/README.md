@@ -11,6 +11,9 @@
 
 ## Use it
 
+@kadal/deck ships this theme, so `theme: folio` works with nothing else installed. Install the
+package only to give the deck a copy of its own, at a version you pick:
+
 ```bash
 npm install @kadal/theme-folio
 ```
@@ -25,7 +28,7 @@ themeConfig:            # all optional
 ---
 ```
 
-The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Playfair Display (headings), Newsreader (text, `--deck-serif-font`), IBM Plex Mono (code), loaded through the theme's `config.fonts`. Code colours: Shiki's gruvbox-light-soft / gruvbox-dark-soft. To show it beside other themes in the theme menu (<kbd>T</kbd>), list it: `themes: [folio, minimal]`.
+The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Playfair Display (headings), Newsreader (text, `--deck-serif-font`), IBM Plex Mono (code), loaded through the theme's `config.fonts`. Code colours: Shiki's gruvbox-light-soft / gruvbox-dark-soft. Every deck's theme menu (<kbd>T</kbd>) offers it already; list it (`themes: [folio, minimal]`) to put it near the top, load its stylesheet with the deck, and give code its own colours when it is picked.
 
 ## themeConfig
 

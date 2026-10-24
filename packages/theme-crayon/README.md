@@ -11,6 +11,9 @@
 
 ## Use it
 
+@kadal/deck ships this theme, so `theme: crayon` works with nothing else installed. Install the
+package only to give the deck a copy of its own, at a version you pick:
+
 ```bash
 npm install @kadal/theme-crayon
 ```
@@ -25,7 +28,7 @@ themeConfig:            # all optional
 ---
 ```
 
-The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Fredoka (headings), Nunito (text), Fira Code (code), loaded through the theme's `config.fonts`. Code colours: Shiki's catppuccin-latte / catppuccin-macchiato. To show it beside other themes in the theme menu (<kbd>T</kbd>), list it: `themes: [crayon, minimal]`.
+The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Fredoka (headings), Nunito (text), Fira Code (code), loaded through the theme's `config.fonts`. Code colours: Shiki's catppuccin-latte / catppuccin-macchiato. Every deck's theme menu (<kbd>T</kbd>) offers it already; list it (`themes: [crayon, minimal]`) to put it near the top, load its stylesheet with the deck, and give code its own colours when it is picked.
 
 ## themeConfig
 

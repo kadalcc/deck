@@ -11,6 +11,9 @@
 
 ## Use it
 
+@kadal/deck ships this theme, so `theme: brand` works with nothing else installed. Install the
+package only to give the deck a copy of its own, at a version you pick:
+
 ```bash
 npm install @kadal/theme-brand
 ```
@@ -26,7 +29,7 @@ themeConfig:            # all optional
 ---
 ```
 
-The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Plus Jakarta Sans (text and headings), JetBrains Mono (code), loaded through the theme's `config.fonts`; a deck's own `fonts:` swaps in the brand's typeface. Code colours: Shiki's github-light-default / github-dark-default. To show it beside other themes in the theme menu (<kbd>T</kbd>), list it: `themes: [brand, minimal]`.
+The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Plus Jakarta Sans (text and headings), JetBrains Mono (code), loaded through the theme's `config.fonts`; a deck's own `fonts:` swaps in the brand's typeface. Code colours: Shiki's github-light-default / github-dark-default. Every deck's theme menu (<kbd>T</kbd>) offers it already; list it (`themes: [brand, minimal]`) to put it near the top, load its stylesheet with the deck, and give code its own colours when it is picked.
 
 ## themeConfig
 

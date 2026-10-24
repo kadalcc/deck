@@ -39,6 +39,10 @@
       "title": "Crisp",
       "description": "Plain black on white: Helvetica Neue, bold titles, pictures in a margin, intro-image and 3-images layouts.",
       "colorScheme": "both",
+      "swatch": [
+        "#3ab9d5",
+        "#2993a3"
+      ],
       "themeConfig": {
         "primary": "#3ab9d5"
       },

@@ -53,6 +53,10 @@
       "title": "Terminal",
       "description": "A developer theme for code-heavy talks: mono-forward type, superb code blocks, dark first with a good light variant, and the matching Ayu code colours.",
       "colorScheme": "both",
+      "swatch": [
+        "#477a0b",
+        "#0b7aa6"
+      ],
       "config": {
         "transition": "fade",
         "colorScheme": "dark",

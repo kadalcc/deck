@@ -1,13 +1,16 @@
 import { useEffect, useRef } from "react";
 
+import { BUILTIN_THEMES, type ThemeMeta } from "../theming/contract.ts";
 import { useDeck } from "./context.ts";
 import { DownloadButton } from "./Download.tsx";
 import { useActions, useUi } from "./hooks.ts";
 
 /**
- * The theme selector: every screen picks its own look — the themes a deck ships (`theme` and
- * `themes`: built-ins, packages the Vite plugin imported, or CSS main.tsx imports) plus light or
- * dark — and keeps the choice in the browser. `T` opens it; the palette button does the same.
+ * The theme selector: every screen picks its own look — the deck's own themes (`theme` and
+ * `themes`: built-ins, packages the Vite plugin imported, or CSS main.tsx imports), then every
+ * first-party theme it did not name, plus light or dark — and keeps the choice in the browser.
+ * `T` opens it; the palette button does the same. A theme not loaded yet starts loading when
+ * the pointer reaches its row, and its swatch comes from its metadata (`kadal.theme.swatch`).
  */
 export function themeLabel(name: string, title?: string): string {
   return title ?? name.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -21,9 +24,22 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
   const actions = useActions();
   const root = useRef<HTMLDivElement>(null);
   const themes = deck.config.themes.length ? deck.config.themes : [deck.config.theme];
+  const refOf = (name: string) => deck.manifest.packages?.themes.find((t) => t.name === name);
   // A theme package's own display name ("Seriph"), when the manifest resolved one.
-  const title = (name: string) =>
-    deck.manifest.packages?.themes.find((t) => t.name === name && !t.builtin)?.meta.title;
+  const title = (name: string) => {
+    const ref = refOf(name);
+    return ref && !ref.builtin ? ref.meta.title : undefined;
+  };
+  // The swatch's colours without the theme's stylesheet, which a lazy theme has not loaded yet.
+  const swatch = (name: string) => {
+    const pair = ((refOf(name)?.meta ?? BUILTIN_THEMES[name]) as ThemeMeta | undefined)?.swatch;
+    return pair ? { background: `linear-gradient(135deg, ${pair[0]}, ${pair[1]})` } : undefined;
+  };
+  // Start a lazy theme's chunk before the click (both loaders cache, so this costs one fetch).
+  const prefetch = (name: string) => {
+    const ref = refOf(name);
+    if (ref?.load && !ref.module) void ref.load().catch(() => {});
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -82,8 +98,10 @@ export function ThemeMenu({ compact = false }: { compact?: boolean }) {
               aria-checked={name === theme}
               className={name === theme ? "is-on" : ""}
               onClick={() => actions.setTheme(name)}
+              onPointerEnter={() => prefetch(name)}
+              onFocus={() => prefetch(name)}
             >
-              <i className={`deck-theme-swatch theme-${name}`} />
+              <i className={`deck-theme-swatch theme-${name}`} style={swatch(name)} />
               {themeLabel(name, title(name))}
             </button>
           ))}

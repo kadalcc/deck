@@ -630,6 +630,7 @@ export function themeScaffold(o: ScaffoldOptions): Record<string, string> {
           name: o.name,
           title: o.title,
           colorScheme: "both",
+          swatch: ["#0f766e", "#b45309"],
           themeConfig: { primary: "#0f766e", footer: true },
           shiki: { light: "github-light", dark: "github-dark" },
           config: {

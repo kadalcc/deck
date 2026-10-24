@@ -3,8 +3,19 @@ import { dirname, join, relative, resolve } from "node:path";
 import type { Plugin } from "vite";
 
 import { DEFAULT_CONFIG } from "../core/model.ts";
-import { LAYER_NAMES, type LayerName, readMeta, requestedPackages } from "../theming/contract.ts";
-import { packageFiles, type ResolvedPackage, resolvePackage } from "../theming/resolve.ts";
+import {
+  LAYER_NAMES,
+  type LayerName,
+  implicitThemes,
+  readMeta,
+  requestedPackages,
+} from "../theming/contract.ts";
+import {
+  packageFiles,
+  type ResolvedPackage,
+  resolveImplicitTheme,
+  resolvePackage,
+} from "../theming/resolve.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -17,10 +28,12 @@ import { packageFiles, type ResolvedPackage, resolvePackage } from "../theming/r
  *       theme, themes and addons resolved from the deck's folder (theming/resolve.ts), and the
  *       deck's own layer files (`global-top.tsx`… beside deck.mdx, or in src/) and routes file
  *       (`routes.tsx`, react/routes.tsx), turned into the imports and the `packages` export of
- *       `virtual:deck`. Every stylesheet is imported
- *       eagerly (the theme menu's swatches need them); the active theme's module and every
- *       addon's are eager too, so the first paint has their layouts; the other themes' modules
- *       are lazy chunks, loaded when the menu picks one.
+ *       `virtual:deck`. The stylesheets of the themes the deck names are imported eagerly; the
+ *       active theme's module and every addon's are eager too, so the first paint has their
+ *       layouts; the other named themes' modules are lazy chunks, loaded when the menu picks one.
+ *       Then every first-party theme the deck did not name (`more`: the engine's copies, or the
+ *       deck's own installed packages) joins the menu with its stylesheet and module both in a
+ *       lazy chunk, so offering all sixteen adds nothing to the first paint.
  *
  *   `deckPackages()`   a plugin of its own, for a page that compiles decks in the browser (the
  *       prebuilt shell): it scans folders for theme and addon packages and generates
@@ -86,8 +99,13 @@ export function routePaths(file: string | null): string[] {
 
 export interface DeckPackageSet {
   theme: ResolvedPackage;
-  /** Every theme the menu offers, the active one first. */
+  /** Every theme the deck names (`theme`, then `themes`), the active one first. */
   themes: ResolvedPackage[];
+  /**
+   * The first-party themes the deck did not name, in FIRST_PARTY_THEMES order: the menu offers
+   * them after `themes`, loaded only when picked.
+   */
+  more?: ResolvedPackage[];
   addons: ResolvedPackage[];
   layers: Partial<Record<LayerName, string>>;
   /** The deck's routes file, or null. */
@@ -108,10 +126,14 @@ export function deckPackageSet(
     const t = resolvePackage("theme", spec, deckDir);
     if (!themes.some((x) => x.name === t.name)) themes.push(t);
   }
+  const more = implicitThemes(themes.map((t) => t.name))
+    .map((name) => resolveImplicitTheme(name, deckDir))
+    .filter((t): t is ResolvedPackage => !!t && !themes.some((x) => x.name === t.name));
   const addons = want.addons.map((spec) => resolvePackage("addon", spec, deckDir));
   return {
     theme,
     themes,
+    more,
     addons,
     layers: layerFiles(deckDir),
     routes: routesFile(deckDir),
@@ -121,7 +143,9 @@ export function deckPackageSet(
 
 /** Folders outside the deck that the dev server must be allowed to serve (a `../theme`). */
 export function packageRoots(set: DeckPackageSet): string[] {
-  return [...set.themes, ...set.addons].flatMap((p) => (p.root ? [p.root] : []));
+  return [...set.themes, ...(set.more ?? []), ...set.addons].flatMap((p) =>
+    p.root ? [p.root] : [],
+  );
 }
 
 /** A path as an import specifier: absolute paths go through as they are (Vite reads them). */
@@ -150,18 +174,36 @@ export function packagesCode(set: DeckPackageSet): { imports: string; value: str
     return id;
   };
 
-  const ref = (p: ResolvedPackage, mode: "eager" | "lazy") => {
+  const ref = (p: ResolvedPackage, mode: "eager" | "lazy" | "implicit") => {
     const module = !p.module ? "null" : mode === "eager" ? eagerId(p.module) : "null";
-    const load = !p.module
-      ? "null"
-      : mode === "eager"
-        ? `() => Promise.resolve(${eagerId(p.module)})`
-        : `() => import(${spec(p.module)})`;
-    return `{ kind: ${JSON.stringify(p.kind)}, name: ${JSON.stringify(p.name)}, spec: ${JSON.stringify(p.spec)}, package: ${JSON.stringify(p.package)}, builtin: ${p.builtin}, meta: ${JSON.stringify(p.meta)}, module: ${module}, load: ${load} }`;
+    // An implicit theme's stylesheet rides in its lazy chunk too: nothing of it loads until it
+    // is picked (react/ThemeMenu.tsx starts the load on hover).
+    const parts =
+      mode === "implicit"
+        ? [p.css, p.module].filter((f): f is string => !!f).map((f) => `import(${spec(f)})`)
+        : [];
+    const load =
+      mode === "implicit"
+        ? !parts.length
+          ? "null"
+          : p.module
+            ? `() => Promise.all([${parts.join(", ")}]).then((m) => m[m.length - 1])`
+            : `() => ${parts[0]}.then(() => null)`
+        : !p.module
+          ? "null"
+          : mode === "eager"
+            ? `() => Promise.resolve(${eagerId(p.module)})`
+            : `() => import(${spec(p.module)})`;
+    // Fifteen of them ride in every deck's first chunk: their prose description stays behind.
+    const meta = mode === "implicit" ? { ...p.meta, description: undefined } : p.meta;
+    return `{ kind: ${JSON.stringify(p.kind)}, name: ${JSON.stringify(p.name)}, spec: ${JSON.stringify(p.spec)}, package: ${JSON.stringify(p.package)}, builtin: ${p.builtin}, meta: ${JSON.stringify(meta)}, module: ${module}, load: ${load}${mode === "implicit" ? ", implicit: true" : ""} }`;
   };
 
   const theme = ref(set.theme, "eager");
-  const themes = set.themes.map((t, i) => (i === 0 ? "__kadal_theme" : ref(t, "lazy")));
+  const themes = [
+    ...set.themes.map((t, i) => (i === 0 ? "__kadal_theme" : ref(t, "lazy"))),
+    ...(set.more ?? []).map((t) => ref(t, "implicit")),
+  ];
   const addons = set.addons.map((a) => ref(a, "eager"));
   const layers = Object.entries(set.layers).map(([name, file]) => {
     const id = eagerId(file!);

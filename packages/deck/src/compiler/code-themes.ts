@@ -22,11 +22,12 @@ import { shikiThemes } from "../theming/merge.ts";
  * The fallback chain ends on the deck's own colour, so a token without the key (code an older
  * build highlighted, a transformer's own span) still has one.
  *
- * Nothing changes for a deck whose menu themes all share its pair (the default menu — minimal,
- * rla, stack — is all GitHub): no extra keys, no rules, byte-identical output. The cost grows
- * with each distinct Shiki theme the menu adds, about 18 bytes per token before compression;
- * `codeThemes` is where that is decided, and a deck that pins `deck({ shiki: { light, dark } })`
- * keeps one pair for every theme, as it asked.
+ * Nothing changes for a deck whose menu themes all share its pair (minimal, rla and stack are
+ * all GitHub): no extra keys, no rules, byte-identical output. The cost grows with each distinct
+ * Shiki theme the menu adds, about 18 bytes per token before compression, so only the themes a
+ * deck names (`theme`, `themes`) are planned here: the first-party themes every menu adds on its
+ * own (`implicit`) keep the deck's code colours. `codeThemes` is where that is decided, and a deck
+ * that pins `deck({ shiki: { light, dark } })` keeps one pair for every theme, as it asked.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 

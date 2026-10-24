@@ -11,6 +11,9 @@
 
 ## Use it
 
+@kadal/deck ships this theme, so `theme: swiss` works with nothing else installed. Install the
+package only to give the deck a copy of its own, at a version you pick:
+
 ```bash
 npm install @kadal/theme-swiss
 ```
@@ -25,7 +28,7 @@ themeConfig:            # all optional
 ---
 ```
 
-The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Inter Tight (headings), Inter (text), JetBrains Mono (code), loaded through the theme's `config.fonts`. Code colours: Shiki's min-light / vesper. To show it beside other themes in the theme menu (<kbd>T</kbd>), list it: `themes: [swiss, minimal]`.
+The deck plugin brings the stylesheet and the module in; nothing to import. The prebuilt shell (the hosted builder, published decks) bundles this theme already. Schemes: light and dark. Fonts: Inter Tight (headings), Inter (text), JetBrains Mono (code), loaded through the theme's `config.fonts`. Code colours: Shiki's min-light / vesper. Every deck's theme menu (<kbd>T</kbd>) offers it already; list it (`themes: [swiss, minimal]`) to put it near the top, load its stylesheet with the deck, and give code its own colours when it is picked.
 
 ## themeConfig
 

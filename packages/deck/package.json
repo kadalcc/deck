@@ -145,13 +145,13 @@
     "node": ">=20.19"
   },
   "scripts": {
-    "build": "tsdown && node tools/sync-template.mjs",
+    "build": "tsdown && node tools/sync-template.mjs && node tools/bundle-themes.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
     "format": "oxfmt src",
     "test": "bun test",
     "verify:island": "node tools/verify-island.mjs",
-    "prepack": "tsdown && node tools/sync-template.mjs",
+    "prepack": "tsdown && node tools/sync-template.mjs && node tools/bundle-themes.mjs",
     "catalog": "bun tools/catalog.ts"
   },
   "dependencies": {

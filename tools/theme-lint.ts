@@ -10,7 +10,7 @@
  *
  *   package.json   the `kadal-theme` keyword, `./style.css` exported, `kadal.theme` with a name
  *                  that is the folder's, a colour scheme, fonts in `config.fonts`, both Shiki
- *                  themes; a first-party package is public
+ *                  themes, two swatch colours; a first-party package is public
  *   style.css      every `--deck-*` token set on `.theme-<name>`, the colour ones again under
  *                  `[data-color-scheme="dark"]` (a both-schemes theme); every `.deck-layout-*`
  *                  class styled; every selector starting with the theme's class (print rules
@@ -136,6 +136,12 @@ export function lintTheme(dir: string): string[] {
     problems.push("kadal.theme.config.fonts is missing: load the theme's families through it");
   if (!meta.shiki?.light || !meta.shiki?.dark)
     problems.push("kadal.theme.shiki needs light and dark");
+  if (
+    !Array.isArray(meta.swatch) ||
+    meta.swatch.length !== 2 ||
+    !meta.swatch.every((c: unknown) => typeof c === "string" && c.trim())
+  )
+    problems.push("kadal.theme.swatch needs two colours (the menu's swatch before the CSS loads)");
   for (const f of pkg.files ?? [])
     if (!existsSync(join(root, f))) problems.push(`files: ${f} does not exist`);
 

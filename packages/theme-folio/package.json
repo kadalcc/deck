@@ -53,6 +53,10 @@
       "title": "Folio",
       "description": "An editorial serif theme for essays and keynotes: warm paper, a high-contrast display serif, generous whitespace.",
       "colorScheme": "both",
+      "swatch": [
+        "#9b2c1c",
+        "#a2772a"
+      ],
       "config": {
         "transition": "fade",
         "fonts": {

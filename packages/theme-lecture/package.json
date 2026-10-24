@@ -53,6 +53,10 @@
       "title": "Lecture",
       "description": "An academic theme for lectures and seminars: numbered sections, a course footer, theorem, definition and proof blocks, citations, and print-perfect pages.",
       "colorScheme": "both",
+      "swatch": [
+        "#1f4e8c",
+        "#a23b2a"
+      ],
       "config": {
         "transition": "fade",
         "fonts": {

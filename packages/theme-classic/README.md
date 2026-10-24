@@ -11,6 +11,9 @@ links, a cyan primary, and a cover that dims a background picture. Light and dar
 
 [All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-classic)
 
+@kadal/deck ships this theme, so `theme: classic` works with nothing else installed. Install the
+package only to give the deck a copy of its own, at a version you pick:
+
 ```bash
 npm install @kadal/theme-classic
 ```

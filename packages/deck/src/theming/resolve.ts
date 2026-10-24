@@ -1,12 +1,14 @@
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   type AddonMeta,
   BUILTIN_THEMES,
   type PackageKind,
   type ThemeMeta,
+  firstPartyTheme,
   isPathSpec,
   packageCandidates,
   readMeta,
@@ -23,6 +25,7 @@ import {
  *
  *   1. a built-in theme (minimal · rla · stack · none): its CSS ships in @kadal/deck
  *   2. @kadal/theme-seriph   3. kadal-theme-seriph   4. seriph, as a package name
+ *   5. a first-party theme's copy inside @kadal/deck (`bundledTheme`), when none is installed
  *   — or, for `./theme`, `../shared/theme`, `/abs/theme`: that folder, beside deck.mdx
  *
  * A package is found by its package.json, not by `require.resolve` of its entry: a theme may
@@ -171,6 +174,55 @@ export function findPackageRoot(name: string, from: string): string | null {
   return null;
 }
 
+/** This package's own folder (where its package.json is), from wherever this module runs. */
+let engineRoot: string | null | undefined;
+function ownRoot(): string | null {
+  if (engineRoot !== undefined) return engineRoot;
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (;;) {
+    const pkg = readJson(join(dir, "package.json"));
+    if (pkg?.name === "@kadal/deck") return (engineRoot = dir);
+    const up = dirname(dir);
+    if (up === dir) return (engineRoot = null);
+    dir = up;
+  }
+}
+
+/**
+ * The engine's copy of a first-party theme package (`ocean` → @kadal/deck's dist/themes/ocean),
+ * or null. The copy is made at build (tools/bundle-themes.mjs); run from source, before a build,
+ * the workspace's own packages/theme-<name> stands in for it.
+ */
+export function bundledTheme(name: string): string | null {
+  const root = ownRoot();
+  if (!root || !firstPartyTheme(name) || BUILTIN_THEMES[name]) return null;
+  for (const dir of [join(root, "dist", "themes", name), join(root, "..", `theme-${name}`)])
+    if (isFile(join(dir, "package.json"))) {
+      try {
+        return realpathSync(dir);
+      } catch {
+        return dir;
+      }
+    }
+  return null;
+}
+
+/**
+ * A first-party theme the menu adds to a deck that did not name it: the built-in, the deck's
+ * own installed `@kadal/theme-<name>`, or the engine's copy. Null when none is there; never
+ * another package that happens to be called `<name>`.
+ */
+export function resolveImplicitTheme(name: string, deckDir: string): ResolvedPackage | null {
+  if (BUILTIN_THEMES[name]) return resolvePackage("theme", name, deckDir);
+  const root = findPackageRoot(`@kadal/theme-${name}`, deckDir) ?? bundledTheme(name);
+  if (!root) return null;
+  try {
+    return fromFolder("theme", name, root);
+  } catch {
+    return null;
+  }
+}
+
 /** `bun add`, `pnpm add`, `yarn add` or `npm install`, by the lockfile beside or above the deck. */
 export function installCommand(from: string, pkg: string): string {
   let dir = resolve(from);
@@ -257,6 +309,10 @@ export function resolvePackage(
     const root = findPackageRoot(name, deckDir);
     if (root) return fromFolder(kind, spec, root);
   }
+  // A first-party theme the deck has not installed: the copy that ships inside @kadal/deck.
+  const own = kind === "theme" ? firstPartyTheme(spec) : null;
+  const bundled = own ? bundledTheme(own) : null;
+  if (bundled) return fromFolder(kind, spec, bundled);
   // A theme the deck's own stylesheets define (`.theme-mine` in src/styles.css): plain CSS, as
   // Kadal themes always could be. Its CSS is the deck's to import.
   if (kind === "theme" && /^[\w-]+$/.test(spec) && ownCss(spec, deckDir))

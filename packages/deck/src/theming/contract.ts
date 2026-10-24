@@ -110,6 +110,11 @@ export interface ThemeMeta {
   layouts?: string[];
   /** Names of the components the module adds (same). */
   components?: string[];
+  /**
+   * Two colours for the theme menu's swatch (its accent and second accent), so the menu can show
+   * the theme before its stylesheet has loaded. Without them the swatch reads the stylesheet.
+   */
+  swatch?: [string, string];
 }
 
 /** The `kadal.addon` field of an addon's package.json. */
@@ -209,13 +214,22 @@ export interface PackageRef {
   module: PackageModule | null;
   /** Loads the module (and its CSS, where that is lazy too); null when there is nothing to load. */
   load: (() => Promise<PackageModule | null>) | null;
+  /**
+   * A first-party theme the menu offers because every deck offers all of them, not because the
+   * deck named it: its stylesheet loads only when it is picked, and code keeps the deck theme's
+   * Shiki colours under it (compiler/code-themes.ts).
+   */
+  implicit?: boolean;
 }
 
 /** `manifest.packages`: what the deck's headmatter asked for, resolved. */
 export interface ManifestPackages {
   /** The deck's theme; null in a manifest that predates packages (the headmatter decides then). */
   theme: PackageRef | null;
-  /** Every theme the theme menu offers, the active one included. */
+  /**
+   * Every theme the theme menu offers: the deck's theme, the rest of its `themes`, then every
+   * first-party theme it did not name (`implicit`).
+   */
   themes: PackageRef[];
   addons: PackageRef[];
   /** The deck's own layer files (`global-top.tsx` beside deck.mdx), found by the Vite plugin. */
@@ -228,11 +242,55 @@ export interface ManifestPackages {
 
 /** The engine's own themes. Their CSS is `@kadal/deck/themes/<name>.css`; `none` has none. */
 export const BUILTIN_THEMES: Record<string, ThemeMeta> = {
-  minimal: { name: "minimal", title: "Minimal", colorScheme: "both" },
-  rla: { name: "rla", title: "RLA", colorScheme: "both" },
-  stack: { name: "stack", title: "Stack", colorScheme: "both" },
+  minimal: {
+    name: "minimal",
+    title: "Minimal",
+    colorScheme: "both",
+    swatch: ["#0a0a0a", "#525252"],
+  },
+  rla: { name: "rla", title: "RLA", colorScheme: "both", swatch: ["#3b82f6", "#8b5cf6"] },
+  stack: { name: "stack", title: "Stack", colorScheme: "both", swatch: ["#059669", "#0d9488"] },
   none: { name: "none", title: "None", colorScheme: "both" },
 };
+
+/**
+ * The sixteen first-party themes, in the order the theme menu lists the ones a deck did not name:
+ * the three built in, then the thirteen `@kadal/theme-*` packages. Every deck offers all of them.
+ * @kadal/deck ships a copy of each package (dist/themes/<name>, made at build by
+ * tools/bundle-themes.mjs), so a deck that installed nothing but the engine has them too; an
+ * installed `@kadal/theme-<name>` wins over the copy. theme-packages.test.ts keeps this list and
+ * packages/theme-* in step.
+ */
+export const FIRST_PARTY_THEMES: readonly string[] = [
+  "minimal",
+  "rla",
+  "stack",
+  "ocean",
+  "folio",
+  "swiss",
+  "terminal",
+  "lecture",
+  "brand",
+  "crayon",
+  "neon",
+  "classic",
+  "seriph",
+  "crisp",
+  "bricks",
+  "shibainu",
+];
+
+/** The first-party theme a spec names (`ocean`, `@kadal/theme-ocean`), or null. */
+export function firstPartyTheme(spec: string): string | null {
+  const name = spec.startsWith("@kadal/theme-") ? spec.slice("@kadal/theme-".length) : spec;
+  return FIRST_PARTY_THEMES.includes(name) ? name : null;
+}
+
+/** The first-party themes a menu adds after the ones the deck named (by resolved name). */
+export function implicitThemes(named: Iterable<string>): string[] {
+  const have = new Set(named);
+  return FIRST_PARTY_THEMES.filter((t) => !have.has(t));
+}
 
 /** Where a theme falls back to when the one named cannot be had. */
 export const FALLBACK_THEME = "minimal";
@@ -299,6 +357,12 @@ export function readMeta(
   if (kind === "addon") return common;
   const scheme = raw.colorScheme ?? raw.colorSchema;
   const shiki = obj(raw.shiki);
+  const swatch =
+    Array.isArray(raw.swatch) &&
+    raw.swatch.length === 2 &&
+    raw.swatch.every((c) => typeof c === "string" && c.trim())
+      ? (raw.swatch.map((c: string) => c.trim()) as [string, string])
+      : undefined;
   return {
     ...common,
     colorScheme: scheme === "light" || scheme === "dark" ? scheme : "both",
@@ -312,6 +376,7 @@ export function readMeta(
           },
         }
       : {}),
+    ...(swatch ? { swatch } : {}),
   } satisfies ThemeMeta;
 }
 
