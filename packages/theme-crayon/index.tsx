@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import type { LayoutProps } from "@kadal/deck";
+import { type LayoutProps, Sticker as ImageSticker, type StickerProps } from "@kadal/deck";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -60,11 +60,16 @@ function Sticker({
   tone = "butter",
   tilt = -2,
   children,
+  ...image
 }: {
   tone?: string;
   tilt?: number;
   children?: ReactNode;
+  src?: string;
+  [key: string]: unknown;
 }) {
+  // With a `src` it is the engine's image sticker (placed over the slide), not words on a cut-out.
+  if (typeof image.src === "string") return <ImageSticker {...(image as StickerProps)} />;
   return (
     <span
       className={`crayon-sticker tone-${TONES.has(tone) ? tone : "butter"}`}

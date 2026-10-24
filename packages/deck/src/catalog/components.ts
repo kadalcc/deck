@@ -428,6 +428,68 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       controls: "Show controls.",
     },
   },
+  Sticker: {
+    category: "media",
+    summary:
+      "An image placed over the slide in stage pixels — a PNG cut-out, an animated GIF/WebP/APNG. Centred unless `x`/`y` say otherwise; in `kadal-deck dev` double-click it to move, resize or turn it and the position is written back as `pos`.",
+    example: `<Sticker src="/stickers/rocket.webp" x={1480} y={140} size={260} rotate={-8} shadow />`,
+    props: {
+      src: "Image URL (public/ path or https).",
+      alt: "Alternative text (empty: decorative).",
+      size: "Width in stage pixels (default 240).",
+      x: "Left edge in stage pixels (default: centred).",
+      y: "Top edge in stage pixels (default: centred).",
+      rotate: "Degrees clockwise.",
+      flip: 'Mirror: true or "x" left↔right, "y" upside down.',
+      shadow: "A soft drop shadow that follows the outline.",
+      pos: '"x,y,w,h[,r]" — written by dragging; wins over x/y/size/rotate.',
+    },
+  },
+  Emoji: {
+    category: "media",
+    summary:
+      "One emoji as an image from an open set (Fluent 3D/Color/Flat, Noto, Noto Animated, Twemoji), served by the host (`https://decks.kadal.cc/emoji` by default). `char` is exact; `name` is looked up in the host's index. Animated Noto shows a still under reduced motion and in print.",
+    example: `<Emoji name="party-popper" />  <Emoji char="👍🏽" set="twemoji" size={96} />`,
+    props: {
+      name: 'Its name in the index, e.g. "party-popper" (":party_popper:" works too).',
+      char: "The emoji itself (wins over name).",
+      set: "fluent-3d (default), fluent-color, fluent-flat, noto, noto-animated, twemoji.",
+      size: "CSS size; a number is px (default 1.2em).",
+      alt: "Alternative text (default: the name).",
+    },
+  },
+  Gif: {
+    category: "media",
+    summary:
+      "A GIF from a provider (KLIPY), hot-linked exactly as the provider returned it, with a small credit on hover. Print and every export (PDF, PNG, PPTX) show a card with its title and a link instead of the media — the providers' terms don't allow copying it.",
+    example: `<Gif provider="klipy" slug="hello-hi-662" src="https://static.klipy.com/ii/…/hello.gif" title="Hello" width={498} height={498} />`,
+    props: {
+      provider: 'Where it came from: "klipy" (default).',
+      id: "The provider's id.",
+      slug: "The provider's slug (builds the link back).",
+      src: "The media URL as the provider returned it (GIF, WebP, MP4 or WebM).",
+      title: "Title: the alt text, the credit and the export card.",
+      creator: "Who made it, for the credit.",
+      width: "Width in px (with height: the aspect ratio).",
+      height: "Height in px.",
+      still: "A still frame, shown under reduced motion.",
+      href: "The page to link to (default: the provider's page for it).",
+    },
+  },
+  Meme: {
+    category: "media",
+    summary:
+      "Image-macro captions over a picture: white Anton with a black outline by default, as real text. `template` records where the picture came from (Imgflip) and shows the link back on hover and in every export.",
+    example: `<Meme src="https://i.imgflip.com/30b1gx.jpg" template={{ provider: "imgflip", id: "181913649", url: "https://imgflip.com/memetemplate/181913649" }} captions={[{ text: "Writing slides by hand", x: 52, y: 6, width: 45 }, { text: "Kadal Deck", x: 52, y: 56, width: 45 }]} />`,
+    props: {
+      src: "The image.",
+      alt: "Alternative text (default: the captions).",
+      template: '{ provider: "imgflip", id, url, name } — the source, credited with a link.',
+      captions:
+        "[{ text, x, y, width, size, align, color, stroke }]: x/y/width in % of the image (defaults 5, 4, 90), size in % of its width (default 9), align left|center|right, colours CSS (default white on black).",
+      width: "CSS width; a number is px.",
+    },
+  },
   Audio: {
     category: "media",
     summary: "An audio player.",

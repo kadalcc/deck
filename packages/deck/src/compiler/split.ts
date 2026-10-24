@@ -1,5 +1,6 @@
 import YAML from "yaml";
 
+import { isMarkerLine, markerBlocks } from "../sync/markers.ts";
 import { blank, blankHtmlComments, codeSpans, fenceRanges, htmlComments } from "./comments.ts";
 import { type SlideStyle, extractStyles } from "./slide-style.ts";
 
@@ -117,7 +118,9 @@ const NOTES = /<Notes(?:\s[^>]*)?>([\s\S]*?)<\/Notes>/g;
 function looksLikeYaml(lines: string[]): boolean {
   let any = false;
   for (const line of lines) {
-    if (!line.trim()) continue;
+    // A merge conflict inside the settings (sync/markers.ts) keeps them settings: the block is
+    // still the slide's frontmatter, and the conflict is reported as one, not as stray text.
+    if (!line.trim() || isMarkerLine(line)) continue;
     if (/^\s+/.test(line) || /^\s*-\s/.test(line) || /^\s*#/.test(line)) continue;
     if (!FRONTMATTER_LINE.test(line)) return false;
     any = true;
@@ -150,7 +153,7 @@ function parseYaml(
   return value as Frontmatter;
 }
 
-interface Piece {
+export interface Piece {
   vertical: boolean;
   frontmatter: string | null;
   lines: string[];
@@ -231,6 +234,26 @@ function cut(text: string): Piece[] {
   };
   let comarkUntil = -1;
 
+  /**
+   * Merge conflicts (sync/markers.ts): a block is opaque — no separator inside it cuts a slide —
+   * and the fence state after it is the state after its first side alone, so one side opening a
+   * code block the other does not cannot swallow the rest of the deck.
+   */
+  type Conflict = { boundaries: Set<number>; end: number };
+  const conflictAt = new Map<number, Conflict>();
+  if (text.includes("<<<<<<<"))
+    for (const b of markerBlocks(text))
+      conflictAt.set(b.start, {
+        boundaries: new Set([...(b.base === null ? [] : [b.base]), b.sep]),
+        end: b.end,
+      });
+  let conflict: {
+    end: number;
+    boundaries: Set<number>;
+    saved: [boolean, string];
+    ours: [boolean, string] | null;
+  } | null = null;
+
   let i = 0;
   // The head: an opening fence at the very top is headmatter.
   let firstContent = 0;
@@ -260,6 +283,19 @@ function cut(text: string): Piece[] {
 
   for (; i < lines.length; i++) {
     const line = lines[i]!;
+    const opens: Conflict | undefined = conflict ? undefined : conflictAt.get(i);
+    if (opens) conflict = { ...opens, saved: [inFence, fence], ours: null };
+    if (conflict) {
+      if (conflict.boundaries.has(i)) {
+        conflict.ours ??= [inFence, fence];
+        [inFence, fence] = conflict.saved;
+      } else if (i === conflict.end) {
+        [inFence, fence] = conflict.ours ?? conflict.saved;
+        conflict = null;
+      }
+      pieces[pieces.length - 1]!.lines.push(line);
+      continue;
+    }
     const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
     if (fenceMatch) {
       const mark = fenceMatch[1]!;
@@ -312,6 +348,16 @@ function cut(text: string): Piece[] {
  * `<Notes>` in an example, a `---` in YAML — are code, not structure.
  */
 export const fencedRanges = fenceRanges;
+
+/**
+ * The deck file cut into its pieces, nothing parsed: the head piece (headmatter and the first
+ * slide) and one piece per separator, with their 0-based line ranges into
+ * `text.split(/\r?\n/)`. What the merge (sync/mdx.ts) works on — every byte of the file is in
+ * exactly one piece, and includes stay unexpanded.
+ */
+export function cutDeck(text: string): Piece[] {
+  return cut(text);
+}
 
 export interface NotesBlock {
   start: number;

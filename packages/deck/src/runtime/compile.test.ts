@@ -129,3 +129,76 @@ describe("shellBase", () => {
     expect(shellBase("/anything", "/@host/given/")).toBe("/@host/given/");
   });
 });
+
+describe("compileDeck: merge conflicts and a kit's modules", () => {
+  const conflicted = `---
+title: T
+---
+
+# One
+
+---
+
+# Two
+
+<<<<<<< local (your files)
+Mine
+||||||| base v3
+Base
+=======
+Theirs
+>>>>>>> web v4 (Quick edit by Asha)
+`;
+
+  test("a conflicted slide is reported and renders the Yours / Web card instead of failing", async () => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const out = await compileDeck(conflicted);
+    expect(out.ok).toBe(false);
+    expect(out.conflicts).toEqual([{ file: "deck.mdx", slide: 1, line: 11, which: 0 }]);
+    expect(out.diagnostics.map((d) => d.message)).toEqual([
+      "Unresolved merge conflict on slide 2 (deck.mdx:11)",
+    ]);
+    const Card = (await out.manifest.slides[1]!.load()).default;
+    const html = renderToStaticMarkup(createElement(Card));
+    expect(html).toContain("Merge conflict on this slide");
+    expect(html).toContain("Yours");
+    expect(html).toContain("Web");
+    expect(html).toContain("Mine");
+    expect(html).toContain("Theirs");
+    // Slide one compiled as usual.
+    expect(out.manifest.slides[0]!.title).toBe("T");
+  });
+
+  test("a conflict in the frontmatter does not also report its YAML", async () => {
+    const out = await compileDeck(
+      "# One\n\n---\n<<<<<<< ours\nlayout: center\n=======\nlayout: two-cols\n>>>>>>> theirs\n---\n\n# Two\n",
+    );
+    expect(out.diagnostics.map((d) => d.message)).toEqual([
+      "Unresolved merge conflict on slide 2 (deck.mdx:4)",
+    ]);
+    expect(out.manifest.slides).toHaveLength(2);
+  });
+
+  test("with a module map, imports resolve from it; a missing one says what to do", async () => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { createElement } = await import("react");
+    const Chart = (p: { n?: number }) => createElement("b", null, `chart ${p.n ?? 0}`);
+    const modules = { "./components/Chart.tsx": { default: Chart, unit: "kg" } };
+    const text = `# One\n\n---\nsrc: ./pages/more.mdx\n---\n`;
+    const files = {
+      "pages/more.mdx": `import Chart, { unit } from "../components/Chart.tsx"\n\n# Two\n\n<Chart n={3} /> {unit}\n`,
+    };
+    const out = await compileDeck(text, { files, modules });
+    expect(out.diagnostics).toEqual([]);
+    const html = renderToStaticMarkup(createElement((await out.manifest.slides[1]!.load()).default));
+    expect(html).toContain("<b>chart 3</b>");
+    expect(html).toContain("kg");
+
+    const missing = await compileDeck(`import X from "./x.tsx"\n\n# Hi\n`, { modules });
+    expect(missing.ok).toBe(false);
+    expect(missing.diagnostics[0]!.message).toContain(
+      "`./x.tsx` isn't part of this deck's last CLI build. Add it in your project and run `kadal-deck publish`.",
+    );
+  });
+});

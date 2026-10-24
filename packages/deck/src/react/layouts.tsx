@@ -1,7 +1,9 @@
 import type { ComponentType, ReactNode } from "react";
 
+import { isPremiumName } from "../core/premium.ts";
 import { useDeck } from "./context.ts";
 import { FrameShell } from "./Frame.tsx";
+import { premiumLayout } from "./premium.tsx";
 
 import type { Frontmatter } from "../compiler/split.ts";
 import type { SlideOptions } from "../core/model.ts";
@@ -16,7 +18,8 @@ import type { SlideOptions } from "../core/model.ts";
  * Every layout wraps the slide's MDX in `.deck-layout` with a modifier class the theme styles;
  * the image/iframe ones read `image` / `url` / `backgroundSize` from the frontmatter. A deck adds
  * its own by passing `components={{ "layout:name": Component }}` to `<Deck>`; a theme or an
- * addon by exporting `layouts` (theming/contract.ts), which merge in under the deck's.
+ * addon by exporting `layouts` (theming/contract.ts), which merge in under the deck's. A
+ * `pro/<name>` is a remote one from the host's library (core/premium.ts).
  */
 export interface LayoutProps {
   frontmatter: Frontmatter;
@@ -128,5 +131,9 @@ export function layoutFor(
   components: Record<string, ComponentType<Record<string, unknown>>>,
 ): ComponentType<LayoutProps> {
   const custom = components[`layout:${name}`] as unknown as ComponentType<LayoutProps> | undefined;
-  return custom ?? LAYOUTS[name] ?? LAYOUTS.default!;
+  if (custom) return custom;
+  // `pro/<name>`: the host's library (react/premium.tsx) — the default layout until it loads, and
+  // for good when it can't.
+  if (isPremiumName(name)) return premiumLayout(name, LAYOUTS.default!);
+  return LAYOUTS[name] ?? LAYOUTS.default!;
 }

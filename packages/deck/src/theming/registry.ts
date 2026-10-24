@@ -43,6 +43,11 @@ export interface RegisteredPackage {
   meta: ThemeMeta | AddonMeta;
   /** Imports the stylesheet and the module; resolves to the module (or null without one). */
   load: () => Promise<unknown>;
+  /**
+   * Other specs that name it: a deck's kit registers a `theme: ./theme` folder theme under its
+   * path, so the deck's headmatter resolves in the browser as it did in the build.
+   */
+  aliases?: string[];
 }
 
 export interface PackageRegistry {
@@ -66,6 +71,7 @@ export function createPackageRegistry(): PackageRegistry {
       // The name first (a deck writes `theme: seriph`), then the package names it may stand for.
       return (
         all.find((e) => e.name === spec) ??
+        all.find((e) => e.aliases?.includes(spec)) ??
         packageCandidates(kind, spec)
           .map((p) => all.find((e) => e.package === p))
           .find(Boolean) ??
@@ -155,7 +161,10 @@ export async function resolveRuntimePackages(
 
   const themeRef = async (spec: string, active: boolean): Promise<PackageRef | null> => {
     if (BUILTIN_THEMES[spec]) return builtinRef(spec, spec);
-    const entry = isPathSpec(spec) ? null : registry.find("theme", spec);
+    // A folder theme only resolves when a kit registered it under its path (vite/kit.ts).
+    const entry = isPathSpec(spec)
+      ? (registry.list("theme").find((e) => e.aliases?.includes(spec)) ?? null)
+      : registry.find("theme", spec);
     if (!entry) {
       warnings.push(
         isPathSpec(spec)
@@ -196,7 +205,9 @@ export async function resolveRuntimePackages(
 
   const addons: PackageRef[] = [];
   for (const spec of want.addons) {
-    const entry = isPathSpec(spec) ? null : registry.find("addon", spec);
+    const entry = isPathSpec(spec)
+      ? (registry.list("addon").find((e) => e.aliases?.includes(spec)) ?? null)
+      : registry.find("addon", spec);
     if (!entry) {
       warnings.push(
         `The addon "${spec}" is not one this player has; the deck runs without it.${isPathSpec(spec) ? " A folder addon needs the CLI build (kadal-deck build)." : ""}`,

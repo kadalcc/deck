@@ -60,6 +60,9 @@ import { iconRegistration, resolveIcons } from "../icons/node.ts";
 import { SIDE_EDITOR_DEPS, SOURCE_PATH, sideEditorCode, sourceEndpoint } from "./source-dev.ts";
 import { type RemoteGate, remoteGate, remoteSettings } from "./remote-dev.ts";
 import { deckSite, subdirConfig } from "./site.ts";
+import { type MarkerBlock, hasConflictMarkers, markerBlocks } from "../sync/markers.ts";
+import { kitJson, kitMode, kitModuleCode, slideImports, writeKitJson } from "./kit.ts";
+import { RESOLVE_PATH, resolveEndpoint } from "./resolve-dev.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -87,6 +90,13 @@ import { deckSite, subdirConfig } from "./site.ts";
  * A `glossary.yaml` beside the deck file (or the headmatter's `glossary:` path) is read here too:
  * every slide's key terms are linked to it as the slide compiles (`compiler/rehype-glossary.ts`),
  * and its entries ride in the manifest for the cards the runtime shows.
+ *
+ * Merge conflicts (`kadal-deck pull`, sync/markers.ts): under `kadal-deck dev` a slide with
+ * markers renders both versions with buttons (react/ConflictCard.tsx → vite/resolve-dev.ts); a
+ * build refuses, naming the slide and line.
+ *
+ * KADAL_DECK_KIT=1 builds the deck's editing kit instead (vite/kit.ts): `virtual:deck` is the
+ * shell plus the module map, and the build writes kit.json.
  *
  * It also self-hosts Excalidraw's fonts for `<Sketch>`: `<base>excalidraw/fonts/…` is served
  * from the package in dev and copied into `dist/excalidraw/fonts` on build (all families but the
@@ -257,14 +267,32 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     included.clear();
     const text = readFileSync(entryPath, "utf8");
     const deckDir = dirname(entryPath);
+    // Merge conflicts by file (sync/markers.ts): their slides become cards, never compiled, and
+    // the YAML errors markers cause inside a frontmatter block are the conflict's.
+    const conflicts = new Map<string, MarkerBlock[]>();
+    const noteConflicts = (file: string, t: string) => {
+      if (hasConflictMarkers(t)) conflicts.set(file, markerBlocks(t));
+      return t;
+    };
+    noteConflicts(entryPath, text);
     const { headmatter, slides, styles } = prepareDeck(text, {
       file: entryPath,
       resolveInclude: (path, from) => {
         const file = resolve(dirname(from), path);
         if (!existsSync(file)) return null;
         included.add(file);
-        return { file, text: readFileSync(file, "utf8") };
+        return { file, text: noteConflicts(file, readFileSync(file, "utf8")) };
       },
+      ...(conflicts.size || /^<{7}/m.test(text)
+        ? {
+            onError: (e: { message: string; file: string; line: number }) => {
+              const inBlock = (conflicts.get(e.file) ?? []).some(
+                (b) => e.line - 1 >= b.start && e.line - 1 <= b.end + 1,
+              );
+              if (!inBlock) throw new Error(`${e.file}:${e.line}: ${e.message}`);
+            },
+          }
+        : {}),
       preprocess: options.preprocess,
       withoutNotes,
       // `<<<` imports: deck-root relative paths, read from the disk and watched like includes.
@@ -294,6 +322,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     return {
       headmatter,
       slides,
+      conflicts,
       // The theme menu's code colours ride with the slides' own styles (compiler/code-themes.ts).
       styles: styles + codeThemeCss(code),
       katex,
@@ -436,11 +465,12 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
     async config(user, env) {
       const out: {
         base?: string;
-        build?: { outDir: string };
+        build?: { outDir?: string; copyPublicDir?: boolean };
         worker?: { format: "es" };
         server?: { https?: object; fs?: { allow: string[] }; allowedHosts?: string[] };
         resolve?: { dedupe: string[] };
         optimizeDeps?: { include: string[] };
+        define?: Record<string, string>;
       } = {};
       // A theme or addon package (or a layer file) brings modules from outside the deck's own
       // tree: one React, one engine for all of them, and a `../my-theme` the dev server may serve.
@@ -453,6 +483,12 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           const outside = packageRoots(peek).filter((r) => !isWithin(workspace, r));
           if (outside.length) out.server = { fs: { allow: [workspace, ...outside] } };
         }
+      }
+      // The kit (vite/kit.ts) rides beside the deck's own build, whose public/ files it shares.
+      // The engine's version, said in the preview's `ready` as the prebuilt shell says it.
+      if (kitMode() && env.command === "build") {
+        out.build = { copyPublicDir: false };
+        out.define = { __KADAL_DECK_VERSION__: JSON.stringify(engineVersion()) };
       }
       // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
       // only an ES-module worker can do. A deck that set its own worker format keeps it.
@@ -541,6 +577,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
       notesEndpoint(s, { entry: () => entryPath, base: () => base });
       dragEndpoint(s, { entry: () => entryPath, base: () => base, quiet });
       sourceEndpoint(s, { entry: () => entryPath, base: () => base });
+      resolveEndpoint(s, { entry: () => entryPath, base: () => base });
       s.watcher.on("change", changed);
       s.watcher.on("add", changed);
       s.watcher.on("unlink", changed);
@@ -556,12 +593,31 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
         return [];
       if (manifest && hotNotes()) return [];
     },
-    transformIndexHtml: site.transformIndexHtml,
-    transform: site.transform,
-    generateBundle: site.generateBundle,
-    closeBundle: site.closeBundle,
+    // The kit is not a site of its own: no head, OG card, PWA or static-host files for it.
+    ...(kitMode()
+      ? {}
+      : {
+          transformIndexHtml: site.transformIndexHtml,
+          transform: site.transform,
+          generateBundle: site.generateBundle,
+          closeBundle: site.closeBundle,
+        }),
     writeBundle() {
       if (!building) return;
+      if (kitMode()) {
+        const m = ensure();
+        writeKitJson(
+          outDir,
+          kitJson({
+            deckDir: dirname(entryPath),
+            modules: [...slideImports(m.slides, dirname(entryPath)).keys()],
+            packages: m.packages,
+            engine: engineVersion(),
+          }),
+        );
+        // The kit draws sketches too: its own font copy, which a content-addressed host stores
+        // once (byte for byte the deck's and the shell's).
+      }
       const dist = excalidrawDist();
       if (!dist) return;
       cpSync(join(dist, "fonts"), join(outDir, "excalidraw", "fonts"), {
@@ -630,6 +686,28 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
 `;
       }
 
+      if (id === RESOLVED && kitMode()) {
+        const deckDir = dirname(entryPath);
+        const resolved = new Map<string, string>();
+        for (const [key, imp] of slideImports(m.slides, deckDir)) {
+          const r = await this.resolve(imp.spec, imp.file, { skipSelf: true });
+          if (r && !r.external) resolved.set(key, r.id);
+          else console.warn(`[deck] kit: ${imp.spec} (imported in ${imp.file}) does not resolve; the builder will not have it.`);
+        }
+        const hasMonaco = monacoInstalled() && monacoLangs(m.slides.map((s) => s.content)).size > 0;
+        const runnersFile = options.codeRunners
+          ? resolve(root, options.codeRunners)
+          : setupFile(deckDir, "code-runners");
+        return kitModuleCode({
+          packages: m.packages,
+          packagesCode: packagesCode(m.packages),
+          resolved,
+          monaco: hasMonaco ? `() => import("${VIRTUAL}/monaco").then((m) => m.default())` : null,
+          codeRunners: runnersFile && existsSync(runnersFile) ? runnersFile : null,
+          engine: engineVersion(),
+        });
+      }
+
       if (id === RESOLVED) {
         // A missing optional peer resolves too — to Vite's stub that throws on import — so the
         // answer is "found a real file", not "resolved".
@@ -681,6 +759,7 @@ export const dragApi = ${building ? "null" : JSON.stringify(`${base}${DRAG_PATH}
 ${building ? "" : DEV_NOTES}
 ${drawingsExport({ building, base, dir: drawingsDir(entryPath) })}
 export const sourceApi = ${building ? "null" : JSON.stringify(`${base}${SOURCE_PATH}`)};
+${building || !m.conflicts.size ? "" : conflictResolverCode(`${base}${RESOLVE_PATH}`)}
 export const sideEditor = ${sideEditorCode(building)};
 export default { headmatter, slides, glossary, styles, codeThemes, relay, kokoro, packages, monaco, codeRunners, dev, notesApi, drawings, dragApi, sourceApi, sideEditor };
 `;
@@ -697,6 +776,22 @@ export default { headmatter, slides, glossary, styles, codeThemes, relay, kokoro
       const kind = slide[1]!;
       const s = m.slides[Number(slide[2])];
       if (!s) return `export default () => null;`;
+
+      const conflicted = (m.conflicts.get(s.range.file) ?? [])
+        .map((b, block) => ({ b, block }))
+        .filter(({ b }) => b.start >= s.range.start && b.start < s.range.end);
+      if (conflicted.length) {
+        const rel = relative(dirname(entryPath), s.range.file).split(sep).join("/");
+        const first = `${rel}:${conflicted[0]!.b.start + 1}`;
+        // A build never ships two versions of a slide.
+        if (building)
+          this.error(
+            `Unresolved merge conflict on slide ${s.index + 1} (${first}). Keep one side or both with \`kadal-deck resolve\`, or edit the file and delete the marker lines, then build again.`,
+          );
+        if (kind !== "slide") return `export default () => null;`;
+        console.warn(`[deck] Unresolved merge conflict on slide ${s.index + 1} (${first}).`);
+        return conflictSlideCode(rel, s.index, conflicted);
+      }
 
       if (kind === "slide")
         return compileMdx(
@@ -781,3 +876,48 @@ function peekPackages(file: string): DeckPackageSet | null {
 }
 
 export { deckPackages, type DeckPackagesOptions } from "./packages.ts";
+
+/** This package's version, for kit.json. */
+function engineVersion(): string {
+  for (const rel of ["../../package.json", "../package.json"]) {
+    const file = fileURLToPath(new URL(rel, import.meta.url));
+    if (!existsSync(file)) continue;
+    try {
+      const pkg = JSON.parse(readFileSync(file, "utf8")) as { name?: string; version?: string };
+      if (pkg.name === "@kadal/deck" && pkg.version) return pkg.version;
+    } catch {
+      /* next */
+    }
+  }
+  return "0.0.0";
+}
+
+/** A conflicted slide's module under `kadal-deck dev`: the card with both versions. */
+function conflictSlideCode(file: string, slide: number, blocks: Array<{ b: MarkerBlock; block: number }>): string {
+  const props = {
+    file,
+    slide,
+    blocks: blocks.map(({ b, block }) => ({
+      block,
+      line: b.start + 1,
+      oursLabel: b.oursLabel,
+      theirsLabel: b.theirsLabel,
+      ours: b.ours.join("\n"),
+      theirs: b.theirs.join("\n"),
+    })),
+  };
+  return `import { jsx } from "react/jsx-runtime";
+import { ConflictSlide } from "@kadal/deck";
+const props = ${JSON.stringify(props)};
+export default function ConflictedSlide() { return jsx(ConflictSlide, props); }
+`;
+}
+
+/** The dev page's answer to a conflict card's buttons: the resolve endpoint (vite/resolve-dev.ts). */
+function conflictResolverCode(url: string): string {
+  return `import { setConflictResolver as __kadal_setResolver } from "@kadal/deck";
+__kadal_setResolver(async (r) => {
+  const res = await fetch(${JSON.stringify(url)}, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(r) });
+  if (!res.ok) console.warn("[deck] could not resolve the conflict:", (await res.json().catch(() => ({}))).error ?? res.status);
+});`;
+}

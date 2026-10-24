@@ -135,7 +135,34 @@ let fontsPending: Promise<void> = Promise.resolve();
  * taken in the fallback face.
  */
 export function deckFontsReady(): Promise<void> {
-  return fontsPending;
+  return Promise.all([fontsPending, ...extraFonts.values()]).then(() => undefined);
+}
+
+/** Families a component needs whatever the deck's `fonts` say, by name: loaded once a page. */
+const extraFonts = new Map<string, Promise<void>>();
+
+/**
+ * Load one Google Fonts family for a component of the engine's own (`<Meme>`'s Anton) — through
+ * the same path as the deck's `fonts` (an offline build's local copy, the no-weights retry), and
+ * waited for by `deckFontsReady`, so print and export never catch it in the fallback face.
+ */
+export function loadExtraFont(family: string, weights = "400"): void {
+  if (typeof document === "undefined" || extraFonts.has(family)) return;
+  const name = family.trim().replace(/\s+/g, "+");
+  const sheet = {
+    family,
+    href: `https://fonts.googleapis.com/css2?family=${name}:wght@${weights}&display=swap`,
+    retry: `https://fonts.googleapis.com/css2?family=${name}&display=swap`,
+  };
+  extraFonts.set(
+    family,
+    loadSheet(sheet, [])
+      .then(() => document.fonts?.load(`1em "${family}"`))
+      .then(
+        () => undefined,
+        () => undefined,
+      ),
+  );
 }
 
 function loadSheet(

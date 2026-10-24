@@ -53,7 +53,7 @@ Every built-in layout is styled (`default`, `center`, `cover`, `intro`, `section
 
 | component | what |
 | --- | --- |
-| `<Sticker tone tilt>` | Words on a pastel cut-out: `tone` pink · mint · sky · butter · lilac · peach (default butter), `tilt` in degrees (default -2). |
+| `<Sticker tone tilt>` | Words on a pastel cut-out: `tone` pink · mint · sky · butter · lilac · peach (default butter), `tilt` in degrees (default -2). With a `src` it is the engine's image `<Sticker>` instead. |
 | `<Bubble from side>` | A speech bubble; `from` names the speaker, `side="right"` answers. |
 
 ## Preview

@@ -57,6 +57,7 @@ import {
   saveEdit,
 } from "../cli/project.ts";
 import { DeckServer, SlideRenderer, stripAnsi } from "../cli/render.ts";
+import { hasConflictMarkers, markerBlocks, strayMarkers } from "../sync/markers.ts";
 import { MissingDependencyError, keepStdoutClean, runVite } from "../cli/vite.ts";
 
 export interface McpOptions {
@@ -190,8 +191,39 @@ export function createServer(options: McpOptions): {
     return entry.renderer;
   }
 
+  /**
+   * A slide with an unresolved merge conflict is not edited by halves: the edit must remove its
+   * markers, or the agent settles it first with deck_resolve. Null when the edit may go ahead.
+   */
+  function conflictRefusal(p: DeckProject, result: EditResult): string | null {
+    const blockText = (t: string) => {
+      const lines = t.replace(/\r\n?/g, "\n").split("\n");
+      return new Set([
+        ...markerBlocks(t).map((b) => lines.slice(b.start, b.end + 1).join("\n")),
+        ...strayMarkers(t).map((i) => `stray:${lines[i]}`),
+      ]);
+    };
+    for (const [file, after] of Object.entries(result.files)) {
+      if (!hasConflictMarkers(after)) continue;
+      const before = blockText(p.files.read(file) ?? "");
+      for (const b of blockText(after))
+        if (!before.has(b))
+          return `This edit would leave a half-merged conflict in ${rel(p, file)}. Settle the conflict with deck_resolve (or send the slide without any <<<<<<< / ======= / >>>>>>> lines).`;
+    }
+    if (result.index === null) return null;
+    const files = { entry: p.files.entry, read: (f: string) => result.files[f] ?? p.files.read(f) };
+    const s = readDeck(files, { root: p.dir }).slides[result.index];
+    if (!s) return null;
+    const text = (files.read(s.range.file) ?? "").replace(/\r\n?/g, "\n").split("\n");
+    const own = text.slice(s.range.start, s.range.end).join("\n");
+    if (!hasConflictMarkers(own)) return null;
+    return `Slide ${s.index} has an unresolved merge conflict (${rel(p, s.range.file)}:${s.range.start + 1}). Read both sides with deck_conflicts, then settle it with deck_resolve (ours, theirs or both) — or send content that has no conflict markers — before editing it. Prefer keeping both sides' intent; ask the person when the two edits contradict.`;
+  }
+
   /** Save an edit and lint the deck, reporting what concerns the edited slide. */
   async function afterEdit(p: DeckProject, result: EditResult, verb: string): Promise<ToolResult> {
+    const refused = conflictRefusal(p, result);
+    if (refused) return failure(refused, { conflict: true, next: ["deck_conflicts", "deck_resolve"] });
     const written = saveEdit(result, p);
     const check = await checkProject(p);
     const outline = outlineDeck(p.files);
@@ -244,6 +276,7 @@ export function createServer(options: McpOptions): {
         "Kadal Deck: presentations written in MDX (deck.mdx). Slides split at `---`, vertical slides at `----`; YAML after a separator is that slide's frontmatter; the YAML at the very top is the headmatter (deck settings + the first slide).",
         "Workflow: deck_reference (look up components/layouts/backgrounds before using them) → deck_create or deck_outline → slide_add / slide_update / notes_set → deck_check → slide_render and LOOK at the pictures → fix → deck_export or deck_publish.",
         "Edit slides through the slide tools rather than rewriting deck.mdx: they change only that slide's lines and lint the result.",
+        "A published deck may be edited on the web too (quick edit). Before editing a published deck: deck_sync_status; if the web has newer versions, deck_pull first. Conflicts: deck_conflicts (both sides, per slide) → deck_resolve (prefer keeping both sides' intent; ask the person when the two edits contradict) → deck_check → deck_publish. Never force a publish over web edits unless the person says so.",
         "Resources: kadal-deck://guide/design-guide (how to make a good talk), kadal-deck://guide/authoring, kadal-deck://reference.",
       ].join("\n"),
     },
@@ -513,7 +546,7 @@ export function createServer(options: McpOptions): {
     {
       title: "Check the deck",
       description:
-        "Lint the deck: invalid YAML, unknown or mistyped frontmatter keys, unknown layouts/backgrounds/themes/transitions, MDX that does not compile (with file:line), JSX components that are not built in / in src/components.tsx / imported, broken `src:` includes, missing images and videos, glossary problems, code-fence options. Errors break the deck; fix them before rendering.",
+        "Lint the deck: invalid YAML, unknown or mistyped frontmatter keys, unknown layouts/backgrounds/themes/transitions, MDX that does not compile (with file:line), JSX components that are not built in / in src/components.tsx / imported, broken `src:` includes, missing images and videos, glossary problems, code-fence options, and unresolved merge conflicts (code merge-conflict: settle them with deck_resolve). Errors break the deck; fix them before rendering.",
       inputSchema: {
         dir: DIR,
         compile: z.boolean().optional().describe("Compile every slide's MDX (default true)."),
@@ -1006,14 +1039,26 @@ export function createServer(options: McpOptions): {
     {
       title: "Publish the deck",
       description:
-        "Build the deck and publish it to its Kadal Deck host (deck.kadal.cc by default) with a live room; returns the URL. Uses the login saved by `kadal-deck login` (or KADAL_DECK_TOKEN). If nobody is signed in it returns what the person must run — it never signs in by itself.",
+        "Build the deck and publish it to its Kadal Deck host (deck.kadal.cc by default) with a live room; returns the URL. Uses the login saved by `kadal-deck login` (or KADAL_DECK_TOKEN). If nobody is signed in it returns what the person must run — it never signs in by itself. The deck's editable source goes too (privately), so it can be quick-edited on the web. If the deck changed on the web since this folder last synced, it does NOT publish: it returns {ok:false, reason:\"diverged\", head, next} — call deck_pull, settle any conflicts, deck_check, then publish again. Use force:true only when the person explicitly says to replace the web's edits. While conflict markers are left it returns {ok:false, reason:\"conflicts\"}.",
       inputSchema: {
         dir: DIR,
         slug: z.string().optional().describe("URL slug (default: the folder name)."),
         workspace: z.string().optional().describe("Workspace handle (default: the token's)."),
         title: z.string().optional(),
+        force: z
+          .boolean()
+          .optional()
+          .describe("Replace edits made on the web since the last sync. Only when the person asks."),
+        showcase: z
+          .boolean()
+          .optional()
+          .describe("List the deck in the public showcase (true) or take it out (false); omit to leave it."),
+        source: z
+          .boolean()
+          .optional()
+          .describe("false: don't upload the editable source (quick edit off; it sticks). true turns it back on."),
       },
-      outputSchema: out({ ok: z.boolean(), url: z.string(), version: z.number() }),
+      outputSchema: out({ ok: z.boolean() }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -1027,11 +1072,17 @@ export function createServer(options: McpOptions): {
         slug,
         workspace,
         title,
+        force,
+        showcase,
+        source,
       }: {
         dir?: string;
         slug?: string;
         workspace?: string;
         title?: string;
+        force?: boolean;
+        showcase?: boolean;
+        source?: boolean;
       }) => {
         const p = project(dir);
         const creds = await loadCredentials();
@@ -1043,23 +1094,233 @@ export function createServer(options: McpOptions): {
         const { publishCommand } = await import("../cli/index.ts");
         // The CLI's publish, with its one JSON answer captured instead of printed.
         let data: Record<string, unknown> = {};
-        const code = await publishCommand(
-          p.dir,
-          { slug, workspace, title },
-          {
-            json: true,
-            say: (line) => console.error(line),
-            emit: (d) => {
-              data = d as Record<string, unknown>;
+        let code: number;
+        try {
+          code = await publishCommand(
+            p.dir,
+            { slug, workspace, title, force, showcase, source },
+            {
+              json: true,
+              say: (line) => console.error(line),
+              emit: (d) => {
+                data = d as Record<string, unknown>;
+              },
             },
-          },
-        );
+          );
+        } catch (e) {
+          const name = (e as Error)?.name;
+          if (name === "DivergedError") {
+            const head = (e as { head: { version: number } }).head;
+            return ok(
+              {
+                ok: false,
+                reason: "diverged",
+                head,
+                base: (e as { base: unknown }).base,
+                message: (e as Error).message,
+                next: ["deck_pull", "deck_publish --force"],
+              },
+              `Not published: ${(e as Error).message}\nNext: deck_pull, settle conflicts (deck_conflicts, deck_resolve), deck_check, deck_publish. deck_publish with force:true replaces the web's edits — only if the person says so.`,
+            );
+          }
+          if (name === "ConflictsError")
+            return ok(
+              {
+                ok: false,
+                reason: "conflicts",
+                conflicts: (e as { conflicts: unknown }).conflicts,
+                message: (e as Error).message,
+                next: ["deck_conflicts", "deck_resolve"],
+              },
+              `Not published: ${(e as Error).message}`,
+            );
+          throw e;
+        }
         if (code !== 0)
           return failure(
             String((data.error as { message?: string })?.message ?? "Publishing failed."),
             data,
           );
         return ok(data, `Published version ${data.version}: ${data.url}`);
+      },
+    ),
+  );
+
+  // ── sync with the web ────────────────────────────────────────────────────────────────────
+  const syncCtx = async (p: DeckProject, a: { slug?: string; workspace?: string }) => {
+    const { hostContext } = await import("../cli/sync-command.ts");
+    return hostContext(p.dir, { slug: a.slug, workspace: a.workspace });
+  };
+  const NOT_SIGNED_IN =
+    "Not signed in to a Kadal Deck host. Ask the person to run `npx kadal-deck login` (or set KADAL_DECK_TOKEN), then try again.";
+
+  server.registerTool(
+    "deck_sync_status",
+    {
+      title: "Sync status",
+      description:
+        "Before editing a published deck, call this. It compares the folder, its last sync (.kadal-deck/) and the web: newer versions made on the web (quick edit, agents), local changes by slide, unresolved conflicts, an unpublished web draft someone is editing, and `next` — the steps to take (e.g. deck_pull). Works offline for the local half.",
+      inputSchema: {
+        dir: DIR,
+        slug: z.string().optional(),
+        workspace: z.string().optional(),
+      },
+      outputSchema: out({ newer: z.array(LOOSE), local: z.array(LOOSE), conflicts: z.array(LOOSE), next: z.array(z.string()) }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    guard(async (a: { dir?: string; slug?: string; workspace?: string }) => {
+      const p = project(a.dir);
+      const { deckStatus } = await import("../cli/sync.ts");
+      const ctx = await syncCtx(p, a);
+      const r = await deckStatus(
+        ctx ? { ...ctx, dir: p.dir } : { dir: p.dir, slug: a.slug ?? "", host: "", token: "", workspace: "", offline: true },
+      );
+      const next = r.next.map((n) =>
+        n === "kadal-deck pull" ? "deck_pull" : n === "kadal-deck publish" ? "deck_publish" : n.startsWith("kadal-deck resolve") ? "deck_conflicts" : n,
+      );
+      return ok(
+        { ...r, signedIn: !!ctx, next },
+        [...(ctx ? [] : ["Not signed in: the folder only."]), ...r.lines, next.length ? `Next: ${next.join(" → ")}` : ""].filter(Boolean).join("\n"),
+      );
+    }),
+  );
+
+  server.registerTool(
+    "deck_pull",
+    {
+      title: "Pull web edits",
+      description:
+        "Merge the newest web version (or `version`) into the deck's files, slide by slide, against the last sync. What only one side changed is taken; the same lines changed both ways become git-style conflict markers (`clean: false`), which block publishing. Changed files are backed up in .kadal-deck/sync/backup/. strategy \"ours\"/\"theirs\" settles every conflict one way — use it only when the person says so; otherwise read them with deck_conflicts and settle each with deck_resolve.",
+      inputSchema: {
+        dir: DIR,
+        version: z.number().int().min(1).optional().describe("A version to pull instead of the newest (e.g. one a forced publish replaced)."),
+        strategy: z.enum(["merge", "ours", "theirs"]).optional().describe("Default merge: leave conflicts for deck_resolve."),
+        dryRun: z.boolean().optional().describe("Say what would change; write nothing."),
+        slug: z.string().optional(),
+        workspace: z.string().optional(),
+      },
+      outputSchema: out({ clean: z.boolean(), version: z.number(), files: z.array(LOOSE), conflicts: z.array(LOOSE) }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    guard(
+      async (a: {
+        dir?: string;
+        version?: number;
+        strategy?: "merge" | "ours" | "theirs";
+        dryRun?: boolean;
+        slug?: string;
+        workspace?: string;
+      }) => {
+        const p = project(a.dir);
+        const ctx = await syncCtx(p, a);
+        if (!ctx) return failure(NOT_SIGNED_IN, { signedIn: false, command: "npx kadal-deck login" });
+        const { pullDeck } = await import("../cli/sync.ts");
+        const r = await pullDeck({
+          ...ctx,
+          dir: p.dir,
+          version: a.version,
+          strategy: a.strategy === "merge" ? undefined : a.strategy,
+          dryRun: a.dryRun,
+        });
+        const lines = [
+          ...r.notes.map((n) => `note: ${n}`),
+          r.files.length
+            ? r.files.map((f) => `${f.change} ${f.path}${f.slides?.length ? ` (slides ${f.slides.join(", ")})` : ""}`).join("\n")
+            : `Already up to date with v${r.version}.`,
+          r.clean
+            ? "Merged cleanly. Next: deck_check, slide_render the changed slides, then deck_publish."
+            : `${r.conflicts.length} conflict(s). Next: deck_conflicts, then deck_resolve each (keep both sides' intent where you can; ask the person when they contradict).`,
+        ];
+        return ok({ ...r, next: r.clean ? ["deck_check", "deck_publish"] : ["deck_conflicts", "deck_resolve"] }, lines.join("\n"));
+      },
+    ),
+  );
+
+  server.registerTool(
+    "deck_conflicts",
+    {
+      title: "List merge conflicts",
+      description:
+        "Every unresolved merge conflict in the deck's files, structured: file, slide (counting from 1 in its file), line, kind (content / frontmatter / delete-edit / add-add), and the text of each side — `ours` (this folder), `theirs` (the web), `base` (what both started from). `which` is the conflict's index in its file, for deck_resolve. Read both sides before choosing.",
+      inputSchema: { dir: DIR },
+      outputSchema: out({ conflicts: z.array(LOOSE) }),
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    guard(async ({ dir }: { dir?: string }) => {
+      const p = project(dir);
+      const { collectSource, folderConflicts } = await import("../cli/sync.ts");
+      const files = await collectSource(p.dir);
+      const conflicts = folderConflicts(files).map((c) => ({
+        ...c,
+        which: findIndexInFile(files[c.path] ?? "", c.line ?? 1),
+      }));
+      return ok(
+        { conflicts },
+        conflicts.length
+          ? conflicts
+              .map(
+                (c) =>
+                  `${c.path}:${c.line}${c.slide ? ` slide ${c.slide}${c.title ? ` "${c.title}"` : ""}` : ""} (${c.kind}, which ${c.which})\n--- yours\n${c.ours}\n--- web\n${c.theirs}`,
+              )
+              .join("\n\n")
+          : "No conflicts.",
+      );
+    }),
+  );
+
+  server.registerTool(
+    "deck_resolve",
+    {
+      title: "Resolve merge conflicts",
+      description:
+        "Settle conflicts: choice \"ours\" keeps this folder's side, \"theirs\" the web's, \"both\" keeps both (ours first — then edit the slide to blend them). Scope: `path` (a file), plus `slide` (1-based, as deck_conflicts says) or `which` (the conflict's index in the file); with neither, every conflict in the file; without `path`, every file. A side that deleted the slide or file removes it when chosen. When the last conflict goes, the pulled version becomes the sync base. Then deck_check and deck_publish.",
+      inputSchema: {
+        dir: DIR,
+        path: z.string().optional().describe("e.g. deck.mdx or pages/intro.mdx"),
+        slide: z.number().int().min(1).optional(),
+        which: z.number().int().min(0).optional(),
+        choice: z.enum(["ours", "theirs", "both"]),
+      },
+      outputSchema: out({ resolved: z.array(LOOSE), remaining: z.array(LOOSE) }),
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    },
+    guard(
+      async (a: { dir?: string; path?: string; slide?: number; which?: number; choice: "ours" | "theirs" | "both" }) => {
+        const p = project(a.dir);
+        const { resolveDeck, collectSource, settlePending, folderConflicts } = await import("../cli/sync.ts");
+        let r: { resolved: Array<Record<string, unknown>>; remaining: unknown[]; settled: boolean };
+        if (a.which !== undefined) {
+          if (!a.path) return failure("`which` needs `path`: the file the conflict is in.");
+          const { resolveConflict } = await import("../sync/merge.ts");
+          const files = await collectSource(p.dir);
+          const text = files[a.path];
+          if (text === undefined) return failure(`${a.path} is not one of the deck's editable files.`);
+          if (a.which >= markerBlocks(text).length) return failure(`${a.path} has no conflict ${a.which}; call deck_conflicts.`);
+          const outText = resolveConflict(text, a.choice, a.which);
+          const { writeFile, rm } = await import("node:fs/promises");
+          const file = join(p.dir, ...a.path.split("/"));
+          if (outText === "") {
+            await rm(file, { force: true });
+            delete files[a.path];
+          } else {
+            await writeFile(file, outText);
+            files[a.path] = outText;
+          }
+          r = {
+            resolved: [{ path: a.path, which: a.which, ...(outText === "" ? { deleted: true } : {}) }],
+            remaining: folderConflicts(files),
+            settled: await settlePending(p.dir, files),
+          };
+        } else
+          r = await resolveDeck({
+            dir: p.dir,
+            target: a.path ? `${a.path}${a.slide ? `#${a.slide}` : ""}` : undefined,
+            choice: a.choice,
+          });
+        return ok(
+          { ...r, next: r.remaining.length ? ["deck_conflicts", "deck_resolve"] : ["deck_check", "deck_publish"] },
+          `${r.resolved.length ? `Resolved ${r.resolved.map((x) => x.path).join(", ")} (${a.choice}).` : "Nothing matched."} ${r.remaining.length ? `${r.remaining.length} conflict(s) left.` : "No conflicts left: deck_check, then deck_publish."}`,
+        );
       },
     ),
   );
@@ -1214,6 +1475,11 @@ export function createServer(options: McpOptions): {
   }
 
   return { server, close };
+}
+
+/** The 0-based index, among a file's conflict blocks, of the one starting on 1-based `line`. */
+function findIndexInFile(text: string, line: number): number {
+  return markerBlocks(text).findIndex((b) => b.start === line - 1);
 }
 
 /** `kadal-deck mcp`: serve on stdin/stdout until the client goes away. */

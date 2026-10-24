@@ -4,6 +4,7 @@ import { splitTransition } from "../core/model.ts";
 
 import type { SlideBackground } from "../core/model.ts";
 import { useDeck } from "./context.ts";
+import { PremiumBackground, isPremiumBackground } from "./premium.tsx";
 import { useLayout, useNav, useUi } from "./hooks.ts";
 
 /**
@@ -66,7 +67,9 @@ export function BackgroundLayer({
     style.backgroundPosition = bg.position;
     style.backgroundRepeat = bg.repeat;
   }
-  const Comp = bg.component ? registry.get(bg.component) : null;
+  // A `pro/` name is the host's (react/premium.tsx), never the registry's.
+  const premium = isPremiumBackground(bg);
+  const Comp = bg.component && !premium ? registry.get(bg.component) : null;
   return (
     <div
       className={[
@@ -100,7 +103,17 @@ export function BackgroundLayer({
           style={{ pointerEvents: bg.iframeInteractive ? "auto" : "none", opacity: bg.opacity }}
         />
       ) : null}
-      {Comp ? (
+      {premium ? (
+        <div className="deck-background-component" style={{ opacity: bg.opacity }}>
+          <PremiumBackground
+            name={bg.component!}
+            props={bg.props}
+            active={active}
+            // Inactive and not a slide leaving: a still copy (print, a thumbnail, a preview).
+            still={!active && !className?.includes("is-leaving")}
+          />
+        </div>
+      ) : Comp ? (
         <div className="deck-background-component" style={{ opacity: bg.opacity }}>
           <Comp {...bg.props} active={active} />
         </div>
