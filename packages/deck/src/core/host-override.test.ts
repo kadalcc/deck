@@ -39,3 +39,19 @@ describe("host override", () => {
     expect(built.badge).toBe(false);
   });
 });
+
+describe("the host's quick-edit address", () => {
+  test("only an http(s) URL is taken", async () => {
+    const { editUrl } = await import("../presenter/EditButton.tsx");
+    const scope = (edit: unknown) => ({ __KADAL_DECK__: { edit } });
+    expect(readHostOverride(scope("https://deck.kadal.cc/app/decks/d1/quick-edit"))!.edit).toBe(
+      "https://deck.kadal.cc/app/decks/d1/quick-edit",
+    );
+    for (const bad of ["javascript:alert(1)", "/app/decks/d1", "data:text/html,x", 42, "https://"])
+      expect(readHostOverride(scope(bad))!.edit).toBeUndefined();
+    expect(editUrl(3, 1, scope("https://deck.kadal.cc/app/decks/d1/quick-edit"))).toBe(
+      "https://deck.kadal.cc/app/decks/d1/quick-edit?slide=3.1",
+    );
+    expect(editUrl(0, 0, scope(undefined))).toBeNull();
+  });
+});

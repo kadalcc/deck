@@ -30,6 +30,7 @@ import { useFit } from "../react/fit.ts";
 import { NotesView } from "../react/NotesView.tsx";
 import { RemoteHost } from "../remote/host.tsx";
 import { useNarrationOn } from "../react/NarrationGate.tsx";
+import { EditOnWebButton } from "./EditButton.tsx";
 import { PresenterSidebar } from "./Sidebar.tsx";
 import { TeleprompterControl, usePresenterStateFeed } from "./TeleprompterControl.tsx";
 import { PresenterTimer } from "./Timer.tsx";
@@ -560,6 +561,7 @@ function PresenterTools({
       >
         <Icon name="layout-grid" /> Overview
       </button>
+      <EditOnWebButton />
       <button
         type="button"
         className={ui.drawing ? "is-on" : ""}

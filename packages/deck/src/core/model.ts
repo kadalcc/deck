@@ -1009,6 +1009,11 @@ export interface HostOverride {
    * the deck's own, a URL (https, or a same-site path) points a deck's button at the host's copy.
    */
   download?: boolean | string;
+  /**
+   * Where the host quick-edits this deck (an http(s) URL): the presenter view's Edit button and
+   * `present.edit` open it with `?slide=h.v` (presenter/EditButton.tsx). Absent: no Edit button.
+   */
+  edit?: string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -1025,6 +1030,14 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (typeof o.download === "boolean") out.download = o.download;
   else if (typeof o.download === "string" && /^(https:\/\/|\/(?!\/))\S+$/.test(o.download))
     out.download = o.download;
+  if (typeof o.edit === "string" && /^https?:\/\/[^\s/]+\S*$/.test(o.edit)) {
+    try {
+      const u = new URL(o.edit);
+      if (u.protocol === "https:" || u.protocol === "http:") out.edit = u.toString();
+    } catch {
+      /* not a URL: ignored */
+    }
+  }
   return out;
 }
 
