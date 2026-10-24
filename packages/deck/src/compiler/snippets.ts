@@ -230,10 +230,11 @@ function fenceFor(code: string, min = 3): string {
   return "`".repeat(Math.max(min, longest + 1));
 }
 
-function notice(indent: string, message: string, path: string): string[] {
+function notice(indent: string, message: string, path: string | null): string[] {
+  const code = path === null ? "" : ` <code>{${JSON.stringify(path)}}</code>`;
   return [
     "",
-    `${indent}<div className="deck-notice deck-snippet-missing" role="note">{${JSON.stringify(message)}} <code>{${JSON.stringify(path)}}</code></div>`,
+    `${indent}<div className="deck-notice deck-snippet-missing" role="note">{${JSON.stringify(message)}}${code}</div>`,
     "",
   ];
 }
@@ -250,9 +251,15 @@ export interface ExpandResult {
 /**
  * Replace every `<<<` line of a slide (outside code fences — a slide that SHOWS the syntax keeps
  * it — but inside a magic-move block, whose steps may be snippets too) with the fence it means.
- * `fromDir` is the deck-root relative folder of the file the slide comes from.
+ * `fromDir` is the deck-root relative folder of the file the slide comes from. `missingMessage`
+ * words a file that is not there (a deck's kit says it was not in the last CLI build).
  */
-export function expandSnippets(text: string, fromDir: string, read: SnippetReader): ExpandResult {
+export function expandSnippets(
+  text: string,
+  fromDir: string,
+  read: SnippetReader,
+  missingMessage?: (path: string) => string,
+): ExpandResult {
   const used: string[] = [];
   const missing: string[] = [];
   const problems: string[] = [];
@@ -290,10 +297,14 @@ export function expandSnippets(text: string, fromDir: string, read: SnippetReade
     const file = read(imp.path);
     if (!file) {
       missing.push(imp.path);
-      problems.push(`snippet ${imp.spec}: ${imp.path} could not be read`);
+      const said = missingMessage?.(imp.path);
+      problems.push(said ?? `snippet ${imp.spec}: ${imp.path} could not be read`);
       // Inside a magic-move block a notice would break the block; an empty step says it instead.
-      if (fence?.magic) out.push("```text", `snippet not found: ${imp.path}`, "```");
-      else out.push(...notice(indent, "Snippet not found:", imp.path));
+      if (fence?.magic) out.push("```text", said ?? `snippet not found: ${imp.path}`, "```");
+      else
+        out.push(
+          ...(said ? notice(indent, said, null) : notice(indent, "Snippet not found:", imp.path)),
+        );
       continue;
     }
     used.push(file.path);

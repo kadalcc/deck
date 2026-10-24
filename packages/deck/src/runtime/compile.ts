@@ -4,12 +4,7 @@ import { type ComponentType, createElement } from "react";
 import * as jsxRuntime from "react/jsx-runtime";
 import type { Highlighter, ShikiTransformer } from "shiki";
 
-import {
-  levelOf,
-  titleOf,
-  unclosedSettings,
-  unclosedSettingsMessage,
-} from "../compiler/split.ts";
+import { levelOf, titleOf, unclosedSettings, unclosedSettingsMessage } from "../compiler/split.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
 import {
   type DeckGlossary,
@@ -41,7 +36,8 @@ import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
 import { sourceFromFiles } from "../draw/source.ts";
 import { dirOf, joinPath } from "../authoring/source.ts";
 import { ConflictSlide } from "../react/ConflictCard.tsx";
-import { type ModuleMap, remarkKitImports } from "./kit-imports.ts";
+import { type GrammarLoader, grammarsFor } from "./grammars.ts";
+import { type ModuleMap, missingModuleMessage, remarkKitImports } from "./kit-imports.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
 import { type MarkerBlock, hasConflictMarkers, markerBlocks } from "../sync/markers.ts";
 import { applySlideDefaults, slideDefaultLayers } from "../theming/merge.ts";
@@ -91,6 +87,12 @@ export interface CompileDeckOptions extends DeckSetup {
   files?: Record<string, string>;
   /** As `deck({ shiki })`: themes, languages, and transformers after the notation ones. */
   shiki?: { light?: string; dark?: string; langs?: string[]; transformers?: ShikiTransformer[] };
+  /**
+   * Grammars beyond the defaults (runtime/grammars.ts), by Shiki id or fence name, for the
+   * languages in `shiki.langs`: `{ mdx: () => import("shiki/langs/mdx.mjs") }`. A language with
+   * no grammar here or among the defaults shows as plain text.
+   */
+  grammars?: Record<string, GrammarLoader>;
   /** Slide defaults beneath the headmatter's `defaults:` (a theme's), see `prepareDeck`. */
   defaults?: Record<string, unknown> | Array<Record<string, unknown> | null | undefined> | null;
   /**
@@ -106,6 +108,13 @@ export interface CompileDeckOptions extends DeckSetup {
    * with an `import` does not compile (there is no bundler in the page).
    */
   modules?: ModuleMap;
+  /**
+   * The files a deck's kit carries from its last CLI build for its `<<<` snippet imports
+   * (deck-root relative path → text): they are code, outside what the builder edits, so the kit
+   * brings them instead. `files` wins over them. With a kit (this or `modules` set), a snippet
+   * in neither is an error that says to publish from the CLI, as an unknown import is.
+   */
+  snippets?: Record<string, string>;
 }
 
 /** A merge conflict still in the source (sync/markers.ts), where an editor can settle it. */
@@ -139,22 +148,34 @@ let highlighterKey = "";
 /**
  * One Shiki per page, with the JavaScript regex engine: no WebAssembly to fetch. Its themes are
  * the deck's pair and whatever the theme menu adds (compiler/code-themes.ts); each is a lazy
- * chunk of Shiki's, fetched only by a deck that names it.
+ * chunk of Shiki's, fetched only by a deck that names it. Its languages are named one by one
+ * (runtime/grammars.ts), so a bundle holding the compiler holds only those grammars.
  */
-async function getHighlighter(themes: CodeThemes, langs: string[]) {
-  const key = `${codeThemesKey(themes)}|${langs.join(",")}`;
+async function getHighlighter(
+  themes: CodeThemes,
+  langs: string[],
+  grammars: Record<string, GrammarLoader> = {},
+) {
+  const key = `${codeThemesKey(themes)}|${langs.join(",")}|${Object.keys(grammars).join(",")}`;
   if (!highlighter || key !== highlighterKey) {
     highlighterKey = key;
     highlighter = (async () => {
-      const [{ createHighlighter }, { createJavaScriptRegexEngine }] = await Promise.all([
-        import("shiki"),
-        import("shiki/engine/javascript"),
-      ]);
-      return createHighlighter({
-        themes: shikiThemeNames(themes),
-        langs,
+      const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, { bundledThemes }] =
+        await Promise.all([
+          import("shiki/core"),
+          import("shiki/engine/javascript"),
+          import("shiki/themes"),
+        ]);
+      const all = bundledThemes as Record<string, () => Promise<unknown>>;
+      return createHighlighterCore({
+        themes: shikiThemeNames(themes).map((name) => {
+          const load = all[name];
+          if (!load) throw new Error(`Theme \`${name}\` is not one of Shiki's themes`);
+          return load as never;
+        }),
+        langs: grammarsFor(langs, grammars) as never[],
         engine: createJavaScriptRegexEngine({ forgiving: true }),
-      });
+      }) as unknown as Highlighter;
     })();
   }
   return highlighter;
@@ -253,12 +274,17 @@ export async function compileDeck(
 
   let themes = codeThemes(options.shiki, null);
 
+  // A deck's kit: its snippet files, and the sentences for the ones it does not have.
+  const kitSnippets = options.snippets ?? (options.modules ? {} : null);
+  const notInKit = new Set<string>();
+
   // Merge conflicts, per file, before anything reads the slides: a conflicted slide is shown as
   // both versions (react/ConflictCard.tsx), never compiled, and the YAML errors its markers cause
   // in a frontmatter block are the conflict's, not reported again.
   const blocksByFile = new Map<string, MarkerBlock[]>();
   for (const [name, body] of [[file, text] as const, ...Object.entries(files)])
-    if (typeof body === "string" && hasConflictMarkers(body)) blocksByFile.set(name, markerBlocks(body));
+    if (typeof body === "string" && hasConflictMarkers(body))
+      blocksByFile.set(name, markerBlocks(body));
   const inConflict = (f: string, line: number) =>
     (blocksByFile.get(f) ?? []).some((b) => line - 1 >= b.start && line - 1 <= b.end + 1);
   const conflicts: CompiledConflict[] = [];
@@ -279,7 +305,8 @@ export async function compileDeck(
         return null;
       },
       onError: (e) => {
-        if (!inConflict(e.file, e.line)) push({ message: e.message, file: e.file, line: e.line, slide: null });
+        if (!inConflict(e.file, e.line))
+          push({ message: e.message, file: e.file, line: e.line, slide: null });
       },
       // `<<<` imports read from `files` too; one that is not there is reported as missing, so a
       // caller that can fetch it (the shell does) fetches it and compiles again.
@@ -287,15 +314,37 @@ export async function compileDeck(
         dirOf: (f) => folderOf(f === file ? "" : f.replace(/^\.\//, "")),
         read: (path) => {
           if (path in files) return { path, text: files[path]! };
+          if (kitSnippets && Object.hasOwn(kitSnippets, path))
+            return { path, text: kitSnippets[path]! };
           missing.add(path);
           return null;
         },
+        ...(kitSnippets
+          ? {
+              missingMessage: (path: string) => {
+                const message = missingModuleMessage(path);
+                notInKit.add(message);
+                return message;
+              },
+            }
+          : {}),
         onProblem: (message, s) =>
-          push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: null }),
+          push({
+            severity: notInKit.has(message) ? "error" : "warning",
+            message,
+            file: s.source.file,
+            line: s.source.line,
+            slide: null,
+          }),
       },
     });
   } catch (err) {
-    push({ message: err instanceof Error ? err.message : String(err), file, line: null, slide: null });
+    push({
+      message: err instanceof Error ? err.message : String(err),
+      file,
+      line: null,
+      slide: null,
+    });
     return {
       manifest: { headmatter: {}, slides: [] },
       diagnostics,
@@ -352,7 +401,7 @@ export async function compileDeck(
   );
 
   const [hl, { notationTransformers }] = await Promise.all([
-    getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS),
+    getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS, options.grammars),
     import("../compiler/transformers.ts"),
   ]);
   const transformers = [...notationTransformers(), ...(options.shiki?.transformers ?? [])];
@@ -490,7 +539,12 @@ export async function compileDeck(
     if (!slideFiles.has(name))
       blocks.forEach((b, block) => {
         conflicts.push({ file: name, slide: null, line: b.start + 1, which: block });
-        push({ message: `Unresolved merge conflict in ${name}:${b.start + 1}`, file: name, line: b.start + 1, slide: null });
+        push({
+          message: `Unresolved merge conflict in ${name}:${b.start + 1}`,
+          file: name,
+          line: b.start + 1,
+          slide: null,
+        });
       });
 
   return {

@@ -544,6 +544,106 @@ describe("merge properties", () => {
   });
 });
 
+describe("short slides: the same place is the same slide", () => {
+  const deck = (...slides: string[]) => `---\ntitle: T\n---\n\n${slides.join("\n\n---\n\n")}\n`;
+
+  test("a one-line slide edited both ways is a conflict, not two slides", () => {
+    const b = deck("# Intro", "# Hi", "# End");
+    const r = mergeMdx(b, deck("# Intro", "# Hello", "# End"), deck("# Intro", "# Hey", "# End"));
+    expect(r.conflicts).toHaveLength(1);
+    expect(r.conflicts[0]).toMatchObject({
+      slide: 2,
+      kind: "content",
+      ours: "# Hello",
+      theirs: "# Hey",
+    });
+    expect(slidesOf(r.text)).toHaveLength(3);
+    expect(resolveConflict(r.text, "theirs")).toBe(deck("# Intro", "# Hey", "# End"));
+  });
+
+  test("first, last and only slides", () => {
+    const first = mergeMdx(
+      deck("# A", "# Mid"),
+      deck("# Apples", "# Mid"),
+      deck("# Bees", "# Mid"),
+    );
+    expect(first.conflicts.map((c) => c.slide)).toEqual([1]);
+    const last = mergeMdx(deck("# Mid", "# Z"), deck("# Mid", "# Zebra"), deck("# Mid", "# Yak"));
+    expect(last.conflicts.map((c) => c.slide)).toEqual([2]);
+    const only = mergeMdx(deck("# Hi"), deck("# Hello"), deck("# Hey"));
+    expect(only.conflicts.map((c) => c.slide)).toEqual([1]);
+    for (const r of [first, last, only])
+      expect(slidesOf(r.text)).toHaveLength(slidesOf(resolveConflict(r.text, "ours")).length);
+    // With no base snapshot the two still pair up and conflict.
+    expect(mergeMdx(null, deck("# Mid", "# Zebra"), deck("# Mid", "# Yak")).conflicts).toHaveLength(
+      1,
+    );
+  });
+
+  test("slides that differ only in their title", () => {
+    const b = deck("## Agenda\n\nWhat we cover.", "## Results\n\nNumbers go here.", "## Thanks");
+    const o = deck("## Plan\n\nWhat we cover.", "## Results\n\nNumbers go here.", "## Thank you");
+    const t = deck(
+      "## Roadmap\n\nWhat we cover.",
+      "## Results\n\nNumbers go here.",
+      "## Questions?",
+    );
+    const r = mergeMdx(b, o, t);
+    expect(r.conflicts.map((c) => c.slide)).toEqual([1, 3]);
+    expect(slidesOf(r.text)).toHaveLength(3);
+    // One side only: taken cleanly.
+    expect(mergeMdx(b, o, b)).toEqual({ text: o, conflicts: [] });
+    expect(mergeMdx(b, b, t)).toEqual({ text: t, conflicts: [] });
+  });
+
+  test("an add on both sides at the same place still keeps both", () => {
+    const b = deck("# A", "# B");
+    const r = mergeMdx(b, deck("# A", "# X", "# B"), deck("# A", "# Y", "# B"));
+    expect(r.conflicts).toEqual([]);
+    expect(titles(r.text)).toEqual(["A", "X", "Y", "B"]);
+    // A run of new slides where the base had a different number of them is not paired either.
+    const r2 = mergeMdx(
+      deck("# A", "# S", "# B"),
+      deck("# A", "# S", "# B"),
+      deck("# A", "# P", "# Q", "# B"),
+    );
+    expect(r2.conflicts).toEqual([]);
+    expect(titles(r2.text)).toEqual(["A", "P", "Q", "B"]);
+  });
+
+  test("slides with different ids in the same place are not paired", () => {
+    const b = deck("---\nid: one\n---\n\n# Hi");
+    const r = mergeMdx(b, deck("---\nid: two\n---\n\n# Hello"), b);
+    expect(r).toEqual({ text: deck("---\nid: two\n---\n\n# Hello"), conflicts: [] });
+  });
+
+  test("property: one-line slides edited at the same place, on one side or both", () => {
+    const words = ["Hi", "Yo", "Ok", "Go", "Up", "No", "So", "Me", "We", "Be"];
+    for (let seed = 1; seed <= 200; seed++) {
+      const r = rng(seed * 31337);
+      const pickWord = () => `${words[Math.floor(r() * words.length)]}${Math.floor(r() * 100)}`;
+      const n = 1 + Math.floor(r() * 6);
+      const base = Array.from({ length: n }, (_, i) => `# S${i} ${pickWord()}`);
+      const i = Math.floor(r() * n);
+      const ours = [...base];
+      const theirs = [...base];
+      ours[i] = `# ${pickWord()}!`;
+      theirs[i] = `# ${pickWord()}?`;
+      const b = deck(...base);
+      const context = `seed ${seed}: ${base.join(" | ")} → ${ours[i]} / ${theirs[i]}`;
+      const both = mergeMdx(b, deck(...ours), deck(...theirs));
+      expect(
+        both.conflicts.map((c) => c.slide),
+        context,
+      ).toEqual([i + 1]);
+      expect(slidesOf(both.text).length, context).toBe(n);
+      expect(resolveConflict(both.text, "ours"), context).toBe(deck(...ours));
+      expect(mergeMdx(b, deck(...ours), b).text, context).toBe(deck(...ours));
+      expect(mergeMdx(b, b, deck(...theirs)).text, context).toBe(deck(...theirs));
+    }
+  });
+});
+
 /* ── the whole source ──────────────────────────────────────────────────────── */
 
 describe("mergeDeckSource", () => {

@@ -1039,7 +1039,7 @@ export function createServer(options: McpOptions): {
     {
       title: "Publish the deck",
       description:
-        "Build the deck and publish it to its Kadal Deck host (deck.kadal.cc by default) with a live room; returns the URL. Uses the login saved by `kadal-deck login` (or KADAL_DECK_TOKEN). If nobody is signed in it returns what the person must run — it never signs in by itself. The deck's editable source goes too (privately), so it can be quick-edited on the web. If the deck changed on the web since this folder last synced, it does NOT publish: it returns {ok:false, reason:\"diverged\", head, next} — call deck_pull, settle any conflicts, deck_check, then publish again. Use force:true only when the person explicitly says to replace the web's edits. While conflict markers are left it returns {ok:false, reason:\"conflicts\"}.",
+        "Build the deck and publish it to its Kadal Deck host (deck.kadal.cc by default) with a live room; returns the URL. Uses the login saved by `kadal-deck login` (or KADAL_DECK_TOKEN). If nobody is signed in it returns what the person must run — it never signs in by itself. The deck's editable source goes too (privately), so it can be quick-edited on the web. If the published deck moved since this folder last synced (a web or agent edit, a publish from another copy, a rollback — or the folder never synced), it does NOT publish: it returns {ok:false, reason:\"diverged\", head, next} — call deck_pull, settle any conflicts, deck_check, then publish again. Use force:true only when the person explicitly says to replace that version. While conflict markers are left it returns {ok:false, reason:\"conflicts\"}.",
       inputSchema: {
         dir: DIR,
         slug: z.string().optional().describe("URL slug (default: the folder name)."),
@@ -1120,7 +1120,7 @@ export function createServer(options: McpOptions): {
                 message: (e as Error).message,
                 next: ["deck_pull", "deck_publish --force"],
               },
-              `Not published: ${(e as Error).message}\nNext: deck_pull, settle conflicts (deck_conflicts, deck_resolve), deck_check, deck_publish. deck_publish with force:true replaces the web's edits — only if the person says so.`,
+              `Not published: ${(e as Error).message}\nNext: deck_pull, settle conflicts (deck_conflicts, deck_resolve), deck_check, deck_publish. deck_publish with force:true replaces that version (it stays in the history) — only if the person says so.`,
             );
           }
           if (name === "ConflictsError")
@@ -1227,6 +1227,7 @@ export function createServer(options: McpOptions): {
           r.files.length
             ? r.files.map((f) => `${f.change} ${f.path}${f.slides?.length ? ` (slides ${f.slides.join(", ")})` : ""}`).join("\n")
             : `Already up to date with v${r.version}.`,
+          ...r.media.map((m) => `${r.dryRun ? "would download" : "downloaded"} ${m.path}`),
           r.clean
             ? "Merged cleanly. Next: deck_check, slide_render the changed slides, then deck_publish."
             : `${r.conflicts.length} conflict(s). Next: deck_conflicts, then deck_resolve each (keep both sides' intent where you can; ask the person when they contradict).`,

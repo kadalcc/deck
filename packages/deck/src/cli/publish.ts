@@ -52,13 +52,16 @@ export interface DivergedHead {
   sourceHash?: string | null;
 }
 
-/** 409 diverged: the deck changed on the web since the version this tree last synced with. */
+/**
+ * 409 diverged: the published deck moved since the version this tree last synced with — a web
+ * or agent edit, another copy's publish, a rollback — or this tree never synced with it.
+ */
 export class DivergedError extends Error {
   constructor(
     readonly head: DivergedHead,
     readonly base: number | null,
   ) {
-    super(divergedMessage(head));
+    super(divergedMessage(head, base));
     this.name = "DivergedError";
   }
 }
@@ -86,8 +89,22 @@ export function when(at: number | string): string {
   return `${d.getDate()} ${month} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-export function divergedMessage(h: DivergedHead): string {
-  return `The deck changed on the web since your last sync: ${describeVersion(h)}. Run \`kadal-deck pull\` to merge their edits, or \`kadal-deck publish --force\` to replace them (they stay in version history).`;
+/**
+ * What `publish` says when the deck moved under it, worded by what moved it (the head's origin):
+ * a teammate's CLI publish is not "the web", and a rollback is neither. A folder that never synced
+ * (no .kadal-deck/sync.json: `base` null) is told so. The way out is the same each time.
+ */
+export function divergedMessage(h: DivergedHead, base: number | null = null): string {
+  const what = describeVersion(h);
+  const said =
+    base === null
+      ? `This folder has never synced with the published deck (now ${what}).`
+      : h.origin === "cli"
+        ? `The deck was published from another copy since your last sync (v${base}): ${what}.`
+        : h.origin === "rollback"
+          ? `The deck was rolled back since your last sync (v${base}): ${what}.`
+          : `The deck changed on the web since your last sync (v${base}): ${what}.`;
+  return `${said} Run \`kadal-deck pull\` to merge it into your files, or \`kadal-deck publish --force\` to replace it (it stays in version history).`;
 }
 
 export interface PublishOptions {
@@ -166,7 +183,11 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
       }
     : {};
   const diverged = (e: unknown): never => {
-    const body = (e as HostError).body as { error?: string; head?: DivergedHead; base?: number | null } | null;
+    const body = (e as HostError).body as {
+      error?: string;
+      head?: DivergedHead;
+      base?: number | null;
+    } | null;
     if (e instanceof HostError && e.status === 409 && body?.error === "diverged" && body.head)
       throw new DivergedError(body.head, body.base ?? base ?? null);
     throw e;
@@ -180,7 +201,9 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
       json: {
         files,
         origin: "cli",
-        ...(o.source ? { source: o.source.map(({ path, size, sha256 }) => ({ path, size, sha256 })) } : {}),
+        ...(o.source
+          ? { source: o.source.map(({ path, size, sha256 }) => ({ path, size, sha256 })) }
+          : {}),
         ...cas,
         ...(kit ? { kit } : {}),
         ...(o.meta ? { meta: o.meta } : {}),

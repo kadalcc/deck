@@ -878,7 +878,7 @@ export const CLI: CliCommand[] = [
     usage:
       "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--without-notes] [--pwa] [--no-source] [--force] [--showcase|--no-showcase] [--json]",
     summary:
-      "Build and publish to a host; prints the URL. The deck's editable source (deck.mdx, pages/, slides/, data, drawings) goes too, privately, with an editing kit, so it can be quick-edited on the web; `--no-source` keeps it local (quick edit off). Refused while merge conflicts are left (exit 5); exit 4 when the deck changed on the web since your last sync — `pull` first, or `--force` to replace those edits (they stay in the history). `--without-notes` publishes the deck without its speaker notes. The host routes the deck itself, so the build has no static-host fallbacks, and no service worker unless --pwa (for a self-run host that serves decks on a real origin: deck.kadal.cc sandboxes them, and an opaque origin gets no worker; the live room and the host's API are never cached either way).",
+      "Build and publish to a host; prints the URL. The deck's editable source (deck.mdx, pages/, slides/, data, drawings) goes too, privately, with an editing kit, so it can be quick-edited on the web; `--no-source` keeps it local (quick edit off). Refused while merge conflicts are left (exit 5); exit 4 when the published deck moved since your last sync (a web edit, a publish from another copy, a rollback) — `pull` first, or `--force` to replace those edits (they stay in the history). `--without-notes` publishes the deck without its speaker notes. The host routes the deck itself, so the build has no static-host fallbacks, and no service worker unless --pwa (for a self-run host that serves decks on a real origin: deck.kadal.cc sandboxes them, and an opaque origin gets no worker; the live room and the host's API are never cached either way).",
     json: true,
   },
   {
@@ -933,7 +933,7 @@ export const EXIT_CODES = [
   {
     code: 4,
     meaning:
-      "Missing prerequisite: no deck.mdx here, dependencies not installed, or Playwright/Chromium missing. From `publish`: the deck changed on the web since your last sync (`error.code` \"diverged\"): run `kadal-deck pull`.",
+      "Missing prerequisite: no deck.mdx here, dependencies not installed, or Playwright/Chromium missing. From `publish`: the published deck moved since your last sync (`error.code` \"diverged\"): run `kadal-deck pull`.",
   },
   {
     code: 5,

@@ -345,10 +345,16 @@ export function SlideFrame({
     if (!deck.config.autoFit || !Component) return;
     const host = root.current;
     if (!host) return;
-    const el = host.querySelector<HTMLElement>(".deck-layout");
-    if (!el || /deck-layout-(image|iframe|full|none)/.test(el.className)) return;
     let raf = 0;
+    // The layout element is looked up at every fit, and a new one is fitted when it appears: a
+    // layout that arrives later — a `pro/` one from the host's library replacing the theme's
+    // fallback inside the same component (react/premium.tsx) — is a new element in a slide of
+    // the same size, so neither the deps nor the ResizeObserver saw it, and it overflowed.
+    let current: Element | null = null;
     const fit = () => {
+      const el = host.querySelector<HTMLElement>(".deck-layout");
+      current = el;
+      if (!el || /deck-layout-(image|iframe|full|none)/.test(el.className)) return;
       el.classList.remove("is-fitted");
       el.style.removeProperty("--deck-fit");
       // What is placed rather than flowed — a layer behind the slide, a block or an arrow at stage
@@ -378,10 +384,17 @@ export function SlideFrame({
     host.addEventListener("load", onLoad, true);
     const ro = new ResizeObserver(schedule);
     ro.observe(host);
+    // Only a replaced layout element re-fits: other DOM changes (a click's reveal, an animation)
+    // are the ResizeObserver's or the `click` dep's, and refitting on each would thrash.
+    const mo = new MutationObserver(() => {
+      if (host.querySelector(".deck-layout") !== current) schedule();
+    });
+    mo.observe(host, { childList: true, subtree: true });
     return () => {
       cancelAnimationFrame(raf);
       host.removeEventListener("load", onLoad, true);
       ro.disconnect();
+      mo.disconnect();
     };
   }, [Component, click, active, preview, deck.config.autoFit]);
 

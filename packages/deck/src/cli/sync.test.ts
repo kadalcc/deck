@@ -13,7 +13,8 @@ import { join } from "node:path";
 
 import { hasConflictMarkers } from "../sync/markers.ts";
 import { FakeHost } from "./fake-host.ts";
-import { DivergedError } from "./publish.ts";
+import { pullLines } from "./sync-command.ts";
+import { DivergedError, divergedMessage } from "./publish.ts";
 import {
   ConflictsError,
   NoSourceError,
@@ -192,8 +193,11 @@ describe("web edits, both ways", () => {
       origin: "builder",
       by: "Asha",
     });
-    expect((err as Error).message).toContain(
-      "Run `kadal-deck pull` to merge their edits, or `kadal-deck publish --force`",
+    expect((err as Error).message).toStartWith(
+      "The deck changed on the web since your last sync (v1): v2 (quick edit by Asha, ",
+    );
+    expect((err as Error).message).toEndWith(
+      "Run `kadal-deck pull` to merge it into your files, or `kadal-deck publish --force` to replace it (it stays in version history).",
     );
     const r = await pull();
     expect(r.clean).toBe(true);
@@ -241,6 +245,45 @@ describe("web edits, both ways", () => {
     const p = await publishNow();
     expect(p.result.version).toBe(3);
     expect(host.deckBySlug("talk")!.versions[2]!.body.base).toBe(2);
+  });
+
+  test("diverged is worded by what moved the deck: web, agent, another copy, rollback", () => {
+    const head = (origin: string) => ({ version: 20, origin, by: "Ravi", at: null });
+    const advice =
+      " Run `kadal-deck pull` to merge it into your files, or `kadal-deck publish --force` to replace it (it stays in version history).";
+    expect(divergedMessage(head("builder"), 18)).toBe(
+      `The deck changed on the web since your last sync (v18): v20 (quick edit by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("mcp"), 18)).toBe(
+      `The deck changed on the web since your last sync (v18): v20 (an agent's edit by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("cli"), 18)).toBe(
+      `The deck was published from another copy since your last sync (v18): v20 (a CLI publish by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("rollback"), 18)).toBe(
+      `The deck was rolled back since your last sync (v18): v20 (rollback by Ravi).${advice}`,
+    );
+    expect(divergedMessage(head("cli"), null)).toBe(
+      `This folder has never synced with the published deck (now v20 (a CLI publish by Ravi)).${advice}`,
+    );
+  });
+
+  test("another copy's publish, and a folder that never synced, are said as such", async () => {
+    await publishNow();
+    host.webEdit("talk", { "deck.mdx": DECK.replace("Line c", "teammate") }, "Ravi", "cli");
+    const err = (await publishNow().catch((e: unknown) => e)) as DivergedError;
+    expect(err).toBeInstanceOf(DivergedError);
+    expect(err.message).toStartWith(
+      "The deck was published from another copy since your last sync (v1): v2 (a CLI publish by Ravi, ",
+    );
+    rmSync(join(dir, ".kadal-deck"), { recursive: true, force: true });
+    const fresh = (await publishNow().catch((e: unknown) => e)) as DivergedError;
+    expect(fresh).toBeInstanceOf(DivergedError);
+    expect(fresh.base).toBeNull();
+    expect(fresh.message).toStartWith(
+      "This folder has never synced with the published deck (now v2 (a CLI publish by Ravi, ",
+    );
+    expect(fresh.message).toContain("Run `kadal-deck pull`");
   });
 
   test("--force replaces the web's version, and pull --version brings it back", async () => {
@@ -311,6 +354,49 @@ describe("web edits, both ways", () => {
     expect(read("deck.mdx")).toBe(DECK.replace("Line a", "web"));
   });
 
+  test("library media a quick edit added is downloaded into public/, checked by hash", async () => {
+    const { createHash } = await import("node:crypto");
+    await publishNow();
+    const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]);
+    const sha = createHash("sha256").update(png).digest("hex");
+    const sticker = `assets/media/${sha}.png`;
+    const elsewhere = `assets/media/${"e".repeat(64)}.gif`;
+    host.webEdit(
+      "talk",
+      {
+        "deck.mdx": DECK.replace(
+          "Line c",
+          `Line c\n\n<Sticker src="${sticker}" x={10} y={20} />\n\n![](${elsewhere})\n\n![](assets/media/gone.webp)`,
+        ),
+        "glossary.yaml": "MDX: Markdown with components\n",
+      },
+      "Asha",
+      "builder",
+      { [sticker]: png },
+    );
+    const dry = await pull({ dryRun: true });
+    expect(dry.media).toEqual([{ path: `public/${sticker}`, size: png.byteLength }]);
+    expect(existsSync(join(dir, "public", "assets"))).toBe(false);
+
+    const r = await pull();
+    expect(r.clean).toBe(true);
+    expect(r.media).toEqual([{ path: `public/${sticker}`, size: png.byteLength }]);
+    expect(new Uint8Array(readFileSync(join(dir, "public", sticker)))).toEqual(png);
+    // Read with the deck's sign-in, by hash; what the host doesn't have is a note, not a failure.
+    expect(host.calls).toContain(`GET /decks/${r.deckId}/files/${sha}`);
+    expect(r.notes).toContain(
+      "assets/media/gone.webp is named in the slides but isn't on the host; add it under public/.",
+    );
+    expect(r.notes.some((n) => n.startsWith(`Could not download ${elsewhere}`))).toBe(true);
+    // Not fetched again; the next publish builds it from public/ (same bytes, nothing new to hold).
+    host.calls.length = 0;
+    const again = await pull();
+    expect(again.media).toEqual([]);
+    expect(host.calls.filter((c) => c.includes(`/files/${sha}`))).toEqual([]);
+    const p = await publishNow();
+    expect(p.result.version).toBe(3);
+  });
+
   test("a file added on the web arrives; one deleted on the web goes (backed up)", async () => {
     write("pages/extra.mdx", "# Extra\n");
     await publishNow();
@@ -377,6 +463,48 @@ describe("web edits, both ways", () => {
     expect(lines.join("\n")).toContain(
       "Someone is editing this deck on the web (unpublished, Asha)",
     );
+  });
+
+  test("status: line endings alone are not a local change (git autocrlf)", async () => {
+    await publishNow();
+    const offline = { dir, slug: "talk", host: "", token: "", workspace: "", offline: true };
+    write("deck.mdx", `\uFEFF${DECK.replace(/\n/g, "\r\n")}`);
+    expect((await deckStatus(offline)).local).toEqual([]);
+    write("deck.mdx", DECK.replace("Line c", "y").replace(/\n/g, "\r\n"));
+    expect((await deckStatus(offline)).local).toEqual([
+      { path: "deck.mdx", change: "modified", slides: [3] },
+    ]);
+  });
+
+  test("pull --dry-run says what it would do, in words, and writes nothing", async () => {
+    const r = {
+      deckId: "d1",
+      version: 4,
+      base: 3,
+      files: [
+        { path: "deck.mdx", change: "conflict" as const, slides: [2] },
+        { path: "pages/new.mdx", change: "added" as const },
+        { path: "pages/old.mdx", change: "deleted" as const },
+      ],
+      conflicts: [],
+      clean: true,
+      backup: null,
+      media: [{ path: "public/assets/media/a.png", size: 3 }],
+      notes: [],
+      dryRun: true,
+    };
+    expect(pullLines(r)).toEqual([
+      "would conflict  deck.mdx  (slide 2)",
+      "would add       pages/new.mdx",
+      "would delete    pages/old.mdx",
+      "would download  public/assets/media/a.png",
+      "\nNothing was written (--dry-run).",
+    ]);
+    expect(pullLines({ ...r, dryRun: false }).slice(0, 2)).toEqual([
+      "conflict deck.mdx  (slide 2)",
+      "added    pages/new.mdx",
+    ]);
+    expect(pullLines({ ...r, files: [], media: [] })).toEqual(["Already up to date with v4."]);
   });
 
   test("status offline: local changes by slide, conflicts", async () => {

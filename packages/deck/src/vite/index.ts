@@ -61,7 +61,15 @@ import { SIDE_EDITOR_DEPS, SOURCE_PATH, sideEditorCode, sourceEndpoint } from ".
 import { type RemoteGate, remoteGate, remoteSettings } from "./remote-dev.ts";
 import { deckSite, subdirConfig } from "./site.ts";
 import { type MarkerBlock, hasConflictMarkers, markerBlocks } from "../sync/markers.ts";
-import { kitJson, kitMode, kitModuleCode, slideImports, writeKitJson } from "./kit.ts";
+import {
+  kitGrammars,
+  kitJson,
+  kitMode,
+  kitModuleCode,
+  kitSnippets,
+  slideImports,
+  writeKitJson,
+} from "./kit.ts";
 import { RESOLVE_PATH, resolveEndpoint } from "./resolve-dev.ts";
 
 /**
@@ -121,7 +129,9 @@ const SKIP_FONTS = new Set(["Xiaolai"]);
  */
 function kokoroWorkerFile(): string {
   const js = fileURLToPath(new URL("../narrate/kokoro.worker.js", import.meta.url));
-  return existsSync(js) ? js : fileURLToPath(new URL("../narrate/kokoro.worker.ts", import.meta.url));
+  return existsSync(js)
+    ? js
+    : fileURLToPath(new URL("../narrate/kokoro.worker.ts", import.meta.url));
 }
 
 /**
@@ -305,7 +315,8 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           if (!existsSync(file) || !statSync(file).isFile()) return null;
           return { path, text: readFileSync(file, "utf8") };
         },
-        onProblem: (message, s) => console.warn(`[deck] ${s.source.file}:${s.source.line}: ${message}`),
+        onProblem: (message, s) =>
+          console.warn(`[deck] ${s.source.file}:${s.source.line}: ${message}`),
       },
     });
     const katex = katexOptions(headmatter, options);
@@ -611,6 +622,7 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           kitJson({
             deckDir: dirname(entryPath),
             modules: [...slideImports(m.slides, dirname(entryPath)).keys()],
+            snippets: [...new Set(m.slides.flatMap((s) => s.snippets))],
             packages: m.packages,
             engine: engineVersion(),
           }),
@@ -692,7 +704,10 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
         for (const [key, imp] of slideImports(m.slides, deckDir)) {
           const r = await this.resolve(imp.spec, imp.file, { skipSelf: true });
           if (r && !r.external) resolved.set(key, r.id);
-          else console.warn(`[deck] kit: ${imp.spec} (imported in ${imp.file}) does not resolve; the builder will not have it.`);
+          else
+            console.warn(
+              `[deck] kit: ${imp.spec} (imported in ${imp.file}) does not resolve; the builder will not have it.`,
+            );
         }
         const hasMonaco = monacoInstalled() && monacoLangs(m.slides.map((s) => s.content)).size > 0;
         const runnersFile = options.codeRunners
@@ -702,6 +717,23 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
           packages: m.packages,
           packagesCode: packagesCode(m.packages),
           resolved,
+          // What the deck's build highlights, so its preview does too (runtime/grammars.ts).
+          langs: options.shiki?.langs,
+          grammars: kitGrammars(
+            options.shiki?.langs ?? DEFAULT_LANGS,
+            bundledLanguagesInfo,
+            (id) => {
+              try {
+                return createRequire(import.meta.url).resolve(`shiki/langs/${id}.mjs`);
+              } catch {
+                return null;
+              }
+            },
+          ),
+          snippets: kitSnippets(m.slides, (path) => {
+            const file = resolve(deckDir, path);
+            return existsSync(file) && statSync(file).isFile() ? readFileSync(file, "utf8") : null;
+          }),
           monaco: hasMonaco ? `() => import("${VIRTUAL}/monaco").then((m) => m.default())` : null,
           codeRunners: runnersFile && existsSync(runnersFile) ? runnersFile : null,
           engine: engineVersion(),
@@ -712,7 +744,8 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
         // A missing optional peer resolves too — to Vite's stub that throws on import — so the
         // answer is "found a real file", not "resolved".
         kokoro ??= this.resolve("kokoro-js", kokoroWorkerFile(), { skipSelf: true }).then(
-          (r) => !!r && !r.external && !r.id.includes("optional-peer-dep") && !r.id.startsWith("\0"),
+          (r) =>
+            !!r && !r.external && !r.id.includes("optional-peer-dep") && !r.id.startsWith("\0"),
           () => false,
         );
         const hasKokoro = await kokoro;
@@ -794,11 +827,7 @@ export default { headmatter, slides, glossary, styles, codeThemes, relay, kokoro
       }
 
       if (kind === "slide")
-        return compileMdx(
-          s.content,
-          `${s.source.file}:${s.source.line}`,
-          slideTerms(s),
-        );
+        return compileMdx(s.content, `${s.source.file}:${s.source.line}`, slideTerms(s));
       if (kind === "notes")
         return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`, null, true);
 
@@ -893,7 +922,11 @@ function engineVersion(): string {
 }
 
 /** A conflicted slide's module under `kadal-deck dev`: the card with both versions. */
-function conflictSlideCode(file: string, slide: number, blocks: Array<{ b: MarkerBlock; block: number }>): string {
+function conflictSlideCode(
+  file: string,
+  slide: number,
+  blocks: Array<{ b: MarkerBlock; block: number }>,
+): string {
   const props = {
     file,
     slide,
