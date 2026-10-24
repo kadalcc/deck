@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-fresh",
-  "version": "0.4.10",
+  "version": "0.5.0",
   "description": "The Fresh renderer for Kadal Deck (@kadal/deck) — which is the Preact renderer, under the name Fresh islands are written in.",
   "keywords": [
     "kadal-deck",
@@ -62,8 +62,8 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.4.10",
-    "@kadal/deck-preact": "^0.4.10",
+    "@kadal/deck": "^0.5.0",
+    "@kadal/deck-preact": "^0.5.0",
     "preact": "^10.0.0 || ^11.0.0"
   }
 }
