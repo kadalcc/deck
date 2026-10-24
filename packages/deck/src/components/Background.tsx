@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 
+import { isPremiumName } from "../core/premium.ts";
 import { backgroundComponent } from "../react/Backgrounds.tsx";
 import { useSlide } from "../react/context.ts";
+import { PremiumBackground, PremiumNotice } from "../react/premium.tsx";
 
 /**
  * A component background inside a slide — the RLA deck's pattern of an absolutely positioned
  * animated layer under the content. `<Background name="aurora" />` picks a registered one;
- * children make a custom one.
+ * children make a custom one. `name="pro/…"` is one from the host's library (react/premium.tsx).
  */
 export function Background({
   name,
@@ -22,6 +24,24 @@ export function Background({
   [key: string]: unknown;
 }) {
   const slide = useSlide();
+  if (isPremiumName(name))
+    return (
+      <>
+        <div
+          className={["deck-slide-background", className].filter(Boolean).join(" ")}
+          style={{ opacity }}
+          aria-hidden
+        >
+          <PremiumBackground
+            name={name}
+            props={props}
+            active={slide.active}
+            still={slide.preview}
+          />
+        </div>
+        {slide.active && !slide.preview ? <PremiumNotice background={name} layout={null} /> : null}
+      </>
+    );
   const Comp = name ? backgroundComponent(name) : null;
   return (
     <div

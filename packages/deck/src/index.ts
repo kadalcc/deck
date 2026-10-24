@@ -72,6 +72,23 @@ export {
   transitionNames,
 } from "./core/transitions.ts";
 export { LAYOUTS, type LayoutProps } from "./react/layouts.tsx";
+export {
+  PREMIUM_PREFIX,
+  isPremiumName,
+  parseCatalog,
+  premiumBase,
+  type PremiumEntry,
+  type PremiumFailure,
+  type PremiumKind,
+} from "./core/premium.ts";
+export {
+  type DeckRuntimeGlobal,
+  type ItemState as PremiumItemState,
+  PremiumLoader,
+  installRuntime,
+  premiumLoader,
+  usePremiumItem,
+} from "./react/premium.tsx";
 export * from "./components/index.ts";
 export {
   DEFAULT_CONFIG,
@@ -222,12 +239,7 @@ export {
 export { plannedLength, presenterTimer } from "./react/pacing.ts";
 export { DEFAULT_FILTERS, filterCss, type DisplayFilters } from "./core/filters.ts";
 export { filtersStore, setFilters } from "./react/DisplaySettings.tsx";
-export {
-  registerIcons,
-  requestIcon,
-  setIconifyApi,
-  type IconState,
-} from "./icons/registry.ts";
+export { registerIcons, requestIcon, setIconifyApi, type IconState } from "./icons/registry.ts";
 export { iconFromTag, parseIconName, type IconData, type IconifySet } from "./icons/data.ts";
 export {
   RenderContextProvider,
