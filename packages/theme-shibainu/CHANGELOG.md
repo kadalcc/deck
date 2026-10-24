@@ -1,5 +1,12 @@
 # @kadal/theme-shibainu
 
+## 0.4.10
+
+### Patch Changes
+
+- Updated dependencies [3e06c60]
+  - @kadal/deck@0.4.10
+
 ## 0.4.9
 
 ### Patch Changes
