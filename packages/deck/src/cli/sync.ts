@@ -894,7 +894,10 @@ export async function publishWithSync(o: PublishWithSyncOptions): Promise<{
   const hash = prep.source ? await hashOf(prep.source) : null;
   const kitDir = prep.source ? join(o.outDir, "__kadal", "kit") : null;
   let kitBuilt = false;
-  const seen: { head: SyncInfo["head"] } = { head: null };
+  // `sync`: whether the host has quick edit at all (GET /sync answered). A host from before it
+  // would store the kit as ordinary files — tens of megabytes against the workspace's quota, for
+  // nothing — so without it the deck goes up as a plain build.
+  const seen: { head: SyncInfo["head"]; sync: boolean } = { head: null, sync: false };
   const baseOf = (deckId: string) => (prep.state?.deckId === deckId ? prep.state.version : null);
   const baseHashOf = (deckId: string) =>
     prep.state?.deckId === deckId ? prep.state.sourceHash : null;
@@ -920,6 +923,9 @@ export async function publishWithSync(o: PublishWithSyncOptions): Promise<{
     onDeck: async (deck) => {
       const info = await getSyncInfo(o, deck.id).catch(() => null);
       seen.head = info?.head ?? null;
+      seen.sync = info !== null;
+      if (!seen.sync && kitDir)
+        say("note     this host has no quick edit yet: publishing without the editing kit.");
       // Someone is mid-edit on the web: say so; it is not a reason to stop.
       if (info?.draft?.dirty)
         say(
@@ -928,7 +934,7 @@ export async function publishWithSync(o: PublishWithSyncOptions): Promise<{
     },
     build: async (base, out) => {
       try {
-        await o.build(base, out, kitDir);
+        await o.build(base, out, seen.sync ? kitDir : null);
       } catch (e) {
         // The deck built and the kit did not: publish without it, and say what it costs.
         if (!kitDir || !existsSync(join(out, "index.html")) || existsSync(join(kitDir, "kit.json")))
@@ -938,7 +944,7 @@ export async function publishWithSync(o: PublishWithSyncOptions): Promise<{
         );
         await rm(kitDir, { recursive: true, force: true });
       }
-      kitBuilt = !!kitDir && existsSync(join(kitDir, "kit.json"));
+      kitBuilt = seen.sync && !!kitDir && existsSync(join(kitDir, "kit.json"));
     },
   });
   await recordPublish(o.dir, {

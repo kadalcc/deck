@@ -338,6 +338,16 @@ describe("web edits, both ways", () => {
     expect((err as Error).message).toContain("Publish once with kadal-deck 0.5 or later");
   });
 
+  test("a host from before sync gets a plain build: no editing kit to store", async () => {
+    host.legacy = true;
+    const r = await publishNow();
+    host.legacy = false;
+    expect(r.kitBuilt).toBe(false);
+    const files = Object.keys(host.deckBySlug("talk")!.versions.at(-1)!.files);
+    expect(files.some((f) => f.startsWith("__kadal/kit/"))).toBe(false);
+    expect(files).toContain("index.html");
+  });
+
   test("an unpublished web draft is said in status, and warned about on publish", async () => {
     await publishNow();
     host.deckBySlug("talk")!.draft = {
