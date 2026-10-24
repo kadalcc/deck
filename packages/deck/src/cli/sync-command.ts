@@ -125,6 +125,7 @@ export async function syncCommand(
       say(
         `${(r.dryRun ? `would ${f.change === "conflict" ? "conflict" : f.change.replace(/d$/, "")}` : f.change).padEnd(9)}${f.path}${f.slides?.length ? `  (slide${f.slides.length === 1 ? "" : "s"} ${f.slides.join(", ")})` : ""}`,
       );
+    for (const m of r.media) say(`${r.dryRun ? "would download " : "media    "}${m.path}`);
     if (r.backup) say(`backup   ${r.backup}`);
     if (!r.clean) say(`\n${conflictsMessage(r.conflicts, "Publishing waits")}`);
     else if (r.files.length && !r.dryRun)

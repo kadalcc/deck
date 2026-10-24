@@ -137,6 +137,8 @@ last synced with.
 - `pull` merges slide by slide: what only one side changed is taken, both sides' new slides are
   kept. The same lines changed both ways become git-style markers and exit **5**:
   `<<<<<<< local (your files)` … `=======` … `>>>>>>> web v14 (quick edit by Asha, …)`.
+- Stickers and images picked in the builder are files named `assets/media/<hash>.<ext>`; `pull`
+  downloads the ones the slides name into `public/assets/media/` (leave the path as written).
 - Resolve by reading both sides (`npx kadal-deck resolve --list`, or the file): prefer keeping
   both sides' intent — `resolve deck.mdx#3 --both`, then edit the slide to blend them; `--ours` /
   `--theirs` keep one side. Ask the person when the two edits contradict. Never delete either

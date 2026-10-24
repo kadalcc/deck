@@ -395,6 +395,84 @@ async function newerVersions(c: HostCtx, deckId: string, after: number | null) {
   }
 }
 
+/* ── media a quick edit brought ────────────────────────────────────────────── */
+
+/**
+ * A builder publish copies the library items a slide uses into the version as
+ * `assets/media/<sha256>.<ext>` and writes that path into the text (a sticker's `src`, an
+ * image). Pulled, the text names a file the folder does not have: `kadal-deck dev` would show it
+ * broken. The deck's `public/` is where such a path resolves — in dev (`/assets/media/…`) and in
+ * a build at any base (copied to `<out>/assets/media/…`) — so the pull writes it there, read with
+ * the deck's sign-in from GET /decks/:id/files (the published version's list) and
+ * /files/:sha (any committed version's file). The name carries the sha256 when the list (the head
+ * only) does not, as after `pull --version N`. Bytes are checked against the hash; a file the
+ * folder already has is left alone. Never a reason for the pull to fail: what cannot be read is a
+ * note.
+ */
+const MEDIA_PATH = /\bassets\/media\/[\w.-]+\.\w+/g;
+
+export function mediaReferences(texts: Iterable<string>): string[] {
+  const out = new Set<string>();
+  for (const t of texts) for (const m of t.matchAll(MEDIA_PATH)) out.add(m[0]);
+  return [...out].sort();
+}
+
+async function pullMedia(
+  c: HostCtx,
+  deckId: string,
+  dir: string,
+  texts: Iterable<string>,
+  dryRun: boolean,
+  notes: string[],
+): Promise<PullResult["media"]> {
+  const refs = mediaReferences(texts);
+  if (!refs.length) return [];
+  let listed: Record<string, string> = {};
+  try {
+    const { data } = await request<{ files?: Array<{ path: string; sha256: string }> }>(
+      c.host,
+      `/decks/${encodeURIComponent(deckId)}/files`,
+      http(c),
+    );
+    listed = Object.fromEntries((data.files ?? []).map((f) => [f.path, f.sha256]));
+  } catch {
+    // An older host, or nothing published: the names still carry their hashes.
+  }
+  const doFetch = c.fetch ?? fetch;
+  const out: PullResult["media"] = [];
+  for (const path of refs) {
+    const sha = listed[path] ?? /^assets\/media\/([0-9a-f]{64})\./.exec(path)?.[1];
+    if (!sha) {
+      notes.push(`${path} is named in the slides but isn't on the host; add it under public/.`);
+      continue;
+    }
+    const file = join(dir, "public", ...path.split("/"));
+    if (existsSync(file)) {
+      const have = createHash("sha256").update(readFileSync(file)).digest("hex");
+      if (have !== sha) notes.push(`Kept your own public/${path} (the web's copy differs).`);
+      continue;
+    }
+    try {
+      const res = await doFetch(
+        `${c.host}/api/v1/decks/${encodeURIComponent(deckId)}/files/${sha}`,
+        { headers: { authorization: `Bearer ${c.token}` } },
+      );
+      if (!res.ok) throw new Error(`the host answered ${res.status}`);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      if (createHash("sha256").update(bytes).digest("hex") !== sha)
+        throw new Error("it arrived damaged (its hash does not match)");
+      if (!dryRun) {
+        await mkdir(dirname(file), { recursive: true });
+        await writeFile(file, bytes);
+      }
+      out.push({ path: `public/${path}`, size: bytes.byteLength });
+    } catch (e) {
+      notes.push(`Could not download ${path}: ${e instanceof Error ? e.message : String(e)}.`);
+    }
+  }
+  return out;
+}
+
 /* ── pull ──────────────────────────────────────────────────────────────────── */
 
 export interface PullOptions extends HostCtx {
@@ -422,6 +500,8 @@ export interface PullResult {
   conflicts: Conflict[];
   clean: boolean;
   backup: string | null;
+  /** Library media the pulled text names, written (or, dry run, to write) under public/. */
+  media: Array<{ path: string; size: number }>;
   notes: string[];
   dryRun: boolean;
 }
@@ -564,6 +644,15 @@ export async function pullDeck(o: PullOptions): Promise<PullResult> {
       }
     }
   }
+  // The library media the slides now name (the merged text, and the web's side of a conflict).
+  const media = await pullMedia(
+    o,
+    deckId,
+    o.dir,
+    [...Object.values(merged.files), ...Object.values(remote.files)],
+    !!o.dryRun,
+    notes,
+  );
   if (!o.dryRun) {
     const common = {
       host: o.host,
@@ -606,6 +695,7 @@ export async function pullDeck(o: PullOptions): Promise<PullResult> {
     conflicts: merged.conflicts,
     clean: merged.clean,
     backup,
+    media,
     notes,
     dryRun: !!o.dryRun,
   };

@@ -311,6 +311,49 @@ describe("web edits, both ways", () => {
     expect(read("deck.mdx")).toBe(DECK.replace("Line a", "web"));
   });
 
+  test("library media a quick edit added is downloaded into public/, checked by hash", async () => {
+    const { createHash } = await import("node:crypto");
+    await publishNow();
+    const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]);
+    const sha = createHash("sha256").update(png).digest("hex");
+    const sticker = `assets/media/${sha}.png`;
+    const elsewhere = `assets/media/${"e".repeat(64)}.gif`;
+    host.webEdit(
+      "talk",
+      {
+        "deck.mdx": DECK.replace(
+          "Line c",
+          `Line c\n\n<Sticker src="${sticker}" x={10} y={20} />\n\n![](${elsewhere})\n\n![](assets/media/gone.webp)`,
+        ),
+        "glossary.yaml": "MDX: Markdown with components\n",
+      },
+      "Asha",
+      "builder",
+      { [sticker]: png },
+    );
+    const dry = await pull({ dryRun: true });
+    expect(dry.media).toEqual([{ path: `public/${sticker}`, size: png.byteLength }]);
+    expect(existsSync(join(dir, "public", "assets"))).toBe(false);
+
+    const r = await pull();
+    expect(r.clean).toBe(true);
+    expect(r.media).toEqual([{ path: `public/${sticker}`, size: png.byteLength }]);
+    expect(new Uint8Array(readFileSync(join(dir, "public", sticker)))).toEqual(png);
+    // Read with the deck's sign-in, by hash; what the host doesn't have is a note, not a failure.
+    expect(host.calls).toContain(`GET /decks/${r.deckId}/files/${sha}`);
+    expect(r.notes).toContain(
+      "assets/media/gone.webp is named in the slides but isn't on the host; add it under public/.",
+    );
+    expect(r.notes.some((n) => n.startsWith(`Could not download ${elsewhere}`))).toBe(true);
+    // Not fetched again; the next publish builds it from public/ (same bytes, nothing new to hold).
+    host.calls.length = 0;
+    const again = await pull();
+    expect(again.media).toEqual([]);
+    expect(host.calls.filter((c) => c.includes(`/files/${sha}`))).toEqual([]);
+    const p = await publishNow();
+    expect(p.result.version).toBe(3);
+  });
+
   test("a file added on the web arrives; one deleted on the web goes (backed up)", async () => {
     write("pages/extra.mdx", "# Extra\n");
     await publishNow();

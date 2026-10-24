@@ -23,6 +23,8 @@ import { canonicalManifest, isEditablePath } from "../sync/manifest.ts";
  * the head is the base, the head's source hash is the base's (or `baseSourceHash`), or the new
  * source hash is the head's; otherwise 409 diverged. It runs at create and again at commit.
  *   GET  /decks/:id/source/blobs/:sha     bytes
+ *   GET  /decks/:id/files                 {version, files[{path,sha256,size,type}]} (the head's)
+ *   GET  /decks/:id/files/:sha            bytes of any committed version's file
  *   GET  /decks/:id/versions              [{version, origin, by, createdAt, current}]
  */
 
@@ -80,9 +82,22 @@ export class FakeHost {
   }
 
   /** A quick edit published from the builder: a new version with this source. */
-  webEdit(slug: string, files: Record<string, string>, by = "Asha", origin = "builder"): number {
+  webEdit(
+    slug: string,
+    files: Record<string, string>,
+    by = "Asha",
+    origin = "builder",
+    /** Library media the publish copied into the version (`assets/media/<sha>.<ext>` → bytes). */
+    media: Record<string, Uint8Array> = {},
+  ): number {
     const d = this.deckBySlug(slug)!;
     const prev = this.head(d)!;
+    const built = { ...prev.files };
+    for (const [path, bytes] of Object.entries(media)) {
+      const h = sha(bytes);
+      this.blobs.set(h, bytes);
+      built[path] = { sha256: h, size: bytes.byteLength };
+    }
     const source: Record<string, { sha256: string; size: number }> = {};
     for (const [path, text] of Object.entries(files)) {
       const bytes = new TextEncoder().encode(text);
@@ -93,7 +108,7 @@ export class FakeHost {
     const version = d.versions.length + 1;
     d.versions.push({
       version,
-      files: prev.files,
+      files: built,
       source,
       sourceHash: this.sourceHash(source),
       origin,
@@ -331,6 +346,23 @@ export class FakeHost {
           ...(text ? { text: new TextDecoder().decode(this.blobs.get(f.sha256)!) } : {}),
         })),
       });
+    }
+    if (rest === "/files") {
+      const head = this.head(d);
+      if (!head) return fail(404, "not_published", "Nothing is published yet.");
+      return json(200, {
+        id: d.id,
+        version: head.version,
+        files: Object.entries(head.files).map(([p, f]) => ({ path: p, ...f, type: "x" })),
+      });
+    }
+    if ((m = /^\/files\/([0-9a-f]{64})$/.exec(rest))) {
+      const known = d.versions.some(
+        (v) => v.committed && Object.values(v.files).some((f) => f.sha256 === m![1]),
+      );
+      const bytes = this.blobs.get(m[1]!);
+      if (!known || !bytes) return fail(404, "not_found", "No such file in this deck.");
+      return new Response(bytes as unknown as BodyInit, { status: 200 });
     }
     if ((m = /^\/source\/blobs\/([0-9a-f]{64})$/.exec(rest))) {
       const known = d.versions.some((v) =>

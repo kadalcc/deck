@@ -1227,6 +1227,7 @@ export function createServer(options: McpOptions): {
           r.files.length
             ? r.files.map((f) => `${f.change} ${f.path}${f.slides?.length ? ` (slides ${f.slides.join(", ")})` : ""}`).join("\n")
             : `Already up to date with v${r.version}.`,
+          ...r.media.map((m) => `${r.dryRun ? "would download" : "downloaded"} ${m.path}`),
           r.clean
             ? "Merged cleanly. Next: deck_check, slide_render the changed slides, then deck_publish."
             : `${r.conflicts.length} conflict(s). Next: deck_conflicts, then deck_resolve each (keep both sides' intent where you can; ask the person when they contradict).`,
