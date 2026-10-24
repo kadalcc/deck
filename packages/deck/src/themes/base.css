@@ -141,17 +141,19 @@ body {
   }
 }
 /* The author's note on a slide whose Pro item did not load (dev server, builder preview only). */
+/* Sized in stage pixels (the slide is 1920 wide and scaled to fit), so it stays readable in a
+   builder's small preview as well as full screen. */
 .deck-premium-chip {
   position: absolute;
   z-index: 40;
-  right: 24px;
-  bottom: 24px;
+  right: 32px;
+  bottom: 32px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px 8px 14px;
+  gap: 14px;
+  padding: 12px 14px 12px 22px;
   border-radius: 999px;
-  font: 500 18px/1.2 system-ui, sans-serif;
+  font: 500 30px/1.2 system-ui, sans-serif;
   color: #1c1917;
   background: #fef3c7;
   border: 1px solid #f59e0b;
@@ -165,12 +167,12 @@ body {
 .deck-premium-chip button {
   all: unset;
   cursor: pointer;
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   text-align: center;
-  line-height: 24px;
-  font-size: 18px;
+  line-height: 40px;
+  font-size: 30px;
 }
 .deck-premium-chip button:hover,
 .deck-premium-chip button:focus-visible {
