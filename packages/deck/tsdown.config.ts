@@ -14,6 +14,7 @@ export default defineConfig({
     "authoring/index": "src/authoring/index.ts",
     "import/index": "src/import/index.ts",
     "runtime/index": "src/runtime/index.ts",
+    "sync/index": "src/sync/index.ts",
     "live/index": "src/live/index.ts",
     "live/protocol": "src/live/protocol.ts",
     "presenter/index": "src/presenter/index.tsx",
