@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-qwik",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "The Qwik renderer for Kadal Deck (@kadal/deck): Qwik components as islands on a slide.",
   "keywords": [
     "kadal-deck",
@@ -62,6 +62,6 @@
   },
   "peerDependencies": {
     "@qwik.dev/core": "^2.0.0-rc.0",
-    "@kadal/deck": "^0.4.9"
+    "@kadal/deck": "^0.4.10"
   }
 }
