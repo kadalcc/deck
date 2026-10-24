@@ -1,6 +1,0 @@
----
-"@kadal/deck": minor
-"@kadal/theme-crayon": minor
----
-
-Stickers, emoji, GIFs and memes. `<Sticker src x y size rotate flip shadow />` places an image (animated GIF/WebP/APNG too) over the slide and is draggable in `kadal-deck dev` like `<Drag>` (the first move writes `pos`). `<Emoji name|char set size />` draws one emoji from an open set — Fluent 3D/Color/Flat, Noto, Noto Animated, Twemoji — served from `https://decks.kadal.cc/emoji` or the host's `window.__KADAL_DECK__.emoji`; Noto Animated is a still under reduced motion and in print. `<Gif provider="klipy" src title />` hot-links a provider's GIF with a credit on hover, and every export (PDF, PNG, PPTX) draws a card with the title and the link instead of the media. `<Meme src template captions />` sets image-macro captions in Anton (loaded through the font system, waited for by print) with the "Template via imgflip.com" link back. `<Drag place>` gives an element a starting box while `pos` is unset. New CLI commands: `kadal-deck media list` and `kadal-deck media add <id|name> [--to public/stickers/]` download from the workspace's media library. Crayon's `<Sticker>` with a `src` is the engine's image sticker; without one it is the pastel cut-out as before.

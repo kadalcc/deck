@@ -1,5 +1,43 @@
 # @kadal/deck
 
+## 0.5.0
+
+### Minor Changes
+
+- 453585a: Stickers, emoji, GIFs and memes. `<Sticker src x y size rotate flip shadow />` places an image (animated GIF/WebP/APNG too) over the slide and is draggable in `kadal-deck dev` like `<Drag>` (the first move writes `pos`). `<Emoji name|char set size />` draws one emoji from an open set — Fluent 3D/Color/Flat, Noto, Noto Animated, Twemoji — served from `https://decks.kadal.cc/emoji` or the host's `window.__KADAL_DECK__.emoji`; Noto Animated is a still under reduced motion and in print. `<Gif provider="klipy" src title />` hot-links a provider's GIF with a credit on hover, and every export (PDF, PNG, PPTX) draws a card with the title and the link instead of the media. `<Meme src template captions />` sets image-macro captions in Anton (loaded through the font system, waited for by print) with the "Template via imgflip.com" link back. `<Drag place>` gives an element a starting box while `pos` is unset. New CLI commands: `kadal-deck media list` and `kadal-deck media add <id|name> [--to public/stickers/]` download from the workspace's media library. Crayon's `<Sticker>` with a `src` is the engine's image sticker; without one it is the pastel cut-out as before.
+- 453585a: Remote packs: `pro/` backgrounds and layouts from the host's library. A `pro/<name>` in
+  `background:`, `layout:` or `<Background name>` resolves through `window.__KADAL_DECK__.premium`
+  (a new `HostOverride` field, http(s) only): the engine fetches the host's `catalog.json` once,
+  only when a slide uses such a name, and `import()`s the item's module, which borrows the engine's
+  React through the new `window.__KADAL_DECK_RUNTIME__` global (`{ contract, version, React, jsx,
+  components, hooks }`). Without a host — or when the host refuses — the slide keeps the theme's
+  own background and the default layout, silently in a published deck; under `kadal-deck dev` and
+  in a builder preview a dismissible "Pro background — available on Kadal Deck Pro" chip says
+  why. An item's static `poster` is used in print, export, thumbnails and with reduced motion.
+- 453585a: Edit a CLI deck on the web, and bring the edits back.
+
+  - `kadal-deck publish` now uploads the deck's editable source (deck.mdx, pages, slides, YAML,
+    data, drawings), kept private to your workspace, and an editing kit (`__kadal/kit/`: your
+    components, styles, config, themes and every module your MDX imports) so the web builder can
+    quick-edit the deck as you built it. `--no-source` keeps the source on your machine.
+  - It publishes only if the deck has not changed on the web since your last sync; otherwise it
+    stops (exit 4) and says who changed what. `--force` replaces those edits (they stay in the
+    version history). `--showcase` / `--no-showcase` list the deck in the public showcase or not.
+  - New: `kadal-deck pull` merges the web's edits into your files slide by slide (backing up what
+    it changes), `kadal-deck status` shows where you stand, and `kadal-deck resolve` settles
+    conflicts — kept as git-style markers, exit 5, never silently dropped.
+  - New `@kadal/deck/sync`: the slide-aware three-way merge (`mergeDeckSource`, `mergeMdx`,
+    `resolveConflict`, `sourceHash`…) that the CLI, the MCP server and the web builder share.
+  - Conflict markers are caught by `kadal-deck check`, refused by a build, and shown under
+    `kadal-deck dev` and in the builder as a "Yours / Web" card with Keep buttons.
+  - MCP: `deck_sync_status`, `deck_pull`, `deck_conflicts`, `deck_resolve`; `deck_publish` answers
+    "diverged" with next steps instead of failing; edit tools won't half-edit a conflicted slide.
+  - The presenter view shows an Edit button (and `present.edit`) when the host offers quick edit.
+
+### Patch Changes
+
+- @kadal/prettier-plugin@0.5.0
+
 ## 0.4.10
 
 ### Patch Changes
