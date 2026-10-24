@@ -92,7 +92,8 @@
   compares with `totalTime`/`duration` or each slide's `timing` (default `defaultTiming`).
 - `contextMenu: true | false | "dev" | "build"`: the right-click menu on slides.
 - Pages: `/presenter`, `/notes`, `/notes-edit` (batch notes editor, dev), `/overview` (every slide
-  with a step slider and its notes), `/remote`. Pages of the deck's own: `routes.tsx` beside
+  with a step slider and its notes), `/teleprompter` (the notes big, following the presenter, for
+  another screen; opened from the presenter view's Teleprompter button or Shift T), `/remote`. Pages of the deck's own: `routes.tsx` beside
   deck.mdx, `export default defineRoutes([{ path: "handout", component: Handout }])` (Slidev's
   `setup/routes.ts` works there too). Buttons of its own beside the controls:
   `custom-nav-controls.tsx` (a layer: `export default (p: LayerProps) => <button …/>`).

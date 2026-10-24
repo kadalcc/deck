@@ -44,6 +44,7 @@ const ENGINE_PAGES = new Set([
   "audience",
   "notes",
   "notes-edit",
+  "teleprompter",
   "overview",
   "stats",
   "remote",

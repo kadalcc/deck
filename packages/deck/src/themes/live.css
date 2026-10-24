@@ -548,33 +548,68 @@
 .deck-presenter-spacer {
   flex: 1;
 }
+/* The deck's title: two lines at most, beside the timer's two rows (the tooltip has it whole). */
+.deck-presenter-title {
+  flex: none;
+  max-width: 180px;
+  font: 600 13px/1.3 var(--deck-body-font);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+/* The time, the first of the timer's two rows (presenter/Timer.tsx); click it to pause. */
 .deck-presenter-timer {
-  font: 22px var(--deck-mono-font);
+  font: 20px/26px var(--deck-mono-font);
   background: transparent;
   color: inherit;
   border: 0;
+  border-radius: 6px;
+  padding: 0 2px;
+  margin-inline-start: -2px;
   cursor: pointer;
   display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
-.deck-presenter-timer small {
-  font-size: 12px;
-  padding: 2px 6px;
+.deck-presenter-timer:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+}
+/* The pacing badge, in the second row: ahead, on time or behind the plan for this slide. */
+.deck-timer-pace {
+  font: 600 11px/18px var(--deck-mono-font);
+  padding: 0 6px;
   border-radius: 6px;
   background: var(--deck-surface);
+  white-space: nowrap;
 }
-.deck-presenter-timer.is-ok small {
-  color: #22c55e;
+.deck-timer-pace.is-ok {
+  color: #16a34a;
 }
-.deck-presenter-timer.is-behind small {
-  color: #ef4444;
+.deck-timer-pace.is-behind {
+  color: #dc2626;
 }
-.deck-presenter-timer.is-ahead small {
+.deck-timer-pace.is-ahead {
+  color: #2563eb;
+}
+.dark .deck-timer-pace.is-ok {
+  color: #4ade80;
+}
+.dark .deck-timer-pace.is-behind {
+  color: #f87171;
+}
+.dark .deck-timer-pace.is-ahead {
   color: #60a5fa;
 }
 .deck-presenter-clock {
-  font: 16px var(--deck-mono-font);
+  margin-inline-start: auto;
+  padding-inline-start: 8px;
+  font: 12px var(--deck-mono-font);
+  font-variant-numeric: tabular-nums;
   color: var(--deck-muted);
 }
 .deck-presenter-tools {

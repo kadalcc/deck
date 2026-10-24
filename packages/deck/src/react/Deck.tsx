@@ -40,7 +40,9 @@ import * as N from "../core/navigation.ts";
 import { readItem, writeItem } from "../core/storage.ts";
 import { createStore, useStore } from "../core/store.ts";
 import { createSwipeTracker } from "../core/touch.ts";
-import { createWindowBus, type WindowBus } from "../core/windows.ts";
+import { windowFeatures } from "../core/teleprompter.ts";
+import { isNavMessage, takesNav, type WindowMessage } from "../core/window-messages.ts";
+import { createWindowBus, type Via, type WindowBus } from "../core/windows.ts";
 import { captureTicket, presenterTicket, withTicket } from "../live/ticket.ts";
 import { Backgrounds } from "./Backgrounds.tsx";
 import { Chrome } from "./chrome.tsx";
@@ -48,6 +50,7 @@ import {
   type DeckActions,
   DeckContext,
   type DeckRuntime,
+  type DeckWindows,
   type StageInset,
   type TermReveal,
   type UiState,
@@ -93,6 +96,7 @@ import { RoutePage, useDeckRoutes, usePackageRoutes } from "./routes.tsx";
  *   /<slug>/join           the audience page   (follow along, react, ask, vote)
  *   /<slug>/notes          every note on one page
  *   /<slug>/notes-edit     every note, editable, on one page (`kadal-deck dev`, or a notesEditor)
+ *   /<slug>/teleprompter   this slide's notes, big, following the presenter (opened from its view)
  *   /<slug>/overview       every slide in a list, with a step slider and its notes
  *   /<slug>/stats          the deck's numbers
  *   /<slug>/remote         the phone remote    (#ticket=… hosted, ?pair=CODE on `kadal-deck dev`)
@@ -166,6 +170,13 @@ const FallbackOverview = lazy(() =>
 const FallbackNotesEdit = lazy(() =>
   import("./NotesEditPage.tsx").then((m) => ({ default: m.NotesEditPage })),
 );
+/**
+ * The teleprompter: every deck has one, as it has the presenter's notes — decks made before it
+ * existed, and the hosted builder's, pass no page for it. A chunk of its own, loaded there only.
+ */
+const FallbackTeleprompter = lazy(() =>
+  import("../presenter/Teleprompter.tsx").then((m) => ({ default: m.TeleprompterPage })),
+);
 
 /**
  * The browser exporter: every deck has it (a lazy chunk of its own, loaded on /export only), so a
@@ -185,6 +196,7 @@ export function pageFor(
   if (mode === "export") return FallbackExport;
   if (mode === "overview") return FallbackOverview;
   if (mode === "notes-edit") return FallbackNotesEdit;
+  if (mode === "teleprompter") return FallbackTeleprompter;
   return mode === "remote" && pages.presenter ? FallbackRemote : null;
 }
 
@@ -197,6 +209,7 @@ function modeFromLocation(base: string): ViewMode {
   if (first === "join" || first === "audience") return "audience";
   if (first === "notes") return "notes";
   if (first === "notes-edit") return "notes-edit";
+  if (first === "teleprompter") return "teleprompter";
   if (first === "overview") return "overview";
   if (first === "stats") return "stats";
   if (first === "remote") return "remote";
@@ -269,8 +282,32 @@ export function Deck({
    */
   const projector = mode === "play" && flags.projector;
   const projectorWindow = useMemo<{ ref: Window | null }>(() => ({ ref: null }), []);
+  const teleprompterWindow = useMemo<{ ref: Window | null }>(() => ({ ref: null }), []);
   /** This deck's other windows in this browser: the bus to them, and the ones this window opened. */
-  const related = useMemo<Related>(() => ({ bus: null, children: new Set() }), []);
+  const related = useMemo<Related>(
+    () => ({ bus: null, children: new Set(), listeners: new Set(), pending: [] }),
+    [],
+  );
+  const windows = useMemo<DeckWindows>(
+    () => ({
+      post: (message) => {
+        // Positions are the runtime's own to send (useDeckEffects), with its rules about who may
+        // move whom; nothing else gets to speak as one.
+        if (!message || (message as { type?: unknown }).type === "nav") return;
+        // A page's effects run before the runtime's, which opens the bus: what a page says on
+        // mount waits for it.
+        if (related.bus) related.bus.post(message);
+        else if (related.pending.length < 16) related.pending.push(message);
+      },
+      subscribe: (listener) => {
+        related.listeners.add(listener);
+        return () => {
+          related.listeners.delete(listener);
+        };
+      },
+    }),
+    [related],
+  );
   const sync = useMemo<DeckRuntime["sync"]>(() => ({ source: null }), []);
 
   // The position the URL asked for, read once: a step (#/h/v/click) cannot be applied until the
@@ -297,11 +334,12 @@ export function Deck({
    *      typed or pasted.
    */
   const startFollowing = useMemo(() => {
-    if (projector) return true;
+    // A teleprompter follows the presenter and nothing else; it has no moves of its own to make.
+    if (projector || mode === "teleprompter") return true;
     if (flags.at) return false;
     const remembered = rememberedFollow(config);
     return remembered ?? !wantedAtLoad;
-  }, [config, flags.at, projector, wantedAtLoad]);
+  }, [config, flags.at, projector, mode, wantedAtLoad]);
 
   const nav = useMemo(() => {
     const initial = { ...N.initialNav(), follow: startFollowing };
@@ -330,6 +368,7 @@ export function Deck({
         hints: false,
         themeMenu: false,
         projectorOpen: false,
+        teleprompterOpen: false,
         theme: stored(config, "theme", config.themes) ?? config.theme,
         termSync:
           (stored(config, "termsync", ["on", "off"]) ?? (config.glossary.sync ? "on" : "off")) ===
@@ -447,6 +486,43 @@ export function Deck({
         adoptWindow(related, projectorWindow.ref);
         ui.update((s) => ({ ...s, projectorOpen: !!projectorWindow.ref }));
       },
+      /**
+       * The teleprompter (presenter/Teleprompter.tsx): a window of the presenter view's, so it
+       * joins the bus as the share window does and follows the presenter's slide and step. A
+       * place puts it on a screen (presenter/TeleprompterControl.tsx asks the Window Management
+       * API for one); without one it is a popup to drag. No ticket rides along: it does not join
+       * the room, and the notes it shows are the ones /notes shows.
+       */
+      openTeleprompter: (place) => {
+        const w = teleprompterWindow.ref;
+        if (w && !w.closed) {
+          if (place)
+            try {
+              w.moveTo(place.left, place.top);
+              w.resizeTo(place.width, place.height);
+            } catch {
+              /* a window the browser will not move: it stays where it is */
+            }
+          w.focus();
+          return;
+        }
+        const url = `${base}teleprompter${formatHash(nav.get(), {
+          withClick: true,
+          oneBased: config.hashOneBasedIndex,
+        })}`;
+        teleprompterWindow.ref = window.open(
+          url,
+          `deck-teleprompter-${config.slug || "deck"}`,
+          windowFeatures(place ?? null),
+        );
+        adoptWindow(related, teleprompterWindow.ref);
+        ui.update((s) => ({ ...s, teleprompterOpen: !!teleprompterWindow.ref }));
+      },
+      closeTeleprompter: () => {
+        teleprompterWindow.ref?.close();
+        teleprompterWindow.ref = null;
+        ui.update((s) => (s.teleprompterOpen ? { ...s, teleprompterOpen: false } : s));
+      },
       // Following again means being where they are, now; this is the one move that sets it back on.
       setFollow: (on) =>
         nav.update((s) => {
@@ -523,7 +599,19 @@ export function Deck({
         setTimeout(() => ui.update((s) => (s.toast === message ? { ...s, toast: null } : s)), 1800);
       },
     };
-  }, [nav, ui, columns, config, options, base, sync, projector, projectorWindow, related]);
+  }, [
+    nav,
+    ui,
+    columns,
+    config,
+    options,
+    base,
+    sync,
+    projector,
+    projectorWindow,
+    teleprompterWindow,
+    related,
+  ]);
 
   const commands = useMemo(() => createCommandRegistry(), []);
   const terms = useMemo(() => createStore<TermReveal | null>(null), []);
@@ -583,6 +671,7 @@ export function Deck({
       menu,
       notesEditor,
       routes: deckRoutes.registry,
+      windows,
     }),
     [
       manifest,
@@ -609,6 +698,7 @@ export function Deck({
       menu,
       notesEditor,
       deckRoutes.registry,
+      windows,
     ],
   );
 
@@ -617,15 +707,21 @@ export function Deck({
   usePackageRoutes(deckRoutes.registry, merged.modules);
   useDeckEffects(runtime, flags, wantedAtLoad, related);
   useTermEffects(runtime);
-  // A share window the viewer closed themselves: the button that opened it stops looking lit.
+  // A share window or teleprompter the viewer closed themselves: the button that opened it stops
+  // looking lit.
   useEffect(() => {
     const id = setInterval(() => {
-      if (!projectorWindow.ref?.closed) return;
-      projectorWindow.ref = null;
-      ui.update((s) => (s.projectorOpen ? { ...s, projectorOpen: false } : s));
+      if (projectorWindow.ref?.closed) {
+        projectorWindow.ref = null;
+        ui.update((s) => (s.projectorOpen ? { ...s, projectorOpen: false } : s));
+      }
+      if (teleprompterWindow.ref?.closed) {
+        teleprompterWindow.ref = null;
+        ui.update((s) => (s.teleprompterOpen ? { ...s, teleprompterOpen: false } : s));
+      }
     }, 1000);
     return () => clearInterval(id);
-  }, [projectorWindow, ui]);
+  }, [projectorWindow, teleprompterWindow, ui]);
   // A handle for the console and tests, as Slidev's `$slidev`: `__deck.nav.get()`, `__deck.actions.next()`.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -814,20 +910,13 @@ function rememberFollow(config: DeckConfig, follow: boolean) {
   writeItem(`deck.follow.${config.slug || "deck"}`, `${follow ? "on" : "off"}:${Date.now()}`);
 }
 
-/** A position one window of this deck tells the others. */
-interface NavMessage {
-  type: "nav";
-  h: number;
-  v: number;
-  click: number;
-  paused: boolean;
-  from: string;
-  presenter?: boolean;
-}
-
 interface Related {
-  bus: WindowBus<NavMessage> | null;
+  bus: WindowBus<WindowMessage> | null;
   children: Set<unknown>;
+  /** `deck.windows` subscribers: everything on the bus that is not a position. */
+  listeners: Set<(message: Exclude<WindowMessage, { type: "nav" }>, via: Via) => void>;
+  /** What `deck.windows` was given before the bus was open. */
+  pending: WindowMessage[];
 }
 
 /** A window this one opened joins the bus (a desktop shell may hand back a stand-in, or null). */
@@ -987,12 +1076,14 @@ function useDeckEffects(
     // A projector takes no input: a key pressed on a window that is only being looked at — the one
     // being shared on a call — must not move it off the presenter's slide.
     // The remote is a phone: its keys (if any) are its own buttons', not the deck's.
+    // The teleprompter's keys are its own (scroll, size); it only ever follows the presenter.
     if (
       !config.keyboard ||
       deck.projector ||
       mode === "print" ||
       mode === "audience" ||
-      mode === "remote"
+      mode === "remote" ||
+      mode === "teleprompter"
     )
       return;
     let pendingG = 0;
@@ -1262,12 +1353,14 @@ function useDeckEffects(
   // A phone remote shows the presenter's slide; it is nobody's window to follow.
   useEffect(() => {
     if (typeof window === "undefined" || mode === "print" || mode === "remote") return;
-    const bus = createWindowBus<NavMessage>(config.slug || base);
+    const bus = createWindowBus<WindowMessage>(config.slug || base);
     related.bus = bus;
     for (const child of related.children) bus.adopt(child);
+    for (const message of related.pending.splice(0)) bus.post(message);
     const unsub = nav.subscribe((s, prev) => {
       // Only local moves go out: a position applied from another window or the room stays put.
-      if (deck.sync.source) return;
+      // A teleprompter makes none, and says nothing that could move the play window either.
+      if (deck.sync.source || mode === "teleprompter") return;
       if (s.h === prev.h && s.v === prev.v && s.click === prev.click && s.paused === prev.paused)
         return;
       bus.post({
@@ -1281,12 +1374,19 @@ function useDeckEffects(
       });
     });
     const unlisten = bus.subscribe(({ data: m, via }) => {
-      if (!m || m.type !== "nav" || m.from === deck.windowId) return;
-      // The presenter's window is driven by the presenter. Another tab of this browser reading the
-      // deck on its own is a viewer, and a viewer must never move the window that drives the room.
-      // Nor may the page that OPENED a presenter view: that can be any page at all, and what it
-      // says about itself (`presenter: true`) is only its word.
-      if (deck.isPresenter && (!m.presenter || via === "opener")) return;
+      if (!m || typeof m !== "object") return;
+      if (m.type !== "nav") {
+        // Not a position: for whoever listens through `deck.windows` (each checks its own).
+        for (const l of related.listeners) l(m, via);
+        return;
+      }
+      // Who may move this window, and who may not: core/window-messages.ts.
+      const self = {
+        windowId: deck.windowId,
+        presenter: deck.isPresenter,
+        teleprompter: mode === "teleprompter",
+      };
+      if (!isNavMessage(m) || !takesNav(self, m, via)) return;
       deck.sync.source = "channel";
       try {
         nav.update((s) => {
