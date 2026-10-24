@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { moduleKey } from "../runtime/kit-imports.ts";
-import { importsOf, kitModuleCode, kitSnippets, slideImports } from "./kit.ts";
+import { importsOf, kitGrammars, kitModuleCode, kitSnippets, slideImports } from "./kit.ts";
 
 describe("the editing kit", () => {
   test("imports are read with MDX's parser, code blocks ignored", () => {
@@ -91,5 +91,37 @@ describe("the editing kit", () => {
       engine: "0.5.1",
     });
     expect(code).toContain(`snippets: ${JSON.stringify(snippets)},`);
+  });
+
+  test("the kit brings the grammars its deck highlights beyond the runtime compiler's own", () => {
+    const languages = [
+      { id: "typescript", aliases: ["ts"] },
+      { id: "mdx" },
+      { id: "haskell", aliases: ["hs"] },
+    ];
+    const grammars = kitGrammars(
+      ["ts", "mdx", "hs", "haskell", "text", "klingon"],
+      languages,
+      (id) => `/shiki/langs/${id}.mjs`,
+    );
+    expect(grammars).toEqual({ mdx: "/shiki/langs/mdx.mjs", haskell: "/shiki/langs/haskell.mjs" });
+    const code = kitModuleCode({
+      packages: {
+        theme: { kind: "theme", name: "minimal", builtin: true } as never,
+        themes: [],
+        addons: [],
+        layers: {},
+        watch: [],
+      },
+      packagesCode: { imports: "", value: "{ layers: {}, routes: null }" },
+      resolved: new Map(),
+      langs: ["ts", "mdx"],
+      grammars,
+      monaco: null,
+      codeRunners: null,
+      engine: "0.5.1",
+    });
+    expect(code).toContain('langs: ["ts","mdx"],');
+    expect(code).toContain('"mdx": () => import("/shiki/langs/mdx.mjs")');
   });
 });

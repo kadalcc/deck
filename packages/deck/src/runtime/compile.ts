@@ -36,6 +36,7 @@ import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
 import { sourceFromFiles } from "../draw/source.ts";
 import { dirOf, joinPath } from "../authoring/source.ts";
 import { ConflictSlide } from "../react/ConflictCard.tsx";
+import { type GrammarLoader, grammarsFor } from "./grammars.ts";
 import { type ModuleMap, missingModuleMessage, remarkKitImports } from "./kit-imports.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
 import { type MarkerBlock, hasConflictMarkers, markerBlocks } from "../sync/markers.ts";
@@ -86,6 +87,12 @@ export interface CompileDeckOptions extends DeckSetup {
   files?: Record<string, string>;
   /** As `deck({ shiki })`: themes, languages, and transformers after the notation ones. */
   shiki?: { light?: string; dark?: string; langs?: string[]; transformers?: ShikiTransformer[] };
+  /**
+   * Grammars beyond the defaults (runtime/grammars.ts), by Shiki id or fence name, for the
+   * languages in `shiki.langs`: `{ mdx: () => import("shiki/langs/mdx.mjs") }`. A language with
+   * no grammar here or among the defaults shows as plain text.
+   */
+  grammars?: Record<string, GrammarLoader>;
   /** Slide defaults beneath the headmatter's `defaults:` (a theme's), see `prepareDeck`. */
   defaults?: Record<string, unknown> | Array<Record<string, unknown> | null | undefined> | null;
   /**
@@ -141,22 +148,34 @@ let highlighterKey = "";
 /**
  * One Shiki per page, with the JavaScript regex engine: no WebAssembly to fetch. Its themes are
  * the deck's pair and whatever the theme menu adds (compiler/code-themes.ts); each is a lazy
- * chunk of Shiki's, fetched only by a deck that names it.
+ * chunk of Shiki's, fetched only by a deck that names it. Its languages are named one by one
+ * (runtime/grammars.ts), so a bundle holding the compiler holds only those grammars.
  */
-async function getHighlighter(themes: CodeThemes, langs: string[]) {
-  const key = `${codeThemesKey(themes)}|${langs.join(",")}`;
+async function getHighlighter(
+  themes: CodeThemes,
+  langs: string[],
+  grammars: Record<string, GrammarLoader> = {},
+) {
+  const key = `${codeThemesKey(themes)}|${langs.join(",")}|${Object.keys(grammars).join(",")}`;
   if (!highlighter || key !== highlighterKey) {
     highlighterKey = key;
     highlighter = (async () => {
-      const [{ createHighlighter }, { createJavaScriptRegexEngine }] = await Promise.all([
-        import("shiki"),
-        import("shiki/engine/javascript"),
-      ]);
-      return createHighlighter({
-        themes: shikiThemeNames(themes),
-        langs,
+      const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, { bundledThemes }] =
+        await Promise.all([
+          import("shiki/core"),
+          import("shiki/engine/javascript"),
+          import("shiki/themes"),
+        ]);
+      const all = bundledThemes as Record<string, () => Promise<unknown>>;
+      return createHighlighterCore({
+        themes: shikiThemeNames(themes).map((name) => {
+          const load = all[name];
+          if (!load) throw new Error(`Theme \`${name}\` is not one of Shiki's themes`);
+          return load as never;
+        }),
+        langs: grammarsFor(langs, grammars) as never[],
         engine: createJavaScriptRegexEngine({ forgiving: true }),
-      });
+      }) as unknown as Highlighter;
     })();
   }
   return highlighter;
@@ -382,7 +401,7 @@ export async function compileDeck(
   );
 
   const [hl, { notationTransformers }] = await Promise.all([
-    getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS),
+    getHighlighter(themes, options.shiki?.langs ?? DEFAULT_LANGS, options.grammars),
     import("../compiler/transformers.ts"),
   ]);
   const transformers = [...notationTransformers(), ...(options.shiki?.transformers ?? [])];

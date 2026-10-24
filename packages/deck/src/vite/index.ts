@@ -61,7 +61,15 @@ import { SIDE_EDITOR_DEPS, SOURCE_PATH, sideEditorCode, sourceEndpoint } from ".
 import { type RemoteGate, remoteGate, remoteSettings } from "./remote-dev.ts";
 import { deckSite, subdirConfig } from "./site.ts";
 import { type MarkerBlock, hasConflictMarkers, markerBlocks } from "../sync/markers.ts";
-import { kitJson, kitMode, kitModuleCode, kitSnippets, slideImports, writeKitJson } from "./kit.ts";
+import {
+  kitGrammars,
+  kitJson,
+  kitMode,
+  kitModuleCode,
+  kitSnippets,
+  slideImports,
+  writeKitJson,
+} from "./kit.ts";
 import { RESOLVE_PATH, resolveEndpoint } from "./resolve-dev.ts";
 
 /**
@@ -709,6 +717,19 @@ export function createWorker() { return new KokoroWorker({ name: "kadal-deck-kok
           packages: m.packages,
           packagesCode: packagesCode(m.packages),
           resolved,
+          // What the deck's build highlights, so its preview does too (runtime/grammars.ts).
+          langs: options.shiki?.langs,
+          grammars: kitGrammars(
+            options.shiki?.langs ?? DEFAULT_LANGS,
+            bundledLanguagesInfo,
+            (id) => {
+              try {
+                return createRequire(import.meta.url).resolve(`shiki/langs/${id}.mjs`);
+              } catch {
+                return null;
+              }
+            },
+          ),
           snippets: kitSnippets(m.slides, (path) => {
             const file = resolve(deckDir, path);
             return existsSync(file) && statSync(file).isFile() ? readFileSync(file, "utf8") : null;

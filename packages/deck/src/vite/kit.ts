@@ -4,6 +4,7 @@ import { join, relative, sep } from "node:path";
 
 import { readExtensions } from "../authoring/lint.ts";
 import { fencedRanges } from "../compiler/split.ts";
+import { runtimeHasGrammar } from "../runtime/grammars.ts";
 import { moduleKey } from "../runtime/kit-imports.ts";
 import { EDITABLE_GLOBS } from "../sync/manifest.ts";
 import type { DeckPackageSet } from "./packages.ts";
@@ -25,6 +26,8 @@ import type { DeckPackageSet } from "./packages.ts";
  *   · with a MODULE MAP of every module the deck's MDX imports, pre-bundled and registered under
  *     its import key (runtime/kit-imports.ts `moduleKey`), so those imports compile in the page;
  *   · with the deck's theme and addon packages registered with the runtime compiler;
+ *   · with the Shiki grammars its build highlights beyond the runtime compiler's own
+ *     (runtime/grammars.ts) — `mdx` in the tour — and none of the rest of Shiki's ~230;
  *   · with the text of every file its `<<<` snippet imports read (`snippets/tide.ts`): code, so
  *     neither the editable source nor the builder has it, and a quick-edited deck still shows it.
  *     A snippet the build did not read fails in the builder as an unknown import does.
@@ -101,6 +104,10 @@ export function kitModuleCode(o: {
   resolved: Map<string, string>;
   /** Snippet files by deck-root relative path, with their text. */
   snippets?: Record<string, string>;
+  /** The languages the deck's build highlights, and the module file of each grammar the
+   * runtime compiler does not bring itself (Shiki id → file). */
+  langs?: string[];
+  grammars?: Record<string, string>;
   monaco: string | null;
   codeRunners: string | null;
   engine: string;
@@ -134,9 +141,14 @@ export function kitModuleCode(o: {
   lines.push(
     `export const kit = { kitVersion: ${KIT_VERSION}, engine: ${JSON.stringify(o.engine)} };`,
   );
+  const grammars = Object.entries(o.grammars ?? {}).map(
+    ([id, f]) => `${JSON.stringify(id)}: () => import(${spec(f)})`,
+  );
   lines.push(`export default kitManifest({
   modules: { ${entries.join(", ")} },
   snippets: ${JSON.stringify(o.snippets ?? {})},
+  langs: ${o.langs ? JSON.stringify(o.langs) : "undefined"},
+  grammars: { ${grammars.join(", ")} },
   layers: __kadal_packages.layers,
   routes: __kadal_packages.routes,
   monaco: ${o.monaco ?? "null"},
@@ -191,6 +203,27 @@ export function kitSnippets(
   for (const path of [...new Set(slides.flatMap((s) => s.snippets ?? []))].sort()) {
     const text = read(path);
     if (text !== null) out[path] = text;
+  }
+  return out;
+}
+
+/**
+ * The grammar files a kit brings for the deck's languages the runtime compiler does not have
+ * itself (Shiki id → module file). `languages` is Shiki's list (ids and aliases); `fileOf` finds a
+ * grammar's module. A name Shiki does not know is plain text in the build too: skipped.
+ */
+export function kitGrammars(
+  langs: readonly string[],
+  languages: ReadonlyArray<{ id: string; aliases?: string[] }>,
+  fileOf: (id: string) => string | null,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const lang of langs) {
+    if (runtimeHasGrammar(lang)) continue;
+    const key = lang.toLowerCase();
+    const id = languages.find((l) => l.id === key || l.aliases?.includes(key))?.id;
+    const file = id && !out[id] ? fileOf(id) : null;
+    if (id && file) out[id] = file;
   }
   return out;
 }

@@ -8,6 +8,7 @@ import { setConflictResolver } from "../react/ConflictCard.tsx";
 import type { DeckRuntime, ViewMode } from "../react/context.ts";
 import { DeckRuntimeView, type DeckProps } from "../react/Deck.tsx";
 import { type CompiledDeck, compileDeck } from "./compile.ts";
+import type { GrammarLoader } from "./grammars.ts";
 import type { ModuleMap } from "./kit-imports.ts";
 import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts";
 
@@ -83,6 +84,10 @@ export interface KitOptions {
    * relative path: code the builder does not edit (and the host does not keep as source).
    */
   snippets?: Record<string, string>;
+  /** The languages the deck's build highlights (`deck({ shiki: { langs } })`), and the grammars
+   * for those beyond the runtime compiler's defaults (runtime/grammars.ts). */
+  langs?: string[];
+  grammars?: Record<string, GrammarLoader>;
   /** The deck's layer files and routes (`global-top.tsx`, `routes.tsx`), as its build had them. */
   layers?: NonNullable<DeckManifest["packages"]>["layers"];
   routes?: NonNullable<DeckManifest["packages"]>["routes"];
@@ -169,9 +174,16 @@ export interface DeckShellProps {
   kit?: KitOptions;
 }
 
-/** What the runtime compiler takes from a kit: its module map and its snippet files. */
+/** What the runtime compiler takes from a kit: its module map, snippet files and languages. */
 const kitCompile = (kit: KitOptions | undefined) =>
-  kit ? { modules: kit.modules, snippets: kit.snippets ?? {} } : {};
+  kit
+    ? {
+        modules: kit.modules,
+        snippets: kit.snippets ?? {},
+        ...(kit.langs ? { shiki: { langs: kit.langs } } : {}),
+        ...(kit.grammars ? { grammars: kit.grammars } : {}),
+      }
+    : {};
 
 /** A kit's build-time parts laid over a compiled manifest. */
 function withKit(manifest: DeckManifest, kit: KitOptions | undefined): DeckManifest {
