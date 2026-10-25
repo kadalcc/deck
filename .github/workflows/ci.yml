@@ -97,17 +97,17 @@ jobs:
         include:
           # Every slide and click (~3.5 min), and the two views whose page count must match it.
           - shard: walk
-            args: --only "walk:" --only "print:" --only "export: /export"
+            args: '--only "walk:" --only "print:" --only "export: /export"'
           # Every other view: dark, themes, keys, tools, presenter, audience, scroll, embeds.
           - shard: views
-            args: --skip "walk:" --skip "print:" --skip "export:"
+            args: '--skip "walk:" --skip "print:" --skip "export:"'
           # `kadal-deck export` (~7 min for all five formats in one process), a share each.
           - shard: export-pdf
-            args: --only "export: kadal-deck" --export-format pdf
+            args: '--only "export: kadal-deck" --export-format pdf'
           - shard: export-png-pptx-md
-            args: --only "export: kadal-deck" --export-format png,pptx,md
+            args: '--only "export: kadal-deck" --export-format png,pptx,md'
           - shard: export-pptx-editable
-            args: --only "export: kadal-deck" --export-format pptx-editable
+            args: '--only "export: kadal-deck" --export-format pptx-editable'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
