@@ -10,8 +10,6 @@ import { type BgProps, asNum, asStr, smoothNoise, useCanvas } from "./shared.ts"
  *
  *   globe       a wire globe off to one side, turning slowly about a tilted axis, with a day
  *               side and a night side                                    (color, x, y, radius, tilt, speed, step)
- *   lattice     a grid that keeps zooming into one of its cells, three levels deep — the
- *               nested address                                           (color, accent, size, sub, period)
  *   thiessen    seeds drifting under their Voronoi (Thiessen) polygons   (color, accent, count, speed)
  *   cells       a lattice where reports land: cells light up, ripple, and go dark again;
  *               a few neighbours at once make an outage                  (color, accent, size, rate, life)
@@ -19,7 +17,6 @@ import { type BgProps, asNum, asStr, smoothNoise, useCanvas } from "./shared.ts"
  *   neatline    a map sheet's frame: double neatline, coordinate ticks, north arrow, scale bar
  *                                                                        (color, inset, step, lat, lon)
  *   scan        a graticule swept by a satellite pass                    (color, accent, size, major, speed)
- *   track       a GPS trail wandering with a pulsing head                (color, accent, speed, width)
  *   raster      a choropleth: cells classed by a slowly drifting field, like a population
  *               raster with its legend                                    (color, size, classes, speed)
  *   plane       a dotted ground plane in oblique projection — the lattice a figure stands on —
@@ -149,116 +146,6 @@ export function Globe({ active, color, x, y, radius, tilt, speed, step, opacity 
       ctx.globalAlpha = 1;
     },
     [c, cx, cy, rr, tl, sp, st, op],
-  );
-  return <canvas ref={ref} className="deck-bg-canvas" />;
-}
-
-/* ── lattice ──────────────────────────────────────────────────────────────── */
-
-export function Lattice({ active, color, accent, size, sub, period }: BgProps) {
-  const c = asStr(color, "rgba(127,127,127,0.35)");
-  const a = asStr(accent, "rgba(124,58,237,0.9)");
-  const cell = asNum(size, 96);
-  const n = Math.max(2, Math.round(asNum(sub, 4)));
-  const per = asNum(period, 9);
-  const pick = useRef<{
-    i: number;
-    j: number;
-    si: number;
-    sj: number;
-    ti: number;
-    tj: number;
-    at: number;
-  } | null>(null);
-  const ref = useCanvas(
-    active,
-    (ctx, w, h, t) => {
-      ctx.clearRect(0, 0, w, h);
-      const cols = Math.ceil(w / cell);
-      const rows = Math.ceil(h / cell);
-      const rnd = (m: number) => Math.floor(Math.random() * m);
-      if (!pick.current || t - pick.current.at > per)
-        pick.current = {
-          i: 1 + rnd(Math.max(1, cols - 2)),
-          j: 1 + rnd(Math.max(1, rows - 2)),
-          si: rnd(n),
-          sj: rnd(n),
-          ti: rnd(n),
-          tj: rnd(n),
-          at: t,
-        };
-      const pk = pick.current;
-      const phase = (t - pk.at) / per;
-      const fade = phase < 0.12 ? phase / 0.12 : phase > 0.88 ? (1 - phase) / 0.12 : 1;
-      // the coarse grid
-      ctx.strokeStyle = c;
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.6;
-      ctx.beginPath();
-      for (let i = 0; i <= cols; i++) {
-        ctx.moveTo(i * cell + 0.5, 0);
-        ctx.lineTo(i * cell + 0.5, h);
-      }
-      for (let j = 0; j <= rows; j++) {
-        ctx.moveTo(0, j * cell + 0.5);
-        ctx.lineTo(w, j * cell + 0.5);
-      }
-      ctx.stroke();
-      // level 1: the chosen cell, subdivided
-      const x1 = pk.i * cell;
-      const y1 = pk.j * cell;
-      ctx.globalAlpha = 0.1 * fade;
-      ctx.fillStyle = a;
-      ctx.fillRect(x1, y1, cell, cell);
-      ctx.globalAlpha = 0.9 * fade;
-      ctx.strokeStyle = a;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x1 + 0.5, y1 + 0.5, cell, cell);
-      const s1 = cell / n;
-      ctx.lineWidth = 0.8;
-      ctx.globalAlpha = 0.55 * fade;
-      ctx.beginPath();
-      for (let k = 1; k < n; k++) {
-        ctx.moveTo(x1 + k * s1, y1);
-        ctx.lineTo(x1 + k * s1, y1 + cell);
-        ctx.moveTo(x1, y1 + k * s1);
-        ctx.lineTo(x1 + cell, y1 + k * s1);
-      }
-      ctx.stroke();
-      // level 2: one sub-cell, subdivided again
-      const x2 = x1 + pk.si * s1;
-      const y2 = y1 + pk.sj * s1;
-      ctx.globalAlpha = 0.2 * fade;
-      ctx.fillRect(x2, y2, s1, s1);
-      ctx.globalAlpha = 0.9 * fade;
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(x2 + 0.5, y2 + 0.5, s1, s1);
-      const s2 = s1 / n;
-      ctx.lineWidth = 0.6;
-      ctx.globalAlpha = 0.5 * fade;
-      ctx.beginPath();
-      for (let k = 1; k < n; k++) {
-        ctx.moveTo(x2 + k * s2, y2);
-        ctx.lineTo(x2 + k * s2, y2 + s1);
-        ctx.moveTo(x2, y2 + k * s2);
-        ctx.lineTo(x2 + s1, y2 + k * s2);
-      }
-      ctx.stroke();
-      // level 3: the spot
-      ctx.globalAlpha = 0.85 * fade;
-      ctx.fillRect(x2 + pk.ti * s2, y2 + pk.tj * s2, s2, s2);
-      // a leader from the coarse cell's corner out to the spot, like a callout
-      ctx.globalAlpha = 0.5 * fade;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 5]);
-      ctx.beginPath();
-      ctx.moveTo(x1 + cell, y1);
-      ctx.lineTo(x2 + pk.ti * s2 + s2 / 2, y2 + pk.tj * s2 + s2 / 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
-    },
-    [c, a, cell, n, per],
   );
   return <canvas ref={ref} className="deck-bg-canvas" />;
 }
@@ -746,71 +633,6 @@ export function Scan({ active, color, accent, size, major, speed }: BgProps) {
   return <canvas ref={ref} className="deck-bg-canvas" />;
 }
 
-/* ── track ────────────────────────────────────────────────────────────────── */
-
-export function Track({ active, color, accent, speed, width }: BgProps) {
-  const c = asStr(color, "rgba(127,127,127,0.6)");
-  const a = asStr(accent, "rgba(5,150,105,0.9)");
-  const sp = asNum(speed, 1);
-  const lw = asNum(width, 2);
-  const trail = useRef<{ pts: Pt[]; marks: Pt[]; lastMark: number }>({
-    pts: [],
-    marks: [],
-    lastMark: 0,
-  });
-  const ref = useCanvas(
-    active,
-    (ctx, w, h, t) => {
-      const tr = trail.current;
-      const u = t * 0.06 * sp;
-      const x = w * (0.1 + 0.8 * smoothNoise(u, 11.3));
-      const y = h * (0.1 + 0.8 * smoothNoise(u + 5.2, 27.9));
-      tr.pts.push([x, y]);
-      if (tr.pts.length > 900) tr.pts.shift();
-      if (t - tr.lastMark > 4) {
-        tr.marks.push([x, y]);
-        if (tr.marks.length > 12) tr.marks.shift();
-        tr.lastMark = t;
-      }
-      ctx.clearRect(0, 0, w, h);
-      // the trail, fading behind the head
-      const n = tr.pts.length;
-      for (let i = 1; i < n; i++) {
-        ctx.strokeStyle = c;
-        ctx.lineWidth = lw;
-        ctx.globalAlpha = (i / n) * 0.9;
-        ctx.beginPath();
-        ctx.moveTo(tr.pts[i - 1]![0], tr.pts[i - 1]![1]);
-        ctx.lineTo(tr.pts[i]![0], tr.pts[i]![1]);
-        ctx.stroke();
-      }
-      // waypoints
-      ctx.strokeStyle = a;
-      ctx.lineWidth = 1.2;
-      for (const [mx, my] of tr.marks) {
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.arc(mx, my, 5, 0, TAU);
-        ctx.stroke();
-      }
-      // the head and its pulse
-      ctx.fillStyle = a;
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, TAU);
-      ctx.fill();
-      const pulse = (t * 0.8) % 1;
-      ctx.globalAlpha = (1 - pulse) * 0.7;
-      ctx.beginPath();
-      ctx.arc(x, y, 6 + pulse * 22, 0, TAU);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    },
-    [c, a, sp, lw],
-  );
-  return <canvas ref={ref} className="deck-bg-canvas" />;
-}
-
 /* ── raster ───────────────────────────────────────────────────────────────── */
 
 export function Raster({ active, color, size, classes, speed, opacity }: BgProps) {
@@ -1045,13 +867,11 @@ export function Plane({
 registerBackground("globe", Globe);
 registerBackground("raster", Raster);
 registerBackground("choropleth", Raster);
-registerBackground("lattice", Lattice);
 registerBackground("thiessen", Thiessen);
 registerBackground("voronoi", Thiessen);
 registerBackground("cells", Cells);
 registerBackground("compass", Compass);
 registerBackground("neatline", Neatline);
 registerBackground("scan", Scan);
-registerBackground("track", Track);
 registerBackground("plane", Plane);
 registerBackground("floor", Plane);

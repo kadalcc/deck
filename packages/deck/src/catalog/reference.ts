@@ -182,10 +182,6 @@ export const BACKGROUND_META: Record<
     family: "map",
     summary: "A wire globe off to one side, turning slowly, with day and night sides.",
   },
-  lattice: {
-    family: "map",
-    summary: "A grid that keeps zooming into one of its cells, three levels deep.",
-  },
   thiessen: {
     family: "map",
     summary: "Seeds drifting under their Voronoi (Thiessen) polygons.",
@@ -201,7 +197,6 @@ export const BACKGROUND_META: Record<
     summary: "A map sheet's frame: neatline, coordinate ticks, north arrow, scale bar.",
   },
   scan: { family: "map", summary: "A graticule swept by a satellite pass." },
-  track: { family: "map", summary: "A GPS trail wandering, with a pulsing head." },
   raster: {
     family: "map",
     summary: "A choropleth of cells classed by a drifting field, with its legend.",
@@ -212,21 +207,6 @@ export const BACKGROUND_META: Record<
     summary:
       'A dotted ground plane in oblique projection for exploded figures; locks onto `data-plane="origin"`/`"unit"` marks in the slide.',
     aliases: ["floor"],
-  },
-  signer: { family: "sign", summary: "A landmark skeleton signing, with a fading wrist trail." },
-  variants: { family: "sign", summary: "One signer drawn as several synthetic variants at once." },
-  handshapes: { family: "sign", summary: "A calm field of hands morphing through handshapes." },
-  trails: {
-    family: "sign",
-    summary: "Wrist paths through signing space; `align` adds a time-warped copy (DTW).",
-  },
-  window: {
-    family: "sign",
-    summary: "Frames scrolling past a hopping 64-frame recogniser window.",
-  },
-  embedding: {
-    family: "sign",
-    summary: "Word clusters around prototypes and a query finding its nearest.",
   },
 };
 

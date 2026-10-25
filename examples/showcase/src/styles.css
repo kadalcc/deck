@@ -417,7 +417,7 @@
 
 .sc-bg-grid {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-auto-rows: 7.6em;
   gap: 0.45em;
   font-size: 0.56em;
@@ -1094,4 +1094,60 @@
   margin: 0.4em 0 0;
   padding: 0;
   list-style: none;
+}
+
+/* ── the Pro library wall (pro-library.mdx) ─────────────────────────────── */
+.sc-library {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.7em;
+  margin-top: 0.8em;
+  font-size: 0.6em;
+}
+.sc-library a {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--deck-border);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--deck-fg) 6%, var(--deck-bg));
+  color: inherit;
+  text-decoration: none;
+}
+.sc-library img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sc-library span {
+  position: absolute;
+  left: 0.5em;
+  bottom: 0.45em;
+  padding: 0.1em 0.55em;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--deck-bg) 85%, transparent);
+  font: 600 0.95em var(--deck-mono-font);
+}
+
+/* pro/mosaic-gallery where the library does not render (a local preview, a self-hosted build):
+   the default layout gets the ::gallery:: slot as one row of pictures, so the slide fits instead
+   of stacking five full-width images and auto-fitting its text down to nothing. The real item
+   lays the slot out itself and never wears .deck-layout-default. */
+.deck-layout-default > .deck-slot-gallery {
+  display: flex;
+  gap: 24px;
+  margin-top: 48px;
+}
+.deck-layout-default > .deck-slot-gallery > p {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+.deck-layout-default > .deck-slot-gallery img {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+  border-radius: 14px;
 }

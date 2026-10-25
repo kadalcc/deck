@@ -3,6 +3,11 @@ import { useEffect, useRef } from "react";
 /** What every component background receives: whether its slide is showing, plus its own props. */
 export interface BgProps {
   active?: boolean;
+  /**
+   * The scheme the slide is shown in — the deck's, or the slide's own `colorScheme` — for the
+   * few backgrounds that need a different treatment on a light page (starfield, sweep).
+   */
+  scheme?: "light" | "dark";
   [key: string]: unknown;
 }
 

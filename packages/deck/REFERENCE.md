@@ -28,6 +28,8 @@ Pick one with `layout: <name>` in a slide's frontmatter.
 
 Custom layouts: add `"layout:name": Component` to `src/components.tsx`.
 
+**The Pro library.** `layout: pro/<slug>` and `background: pro/<slug>` (or `<Background name="pro/<slug>" />`) pick one of 95 items in 15 genres that deck.kadal.cc serves to decks published from a Pro or Team workspace; browse them at https://deck.kadal.cc/library/ (JSON: https://deck.kadal.cc/api/v1/library/catalog). On any other host or plan a `pro/` name falls back to the theme's own background and the `default` layout, so write the slide to read well either way.
+
 ## Components
 
 Every component below works in any slide without an import. Your own go in `src/components.tsx`.
@@ -1411,6 +1413,10 @@ Links glossary mentions inside a plain string at render time — for words that 
 
 `background: <name>` in frontmatter, `{ component: <name>, ...props }` for props, or `<Background name>` in the slide. Colours are CSS strings; `rgba()` sets their weight. With a component, `color` is its stroke and `fill`/`tint` washes the layer.
 
+**The Pro library.** `layout: pro/<slug>` and `background: pro/<slug>` (or `<Background name="pro/<slug>" />`) pick one of 95 items in 15 genres that deck.kadal.cc serves to decks published from a Pro or Team workspace; browse them at https://deck.kadal.cc/library/ (JSON: https://deck.kadal.cc/api/v1/library/catalog). On any other host or plan a `pro/` name falls back to the theme's own background and the `default` layout, so write the slide to read well either way.
+
+Removed in 0.6: `signer`, `variants`, `handshapes`, `trails`, `window`, `embedding`, `lattice` and `track`. A deck that needs one copies it from https://deck.kadal.cc/docs/backgrounds/#removed-in-06 into `src/components.tsx` and registers it with `registerBackground`.
+
 ### Ambient
 
 - **gradient-mesh** (also mesh) — Slow, drifting, blurred colour blobs. Props: `colors=["#3b82f6", "#8b5cf6", "#06b6d4", "#f59e0b"]`, `speed=1`. `background: { component: gradient-mesh, speed: 1 }`
@@ -1419,7 +1425,7 @@ Links glossary mentions inside a plain string at render time — for words that 
 - **lines** — Flowing gradient lines. Props: `colors=["#1d4ed8", "#3b82f6", "#06b6d4"]`, `count=18`, `speed=0.3`. `background: { component: lines, count: 18 }`
 - **beams** — Thin beams of light falling. Props: `color="#60a5fa"`, `count=7`. `background: { component: beams, color: "#60a5fa" }`
 - **sparkles** — A twinkling particle field. Props: `color="#3b82f6"`, `density=400`, `size=1.6`. `background: { component: sparkles, color: "#3b82f6" }`
-- **starfield** — Stars drifting slowly. Props: `color="#ffffff"`, `count=240`. `background: { component: starfield, color: "#ffffff" }`
+- **starfield** — Stars drifting slowly. Props: `color=light ? "#1e293b" : "#ffffff"`, `count=240`. `background: { component: starfield, count: 240 }`
 - **grid** — A fine grid fading at the edges. Props: `color="rgba(127,127,127,0.25)"`, `size=48`. `background: { component: grid, size: 48 }`
 - **dots** — A dot matrix. Props: `color="rgba(127,127,127,0.35)"`, `size=28`. `background: { component: dots, size: 28 }`
 - **noise** — Film grain. Props: `opacity=0.12`. `background: { component: noise, opacity: 0.12 }`
@@ -1435,29 +1441,18 @@ Links glossary mentions inside a plain string at render time — for words that 
 - **vignette** — A darkened edge. Props: `color="rgba(0,0,0,1)"`, `strength=0.35`. `background: { component: vignette, strength: 0.35 }`
 - **rays** — Light rays from a point. Props: `color="rgba(255,255,255,0.35)"`, `x=20`, `y=-10`, `opacity=0.5`. `background: { component: rays, x: 20 }`
 - **stripes** — Diagonal stripes. Props: `color="rgba(127,127,127,0.12)"`, `size=14`, `angle=45`. `background: { component: stripes, size: 14 }`
-- **sweep** — A slow animated gradient sweep across two or three colours. Props: `colors=["#0f172a", "#1e3a8a", "#0f766e"]`, `speed=1`, `angle=120`. `background: { component: sweep, speed: 1 }`
+- **sweep** — A slow animated gradient sweep across two or three colours. Props: `colors=scheme === "light" ? ["#dbeafe", "#c7d2fe", "#ccfbf1"] : ["#0f172a", "#1e3a8a", "#0f766e"]`, `speed=1`, `angle=120`. `background: { component: sweep, speed: 1 }`
 
 ### Map
 
 - **globe** — A wire globe off to one side, turning slowly, with day and night sides. Props: `color="rgba(127,127,127,0.55)"`, `x=0.82`, `y=0.45`, `radius=0.62`, `tilt=23`, `speed=6`, `step=15`, `opacity=1`. `background: { component: globe, x: 0.82 }`
-- **lattice** — A grid that keeps zooming into one of its cells, three levels deep. Props: `color="rgba(127,127,127,0.35)"`, `accent="rgba(124,58,237,0.9)"`, `size=96`, `sub=4`, `period=9`. `background: { component: lattice, size: 96 }`
 - **thiessen** (also voronoi) — Seeds drifting under their Voronoi (Thiessen) polygons. Props: `color="rgba(127,127,127,0.5)"`, `accent="rgba(13,148,136,0.9)"`, `count=22`, `speed=5`. `background: { component: thiessen, count: 22 }`
 - **cells** — Reports landing on a lattice: cells light up, ripple and go dark. Props: `color="rgba(127,127,127,0.3)"`, `accent="rgba(219,39,119,0.9)"`, `size=30`, `rate=0.9`, `life=7`. `background: { component: cells, size: 30 }`
 - **compass** — A compass rose with its degree ring turning. Props: `color="rgba(127,127,127,0.5)"`, `accent="rgba(220,38,38,0.85)"`, `x=0.84`, `y=0.52`, `radius=0.42`, `speed=3`. `background: { component: compass, x: 0.84 }`
 - **neatline** — A map sheet's frame: neatline, coordinate ticks, north arrow, scale bar. Props: `color="rgba(127,127,127,0.55)"`, `inset=0.045`, `step=48`, `lat=13.0`, `lon=80.1`. `background: { component: neatline, inset: 0.045 }`
 - **scan** — A graticule swept by a satellite pass. Props: `color="rgba(127,127,127,0.35)"`, `accent="rgba(59,130,246,0.9)"`, `size=48`, `major=5`, `speed=40`. `background: { component: scan, size: 48 }`
-- **track** — A GPS trail wandering, with a pulsing head. Props: `color="rgba(127,127,127,0.6)"`, `accent="rgba(5,150,105,0.9)"`, `speed=1`, `width=2`. `background: { component: track, speed: 1 }`
 - **raster** (also choropleth) — A choropleth of cells classed by a drifting field, with its legend. Props: `color="rgba(5,150,105,1)"`, `size=40`, `classes=6`, `speed=0.05`, `opacity=0.55`. `background: { component: raster, size: 40 }`
 - **plane** (also floor) — A dotted ground plane in oblique projection for exploded figures; locks onto `data-plane="origin"`/`"unit"` marks in the slide. Props: `color="rgba(100,116,139,0.55)"`, `accent="rgba(13,148,136,0.9)"`, `size=36`, `shear=0.62`, `rise=0.3`, `major=4`, `x=0.05`, `y=0.9`, `horizon=0.24`, `focus=0.3`, `speed=11`. `background: { component: plane, size: 36 }`
-
-### Sign
-
-- **signer** — A landmark skeleton signing, with a fading wrist trail. Props: `color="rgba(13,148,136,0.55)"`, `accent="rgba(124,58,237,0.75)"`, `x=0.78`, `y=0.42`, `scale=0.16`, `speed=1`, `zones`, `trail`. `background: { component: signer, x: 0.78 }`
-- **variants** — One signer drawn as several synthetic variants at once. Props: `color="rgba(5,150,105,0.5)"`, `accent="rgba(124,58,237,0.7)"`, `x=0.78`, `y=0.4`, `scale=0.15`, `count=4`, `speed=1`. `background: { component: variants, x: 0.78 }`
-- **handshapes** — A calm field of hands morphing through handshapes. Props: `color="rgba(13,148,136,0.4)"`, `accent="rgba(124,58,237,0.6)"`, `cols=7`, `rows=4`, `size=0.075`, `speed=1`, `top=0`. `background: { component: handshapes, cols: 7 }`
-- **trails** — Wrist paths through signing space; `align` adds a time-warped copy (DTW). Props: `color="rgba(13,148,136,0.55)"`, `accent="rgba(124,58,237,0.8)"`, `count=4`, `speed=1`, `align`, `area="0,0,1,1"`. `background: { component: trails, count: 4 }`
-- **window** — Frames scrolling past a hopping 64-frame recogniser window. Props: `color="rgba(37,99,235,0.45)"`, `accent="rgba(5,150,105,0.8)"`, `speed=1`, `y=0.93`. `background: { component: window, speed: 1 }`
-- **embedding** — Word clusters around prototypes and a query finding its nearest. Props: `color="rgba(124,58,237,0.45)"`, `accent="rgba(5,150,105,0.85)"`, `count=9`, `speed=1`. `background: { component: embedding, count: 9 }`
 
 ### Not components
 

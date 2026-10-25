@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
 import { isPremiumName } from "../core/premium.ts";
-import { backgroundComponent } from "../react/Backgrounds.tsx";
+import { UnknownBackground, backgroundComponent } from "../react/Backgrounds.tsx";
 import { useSlide } from "../react/context.ts";
+import { useEffectiveScheme } from "./Contextual.tsx";
 import { PremiumBackground, PremiumNotice } from "../react/premium.tsx";
 
 /**
@@ -24,6 +25,7 @@ export function Background({
   [key: string]: unknown;
 }) {
   const slide = useSlide();
+  const scheme = useEffectiveScheme();
   if (isPremiumName(name))
     return (
       <>
@@ -49,7 +51,13 @@ export function Background({
       style={{ opacity }}
       aria-hidden
     >
-      {Comp ? <Comp {...props} active={slide.active} /> : children}
+      {Comp ? (
+        <Comp {...props} active={slide.active} scheme={scheme} />
+      ) : name && !children && !slide.preview ? (
+        <UnknownBackground name={name} />
+      ) : (
+        children
+      )}
     </div>
   );
 }

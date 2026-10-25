@@ -13,7 +13,8 @@ carries speaker notes.
 | `slides/01-writing.mdx` | the format, slots, a custom layout, all nineteen layouts, the glossary, the tools around a deck |
 | `slides/02-clicks.mdx` | `<Clicks>` and its options, all twenty click effects, `at` / ranges / `hide` / `clicks:` / `clicksStart`, direction, marks and moving words |
 | `slides/03-code.mdx` | stepped code, every fence option and notation mark, code groups, TwoSlash, Monaco, magic move, maths, Mermaid, sketches |
-| `slides/04-looks.mdx` | all sixteen themes in light and dark, per-slide schemes, every background (and colour, gradient, image, video, page, wash, the long-hand keys), bling in every tone, building blocks |
+| `slides/04-looks.mdx` | all sixteen themes in light and dark, per-slide schemes, every built-in background (and colour, gradient, image, video, page, wash, the long-hand keys), bling in every tone, building blocks |
+| `slides/pro-library.mdx` | the Pro library: a cover, an outline, a KPI board, a pull quote, a gallery, a terminal cover and three backgrounds, each a real `pro/` item, then one card from each of the fifteen genres |
 | `slides/05-motion.mdx` | every transition, `-in`/`-out`, three speeds, a transition of the deck's own, auto-animate, `<Motion>`, `autoSlide` |
 | `slides/06-media.mdx` | image layouts, the lightbox, Markdown images, video, audio, embeds, YouTube and X, QR |
 | `slides/07-islands.mdx` | eleven runtimes on one slide, and how a renderer is written |

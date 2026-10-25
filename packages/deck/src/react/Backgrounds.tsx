@@ -4,7 +4,8 @@ import { splitTransition } from "../core/model.ts";
 
 import type { SlideBackground } from "../core/model.ts";
 import { useDeck } from "./context.ts";
-import { PremiumBackground, isPremiumBackground } from "./premium.tsx";
+import { removedBackgroundHint } from "../core/removed.ts";
+import { PremiumBackground, isPremiumBackground, useAuthoring } from "./premium.tsx";
 import { useLayout, useNav, useUi } from "./hooks.ts";
 
 /**
@@ -50,6 +51,7 @@ export function BackgroundLayer({
   className?: string;
 }) {
   const theme = useUi((s) => s.theme);
+  const deckScheme = useUi((s) => s.colorScheme);
   if (!bg)
     return (
       <div
@@ -115,11 +117,29 @@ export function BackgroundLayer({
         </div>
       ) : Comp ? (
         <div className="deck-background-component" style={{ opacity: bg.opacity }}>
-          <Comp {...bg.props} active={active} />
+          <Comp {...bg.props} active={active} scheme={bg.scheme ?? deckScheme} />
         </div>
       ) : bg.component ? (
-        <div className="deck-background-missing">Unknown background “{bg.component}”</div>
+        <UnknownBackground name={bg.component} />
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * A background name nothing registered. A published deck shows the theme's own background and
+ * says nothing, as it does for a `pro/` item it cannot load; the author (the dev server, a
+ * builder preview) gets the notice — and, for a name 0.6 removed, where it went
+ * (core/removed.ts).
+ */
+export function UnknownBackground({ name }: { name: string }) {
+  const authoring = useAuthoring();
+  if (!authoring) return null;
+  const removed = removedBackgroundHint(name);
+  return (
+    <div className="deck-background-missing">
+      {`Unknown background “${name}”`}
+      {removed ? <span className="deck-background-removed">{removed}</span> : null}
     </div>
   );
 }

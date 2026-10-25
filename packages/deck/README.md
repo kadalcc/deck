@@ -180,6 +180,51 @@ compiler (`compileDeck` in `@kadal/deck/runtime`) takes the same options.
 
 **Slide hooks.** `useSlideEnter(fn)` and `useSlideLeave(fn)` (Slidev's `onSlideEnter` / `onSlideLeave`) run when a slide becomes, and stops being, the current one in that window — slides stay mounted while near, so mount is not "shown". They never fire for the presenter's next-step box, the overview, print or the audience's mirror, and StrictMode does not double them; an enter can return a cleanup that runs on leave.
 
+## Backgrounds and layouts
+
+**The Pro library.** 95 backgrounds and layouts in 15 genres — board-pack covers, KPI boards,
+magazine spreads, terminal covers, lecture outlines, synthwave grids, wedding invitations — each in
+light and dark, each wearing the deck's theme. `layout: pro/<slug>` or `background: pro/<slug>` (or
+`<Background name="pro/<slug>" />`) picks one:
+
+<table>
+<tr>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/exec-cover/card.webp" alt="Executive Cover, a Pro layout from the corporate genre" width="100%"></a><br><code>layout: pro/exec-cover</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/kpi-board/card.webp" alt="KPI Board, a Pro layout from the finance genre" width="100%"></a><br><code>layout: pro/kpi-board</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/pull-quote/card.webp" alt="Pull Quote, a Pro layout from the editorial genre" width="100%"></a><br><code>layout: pro/pull-quote</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/terminal-cover/card.webp" alt="Terminal Cover, a Pro layout from the developer genre" width="100%"></a><br><code>layout: pro/terminal-cover</code></td>
+</tr>
+<tr>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/neon-drift/card.webp" alt="Neon Drift, a Pro background from the gaming genre" width="100%"></a><br><code>background: pro/neon-drift</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/ridges/card.webp" alt="Ridges, a Pro background from the nature genre" width="100%"></a><br><code>background: pro/ridges</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/riso-shapes/card.webp" alt="Riso Shapes, a Pro background from the creative genre" width="100%"></a><br><code>background: pro/riso-shapes</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><img src="https://deck.kadal.cc/api/v1/library/previews/breathe/card.webp" alt="Breathe, a Pro background from the health genre" width="100%"></a><br><code>background: pro/breathe</code></td>
+</tr>
+</table>
+
+The library renders on decks published to [deck.kadal.cc](https://deck.kadal.cc/pricing/) from a
+**Pro or Team** workspace: the host names where its items live (`window.__KADAL_DECK__.premium`) and
+the engine fetches an item when a slide first uses it. Anywhere else — a static build on your own
+host, or the free plan — nothing is fetched and a `pro/` name falls back to the theme's own
+background and the `default` layout, so the slide still reads; only an author (`kadal-deck dev`, a
+builder preview) sees a small chip saying the item is Pro. Every item: [deck.kadal.cc/library](https://deck.kadal.cc/library/).
+
+**Built in, free everywhere.** 28 backgrounds ship with the engine (listed under
+[Themes and looks](#themes-and-looks)). A few of them:
+
+<table>
+<tr>
+<td align="center" width="33%"><img src="https://raw.githubusercontent.com/kadalcc/deck/main/.github/assets/backgrounds/gradient-mesh.webp" alt="The gradient-mesh background: slow, drifting, blurred colour blobs" width="100%"><br><code>background: gradient-mesh</code></td>
+<td align="center" width="33%"><img src="https://raw.githubusercontent.com/kadalcc/deck/main/.github/assets/backgrounds/aurora.webp" alt="The aurora background: soft northern-lights bands" width="100%"><br><code>background: aurora</code></td>
+<td align="center" width="33%"><img src="https://raw.githubusercontent.com/kadalcc/deck/main/.github/assets/backgrounds/waves.webp" alt="The waves background: layered noise waves" width="100%"><br><code>background: waves</code></td>
+</tr>
+<tr>
+<td align="center" width="33%"><img src="https://raw.githubusercontent.com/kadalcc/deck/main/.github/assets/backgrounds/glows.webp" alt="The glows background: large slow glows of colour" width="100%"><br><code>background: glows</code></td>
+<td align="center" width="33%"><img src="https://raw.githubusercontent.com/kadalcc/deck/main/.github/assets/backgrounds/constellation.webp" alt="The constellation background: points joined to their near neighbours, drifting" width="100%"><br><code>background: constellation</code></td>
+<td align="center" width="33%"><img src="https://raw.githubusercontent.com/kadalcc/deck/main/.github/assets/backgrounds/globe.webp" alt="The globe background: a wire globe, turning slowly" width="100%"><br><code>background: globe</code></td>
+</tr>
+</table>
+
 ## Themes and looks
 
 `T` (or the palette button) opens the theme menu on every view — play, presenter, audience: all sixteen first-party themes, the deck's own first (`theme`, then `themes` in its order), and light or dark. `themes:` orders the menu rather than narrowing it: the themes a deck names load with it, and every first-party theme it does not name follows them, its stylesheet and layouts in a chunk of their own that loads only when someone picks it (or points at its row), so offering all sixteen adds nothing to the first paint. Each screen keeps its own choice per deck in the browser. Code follows the pick for the themes the deck names: each one's Shiki pair (`kadal.theme.shiki`) colours every block, magic move and Monaco editor while it is shown — the build highlights with each distinct pair those themes need, as CSS variables, so a deck whose named themes share one pair pays nothing. A theme the menu adds on its own keeps the deck's code colours; name it in `themes:` to give it its own.
@@ -198,7 +243,9 @@ compiler (`compileDeck` in `@kadal/deck/runtime`) takes the same options.
 
 **Fonts.** `fonts: ["Inter:wght@400;600"]` as before, or Slidev's object — `fonts: { sans: Inter, heading: Fraunces, mono: Fira Code, weights: "400,600", italic: true, provider: google | bunny | none, local: [Helvetica Neue] }` — which also points the theme's font tokens at the families. Exports wait for them.
 
-Backgrounds (`background: name` in frontmatter, `{ component, ...props }` for props, or `<Background name>` inside a slide): mesh, aurora, waves, lines, beams, sparkles, starfield, grid, dots, noise, spotlight, the quieter set — topo (contours, with index lines), glows, graticule, hex, constellation, vignette, rays, stripes, sweep — and the map room: **globe** (a wire globe off to one side, turning slowly, day and night sides), **lattice** (a grid zooming into one cell three levels deep), **thiessen** (drifting seeds under their Voronoi polygons), **cells** (reports landing on a lattice, rippling, going dark), **compass** (a rose with its degree ring turning), **neatline** (a map sheet's frame with coordinate ticks, north arrow and scale bar), **scan** (a graticule swept by a satellite pass), **track** (a GPS trail with a pulsing head), **raster** (a choropleth of cells classed by a drifting field, with its legend), **plane** (a dotted ground plane in oblique projection — the lattice an exploded figure stands on — with surveyor's control points at every `major`-th point, thinning toward a `horizon` and away from `focus` so words beside the figure sit on clean paper, and one slow glint crossing it; a figure that carries `data-plane="origin"` and `data-plane="unit"` marks has the floor locked onto it, point for point, at any size). All pause off-slide and hold a still frame under reduced motion; colours are CSS strings, so `rgba()` sets their weight. With a component, `color` is the component's stroke and `fill` (or `tint`) washes the layer behind it — a soft diagonal gradient of that one colour, strongest top-left, never a flat block (`background: { component: topo, color: "rgba(5,150,105,0.55)", fill: "rgba(5,150,105,0.12)" }`); `tint:` alone does the same on a slide without a component, where plain `color:` stays flat.
+Built-in backgrounds (`background: name` in frontmatter, `{ component, ...props }` for props, or `<Background name>` inside a slide): mesh, aurora, waves, lines, beams, sparkles, starfield, grid, dots, noise, spotlight, the quieter set — topo (contours, with index lines), glows, graticule, hex, constellation, vignette, rays, stripes, sweep — and a few for talks about places: **globe** (a wire globe off to one side, turning slowly, day and night sides), **thiessen** (drifting seeds under their Voronoi polygons), **cells** (reports landing on a grid, rippling, going dark), **compass** (a rose with its degree ring turning), **neatline** (a map sheet's frame with coordinate ticks, north arrow and scale bar), **scan** (a graticule swept by a satellite pass), **raster** (a choropleth of cells classed by a drifting field, with its legend), **plane** (a dotted ground plane in oblique projection for an exploded figure — with surveyor's control points at every `major`-th point, thinning toward a `horizon` and away from `focus` so words beside the figure sit on clean paper, and one slow glint crossing it; a figure that carries `data-plane="origin"` and `data-plane="unit"` marks has the floor locked onto it, point for point, at any size). All pause off-slide and hold a still frame under reduced motion; colours are CSS strings, so `rgba()` sets their weight. With a component, `color` is the component's stroke and `fill` (or `tint`) washes the layer behind it — a soft diagonal gradient of that one colour, strongest top-left, never a flat block (`background: { component: topo, color: "rgba(5,150,105,0.55)", fill: "rgba(5,150,105,0.12)" }`); `tint:` alone does the same on a slide without a component, where plain `color:` stays flat. The [Pro library](#backgrounds-and-layouts) adds 95 more on deck.kadal.cc.
+
+**Removed in 0.6.** The six sign-language backgrounds (`signer`, `variants`, `handshapes`, `trails`, `window`, `embedding`) and the map room's `lattice` and `track` are no longer in the engine. A deck that still names one shows the theme's background when published and an "Unknown background" notice, with a link, in `kadal-deck dev`; to keep one, copy its source from [the docs](https://deck.kadal.cc/docs/backgrounds/#removed-in-06) into your deck and register it with `registerBackground` in `src/components.tsx`.
 
 Bling components, all reading the theme's tokens: `<GradientText>`, `<Glass tone glow>`, `<Glow>`, `<Chip tone icon>`, `<Icon name>` (any Lucide icon, or Iconify's `set:name`), `<Divider label>`, `<Ribbon>`, `<Halo>`, `<Shimmer>`, `<Blob>`, `<Tilt>`. Tones: accent, accent-2, good, warn, bad, info, neutral, purple, pink, amber, teal.
 

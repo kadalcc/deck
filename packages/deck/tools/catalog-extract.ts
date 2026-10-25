@@ -198,13 +198,15 @@ function backgroundProps(fn: ts.FunctionDeclaration): PropInfo[] {
   const props: PropInfo[] = [];
   for (const el of param.name.elements) {
     const name = el.name.getText();
-    if (name === "active") continue;
+    // The layer passes these to every background; they are not props an author sets.
+    if (name === "active" || name === "scheme") continue;
     let type: ValueShape = { text: "unknown", variants: [] };
     let def: string | undefined;
     const helper = new RegExp(`\\bas(Num|Str|List)\\(\\s*${name}\\s*,`).exec(body);
     if (helper) {
       const args = argsAt(body, helper.index + helper[0].indexOf("("));
-      def = clean(args.slice(args.indexOf(",") + 1));
+      // A call the formatter wrapped keeps its trailing comma: not part of the default.
+      def = clean(args.slice(args.indexOf(",") + 1)).replace(/,$/, "");
       type =
         helper[1] === "Num"
           ? { text: "number", variants: [{ type: "number" }] }

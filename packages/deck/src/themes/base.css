@@ -143,11 +143,17 @@ body {
 /* The author's note on a slide whose Pro item did not load (dev server, builder preview only). */
 /* Sized in stage pixels (the slide is 1920 wide and scaled to fit), so it stays readable in a
    builder's small preview as well as full screen. */
+/* Bottom centre of the stage: every view's chrome sits in the corners (the slide number and nav
+   pill on the right, back-to-start and the theme menu on the left), so the middle is the one
+   place on the edge nothing else claims, in play, the presenter's current slide and a preview. */
 .deck-premium-chip {
   position: absolute;
   z-index: 40;
-  right: 32px;
+  left: 50%;
   bottom: 32px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 64px);
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -311,8 +317,14 @@ body {
 .deck-background-missing {
   position: absolute;
   inset: auto 1rem 1rem auto;
+  max-width: 40rem;
+  text-align: right;
   font: 12px var(--deck-mono-font);
   color: #f43f5e;
+}
+.deck-background-removed {
+  display: block;
+  margin-top: 0.25rem;
 }
 
 /* ── stage and slides ────────────────────────────────────────────────────── */
