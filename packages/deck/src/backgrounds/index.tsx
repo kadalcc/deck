@@ -3,7 +3,6 @@ import { useRef } from "react";
 import { registerBackground } from "../react/Backgrounds.tsx";
 import { type BgProps, asList, asNum, smoothNoise, useCanvas } from "./shared.ts";
 import "./gis.tsx";
-import "./sign.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

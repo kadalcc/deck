@@ -296,6 +296,12 @@ describe("lint", () => {
     ]);
     const r = await lint("# A\n\n---\nlayout: two-col\n---\n\n# B\n");
     expect(r.diagnostics[0]!.hint).toContain('"two-cols"');
+    // A background 0.6 removed says where it went instead of guessing a near name.
+    const gone = await lint("# A\n\n---\nbackground: signer\n---\n\n# B\n");
+    expect(gone.diagnostics.map((d) => d.code)).toEqual(["background-unknown"]);
+    expect(gone.diagnostics[0]!.hint).toBe(
+      "`signer` was removed in Kadal Deck 0.6. Copy it into your deck: https://deck.kadal.cc/docs/backgrounds/#removed-in-06",
+    );
   });
 
   test("YAML, includes and MDX errors point at the file's own lines", async () => {

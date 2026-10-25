@@ -111,7 +111,7 @@ export function sectionMarkdown(catalog: Catalog, section: CatalogSection, level
         "`background: <name>` in frontmatter, `{ component: <name>, ...props }` for props, or `<Background name>` in the slide. Colours are CSS strings; `rgba()` sets their weight. With a component, `color` is its stroke and `fill`/`tint` washes the layer.",
         "",
       );
-      for (const fam of ["ambient", "quiet", "map", "sign", "plain"]) {
+      for (const fam of ["ambient", "quiet", "map", "plain"]) {
         const list = catalog.backgrounds.filter((b) => b.family === fam);
         if (!list.length) continue;
         out.push(

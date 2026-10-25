@@ -311,8 +311,14 @@ body {
 .deck-background-missing {
   position: absolute;
   inset: auto 1rem 1rem auto;
+  max-width: 40rem;
+  text-align: right;
   font: 12px var(--deck-mono-font);
   color: #f43f5e;
+}
+.deck-background-removed {
+  display: block;
+  margin-top: 0.25rem;
 }
 
 /* ── stage and slides ────────────────────────────────────────────────────── */

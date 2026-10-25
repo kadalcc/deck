@@ -116,7 +116,7 @@ export interface LayoutInfo {
   example: string;
 }
 
-export type BackgroundFamily = "ambient" | "quiet" | "map" | "sign" | "plain";
+export type BackgroundFamily = "ambient" | "quiet" | "map" | "plain";
 
 export interface BackgroundInfo {
   name: string;

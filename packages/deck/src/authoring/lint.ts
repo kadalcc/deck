@@ -15,6 +15,7 @@ import { extractRegion, parseSnippetLine } from "../compiler/snippets.ts";
 import { comarkEnabled } from "../compiler/setup.ts";
 import { BUILTIN_RUNNER_LANGS, runnerLang } from "../monaco/runner-langs.ts";
 import { resolveBackground, splitTransition } from "../core/model.ts";
+import { removedBackgroundHint } from "../core/removed.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
 import { checkDeckSyntax, checkSlideSyntax, deckTransitionNames, maskSlideBody } from "./lint-syntax.ts";
@@ -483,9 +484,11 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         severity: "error",
         code: "background-unknown",
         message: `Unknown background "${bg.component}".`,
-        hint: near
-          ? `Did you mean "${near}"?`
-          : 'Use a registered background, a colour like "#0f172a", a gradient, or an image path.',
+        hint:
+          removedBackgroundHint(bg.component) ??
+          (near
+            ? `Did you mean "${near}"?`
+            : 'Use a registered background, a colour like "#0f172a", a gradient, or an image path.'),
       });
     }
     for (const key of ["transition", "backgroundTransition"]) {
