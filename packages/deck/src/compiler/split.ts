@@ -414,9 +414,10 @@ export function notesBlocks(content: string): NotesBlock[] {
 
 /**
  * Lift a slide's notes out of its MDX (their lines are blanked, so the rest keep their numbers),
- * blank every other HTML comment, and lift its `<style>` blocks.
+ * blank every other HTML comment, and lift its `<style>` blocks. Every blanking keeps the line
+ * breaks, so line k of the result is line k of the input (runtime/edit-map.ts relies on it).
  */
-function extractNotes(content: string): {
+export function extractNotes(content: string): {
   content: string;
   notes: string | null;
   styles: SlideStyle[];

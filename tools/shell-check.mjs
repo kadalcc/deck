@@ -61,7 +61,8 @@ const send = async (res, file) => {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://x");
   if (url.pathname === "/editor") {
-    res.setHeader("content-type", "text/html");
+    // UTF-8, or the deck's non-ASCII text reaches the shell mangled (and every offset after it).
+    res.setHeader("content-type", "text/html; charset=utf-8");
     return res.end(editor);
   }
   let p = decodeURIComponent(url.pathname.replace(/^\/@me\/talk\//, ""));
@@ -78,6 +79,113 @@ const server = createServer(async (req, res) => {
   res.statusCode = 404;
   res.end();
 });
+
+/**
+ * Editing in place (runtime/edit.ts), driven as a person would: arm it, hover, click, double-click
+ * a heading, retype it, Enter. The shell must post `edited` with the range of that text in the
+ * file the editor sent — and never move the deck while the person types (Space is "next").
+ */
+async function editInPlace(page, deckText) {
+  const frame = page.frameLocator("iframe");
+  const toShell = (message) =>
+    page.evaluate((m) => document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, ...m }, "*"), message);
+  const latest = (type) => page.evaluate((t) => window.msgs.filter((m) => m.type === t).at(-1) ?? null, type);
+  const waitFor = (type, count) =>
+    page.waitForFunction(([t, n]) => window.msgs.filter((m) => m.type === t).length >= n, [type, count], { timeout: 10_000 });
+  const countOf = (type) => page.evaluate((t) => window.msgs.filter((m) => m.type === t).length, type);
+  const ready = await page.evaluate(() => window.msgs.find((m) => m.type === "ready"));
+  check("edit: ready lists the \"edit\" feature", Array.isArray(ready.features) && ready.features.includes("edit"), JSON.stringify(ready.features));
+
+  await toShell({ type: "edit", on: true });
+  const heading = frame.locator(".deck-slide.is-present h1");
+  const title = (await heading.textContent()).trim();
+  const range = (await heading.getAttribute("data-deck-edit")).split("-").map(Number);
+  check("edit: the heading's range holds its text in deck.mdx", deckText.slice(range[0], range[1]) === title, `${range} "${title}"`);
+  await heading.hover();
+  const outline = frame.locator(".deck-edit-outline");
+  check("edit: hovering outlines it, offering a double-click", (await outline.textContent()) === "Double-click to edit");
+  await page.screenshot({ path: join(root, "examples/starter/check-output/edit-hover.png") });
+  const para = frame.locator(".deck-slide.is-present p").first();
+  await para.hover();
+  check("edit: text with markup inside says to edit it in the source", (await outline.textContent()) === "Edit in source");
+
+  const located = await countOf("located");
+  await heading.click();
+  await waitFor("located", located + 1);
+  const loc = await latest("located");
+  const line = deckText.slice(0, deckText.indexOf(title)).split("\n").length;
+  check("edit: a click reports where it is in the source", loc.file === "deck.mdx" && loc.line === line && deckText.slice(0, loc.offset).split("\n").length === line, JSON.stringify(loc));
+
+  const typed = "Retyped in place: வணக்கம் 🎉";
+  await heading.dblclick();
+  check("edit: a double-click makes the heading editable", (await heading.getAttribute("contenteditable")) !== null);
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type(typed);
+  await page.screenshot({ path: join(root, "examples/starter/check-output/edit-typing.png") });
+  await page.keyboard.press("Enter");
+  await waitFor("edited", 1);
+  const edited = await latest("edited");
+  check(
+    "edit: Enter posts `edited` with the heading's range, before and after",
+    edited.file === "deck.mdx" && edited.from === range[0] && edited.to === range[1] &&
+      edited.before === title && deckText.slice(edited.from, edited.to) === edited.before && edited.after === typed,
+    JSON.stringify(edited),
+  );
+  const still = await latest("nav");
+  check("edit: typing (spaces too) never moved the deck", still.index === 1, JSON.stringify(still));
+  check("edit: the element is no longer editable", (await heading.getAttribute("contenteditable")) === null);
+
+  // The editor applies it and sends the source again: the slide shows the new text.
+  const applied = deckText.slice(0, edited.from) + edited.after + deckText.slice(edited.to);
+  await toShell({ type: "source", text: applied });
+  await frame.getByRole("heading", { name: typed }).waitFor({ timeout: 20_000 }).then(
+    () => check("edit: the re-sent source shows the edit", true),
+    () => check("edit: the re-sent source shows the edit", false),
+  );
+  // Esc puts it back and posts nothing.
+  const fresh = frame.locator(".deck-slide.is-present h1");
+  await fresh.dblclick();
+  await page.keyboard.type(" and more");
+  await page.keyboard.press("Escape");
+  check(
+    "edit: Esc cancels, puts the text back and posts nothing",
+    (await fresh.textContent()) === typed && (await countOf("edited")) === 1 && (await fresh.getAttribute("contenteditable")) === null,
+  );
+
+  // A multi-file deck: the page a slide comes from, with its own offsets.
+  const page2 = "# The included page\n\nPage text.\n";
+  await toShell({
+    type: "source",
+    text: "---\ntitle: Files\n---\n\n# Main\n\n---\nsrc: pages/intro.mdx\n---\n",
+    files: { "pages/intro.mdx": page2 },
+    at: 1,
+  });
+  const included = frame.getByRole("heading", { name: "The included page" });
+  await included.waitFor({ timeout: 20_000 });
+  await included.dblclick();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("Renamed page");
+  // Leaving the element saves too.
+  await frame.locator(".deck-slide.is-present p").first().click();
+  await waitFor("edited", 2);
+  const inPage = await latest("edited");
+  check(
+    "edit: an included page's text reports its own file and offsets",
+    inPage.file === "pages/intro.mdx" && inPage.from === 2 && inPage.to === 2 + "The included page".length &&
+      inPage.before === "The included page" && inPage.after === "Renamed page",
+    JSON.stringify(inPage),
+  );
+
+  // Edit mode and a comment pick never run at once: arming the pick turns editing off.
+  await toShell({ type: "pick", on: true });
+  await page.waitForTimeout(100);
+  await included.dblclick();
+  check("edit: a pick turns editing in place off", (await included.getAttribute("contenteditable")) === null);
+  await toShell({ type: "pick", on: false });
+  await toShell({ type: "source", text: deckText, at: 1 });
+  await frame.getByRole("heading", { name: title }).waitFor({ timeout: 20_000 });
+}
+
 const PORT = Number(process.env.PORT ?? 5411);
 await new Promise((r) => server.listen(PORT, r));
 
@@ -98,6 +206,9 @@ try {
     broken: document.querySelectorAll(".deck-compile-error").length,
   }));
   check("published: every slide compiled", counts.slides > 0 && counts.broken === 0, `${counts.slides} slides`);
+  // Source positions are for the editor's preview only: a published deck carries none.
+  const tagged = await page.locator("[data-deck-at], [data-deck-edit], [data-deck-file]").count();
+  check("published: no source positions in the page", tagged === 0, `${tagged}`);
   await page.keyboard.press("ArrowRight");
   await page.waitForTimeout(600);
   check("published: ArrowRight moves", /^#\/1/.test(await page.evaluate(() => location.hash)));
@@ -145,6 +256,7 @@ try {
   );
   const nav = await page.evaluate(() => window.msgs.filter((m) => m.type === "nav").at(-1));
   check("preview: it lands on the slide asked for and reports it", nav.index === 1, JSON.stringify(nav));
+  await editInPlace(page, deck);
   // An edit to the slide on screen: the recompiled slide must replace the old one, not a cache.
   await page.evaluate((deckText) => {
     const edited = deckText.replace(/\n---\n/, "\n---\n\n# Edited by the check\n\n---\n");
