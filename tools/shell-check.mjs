@@ -321,6 +321,55 @@ async function recompileInPlace(page, deckText) {
   await page.waitForTimeout(800);
 }
 
+/**
+ * A drawn background is one picture at every size: the builder's small preview, a thumbnail and
+ * the full window. They drew in screen pixels (aurora's swell and blur, waves' 50 px strokes,
+ * the mesh's vmax blobs), so a 560 px preview showed bands twice as tall and soft as a 1600 px
+ * view. Each is shot at two frame sizes, still (reduced motion), and compared at 320×180.
+ */
+async function backgroundsScale(browser, deckText) {
+  const names = ["aurora", "waves", "lines", "gradient-mesh", "glows"];
+  const text = deckText.replace(/\n---\n[\s\S]*$/, "\n") +
+    names.map((n) => `\n---\nbackground: ${n}\n---\n\n<span />\n`).join("");
+  const page = await browser.newPage({ viewport: { width: 1700, height: 1000 }, reducedMotion: "reduce" });
+  await page.goto(`http://localhost:${PORT}/editor`);
+  await page.waitForFunction(() => window.msgs.some((m) => m.type === "compiled"), null, { timeout: 60_000 });
+  await page.evaluate((t) => document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "source", text: t, at: 1 }, "*"), text);
+  await page.waitForTimeout(1500);
+  const shots = {};
+  for (const [w, h] of [[560, 315], [1600, 900]]) {
+    await page.evaluate(([w, h]) => Object.assign(document.querySelector("iframe").style, { width: `${w}px`, height: `${h}px` }), [w, h]);
+    for (let i = 0; i < names.length; i++) {
+      await page.evaluate((i) => document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "command", id: "nav.goto", params: { index: i + 1 }, seq: 800 + i }, "*"), i);
+      await page.waitForTimeout(700);
+      const png = await page.frameLocator("iframe").locator(".deck-backgrounds").screenshot();
+      (shots[names[i]] ??= []).push(
+        await page.evaluate(async (b64) => {
+          const img = new Image();
+          img.src = `data:image/png;base64,${b64}`;
+          await img.decode();
+          const c = Object.assign(document.createElement("canvas"), { width: 320, height: 180 });
+          const g = c.getContext("2d");
+          g.drawImage(img, 0, 0, 320, 180);
+          return Array.from(g.getImageData(0, 0, 320, 180).data);
+        }, png.toString("base64")),
+      );
+    }
+  }
+  const diff = (a, b) => {
+    let d = 0;
+    for (let i = 0; i < a.length; i += 4) d += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+    return d / (a.length / 4) / 3;
+  };
+  const off = names.map((n) => [n, diff(...shots[n])]).filter(([, d]) => d > 4); // 0.6.3: aurora 18, waves 39, mesh 23, lines 5.3, glows 4.5
+  check(
+    "backgrounds: a drawn background looks the same at 560 and 1600 px",
+    off.length === 0,
+    names.map((n) => `${n} ${diff(...shots[n]).toFixed(1)}`).join(", "),
+  );
+  await page.close();
+}
+
 async function chromeOff(page, deckText) {
   const frame = page.frameLocator("iframe");
   const toShell = (message) =>
@@ -516,6 +565,7 @@ try {
   await notice.getByRole("button", { name: "Dismiss" }).click();
   check("preview: the notice dismisses", (await notice.count()) === 0);
   check("no console errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await backgroundsScale(browser, deck);
 } finally {
   await browser.close();
   server.close();

@@ -532,12 +532,15 @@
   inset: 0;
   overflow: hidden;
   filter: blur(60px);
+  /* Its blobs are sized off this box (cqmax), not the window (vmax): a preview, a thumbnail and
+     the full-window view then show the same picture (react/Backgrounds.tsx). */
+  container-type: size;
 }
 .deck-bg-glows span {
   position: absolute;
-  width: 70vmax;
-  height: 70vmax;
-  margin: -35vmax 0 0 -35vmax;
+  width: 70cqmax;
+  height: 70cqmax;
+  margin: -35cqmax 0 0 -35cqmax;
   border-radius: 50%;
   animation: deck-glow-drift var(--speed, 60s) ease-in-out infinite alternate;
 }

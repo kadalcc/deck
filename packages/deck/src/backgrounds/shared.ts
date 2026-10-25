@@ -87,6 +87,16 @@ export function useCanvas(
 }
 
 /**
+ * A blur radius in the canvas's drawing units. `ctx.filter` blurs and `shadowBlur` are measured
+ * in the BITMAP's pixels — the transform `useCanvas` sets does not scale them — and the bitmap
+ * follows the size the canvas is shown at, so a fixed `blur(40px)` was twice as soft in a small
+ * preview as in a full-window view. Times the bitmap's scale, it is the same everywhere.
+ */
+export function blurPx(ctx: CanvasRenderingContext2D, px: number): number {
+  return px * Math.abs(ctx.getTransform().a || 1);
+}
+
+/**
  * Seconds since the last frame, for a draw function: never more than a twentieth (a tab coming
  * back must not jump), and never less than zero. The first frame's timestamp is when that frame
  * STARTED, which can be before the `performance.now()` the loop was set up at — a negative step

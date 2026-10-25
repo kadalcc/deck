@@ -1,7 +1,7 @@
 import { useRef } from "react";
 
 import { registerBackground } from "../react/Backgrounds.tsx";
-import { type BgProps, asList, asNum, smoothNoise, useCanvas } from "./shared.ts";
+import { type BgProps, asList, asNum, blurPx, smoothNoise, useCanvas } from "./shared.ts";
 import "./gis.tsx";
 
 /**
@@ -80,7 +80,7 @@ export function Aurora({ active, colors, speed }: BgProps) {
         }
         ctx.lineTo(w, h);
         ctx.closePath();
-        ctx.filter = "blur(40px)";
+        ctx.filter = `blur(${blurPx(ctx, 40)}px)`;
         ctx.fill();
         ctx.filter = "none";
       });
@@ -100,7 +100,7 @@ export function Waves({ active, colors, speed, blur }: BgProps) {
     active,
     (ctx, w, h, t) => {
       ctx.clearRect(0, 0, w, h);
-      ctx.filter = `blur(${bl}px)`;
+      ctx.filter = `blur(${blurPx(ctx, bl)}px)`;
       cs.forEach((c, i) => {
         ctx.beginPath();
         ctx.lineWidth = 50;

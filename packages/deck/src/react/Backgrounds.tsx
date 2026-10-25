@@ -1,4 +1,11 @@
-import { type ComponentType, useEffect, useRef, useState } from "react";
+import {
+  type ComponentType,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { splitTransition } from "../core/model.ts";
 
@@ -39,6 +46,57 @@ export function tintWash(color: string): string {
     `radial-gradient(110% 85% at 10% 0%, ${at(80)} 0%, ${at(0)} 62%)`,
     `linear-gradient(158deg, ${at(100)} 0%, ${at(64)} 48%, ${at(36)} 100%)`,
   ].join(", ");
+}
+
+/**
+ * ─── A DRAWN BACKGROUND IS DRAWN ON THE STAGE, THEN SCALED ───
+ *
+ * The background stack covers the stage's box in SCREEN pixels (it sits beside the stage, not in
+ * its transform), and so do the presenter's, the remote's and the thumbnails' copies, each at its
+ * own size. A component background that draws in pixels — aurora's 80 px swell and 40 px blur, a
+ * starfield's star size, a grid's 48 px cell — drew the same pixels into every box, so a 780 px
+ * builder preview showed bands twice as tall and twice as soft as the 1456 px play view.
+ * Component and `pro/` backgrounds now lay out at the deck's own size (`config.width × height`)
+ * and are scaled to cover the box, as the stage is: one look at every size. Colours, gradients,
+ * images and video already follow their box (cover, percentages) and stay as they were.
+ */
+function OnStage({ children }: { children: ReactNode }) {
+  const deck = useDeck();
+  const width = deck.config?.width ?? 0;
+  const height = deck.config?.height ?? 0;
+  const box = useRef<HTMLDivElement>(null);
+  // Until measured (the first render, a server render), as if the box were the stage: the layout
+  // effect corrects it before the first paint.
+  const [fit, setFit] = useState({ s: 1, x: 0, y: 0 });
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el || !width || !height) return;
+    const measure = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      const s = Math.max(w / width, h / height);
+      setFit((f) => {
+        const next = { s, x: (w - width * s) / 2, y: (h - height * s) / 2 };
+        return f.s === next.s && f.x === next.x && f.y === next.y ? f : next;
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width, height]);
+  if (!width || !height) return <>{children}</>;
+  return (
+    <div ref={box} className="deck-background-onstage">
+      <div
+        className="deck-background-stage"
+        style={{ width, height, transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.s})` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export function BackgroundLayer({
@@ -107,17 +165,21 @@ export function BackgroundLayer({
       ) : null}
       {premium ? (
         <div className="deck-background-component" style={{ opacity: bg.opacity }}>
-          <PremiumBackground
-            name={bg.component!}
-            props={bg.props}
-            active={active}
-            // Inactive and not a slide leaving: a still copy (print, a thumbnail, a preview).
-            still={!active && !className?.includes("is-leaving")}
-          />
+          <OnStage>
+            <PremiumBackground
+              name={bg.component!}
+              props={bg.props}
+              active={active}
+              // Inactive and not a slide leaving: a still copy (print, a thumbnail, a preview).
+              still={!active && !className?.includes("is-leaving")}
+            />
+          </OnStage>
         </div>
       ) : Comp ? (
         <div className="deck-background-component" style={{ opacity: bg.opacity }}>
-          <Comp {...bg.props} active={active} scheme={bg.scheme ?? deckScheme} />
+          <OnStage>
+            <Comp {...bg.props} active={active} scheme={bg.scheme ?? deckScheme} />
+          </OnStage>
         </div>
       ) : bg.component ? (
         <UnknownBackground name={bg.component} />
