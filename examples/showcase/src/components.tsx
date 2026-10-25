@@ -7,6 +7,7 @@ import {
   type SketchStep,
   useClickIndex,
   useDeck,
+  useEffectiveScheme,
   useNav,
   useNavDirection,
   useSlide,
@@ -94,6 +95,40 @@ function BgTile({ name, label, ...props }: { name: string; label?: string; [k: s
     <div className="sc-bg-tile" data-background={name}>
       <Background name={name} {...props} />
       <span>{label ?? name}</span>
+    </div>
+  );
+}
+
+/**
+ * The Pro library as a wall of cards. The pictures are deck.kadal.cc's public previews — one
+ * card per item, a dark one for the dark scheme — so the slide shows the library as it is today
+ * on any host, while the items themselves render only on a Pro or Team deck (react/premium.tsx).
+ */
+const LIBRARY = "https://deck.kadal.cc/library/";
+const PREVIEWS = "https://deck.kadal.cc/api/v1/library/previews/";
+
+function LibraryGrid({ items }: { items: string }) {
+  const scheme = useEffectiveScheme();
+  const card = scheme === "dark" ? "card-dark.webp" : "card.webp";
+  return (
+    <div className="sc-library">
+      {items.split(",").map((entry) => {
+        const [slug, label] = entry.split(":").map((x) => x.trim());
+        return (
+          <a key={slug} href={LIBRARY} target="_blank" rel="noreferrer">
+            <img
+              src={`${PREVIEWS}${slug}/${card}`}
+              alt={`pro/${slug}`}
+              loading="lazy"
+              // Offline, or before the host has the previews: an empty card with its label.
+              onError={(e) => {
+                e.currentTarget.style.visibility = "hidden";
+              }}
+            />
+            <span>{label ?? slug}</span>
+          </a>
+        );
+      })}
     </div>
   );
 }
@@ -508,6 +543,7 @@ export const components: Record<string, ComponentType<Record<string, unknown>>> 
   EffectTile: EffectTile as ComponentType<Record<string, unknown>>,
   BgTile: BgTile as ComponentType<Record<string, unknown>>,
   ThemeCard: ThemeCard as ComponentType<Record<string, unknown>>,
+  LibraryGrid: LibraryGrid as ComponentType<Record<string, unknown>>,
   StepMeter: StepMeter as ComponentType<Record<string, unknown>>,
   DirectionBadge: DirectionBadge as ComponentType<Record<string, unknown>>,
   EnterCounter: EnterCounter as ComponentType<Record<string, unknown>>,

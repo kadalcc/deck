@@ -2,8 +2,10 @@
 layout: section
 id: code
 background:
-  component: graticule
-  color: "rgba(99,102,241,0.22)"
+  component: lines
+  colors: "#6366f1,#8b5cf6,#0ea5e9"
+  count: 10
+  opacity: 0.6
 ---
 
 <p className="sc-eyebrow">Chapter 3</p>
@@ -13,7 +15,7 @@ background:
 Highlighted at build time, stepped on clicks, typeset without a server.
 
 <Notes>
-Chapter three: the things a technical talk is made of. Code is highlighted by Shiki when the deck is built — in a light and a dark theme at once — so nothing ships a highlighter to the audience. The graticule behind this slide is one of the quieter backgrounds.
+Chapter three: the things a technical talk is made of. Code is highlighted by Shiki when the deck is built — in a light and a dark theme at once — so nothing ships a highlighter to the audience. The flowing lines behind this slide are `background: lines`, given three colours of its own.
 </Notes>
 
 ---

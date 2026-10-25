@@ -9,7 +9,7 @@ background:
 
 # Looks
 
-Sixteen themes, light and dark, thirty-odd backgrounds, and the small things that make a slide feel finished.
+Sixteen themes, light and dark, twenty-eight backgrounds built in, and the small things that make a slide feel finished.
 
 <Notes>
 Chapter four: how a deck looks. The aurora behind this slide is `background: aurora`.
@@ -110,7 +110,7 @@ id: backgrounds
 
 <p className="sc-eyebrow">Looks · backgrounds</p>
 
-## Every background, running
+## Every built-in background, running
 
 <div className="sc-bg-grid">
   <BgTile name="mesh" />
@@ -135,26 +135,18 @@ id: backgrounds
   <BgTile name="sweep" />
   <BgTile name="globe" />
   <BgTile name="raster" />
-  <BgTile name="lattice" />
   <BgTile name="thiessen" />
   <BgTile name="cells" />
   <BgTile name="compass" />
   <BgTile name="neatline" />
   <BgTile name="scan" />
-  <BgTile name="track" />
   <BgTile name="plane" />
-  <BgTile name="signer" />
-  <BgTile name="variants" />
-  <BgTile name="handshapes" />
-  <BgTile name="trails" />
-  <BgTile name="window" />
-  <BgTile name="embedding" />
 </div>
 
-<p className="sc-small">Each is <code>background: name</code> for a whole slide, or <code>{'<Background name="…" />'}</code> inside one. <Kbd>↓</Kbd> for colours, gradients, pictures, video, pages and washes.</p>
+<p className="sc-small">Each is <code>background: name</code> for a whole slide, or <code>{'<Background name="…" />'}</code> inside one, free on every plan. <Kbd>↓</Kbd> for colours, gradients, pictures, video, pages and washes.</p>
 
 <Notes>
-Thirty-six component backgrounds, every one running in its own card. The first row is the classic set — mesh, aurora, waves, lines, beams, sparkles. Then the quieter ones: topo, glows, graticule, hex, constellation, vignette, rays, stripes, sweep. Then the map room — globe, raster, lattice, thiessen, cells, compass, neatline, scan, track, plane. And the sign-language set from the ISL talk: signer, variants, handshapes, trails, window, embedding.
+Twenty-eight component backgrounds, built in and free, every one running in its own card. First the classic set — mesh, aurora, waves, lines, beams, sparkles, starfield, grid, dots, noise, spotlight. Then the quieter ones: topo, glows, graticule, hex, constellation, vignette, rays, stripes, sweep. Then a few for talks about places — globe, raster, thiessen, cells, compass, neatline, scan and plane. The next chapter is the Pro library: ninety-five more.
 
 Each pauses when its slide is not shown and holds a still frame under reduced motion. Press down for the other kinds of background.
 </Notes>
@@ -293,23 +285,31 @@ The same wash, alone. Plain `color:` stays flat; `tint:` gives the gradient.
 
 ----
 background:
-  component: globe
-  fill: "rgba(5,150,105,0.08)"
-  color: "rgba(5,150,105,0.55)"
-  x: 0.8
-  y: 0.5
-  radius: 0.6
-id: bg-globe
+  component: gradient-mesh
+  colors: "#0ea5e9,#22d3ee,#6366f1,#ec4899"
+  speed: 0.6
+id: bg-palette
 ---
 
-<p className="sc-eyebrow">The map room</p>
+<p className="sc-eyebrow">background: {"{ component, colors, speed }"}</p>
 
-## Backgrounds for talks about places
+## A palette of your own
 
-A wire globe turning about a tilted axis, with props for where it sits and how big it is: `x`, `y`, `radius`.
+Most backgrounds take `colors` and `speed`: here the mesh drifts through the deck's sea blues and one pink, at a little over half its usual pace.
+
+<How>
+
+```yaml
+background:
+  component: gradient-mesh
+  colors: "#0ea5e9,#22d3ee,#6366f1,#ec4899"
+  speed: 0.6
+```
+
+</How>
 
 <Notes>
-The map-room set was made for a GIS talk: the globe, lattice, thiessen polygons, cells, compass, neatline, scan, track, raster and plane. Every one takes props — this globe sits right of centre.
+The same gradient mesh as the cover, given four colours of its own and slowed down. `colors` is a comma-separated list of CSS colours; `speed` multiplies the motion.
 </Notes>
 
 ----

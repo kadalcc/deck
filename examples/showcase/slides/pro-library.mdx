@@ -1,0 +1,214 @@
+---
+layout: section
+id: pro
+background: pro/swell
+---
+
+<p className="sc-eyebrow">Chapter 5</p>
+
+# The Pro library
+
+Ninety-five backgrounds and layouts in fifteen genres, each one wearing whatever theme the deck wears.
+
+<Notes>
+Chapter five: the Pro library. Everything so far ships with the engine, free. The library is ninety-five more pieces — sixty-two backgrounds and thirty-three layouts across fifteen genres, from board packs to birthday cards — that deck.kadal.cc serves to decks published on a Pro or Team plan. This tour is published from a Team workspace, so what you see in this chapter is the real thing. The sea behind this slide is `background: pro/swell`.
+</Notes>
+
+---
+layout: pro/exec-cover
+id: pro-cover
+hideInToc: true
+kicker: Pro library · corporate
+presenter: Kadal Deck, the tour
+date: "layout: pro/exec-cover"
+---
+
+# Operating plan for the next four quarters
+
+Where we grow, what we stop, and what it costs.
+
+<Notes>
+A board-pack cover: eyebrow, title and a line under it on the left, an accent monolith on the right. The slide is a heading and a sentence; `layout: pro/exec-cover` and three props — `kicker`, `presenter`, `date` — do the rest.
+</Notes>
+
+---
+layout: pro/lecture-outline
+id: pro-outline
+kicker: Chapter 5 of 12
+current: 2
+---
+
+## This chapter
+
+1. A cover for a board pack
+2. An outline that knows where you are
+3. Numbers on a board
+4. A quote, set like a magazine
+5. A gallery of work
+6. A talk that opens in a terminal
+7. A background that moves
+8. Where it renders
+9. The whole library
+
+<Notes>
+An outline from the education genre. It is a plain numbered list; `current: 2` marks where the talk is — this slide — so the items before it read as done and the ones after as still to come.
+</Notes>
+
+---
+layout: pro/kpi-board
+id: pro-kpi
+columns: 4
+period: The library, October 2026
+---
+
+## The library in four numbers
+
+- **95** Items
+- **15** Genres
+- **62** Backgrounds
+- **33** Layouts
+
+<Notes>
+A board of figures from the finance genre. Each list item is a bold figure and its label; an italic or struck-through word after it becomes an up or down chip. The figures are the library's own: ninety-five items, fifteen genres, sixty-two backgrounds and thirty-three layouts.
+</Notes>
+
+---
+layout: pro/pull-quote
+id: pro-quote
+by: Kadal
+role: the studio behind Kadal Deck
+---
+
+> A layout is a decision you make once, so the next forty slides don't have to make it again.
+
+<Notes>
+A pull quote from the editorial genre: a Markdown blockquote, and `by` and `role` for the line under it.
+</Notes>
+
+---
+layout: pro/mosaic-gallery
+id: pro-gallery
+gap: 1
+---
+
+## The tour's own pictures
+
+The sea, the night and the tide, from this deck's `public/` folder.
+
+::gallery::
+
+![The sea, wide](media/sea-wide.jpg)
+
+![The sea, standing up](media/sea-portrait.jpg)
+
+![The night](media/night-thumb.jpg)
+
+![The tide clock](media/tide-poster-full.jpg)
+
+![The sea at dusk](media/sea-thumb.jpg)
+
+<Notes>
+A gallery from the creative genre. The heading and a line go in the default slot; the pictures go after `::gallery::`, one per paragraph, and the first is shown large.
+</Notes>
+
+---
+layout: pro/terminal-cover
+id: pro-terminal
+hideInToc: true
+window: ~/talks/tour — zsh
+command: npx kadal-deck publish
+---
+
+# Your talk, with the library
+
+One `layout:` or `background:` line per slide; deck.kadal.cc serves the rest.
+
+<Notes>
+A cover for a developer talk: a terminal window, the command that started it, and the title typed out after it. `window` and `command` are its props.
+</Notes>
+
+---
+id: pro-motion
+colorScheme: dark
+background: pro/neon-drift
+---
+
+<p className="sc-eyebrow">background: pro/neon-drift</p>
+
+## A background that moves
+
+A synthwave grid rolling toward a glowing horizon, under a slow sun.
+
+<How>
+
+```yaml
+---
+colorScheme: dark
+background: pro/neon-drift
+---
+```
+
+</How>
+
+<Notes>
+From the gaming genre. Library backgrounds behave like the built-in ones: they pause when their slide is not shown, and they draw a still poster instead of moving for print, export, thumbnails and anyone who asked for reduced motion.
+</Notes>
+
+---
+id: pro-where
+background: pro/blob-morph
+---
+
+<p className="sc-eyebrow">Pro library · where it renders</p>
+
+## One line of frontmatter, on the right host
+
+<Cols cols="1fr 1.1fr" gap="3rem" align="start">
+<Col>
+
+```yaml
+---
+layout: pro/kpi-board
+background: pro/blob-morph
+---
+```
+
+<p className="sc-small">The same names work in <code>{'<Background name="pro/…" />'}</code> inside a slide.</p>
+
+</Col>
+<Col>
+
+<Callout kind="tip" title="Pro and Team, on deck.kadal.cc">
+
+Decks published from a Pro or Team workspace get the real item, fetched when a slide first uses it.
+
+</Callout>
+
+<Callout kind="note" title="Everywhere else">
+
+A self-hosted build or the free plan falls back to the theme's own background and the default layout, so the slide still reads. Only the dev server says why, in a small chip.
+
+</Callout>
+
+</Col>
+</Cols>
+
+<Notes>
+How to use it, and where it works. A `pro/` name in `layout:` or `background:` is all it takes. On deck.kadal.cc, a deck published from a Pro or Team workspace gets the real item. Anywhere else — your own host, a static build, the free plan — the name falls back to the theme's background and the default layout: the slide still reads, nothing errors, and only the author sees a chip saying the item is Pro. The blobs behind this slide are `pro/blob-morph`, from the startup genre.
+</Notes>
+
+---
+id: pro-all
+---
+
+<p className="sc-eyebrow">Pro library · fifteen genres</p>
+
+## The whole library
+
+<LibraryGrid items="exec-cover:corporate, pitch-cover:startup, geometry-drift:education, molecule:science, circuit:developer, riso-shapes:creative, festival-lights:celebration, sky-doodles:kids, kpi-board:finance, breathe:health, neon-drift:gaming, ridges:nature, magazine-cover:editorial, checker-floor:retro, big-statement:minimal" />
+
+<p className="sc-small">One from each genre. Every item, in light and dark and moving, is at <a href="https://deck.kadal.cc/library/">deck.kadal.cc/library</a>.</p>
+
+<Notes>
+One item from each of the fifteen genres: corporate, startup, education, science, developer, creative, celebration, kids, finance, health, gaming, nature, editorial, retro and minimal. The pictures are the library's public previews, so this slide shows them on any host. Click any card for the whole library, where every item plays in light and dark.
+</Notes>
