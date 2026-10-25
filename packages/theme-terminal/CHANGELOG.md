@@ -1,5 +1,12 @@
 # @kadal/theme-terminal
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [0dd7ae0]
+  - @kadal/deck@0.5.2
+
 ## 0.5.1
 
 ### Patch Changes
