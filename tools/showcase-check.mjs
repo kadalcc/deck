@@ -8,8 +8,23 @@
  *   node tools/showcase-check.mjs --out <dir>       where screenshots and exports go
  *                                                   (default examples/showcase/check-output, gitignored)
  *   node tools/showcase-check.mjs --port <n>        serve the deck on that port (default: any free one)
- *   node tools/showcase-check.mjs --only <text>     run only the checks whose name contains <text>
- *                                                   (the walk still reads the deck's slides)
+ *   node tools/showcase-check.mjs --only <text>     run only the checks whose name contains <text>;
+ *                                                   repeat it for several (the walk, when it is left
+ *                                                   out, still reads the deck's slides)
+ *   node tools/showcase-check.mjs --skip <text>     leave out the checks whose name contains <text>
+ *                                                   (repeatable; wins over --only)
+ *   node tools/showcase-check.mjs --export-format <list>
+ *                                                   the formats `kadal-deck export` makes and checks
+ *                                                   (default pdf,png,pptx,pptx-editable,md)
+ *   node tools/showcase-check.mjs --export-range <spec>
+ *                                                   export only those slides (`kadal-deck export
+ *                                                   --range`, e.g. 1-74 or 75-)
+ *
+ * CI runs this in parallel jobs, each with a share of the checks (.github/workflows/ci.yml): the
+ * walk with the views that count against it (print, /export, scroll), every other view, and the CLI
+ * export split by format. A run that does not walk checks its export against the print view's own
+ * page count; the walk's run checks that count against the walk, so the export is still held to
+ * Σ(clicks + 1) over every slide.
  *
  * Needs the engine built (`bun run build`) and Playwright's Chromium (`npx playwright install chromium`).
  * Prints a table and exits non-zero on any failure.
@@ -36,15 +51,18 @@ const dist = join(deckDir, "dist");
 const argv = process.argv.slice(2);
 const flag = (f) => argv.includes(f);
 const val = (f, d) => (argv.includes(f) ? argv[argv.indexOf(f) + 1] : d);
+const vals = (f) => argv.flatMap((a, i) => (a === f && argv[i + 1] !== undefined ? [argv[i + 1]] : []));
 const out = resolve(val("--out", join(deckDir, "check-output")));
 const started = Date.now();
 
 // ── results ────────────────────────────────────────────────────────────────
 const results = [];
 let current = null;
-const only = val("--only", null);
+const only = vals("--only");
+const skip = vals("--skip");
+const wanted = (name) => (!only.length || only.some((o) => name.includes(o))) && !skip.some((s) => name.includes(s));
 async function step(name, fn) {
-  if (only && !name.includes(only) && !name.startsWith("walk:")) return;
+  if (!wanted(name)) return;
   const t = Date.now();
   current = { name, ok: true, detail: [], ms: 0 };
   try {
@@ -217,13 +235,21 @@ let columns = null;
 let visited = new Map(); // "h,v" -> total clicks seen
 
 // ── 1 · every slide, every click (light) ───────────────────────────────────
-await step("walk: every slide and every click, light", async () => {
+const WALK = "walk: every slide and every click, light";
+// Every other check finds its slides by id, so a run that leaves the walk out still reads them.
+if (!wanted(WALK)) {
+  const { page, context } = await openPage();
+  await page.goto(`${base}#/0`);
+  await ready(page);
+  columns = await manifestOf(page);
+  await context.close();
+}
+await step(WALK, async () => {
   const { page, context, take } = await openPage();
   mkdirSync(join(out, "light"), { recursive: true });
   await page.goto(`${base}#/0`);
   await ready(page);
   columns = await manifestOf(page);
-  if (only && !"walk: every slide and every click, light".includes(only)) return void (await context.close());
   const expected = columns.reduce((n, c) => n + c.length, 0);
   let last = "";
   let stepsTaken = 0;
@@ -866,8 +892,10 @@ await step("scroll view: slides stacked full width, on a phone and a desktop", a
       if (Math.abs(geo.segs[i].top - (prev.top + prev.height)) > 1) gaps++;
     }
     expect(gaps === 0, `${vp.width}px: ${gaps} slides do not follow straight on from the one above`);
-    // A slide with no steps takes its own height and no more: no empty page between slides.
-    const plain = flat().map((s, i) => ({ s, g: geo.segs[i] })).filter(({ s }) => (visited.get(`${s.h},${s.v}`) ?? 0) === 0);
+    // A slide with no steps takes its own height and no more: no empty page between slides. Which
+    // slides have steps is what the walk counted, so CI runs this view in the walk's job.
+    if (!visited.size) note(`${vp.width}px: not walked in this run, so slide heights were not checked`);
+    const plain = flat().map((s, i) => ({ s, g: geo.segs[i] })).filter(({ s }) => visited.size && (visited.get(`${s.h},${s.v}`) ?? 0) === 0);
     const tall = plain.filter(({ g }) => g && g.height > slideH + 2);
     expect(tall.length === 0, `${vp.width}px: ${tall.length} slides without steps are taller than a slide (${tall[0]?.g.height.toFixed(0)} > ${slideH.toFixed(0)})`);
     // What is on screen at the top is a slide with words on it, not an empty stretch.
@@ -916,6 +944,31 @@ await step("?embedded and ?projector", async () => {
 // A slide with `clicksStart` opens (and prints) from that step.
 const startOf = (key) => flat().find((s) => `${s.h},${s.v}` === key)?.start ?? 0;
 const expectedPages = () => [...visited.entries()].reduce((n, [key, clicks]) => n + clicks + 1 - Math.min(startOf(key), clicks), 0);
+// Slide numbers (1-based, in deck order) a `--range` spec such as "1-74" or "75-" names.
+const slidesIn = (spec, total) =>
+  spec.split(",").flatMap((part) => {
+    const [a, b] = part.trim().split("-");
+    const lo = Number(a);
+    const hi = b === undefined ? lo : b === "" ? total : Number(b);
+    return Array.from({ length: Math.max(0, Math.min(hi, total) - lo + 1) }, (_, i) => lo + i);
+  });
+// What an export must have: the walked count, or, in a run that did not walk, the print view's
+// own count (which the walk's run holds to the walked count: see the header). With a range, the
+// same for just those slides.
+async function pagesWanted(range) {
+  if (visited.size) {
+    if (!range) return expectedPages();
+    const keys = new Set(slidesIn(range, flat().length).map((n) => `${flat()[n - 1].h},${flat()[n - 1].v}`));
+    return [...visited.entries()].filter(([key]) => keys.has(key)).reduce((n, [key, clicks]) => n + clicks + 1 - Math.min(startOf(key), clicks), 0);
+  }
+  const { page, context } = await openPage({ viewport: { width: 1920, height: 1080 } });
+  await page.goto(`${base}?print-pdf${range ? `&range=${encodeURIComponent(range)}` : ""}`);
+  await page.waitForSelector(".deck-print-pages[data-ready]", { timeout: 120_000 });
+  const pages = await page.locator(".deck-print-page").count();
+  await context.close();
+  note(`not walked in this run: ${pages} pages expected, the print view's count${range ? ` for slides ${range}` : ""}`);
+  return pages;
+}
 await step("print: ?print-pdf has a page per click step", async () => {
   const { page, context, take } = await openPage({ viewport: { width: 1920, height: 1080 } });
   await page.goto(`${base}?print-pdf`);
@@ -958,20 +1011,29 @@ await step("export: /export, the browser exporter, previews and packs a range", 
   await context.close();
 });
 
+const FORMATS = { pdf: "PDF", png: "PNG", pptx: "PPTX", "pptx-editable": "editable PPTX", md: "Markdown" };
+const exportFormats = val("--export-format", Object.keys(FORMATS).join(",")).split(",").filter(Boolean);
+for (const f of exportFormats)
+  if (!(f in FORMATS)) {
+    console.error(`--export-format ${f}: use ${Object.keys(FORMATS).join(", ")}`);
+    process.exit(2);
+  }
+const exporting = (f) => exportFormats.includes(f);
+const exportRange = val("--export-range", null);
 if (!flag("--no-export")) {
-  await step("export: kadal-deck export — PDF, PNG, PPTX, editable PPTX, Markdown", async () => {
+  await step(`export: kadal-deck export — ${exportFormats.map((f) => FORMATS[f]).join(", ")}${exportRange ? `, slides ${exportRange}` : ""}`, async () => {
     const dir = join(out, "export");
     const bin = join(root, "packages/deck/dist/cli/bin.js");
     await run(
       "node",
-      [bin, "export", "--url", base, "--no-posters", "--format", "pdf,png,pptx,pptx-editable,md", "--scale", "1", "--out", dir],
+      [bin, "export", "--url", base, "--no-posters", "--format", exportFormats.join(","), "--scale", "1", "--out", dir, ...(exportRange ? ["--range", exportRange] : [])],
       deckDir,
     );
     const pdf = join(dir, "showcase.pdf");
     const pptx = join(dir, "showcase.pptx");
-    const want = expectedPages();
-    expect(existsSync(pdf) && statSync(pdf).size > 200_000, "no PDF, or a tiny one");
-    if (existsSync(pdf)) {
+    const want = await pagesWanted(exportRange);
+    if (exporting("pdf")) expect(existsSync(pdf) && statSync(pdf).size > 200_000, "no PDF, or a tiny one");
+    if (exporting("pdf") && existsSync(pdf)) {
       const text = readFileSync(pdf).toString("latin1");
       const count = (text.match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
       expect(count === want, `the PDF has ${count} pages, expected ${want}`);
@@ -994,17 +1056,19 @@ if (!flag("--no-export")) {
       expect(/\/Title\s*[(<]/.test(text), "the PDF has no title in its metadata");
     }
     const pngs = existsSync(join(dir, "png")) ? readdirSync(join(dir, "png")).filter((f) => f.endsWith(".png")) : [];
-    expect(pngs.length === want, `${pngs.length} PNGs, expected ${want}`);
-    expect(pngs.every((f) => statSync(join(dir, "png", f)).size > 5_000), "a PNG is suspiciously small");
-    expect(existsSync(pptx) && statSync(pptx).size > 200_000, "no PPTX, or a tiny one");
-    if (existsSync(pptx)) {
+    if (exporting("png")) {
+      expect(pngs.length === want, `${pngs.length} PNGs, expected ${want}`);
+      expect(pngs.every((f) => statSync(join(dir, "png", f)).size > 5_000), "a PNG is suspiciously small");
+    }
+    if (exporting("pptx")) expect(existsSync(pptx) && statSync(pptx).size > 200_000, "no PPTX, or a tiny one");
+    if (exporting("pptx") && existsSync(pptx)) {
       const slides = new Set(readFileSync(pptx).toString("latin1").match(/ppt\/slides\/slide\d+\.xml/g) ?? []);
       expect(slides.size === want, `the PPTX has ${slides.size} slides, expected ${want}`);
     }
     // The editable PPTX: a slide per page, and its words are words (text runs), not pictures.
     const editable = join(dir, "showcase.editable.pptx");
-    expect(existsSync(editable) && statSync(editable).size > 100_000, "no editable PPTX, or a tiny one");
-    if (existsSync(editable)) {
+    if (exporting("pptx-editable")) expect(existsSync(editable) && statSync(editable).size > 100_000, "no editable PPTX, or a tiny one");
+    if (exporting("pptx-editable") && existsSync(editable)) {
       const listing = await new Promise((done) => {
         const p = spawn("unzip", ["-l", editable]);
         let s = "";
@@ -1025,8 +1089,8 @@ if (!flag("--no-export")) {
     }
     // Markdown: a picture per page, the notes as text.
     const md = join(dir, "showcase.md");
-    expect(existsSync(md), "no Markdown export");
-    if (existsSync(md)) {
+    if (exporting("md")) expect(existsSync(md), "no Markdown export");
+    if (exporting("md") && existsSync(md)) {
       const text = readFileSync(md, "utf8");
       const pics = (text.match(/!\[[^\]]*\]\(\.\/png\/[^)]+\.png\)/g) ?? []).length;
       expect(pics === want, `the Markdown has ${pics} pictures, expected ${want}`);

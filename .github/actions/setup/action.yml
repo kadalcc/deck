@@ -1,0 +1,66 @@
+name: Set up the engine
+description: >
+  Bun (pinned) and Node, the workspace installed from bun.lock with Bun's download cache restored,
+  optionally the packages built, and optionally Playwright's Chromium with its system packages.
+
+inputs:
+  build:
+    description: Build the packages (and install again, so the kadal-deck bin gets linked)
+    default: "false"
+  playwright:
+    description: Install Playwright's Chromium and the system packages it needs
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: oven-sh/setup-bun@v2
+      with:
+        # The one Bun every workflow here uses (release.yml too): bun.lock is written by it.
+        bun-version: 1.3.14
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+        restore-keys: bun-${{ runner.os }}-
+    - shell: bash
+      run: bun install --frozen-lockfile
+
+    # The CLI's bin (packages/deck/dist/cli/bin.js) only exists after the build, so the first
+    # install couldn't link `kadal-deck` into the examples; installing again links it.
+    - if: inputs.build == 'true'
+      shell: bash
+      run: |
+        bun run build
+        bun install --frozen-lockfile
+
+    # `playwright install --with-deps` spends most of its time on apt: ~26 MB of fonts and xvfb
+    # from the Ubuntu mirror, 30 s to 90 s depending on the mirror. apt-get keeps what it downloads
+    # in its archive directory; pointed at a cached one, a warm run downloads nothing. The same
+    # packages are installed either way, so the browser renders the same text as before.
+    - if: inputs.playwright == 'true'
+      id: pw
+      shell: bash
+      run: |
+        echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+        # The runner image (ImageOS/ImageVersion are the runner's own variables, not in `env`).
+        echo "image=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
+        echo "image-version=${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
+        mkdir -p ~/.cache/apt-archives/partial
+        echo "Dir::Cache::Archives \"$HOME/.cache/apt-archives/\";" | sudo tee /etc/apt/apt.conf.d/99-cached-archives > /dev/null
+    - if: inputs.playwright == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/ms-playwright
+          ~/.cache/apt-archives/*.deb
+        # A new runner image restores the last image's packages and adds what changed.
+        key: playwright-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-${{ steps.pw.outputs.image-version }}
+        restore-keys: playwright-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-
+    - if: inputs.playwright == 'true'
+      shell: bash
+      run: npx playwright install --with-deps chromium

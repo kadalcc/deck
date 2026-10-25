@@ -10,6 +10,7 @@ permissions:
   contents: write
   pull-requests: write
   id-token: write # npm trusted publishing (OIDC) and provenance
+  actions: write # start CI on the "Version packages" branch (below)
 
 jobs:
   release:
@@ -51,6 +52,14 @@ jobs:
           # trusted publishing (OIDC) first whenever the package has a trusted publisher.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
+      # The "Version packages" PR is opened and pushed with GITHUB_TOKEN, which starts no workflow
+      # by itself: its pull_request run sits waiting for a maintainer's approval, and fails when the
+      # PR moves on unapproved. A dispatch is the one event GITHUB_TOKEN may start, so CI runs on
+      # the branch as it now stands and its checks land on the PR's head commit.
+      - if: steps.changesets.outputs.hasChangesets == 'true' && steps.changesets.outputs.published != 'true'
+        run: gh workflow run ci.yml --ref changeset-release/main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # The GitHub release v<version>, with the changelog entry and the packages that went out.
       - if: steps.changesets.outputs.published == 'true'
         run: node tools/github-release.mjs
