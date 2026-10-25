@@ -228,6 +228,16 @@ started with `--allow-outside`.
 | `slide_render`, `deck_preview` | PNGs of slides from a dev server kept running between calls, and a live URL |
 | `deck_build`, `deck_export`, `deck_publish` | a static site, PDF/PNG/PPTX, and a published deck |
 
+**Hosted decks, from any agent.** The hosted service runs a remote MCP server at
+`https://deck.kadal.cc/mcp` (OAuth; you pick one workspace and can make the connection read-only).
+It lists and inspects your published decks, reads a talk in progress (current slide, polls,
+questions by votes), changes titles, visibility and passcodes, rolls back versions, makes share
+links, and quick-edits and publishes decks through the web builder without ever overwriting newer
+work. Add it as a custom connector in Claude, ChatGPT or Cursor, or with
+`claude mcp add --transport http kadal-deck-hosted https://deck.kadal.cc/mcp`.
+
+[![Kadal Deck MCP connector – tool definition quality and endpoint health on Glama](https://glama.ai/mcp/connectors/cc.kadal/deck/badges/score.svg)](https://glama.ai/mcp/connectors/cc.kadal/deck)
+
 For scripts: `kadal-deck check` (exit 1 on errors), `kadal-deck screenshot`, `kadal-deck info [topic]`,
 and `--json` on every command. Exit codes: 0 ok, 1 failed, 2 usage, 3 not signed in, 4 missing
 prerequisite. `@kadal/deck/catalog` is everything a deck can use as data, `@kadal/deck/authoring`
