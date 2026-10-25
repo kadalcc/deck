@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useDeck } from "./context.ts";
+import { useUi } from "./hooks.ts";
 
 /**
  * A theme (or addon) the deck asked for that this player does not have: said once, on screen, in
@@ -12,12 +13,15 @@ export function ThemeNotice() {
   const warnings = deck.manifest.packages?.warnings ?? [];
   const key = warnings.join("\n");
   const [dismissed, setDismissed] = useState<string | null>(null);
+  // Chrome off (an editor's preview): the editor has the same lines as warning diagnostics.
+  const chrome = useUi((s) => s.chrome);
 
   useEffect(() => {
     for (const w of key ? key.split("\n") : []) console.warn(`[deck] ${w}`);
   }, [key]);
 
-  if (!key || dismissed === key || deck.projector || deck.mode === "audience") return null;
+  if (!key || !chrome || dismissed === key || deck.projector || deck.mode === "audience")
+    return null;
   return (
     <div className="deck-theme-notice" role="status">
       <div className="deck-theme-notice-text">

@@ -19,6 +19,20 @@ import { Icon } from "../components/bling.tsx";
  */
 export function Chrome() {
   const deck = useDeck();
+  const shown = useUi((s) => s.chrome);
+  // Without the chrome (an editor's preview), only what a key or the slide itself opens.
+  if (!shown)
+    return (
+      <>
+        <PauseCurtain />
+        <HelpSheet />
+        <JumpTo />
+        <SearchSheet />
+        <HintLayer />
+        <Toast />
+        <ConfettiLayer />
+      </>
+    );
   return (
     <>
       {deck.config.controls === true ? <Controls /> : null}

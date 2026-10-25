@@ -26,6 +26,9 @@ it includes) beside it, under any path:
   table cell be retyped, reported as `edited` with the file's `from`–`to` offsets, `before` and
   `after`. The shell never changes the deck: apply the edit and post `source` again. Shells that
   can do this say `features: ["edit"]` in `ready`.
+- `{type:"chrome", on:false}` hides the deck's own chrome in the preview (the arrows pill, progress
+  bar, slide number, theme button) for an editor whose stage has its own; the watermark and ads
+  stay. On by default; shells that take it say `"chrome"` in `ready.features`.
 
 Slides compiled this way cannot `import`: they use the engine's components.
 

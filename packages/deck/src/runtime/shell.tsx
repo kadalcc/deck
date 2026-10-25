@@ -206,6 +206,8 @@ function withKit(manifest: DeckManifest, kit: KitOptions | undefined): DeckManif
 
 export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
   const [state, setState] = useState<State>({ phase: "loading" });
+  // The play view's own chrome; an editor whose stage has its own controls turns it off.
+  const [chrome, setChrome] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -294,6 +296,8 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
         edit.flush();
         edit.setSource(m.text, m.files ?? {});
         void load(m.text, m.files, m.at);
+      } else if (m.type === "chrome") {
+        setChrome(m.on);
       } else if (m.type === "edit") {
         if (m.on) picking = false;
         edit.arm(m.on);
@@ -353,7 +357,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       kadal: 1,
       type: "ready",
       version: VERSION,
-      features: ["edit"],
+      features: ["edit", "chrome"],
       ...(kit
         ? {
             kit: {
@@ -416,6 +420,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
     <DeckRuntimeView
       key={state.key}
       {...deck}
+      chrome={chrome}
       manifest={withKit(state.compiled.manifest, kit)}
       base={base}
     />
