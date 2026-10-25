@@ -1425,7 +1425,7 @@ Removed in 0.6: `signer`, `variants`, `handshapes`, `trails`, `window`, `embeddi
 - **lines** — Flowing gradient lines. Props: `colors=["#1d4ed8", "#3b82f6", "#06b6d4"]`, `count=18`, `speed=0.3`. `background: { component: lines, count: 18 }`
 - **beams** — Thin beams of light falling. Props: `color="#60a5fa"`, `count=7`. `background: { component: beams, color: "#60a5fa" }`
 - **sparkles** — A twinkling particle field. Props: `color="#3b82f6"`, `density=400`, `size=1.6`. `background: { component: sparkles, color: "#3b82f6" }`
-- **starfield** — Stars drifting slowly. Props: `color="#ffffff"`, `count=240`. `background: { component: starfield, color: "#ffffff" }`
+- **starfield** — Stars drifting slowly. Props: `color=light ? "#1e293b" : "#ffffff"`, `count=240`. `background: { component: starfield, count: 240 }`
 - **grid** — A fine grid fading at the edges. Props: `color="rgba(127,127,127,0.25)"`, `size=48`. `background: { component: grid, size: 48 }`
 - **dots** — A dot matrix. Props: `color="rgba(127,127,127,0.35)"`, `size=28`. `background: { component: dots, size: 28 }`
 - **noise** — Film grain. Props: `opacity=0.12`. `background: { component: noise, opacity: 0.12 }`
@@ -1441,7 +1441,7 @@ Removed in 0.6: `signer`, `variants`, `handshapes`, `trails`, `window`, `embeddi
 - **vignette** — A darkened edge. Props: `color="rgba(0,0,0,1)"`, `strength=0.35`. `background: { component: vignette, strength: 0.35 }`
 - **rays** — Light rays from a point. Props: `color="rgba(255,255,255,0.35)"`, `x=20`, `y=-10`, `opacity=0.5`. `background: { component: rays, x: 20 }`
 - **stripes** — Diagonal stripes. Props: `color="rgba(127,127,127,0.12)"`, `size=14`, `angle=45`. `background: { component: stripes, size: 14 }`
-- **sweep** — A slow animated gradient sweep across two or three colours. Props: `colors=["#0f172a", "#1e3a8a", "#0f766e"]`, `speed=1`, `angle=120`. `background: { component: sweep, speed: 1 }`
+- **sweep** — A slow animated gradient sweep across two or three colours. Props: `colors=scheme === "light" ? ["#dbeafe", "#c7d2fe", "#ccfbf1"] : ["#0f172a", "#1e3a8a", "#0f766e"]`, `speed=1`, `angle=120`. `background: { component: sweep, speed: 1 }`
 
 ### Map
 

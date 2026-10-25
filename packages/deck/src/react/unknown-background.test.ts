@@ -10,10 +10,10 @@ import { BackgroundLayer, backgroundComponent } from "./Backgrounds.tsx";
 import { DeckContext, type DeckRuntime } from "./context.ts";
 
 /** Just enough of a deck for a background layer: the manifest's `dev` flag and the ui store. */
-function render(name: string, dev: boolean): string {
+function render(name: string, dev: boolean, colorScheme: "light" | "dark" = "light"): string {
   const deck = {
     manifest: { dev },
-    ui: createStore({ theme: "classic" }),
+    ui: createStore({ theme: "classic", colorScheme }),
   } as unknown as DeckRuntime;
   return renderToString(
     createElement(
@@ -56,5 +56,12 @@ describe("backgrounds removed in 0.6", () => {
     const other = render("no-such-thing", true);
     expect(other).toContain("Unknown background “no-such-thing”");
     expect(other).not.toContain("was removed");
+  });
+});
+
+describe("light-page treatments", () => {
+  test("sweep's default palette is pale on a light page and night navy on a dark one", () => {
+    expect(render("sweep", false, "light")).toContain("#dbeafe");
+    expect(render("sweep", false, "dark")).toContain("#0f172a");
   });
 });

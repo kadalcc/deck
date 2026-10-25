@@ -227,8 +227,11 @@ export function Sparkles({ active, color, density, size }: BgProps) {
   return <canvas ref={ref} className="deck-bg-canvas" />;
 }
 
-export function Starfield({ active, color, count }: BgProps) {
-  const c = typeof color === "string" ? color : "#ffffff";
+export function Starfield({ active, color, count, scheme }: BgProps) {
+  // On a light page the stars are ink, and the trails fade to the page instead of to black: the
+  // black wash made the whole slide a night sky that the theme's dark title vanished into.
+  const light = scheme === "light";
+  const c = typeof color === "string" ? color : light ? "#1e293b" : "#ffffff";
   const n = asNum(count, 240);
   const stars = useRef<{ x: number; y: number; z: number }[] | null>(null);
   const ref = useCanvas(
@@ -239,8 +242,15 @@ export function Starfield({ active, color, count }: BgProps) {
         y: Math.random() * 2 - 1,
         z: Math.random(),
       }));
-      ctx.fillStyle = "rgba(0,0,0,0.25)";
-      ctx.fillRect(0, 0, w, h);
+      if (light) {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.fillStyle = "rgba(0,0,0,0.25)";
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = "source-over";
+      } else {
+        ctx.fillStyle = "rgba(0,0,0,0.25)";
+        ctx.fillRect(0, 0, w, h);
+      }
       ctx.fillStyle = c;
       for (const s of stars.current) {
         s.z -= dt * 0.08;
@@ -260,7 +270,7 @@ export function Starfield({ active, color, count }: BgProps) {
       }
       ctx.globalAlpha = 1;
     },
-    [c, n],
+    [c, n, light],
   );
   return <canvas ref={ref} className="deck-bg-canvas" />;
 }
@@ -585,8 +595,13 @@ export function Stripes({ color, size, angle }: BgProps) {
 }
 
 /** A slow sweep across two or three colours — the classic animated gradient. */
-export function GradientSweep({ active, colors, speed, angle }: BgProps) {
-  const cs = asList(colors, ["#0f172a", "#1e3a8a", "#0f766e"]);
+export function GradientSweep({ active, colors, speed, angle, scheme }: BgProps) {
+  // The default palette is night navy to teal; on a light page the same hues as pale washes, so
+  // the theme's dark title reads. Colours the author names are used as given in both.
+  const cs = asList(
+    colors,
+    scheme === "light" ? ["#dbeafe", "#c7d2fe", "#ccfbf1"] : ["#0f172a", "#1e3a8a", "#0f766e"],
+  );
   return (
     <div
       className="deck-bg-sweep"

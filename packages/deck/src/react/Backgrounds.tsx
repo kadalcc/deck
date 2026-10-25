@@ -51,6 +51,7 @@ export function BackgroundLayer({
   className?: string;
 }) {
   const theme = useUi((s) => s.theme);
+  const deckScheme = useUi((s) => s.colorScheme);
   if (!bg)
     return (
       <div
@@ -116,7 +117,7 @@ export function BackgroundLayer({
         </div>
       ) : Comp ? (
         <div className="deck-background-component" style={{ opacity: bg.opacity }}>
-          <Comp {...bg.props} active={active} />
+          <Comp {...bg.props} active={active} scheme={bg.scheme ?? deckScheme} />
         </div>
       ) : bg.component ? (
         <UnknownBackground name={bg.component} />
