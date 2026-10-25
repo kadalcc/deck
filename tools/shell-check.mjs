@@ -186,6 +186,43 @@ async function editInPlace(page, deckText) {
   await frame.getByRole("heading", { name: title }).waitFor({ timeout: 20_000 });
 }
 
+/**
+ * `{type:"chrome", on:false}`: an editor whose stage has its own controls hides the deck's — the
+ * arrows pill, the progress bar, the theme button — across recompiles, while the free plan's
+ * watermark stays. `on:true` brings them back.
+ */
+async function chromeOff(page, deckText) {
+  const frame = page.frameLocator("iframe");
+  const toShell = (message) =>
+    page.evaluate((m) => document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, ...m }, "*"), message);
+  const ready = await page.evaluate(() => window.msgs.find((m) => m.type === "ready"));
+  check("chrome: ready lists the \"chrome\" feature", ready.features?.includes("chrome"), JSON.stringify(ready.features));
+  const chrome = () =>
+    frame.locator(".deck-controls, .deck-progress, .deck-theme-button, .deck-slide-number, .deck-corner-tools").count();
+  const before = await chrome();
+  check("chrome: on by default", before > 0 && (await frame.locator(".deck-theme-button").count()) === 1, `${before}`);
+  await toShell({ type: "chrome", on: false });
+  await frame.locator(".deck-theme-button").waitFor({ state: "detached", timeout: 10_000 }).catch(() => {});
+  check("chrome: off hides the arrows, progress and theme button", (await chrome()) === 0);
+  // A recompile keeps it off, and a watermarked (free plan) deck keeps its watermark.
+  const badged = deckText.replace(/^---\n/, "---\nbadge: true\n");
+  await toShell({ type: "source", text: badged, at: 1 });
+  await frame.locator(".deck-slide.is-present .deck-watermark").waitFor({ timeout: 20_000 }).then(
+    () => check("chrome: the watermark is not chrome and stays", true),
+    () => check("chrome: the watermark is not chrome and stays", false),
+  );
+  check("chrome: …and a recompile keeps the chrome off", (await chrome()) === 0);
+  await page.waitForTimeout(800); // the slide's entrance transition, for the picture
+  await page.screenshot({ path: join(root, "examples/starter/check-output/chrome-off.png") });
+  await toShell({ type: "chrome", on: true });
+  await frame.locator(".deck-theme-button").waitFor({ timeout: 10_000 }).then(
+    () => check("chrome: on brings it back", true),
+    () => check("chrome: on brings it back", false),
+  );
+  await toShell({ type: "source", text: deckText, at: 1 });
+  await page.waitForTimeout(300);
+}
+
 const PORT = Number(process.env.PORT ?? 5411);
 await new Promise((r) => server.listen(PORT, r));
 
@@ -257,6 +294,7 @@ try {
   const nav = await page.evaluate(() => window.msgs.filter((m) => m.type === "nav").at(-1));
   check("preview: it lands on the slide asked for and reports it", nav.index === 1, JSON.stringify(nav));
   await editInPlace(page, deck);
+  await chromeOff(page, deck);
   // An edit to the slide on screen: the recompiled slide must replace the old one, not a cache.
   await page.evaluate((deckText) => {
     const edited = deckText.replace(/\n---\n/, "\n---\n\n# Edited by the check\n\n---\n");

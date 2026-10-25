@@ -123,6 +123,12 @@ export interface DeckProps {
   /** Wraps the runtime (the live provider, a theme provider). */
   children?: ReactNode;
   /**
+   * Draw the play view's chrome over the slides (default true): the arrows, the progress bar, the
+   * slide number, the theme button. An editor's preview with controls of its own turns it off.
+   * The watermark and the ad frame are not chrome and always show.
+   */
+  chrome?: boolean;
+  /**
    * The URL path the deck lives under, e.g. "/@you/talk/". Defaults to Vite's `BASE_URL`; a deck
    * that was not built for its address (the prebuilt shell) works it out and passes it here.
    */
@@ -241,6 +247,7 @@ export function DeckRuntimeView({
   contextMenu: menuIn,
   notesEditor: notesEditorIn,
   routes: routesIn,
+  chrome = true,
 }: DeckProps) {
   const base = useMemo(
     () => (baseIn ? (baseIn.endsWith("/") ? baseIn : `${baseIn}/`) : baseOf()),
@@ -388,9 +395,15 @@ export function DeckRuntimeView({
           mode === "play" &&
           (flags.view === "scroll" || (flags.view !== "slide" && config.view === "scroll")),
         toast: null,
+        chrome,
       }),
+    // `chrome` follows the prop below without remaking the store.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [config.colorScheme, config.view, flags.view, mode],
   );
+  useEffect(() => {
+    ui.update((s) => (s.chrome === chrome ? s : { ...s, chrome }));
+  }, [ui, chrome]);
 
   const layout = useMemo(() => createStore<Layout>(computeLayout(config, viewport())), [config]);
   // What the ad frame takes from the viewport; nothing, unless it is showing (react/AdFrame.tsx).

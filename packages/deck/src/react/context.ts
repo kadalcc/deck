@@ -78,6 +78,12 @@ export interface UiState {
   teleprompterOpen: boolean;
   /** The presenter's switch: term cards opened here also open on every screen in the room. */
   termSync: boolean;
+  /**
+   * The play view's own chrome — the arrows pill, corner tools, progress bar, slide number, notes
+   * footer, theme button and theme notice. Off in an editor's preview whose stage has its own
+   * (`<Deck chrome={false}>`, the preview's `chrome` message); the watermark and ads stay.
+   */
+  chrome: boolean;
 }
 
 /** The term card on show in this window: which mention of which term, and whose doing. */

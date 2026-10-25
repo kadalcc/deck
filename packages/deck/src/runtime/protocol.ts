@@ -45,7 +45,17 @@ export type ToPreview =
    * answer every `edited` by sending `source` again, changed or not (an element whose edit no
    * source answers within 5 s is put back as it was).
    */
-  | { kadal: 1; type: "edit"; on: boolean };
+  | { kadal: 1; type: "edit"; on: boolean }
+  /**
+   * The play view's own chrome on or off (only when `ready.features` has "chrome"; on by default,
+   * and kept across recompiles). Off hides what the shell draws over the slides for a viewer —
+   * the arrows pill with the slide number, the corner tools (back to start, a deck's own nav
+   * buttons), the progress bar, a standalone slide number, the notes footer, the theme button
+   * and the unknown-theme notice — for an editor whose stage has its own. The free plan's
+   * watermark and ads, the premium notice, and what a key or the slide opens (help, jump-to,
+   * search, pause, toasts, confetti) are not chrome and stay.
+   */
+  | { kadal: 1; type: "chrome"; on: boolean };
 
 /** Shell → editor. */
 export type FromPreview =
@@ -57,7 +67,8 @@ export type FromPreview =
       kit?: { kitVersion: number; engine: string; modules: string[]; snippets?: string[] };
       /**
        * What this shell can do beyond the messages every shell answers: "edit" = editing in
-       * place (`edit`, `edited`, `located`). Absent from shells before 0.6.1.
+       * place (`edit`, `edited`, `located`; 0.6.1), "chrome" = the `chrome` message (0.6.2).
+       * Absent from shells before 0.6.1.
        */
       features?: string[];
     }
