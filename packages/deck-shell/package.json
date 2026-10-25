@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-shell",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "private": true,
   "description": "The prebuilt Kadal Deck shell: one static page that runs any deck from its deck.mdx, compiled in the browser. For hosts and editors; decks you build with the CLI do not need it.",
   "keywords": [
