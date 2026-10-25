@@ -239,6 +239,88 @@ async function placementFrame(page, deckText, ask) {
   await page.waitForFunction(() => window.msgs.some((m) => m.type === "compiled"), null, { timeout: 30_000 });
 }
 
+/**
+ * A recompile of the slide on screen renders in place: the shell mounts every compile afresh, and
+ * that remount (then a goto to the editor's `at`) used to replay the slide's entrance — it slid
+ * in from the right on every keystroke. Sampled every frame: while an edited source of the shown
+ * slide lands, nothing on the stage or its backgrounds animates and the stage is a cut; a real
+ * move afterwards (the editor's slide rail is `nav.goto`) still plays its transition.
+ */
+async function recompileInPlace(page, deckText) {
+  const frame = page.frameLocator("iframe");
+  const toShell = (message) =>
+    page.evaluate((m) => document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, ...m }, "*"), message);
+  const sliding = deckText.replace(/^---\n/, "---\ntransition: slide\nbackgroundTransition: slide\n");
+  await toShell({ type: "source", text: sliding, at: 1 });
+  await page.waitForTimeout(1500);
+  // Every frame for `ms`: the stage's transition, and every running animation on a slide or a
+  // background layer (a transition still settling from an earlier move counts against it too).
+  const sample = (ms) =>
+    page.frames()[1].evaluate(
+      (ms) =>
+        new Promise((done) => {
+          const seen = { frames: 0, animated: 0, transitions: new Set(), names: new Set(), headings: new Set() };
+          const t0 = performance.now();
+          const tick = () => {
+            seen.frames++;
+            const stage = document.querySelector(".deck-stage");
+            if (stage) seen.transitions.add(stage.dataset.transition);
+            const h = document.querySelector(".deck-slide.is-present h1, .deck-slide.is-present h2");
+            if (h) seen.headings.add(h.textContent.trim());
+            // The slides and background layers themselves (a code block's line highlight fading
+            // in, inside a slide, is the slide's content, not its entrance).
+            const running = document
+              .getAnimations()
+              .filter((a) => a.playState === "running" && a.effect?.target?.matches?.(".deck-slide, .deck-backgrounds > *"));
+            const shown = document.querySelector(".deck-slide.is-present");
+            const moved = shown && getComputedStyle(shown).transform !== "none";
+            if (running.length || moved) seen.animated++;
+            for (const a of running) seen.names.add(a.animationName ?? a.transitionProperty ?? "?");
+            if (performance.now() - t0 < ms) requestAnimationFrame(tick);
+            else done({ ...seen, transitions: [...seen.transitions], names: [...seen.names], headings: [...seen.headings] });
+          };
+          requestAnimationFrame(tick);
+        }),
+      ms,
+    );
+  const index = () => page.evaluate(() => window.msgs.filter((m) => m.type === "nav").at(-1)?.index);
+  const typed = sliding.replace("# Three dashes start a new slide", "# Three dashes start a new slide!");
+  const watching = sample(1500);
+  await page.waitForTimeout(50);
+  await toShell({ type: "source", text: typed, at: 1 });
+  const seen = await watching;
+  check(
+    "recompile: an edit to the slide on screen shows it in place, with no transition",
+    seen.animated === 0 && seen.transitions.every((t) => t === "none") &&
+      seen.headings.includes("Three dashes start a new slide!") && (await index()) === 1,
+    JSON.stringify(seen),
+  );
+  // No `at` (an older host): the slide on screen still stays put, as a cut.
+  const again = sample(1200);
+  await page.waitForTimeout(50);
+  await toShell({ type: "source", text: typed.replace("start a new slide!", "start a new slide!!") });
+  const seen2 = await again;
+  check(
+    "recompile: …and without `at`, it stays on the slide shown",
+    seen2.animated === 0 && seen2.headings.includes("Three dashes start a new slide!!") && (await index()) === 1,
+    JSON.stringify(seen2),
+  );
+  // A real move still animates: the next slide slides in.
+  const moving = sample(400);
+  await page.evaluate(() =>
+    document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "command", id: "nav.goto", params: { index: 2 }, seq: 700 }, "*"),
+  );
+  const moved = await moving;
+  check(
+    "recompile: …while moving to another slide keeps its transition",
+    moved.animated > 0 && moved.transitions.includes("slide"),
+    JSON.stringify(moved),
+  );
+  await toShell({ type: "source", text: deckText, at: 1 });
+  await frame.locator(".deck-slide.is-present").waitFor({ timeout: 20_000 });
+  await page.waitForTimeout(800);
+}
+
 async function chromeOff(page, deckText) {
   const frame = page.frameLocator("iframe");
   const toShell = (message) =>
@@ -343,6 +425,7 @@ try {
   check("preview: it lands on the slide asked for and reports it", nav.index === 1, JSON.stringify(nav));
   await editInPlace(page, deck);
   await chromeOff(page, deck);
+  await recompileInPlace(page, deck);
   // An edit to the slide on screen: the recompiled slide must replace the old one, not a cache.
   await page.evaluate((deckText) => {
     const edited = deckText.replace(/\n---\n/, "\n---\n\n# Edited by the check\n\n---\n");

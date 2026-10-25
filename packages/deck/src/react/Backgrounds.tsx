@@ -151,9 +151,12 @@ export function Backgrounds() {
   const { h, v, direction } = useNav((s) => ({ h: s.h, v: s.v, direction: s.direction }));
   const options = deck.options.get(`${h},${v}`);
   const current = options?.background ?? null;
+  // The background the stack mounted with is already there (`mounted`): like the stage's first
+  // slide it cuts in, so a page load — or an editor's preview remounting a recompiled deck — does
+  // not play the background's entrance.
   const [layers, setLayers] = useState<
-    { key: string; bg: SlideBackground | null; leaving: boolean }[]
-  >([{ key: `${h},${v}`, bg: current, leaving: false }]);
+    { key: string; bg: SlideBackground | null; leaving: boolean; mounted?: boolean }[]
+  >([{ key: `${h},${v}`, bg: current, leaving: false, mounted: true }]);
   // The direction the slide was arrived from, as the stage keeps it: a click going back must not
   // restart the background's entrance (its animation name follows the direction).
   const arrival = useRef({ h, v, direction });
@@ -197,7 +200,7 @@ export function Backgrounds() {
           key={l.key}
           bg={l.bg}
           active={!l.leaving}
-          className={l.leaving ? "is-leaving" : "is-entering"}
+          className={l.leaving ? "is-leaving" : l.mounted ? "is-mounted" : "is-entering"}
         />
       ))}
     </div>

@@ -39,10 +39,15 @@ export function Stage() {
    * whole slide sliding in. And until the next move after arriving, its clicks snap to where the
    * move landed (`up` lands on the first step of a slide that was waiting, pre-rendered, at its
    * last) rather than fading out under the transition.
+   *
+   * The slide the stage MOUNTED on was not moved to, so it cuts in: no move, no transition. That is
+   * a page load (at #/5 too, which the nav reaches by a `goto`), and an editor's preview remounting
+   * a recompiled deck on the slide being edited — keyed on `seq === 0` instead, every keystroke
+   * slid the slide in again, and so did the first click on a slide opened from a hash.
    */
-  const arrival = useRef({ h, v, seq, direction });
+  const arrival = useRef({ h, v, seq, direction, mounted: true });
   if (arrival.current.h !== h || arrival.current.v !== v)
-    arrival.current = { h, v, seq, direction };
+    arrival.current = { h, v, seq, direction, mounted: false };
   const slideDirection = arrival.current.direction;
   const arriving = arrival.current.seq === seq;
   // The slide just left keeps the click it was showing while it animates out — rendering it at
@@ -176,6 +181,7 @@ export function Stage() {
   });
 
   const autoAnimating = !!leaving && autoSnapWas(leaving, current);
+  const cut = arrival.current.mounted;
   // A named custom transition's keyframes for this direction (none for built-ins and pure CSS).
   const customIn = transitionAnimation(transition, "in", slideDirection, deck.config.transitions);
   const customOut = transitionAnimation(
@@ -197,8 +203,8 @@ export function Stage() {
       ref={stageRef}
       className="deck-stage"
       style={stageStyle}
-      data-transition={autoAnimating || seq === 0 ? "none" : transition}
-      data-transition-out={autoAnimating || seq === 0 ? "none" : transitionOut}
+      data-transition={autoAnimating || cut ? "none" : transition}
+      data-transition-out={autoAnimating || cut ? "none" : transitionOut}
       data-speed={speed}
       data-direction={slideDirection}
       data-nav-direction={navDir}
