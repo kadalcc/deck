@@ -36,6 +36,7 @@ import type { DeckManifest, SlideMeta, SlideModule } from "../core/model.ts";
 import { sourceFromFiles } from "../draw/source.ts";
 import { dirOf, joinPath } from "../authoring/source.ts";
 import { ConflictSlide } from "../react/ConflictCard.tsx";
+import { rehypeEditSpots, slideLocator } from "./edit-map.ts";
 import { type GrammarLoader, grammarsFor } from "./grammars.ts";
 import { type ModuleMap, missingModuleMessage, remarkKitImports } from "./kit-imports.ts";
 import { useMDXComponents } from "../react/mdx.tsx";
@@ -115,6 +116,13 @@ export interface CompileDeckOptions extends DeckSetup {
    * in neither is an error that says to publish from the CLI, as an unknown import is.
    */
   snippets?: Record<string, string>;
+  /**
+   * Tag the slides' elements with where they are in the source (`data-deck-at`, and
+   * `data-deck-edit` on text a person may retype in place: runtime/edit-map.ts), for an editor's
+   * preview. Never for a deck people watch: the shell sets it in `?preview` only. Off when a
+   * `preprocess` hook rewrites the text, since positions would then be in the rewritten text.
+   */
+  editable?: boolean;
 }
 
 /** A merge conflict still in the source (sync/markers.ts), where an editor can settle it. */
@@ -456,6 +464,16 @@ export async function compileDeck(
         push({ severity: "warning", message, file: s.source.file, line: s.source.line, slide: i });
       const loose = unclosedSettings(s.content);
       if (loose) warn(unclosedSettingsMessage(loose));
+      // Preview compiles: where each element of the slide is in the text the editor sent.
+      const fileText = s.range.file === file ? text : files[s.range.file];
+      const spots =
+        options.editable && !options.preprocess && typeof fileText === "string"
+          ? rehypeEditSpots({
+              file: s.range.file,
+              source: s.content,
+              locate: slideLocator(fileText, s.range, s.content),
+            })
+          : null;
       const build = async (source: string, terms: unknown, notes = false): Promise<SlideModule> => {
         const plugins = mdxPlugins({
           highlighter: hl,
@@ -474,6 +492,7 @@ export async function compileDeck(
           twoslash: null,
           onTwoslashMissing: noteTwoslash,
         });
+        if (spots && !notes) plugins.rehypePlugins = [spots, ...(plugins.rehypePlugins ?? [])];
         const kit = options.modules ? { modules: options.modules, from: s.source.file } : undefined;
         try {
           const Component = await compileToComponent(source, plugins, "mdx", kit);

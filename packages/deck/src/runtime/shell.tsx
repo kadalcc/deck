@@ -10,6 +10,7 @@ import { DeckRuntimeView, type DeckProps } from "../react/Deck.tsx";
 import { type CompiledDeck, compileDeck } from "./compile.ts";
 import type { GrammarLoader } from "./grammars.ts";
 import type { ModuleMap } from "./kit-imports.ts";
+import { inPlaceEditing } from "./edit.ts";
 import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts";
 
 /**
@@ -212,7 +213,8 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
     pendingAt = null;
     const load = async (text: string, files: Record<string, string> = {}, at?: number) => {
       const t0 = performance.now();
-      const compiled = await compileDeck(text, { files, ...kitCompile(kit) });
+      // Only the editor's preview tags elements with their source positions (runtime/edit-map.ts).
+      const compiled = await compileDeck(text, { files, editable: preview, ...kitCompile(kit) });
       if (!alive) return;
       pendingAt = at ?? null;
       setState({ phase: "ready", compiled, key: ++key });
@@ -271,12 +273,31 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       };
     }
 
+    // Editing in place (runtime/edit.ts). Its key listener goes on the window now, before the
+    // deck mounts, so it runs ahead of the deck's shortcuts while an element is being edited.
+    const edit = inPlaceEditing({
+      post,
+      slideSource: () => {
+        const rt = runtime();
+        if (!rt) return null;
+        const s = rt.nav.get();
+        return rt.manifest.slides[flatIndex(rt.columns, s.h, s.v)]?.source ?? null;
+      },
+    });
+
     // The editor's preview: only the parent speaks to us.
     const onMessage = (e: MessageEvent) => {
       if (e.source !== window.parent || !isToPreview(e.data)) return;
       const m = e.data;
-      if (m.type === "source") void load(m.text, m.files, m.at);
-      else if (m.type === "command") {
+      if (m.type === "source") {
+        // An edit in progress is saved against the text it was made in, then the new text lands.
+        edit.flush();
+        edit.setSource(m.text, m.files ?? {});
+        void load(m.text, m.files, m.at);
+      } else if (m.type === "edit") {
+        if (m.on) picking = false;
+        edit.arm(m.on);
+      } else if (m.type === "command") {
         const rt = runtime();
         if (!rt) {
           post({
@@ -297,7 +318,10 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
           seq: m.seq,
           commands: runtime()?.commands.list() ?? [],
         });
-      } else if (m.type === "pick") picking = m.on;
+      } else if (m.type === "pick") {
+        picking = m.on;
+        if (m.on) edit.arm(false);
+      }
     };
     let picking = false;
     const onClick = (e: MouseEvent) => {
@@ -329,6 +353,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       kadal: 1,
       type: "ready",
       version: VERSION,
+      features: ["edit"],
       ...(kit
         ? {
             kit: {
@@ -342,6 +367,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
     });
     return () => {
       alive = false;
+      edit.dispose();
       setConflictResolver(null);
       window.removeEventListener("message", onMessage);
       window.removeEventListener("click", onClick, true);

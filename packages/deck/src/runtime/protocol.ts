@@ -32,8 +32,20 @@ export type ToPreview =
     }
   | { kadal: 1; type: "command"; seq: number; id: string; params?: unknown }
   | { kadal: 1; type: "commands"; seq: number }
-  /** Arm a one-shot pick: the next click on the slide is reported as `picked` (for comments). */
-  | { kadal: 1; type: "pick"; on: boolean };
+  /**
+   * Arm a one-shot pick: the next click on the slide is reported as `picked` (for comments).
+   * Arming it turns editing in place off.
+   */
+  | { kadal: 1; type: "pick"; on: boolean }
+  /**
+   * Editing in place on or off (only when `ready.features` has "edit"). While on, a hover outlines
+   * the element under the pointer, a click is reported as `located`, and a double-click on text
+   * that is one plain run of the source lets the person retype it, reported as `edited`. Arming
+   * it turns a pending pick off; the two never run at once. The shell never changes the deck:
+   * answer every `edited` by sending `source` again, changed or not (an element whose edit no
+   * source answers within 5 s is put back as it was).
+   */
+  | { kadal: 1; type: "edit"; on: boolean };
 
 /** Shell → editor. */
 export type FromPreview =
@@ -43,6 +55,11 @@ export type FromPreview =
       version: string;
       /** Present when this is a deck's own editing kit, not the generic shell. */
       kit?: { kitVersion: number; engine: string; modules: string[]; snippets?: string[] };
+      /**
+       * What this shell can do beyond the messages every shell answers: "edit" = editing in
+       * place (`edit`, `edited`, `located`). Absent from shells before 0.6.1.
+       */
+      features?: string[];
     }
   | {
       kadal: 1;
@@ -70,6 +87,30 @@ export type FromPreview =
       /** The clicked element's tag and classes, e.g. "h2.title". */
       element: string;
     }
+  /**
+   * Editing in place saved an edit: replace `from`–`to` of `file` (UTF-16 offsets into that
+   * file's text exactly as the last `source` sent it: "deck.mdx" is `source.text`, any other name
+   * a key of `source.files`; headmatter and frontmatter count) with `after`. `before` is
+   * `text.slice(from, to)` as it was then — check it still is before applying, since the text may
+   * have changed since. `after` is plain text as typed (one line, except in a paragraph, where
+   * line breaks are spelled as the file spells them); escaping Markdown in it is the editor's call.
+   */
+  | {
+      kadal: 1;
+      type: "edited";
+      file: string;
+      from: number;
+      to: number;
+      before: string;
+      after: string;
+    }
+  /**
+   * A click while editing in place: where the clicked thing is in the source (1-based line and
+   * column, and the same place as a UTF-16 offset), for the editor to put its cursor there. On
+   * editable text it is the character clicked; on anything else the element's start, or the
+   * slide's first line when the element has no position of its own.
+   */
+  | { kadal: 1; type: "located"; file: string; line: number; column: number; offset: number }
   /**
    * A button on a conflicted slide's card was pressed: settle that conflict of that file
    * (`resolveConflict(text, choice, which)` from `@kadal/deck/sync`; `which` counts the file's

@@ -21,6 +21,11 @@ it includes) beside it, under any path:
 - `?preview` makes it an editor's iframe: it waits for the parent to post the deck's text and
   answers with diagnostics, the outline and the viewer's position (see `@kadal/deck/runtime`'s
   `ToPreview` / `FromPreview`).
+- In `?preview` the shell can also edit in place: after `{type:"edit", on:true}` a click reports
+  `located` (where it is in the source) and a double-click lets a heading, paragraph, list item or
+  table cell be retyped, reported as `edited` with the file's `from`–`to` offsets, `before` and
+  `after`. The shell never changes the deck: apply the edit and post `source` again. Shells that
+  can do this say `features: ["edit"]` in `ready`.
 
 Slides compiled this way cannot `import`: they use the engine's components.
 
