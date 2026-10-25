@@ -1,5 +1,12 @@
 # @kadal/deck-shell
 
+## 0.6.4
+
+### Patch Changes
+
+- 17ded02: Drawn backgrounds look the same at every size. The background stack covers the stage's box in screen pixels, and component backgrounds drew in those pixels — aurora's swell and blur, waves' strokes, the mesh's and glows' `vmax` blobs — so a small preview (the builder's, a thumbnail, the presenter's) showed bands twice as tall and twice as soft as the full window. Component and `pro/` backgrounds now lay out at the deck's own size and are scaled to cover their box, as the stage is; canvas blurs follow the bitmap's scale (`ctx.filter` and `shadowBlur` are in bitmap pixels); the mesh and glows size their blobs off their own box (`cqmax`). Colours, gradients, images and video are unchanged.
+- 17ded02: The builder's preview no longer replays the slide's entrance on every recompile. Each compile mounts a new runtime, which landed on the hash's slide and then moved to the editor's `at` — a move, so the slide slid in again on every keystroke and every tweak. A recompile now opens on the slide being edited as a cut (`<Deck startAt>`), and the slide (and background) a deck mounts on cuts in, at #/5 too. Moving to another slide keeps its transition.
+
 ## 0.6.3
 
 ### Patch Changes
