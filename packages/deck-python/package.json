@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-python",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "The Python renderer for Kadal Deck (@kadal/deck): Python islands on a slide, through Pyodide.",
   "keywords": [
     "kadal-deck",
@@ -60,6 +60,6 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.5.2"
+    "@kadal/deck": "^0.5.3"
   }
 }

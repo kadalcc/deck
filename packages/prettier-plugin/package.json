@@ -1,6 +1,6 @@
 {
   "name": "@kadal/prettier-plugin",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Prettier for Kadal Deck decks (deck.mdx): separators and frontmatter normalised, YAML formatted with its comments, and every slide's Markdown formatted, with code, notes, magic-move and ::slot:: sugar left exactly as written.",
   "keywords": [
     "prettier",

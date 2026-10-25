@@ -1,5 +1,12 @@
 # @kadal/theme-ocean
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [a1603e7]
+  - @kadal/deck@0.5.3
+
 ## 0.5.2
 
 ### Patch Changes
