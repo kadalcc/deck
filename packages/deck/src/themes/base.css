@@ -414,7 +414,9 @@ body {
 .deck-layout-fact,
 .deck-layout-quote,
 .deck-layout-statement {
-  justify-content: center;
+  /* SAFE: content taller than the slide overflows downwards, where the auto-fit measures it and
+     scales it down; plain centring pushed half of it above the top, unseen and unmeasured. */
+  justify-content: safe center;
 }
 .deck-layout-center,
 .deck-layout-fact,
