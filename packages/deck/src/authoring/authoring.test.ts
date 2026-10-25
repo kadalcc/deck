@@ -296,6 +296,11 @@ describe("lint", () => {
     ]);
     const r = await lint("# A\n\n---\nlayout: two-col\n---\n\n# B\n");
     expect(r.diagnostics[0]!.hint).toContain('"two-cols"');
+    // `pro/` names belong to the host's library: no unknown layout, background or layout keys.
+    const pro = await lint(
+      "# A\n\n---\nlayout: pro/kpi-board\nbackground: pro/neon-drift\nperiod: Q3\n---\n\n# B\n",
+    );
+    expect(pro.diagnostics).toEqual([]);
     // A background 0.6 removed says where it went instead of guessing a near name.
     const gone = await lint("# A\n\n---\nbackground: signer\n---\n\n# B\n");
     expect(gone.diagnostics.map((d) => d.code)).toEqual(["background-unknown"]);

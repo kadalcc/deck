@@ -15,6 +15,7 @@ import { extractRegion, parseSnippetLine } from "../compiler/snippets.ts";
 import { comarkEnabled } from "../compiler/setup.ts";
 import { BUILTIN_RUNNER_LANGS, runnerLang } from "../monaco/runner-langs.ts";
 import { resolveBackground, splitTransition } from "../core/model.ts";
+import { isPremiumName } from "../core/premium.ts";
 import { removedBackgroundHint } from "../core/removed.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
@@ -417,9 +418,11 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       // value either reading accepts is fine (`narration: { rate: 1.1 }`, a custom transition).
       const def = head ? (dk ?? sk) : (sk ?? dk);
       const also = head && dk && sk ? sk : null;
-      // A layout of the deck's own is read from frontmatter by its author's code: its keys are
-      // the layout's business, not unknown.
-      const ownLayout = typeof s.frontmatter.layout === "string" && ext.layouts.includes(s.frontmatter.layout);
+      // A layout of the deck's own is read from frontmatter by its author's code, and a `pro/`
+      // one by the host's library: either way its keys are the layout's business, not unknown.
+      const ownLayout =
+        typeof s.frontmatter.layout === "string" &&
+        (ext.layouts.includes(s.frontmatter.layout) || isPremiumName(s.frontmatter.layout));
       if (!def && ownLayout) continue;
       if (!def) {
         const near = closest(key, [...slideKeys.keys(), ...(head ? deckKeys.keys() : [])]);
@@ -464,7 +467,9 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       });
     if (head) lintSiteKeys(s.frontmatter, at);
     const layout = s.frontmatter.layout;
-    if (typeof layout === "string" && !layouts.has(layout)) {
+    // A `pro/` name is the host's library (core/premium.ts): only the host knows its items, and
+    // without one the slide falls back on purpose, so there is nothing to report here.
+    if (typeof layout === "string" && !layouts.has(layout) && !isPremiumName(layout)) {
       const near = closest(layout, layouts);
       add({
         ...at,
@@ -477,7 +482,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       });
     }
     const bg = resolveBackground(s.frontmatter);
-    if (bg?.component && !bgs.has(bg.component)) {
+    if (bg?.component && !bgs.has(bg.component) && !isPremiumName(bg.component)) {
       const near = closest(bg.component, bgs);
       add({
         ...at,
