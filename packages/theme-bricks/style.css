@@ -427,3 +427,11 @@
 .theme-bricks .deck-progress span {
   background: linear-gradient(90deg, #f07a6b, #f9d56e, #e29b94, #72a6e2);
 }
+
+/* ── a slide with its own background ───────────────────────────────────────
+   `background:` on a slide (a colour, a picture, a built-in or library background) is the
+   author's: the engine marks the slide `has-background` and the theme's decorative backdrop for
+   that layout steps aside, instead of painting over it or stacking a second set of art on it. */
+.theme-bricks .deck-slide.has-background {
+  background-image: none;
+}

@@ -85,6 +85,19 @@ describe("catalog and modules", () => {
     expect(parseCatalog("nope")).toEqual([]);
   });
 
+  test("a one-scheme item says so; anything else about its scheme is dropped", () => {
+    const [dark, light, both, odd] = parseCatalog([
+      { id: "pro/chalk", kind: "background", module: "a.js", scheme: "dark" },
+      { id: "pro/paper", kind: "background", module: "b.js", scheme: "light" },
+      { id: "pro/any", kind: "background", module: "c.js", scheme: "both" },
+      { id: "pro/odd", kind: "background", module: "d.js", scheme: "neon" },
+    ]);
+    expect(dark!.scheme).toBe("dark");
+    expect(light!.scheme).toBe("light");
+    expect(both!.scheme).toBeUndefined();
+    expect(odd!.scheme).toBeUndefined();
+  });
+
   test("a module URL must stay under the base", () => {
     const base = "https://decks.kadal.cc/@a/b/__kadal/premium/";
     expect(moduleUrl(base, { module: "items/x.js" })).toBe(`${base}items/x.js`);

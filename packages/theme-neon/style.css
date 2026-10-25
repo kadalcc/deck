@@ -716,3 +716,12 @@
 .theme-neon .deck-layout-center > :is(h1, h2) {
   margin-bottom: 0.3em;
 }
+
+/* ── a slide with its own background ───────────────────────────────────────
+   `background:` on a slide (a colour, a picture, a built-in or library background) is the
+   author's: the engine marks the slide `has-background` and the theme's decorative backdrop for
+   that layout steps aside, instead of painting over it or stacking a second set of art on it. */
+.theme-neon .deck-slide.has-background:is(.layout-cover, .layout-end)::before,
+.theme-neon .deck-slide.has-background:is(.layout-cover, .layout-end)::after {
+  display: none;
+}
