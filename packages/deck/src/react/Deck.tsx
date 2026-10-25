@@ -154,6 +154,11 @@ export interface DeckProps {
    * passes its own; `null` turns editing off even in dev.
    */
   notesEditor?: NotesEditor | null;
+  /**
+   * The slide to open on (0-based, over the hash): the shell's preview remounts every recompile
+   * on the slide being edited, and mounted there it cuts in rather than moving to it.
+   */
+  startAt?: number;
 }
 
 function baseOf(): string {
@@ -249,6 +254,7 @@ export function DeckRuntimeView({
   notesEditor: notesEditorIn,
   routes: routesIn,
   chrome = true,
+  startAt,
 }: DeckProps) {
   const base = useMemo(
     () => (baseIn ? (baseIn.endsWith("/") ? baseIn : `${baseIn}/`) : baseOf()),
@@ -362,8 +368,9 @@ export function DeckRuntimeView({
 
   const nav = useMemo(() => {
     const initial = { ...N.initialNav(), follow: startFollowing };
-    const fromHash = wantedAtLoad;
-    return createStore(fromHash ? N.goto(initial, columns, fromHash) : initial);
+    // `startAt` is read at mount only: the shell remounts for a new one.
+    const start = startAt !== undefined ? fromFlat(columns, startAt) : wantedAtLoad;
+    return createStore(start ? N.goto(initial, columns, start) : initial);
   }, [columns, config.hashOneBasedIndex, startFollowing]);
 
   const ui = useMemo(

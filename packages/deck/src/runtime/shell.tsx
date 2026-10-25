@@ -120,7 +120,7 @@ export function kitManifest(kit: KitOptions): DeckManifest {
 type State =
   | { phase: "loading" }
   | { phase: "failed"; message: string }
-  | { phase: "ready"; compiled: CompiledDeck; key: number };
+  | { phase: "ready"; compiled: CompiledDeck; key: number; startAt?: number };
 
 const post = (message: FromPreview) => {
   if (window.parent && window.parent !== window) window.parent.postMessage(message, "*");
@@ -138,10 +138,26 @@ function outlineOf(manifest: DeckManifest): OutlineEntry[] {
   }));
 }
 
-/** A slide to land on once the next compile is mounted (`source.at`). */
-let pendingAt: number | null = null;
-
 const runtime = () => (window as unknown as { __deck?: DeckRuntime }).__deck;
+
+/**
+ * ─── A RECOMPILE OPENS WHERE IT WAS, AS A CUT ───
+ *
+ * Every compile mounts a new runtime (its manifest is new), so the slide on screen is mounted
+ * afresh each keystroke. It used to mount wherever the hash said and then `nav.goto` the
+ * editor's `at` — a move, so the stage played the slide's entrance (it slid in from the right on
+ * every character typed, every tweak-bar change). Now the new runtime opens ON the slide: the
+ * editor's `at` (the slide being edited, in the new deck's numbering), or else the slide the
+ * last runtime showed. Mounted there, it cuts in (react/Stage.tsx). Moving to another slide — a
+ * key, the editor's slide rail, a command — is still a move and keeps its transition.
+ */
+const startOf = (at: number | undefined): number | undefined => {
+  if (at !== undefined) return at;
+  const rt = runtime();
+  if (!rt) return undefined;
+  const s = rt.nav.get();
+  return flatIndex(rt.columns, s.h, s.v);
+};
 
 /** Start the shell. Resolves once the first compile has rendered (or failed). */
 export function startShell(options: ShellOptions): void {
@@ -212,14 +228,12 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
   useEffect(() => {
     let alive = true;
     let key = 0;
-    pendingAt = null;
     const load = async (text: string, files: Record<string, string> = {}, at?: number) => {
       const t0 = performance.now();
       // Only the editor's preview tags elements with their source positions (runtime/edit-map.ts).
       const compiled = await compileDeck(text, { files, editable: preview, ...kitCompile(kit) });
       if (!alive) return;
-      pendingAt = at ?? null;
-      setState({ phase: "ready", compiled, key: ++key });
+      setState({ phase: "ready", compiled, key: ++key, startAt: preview ? startOf(at) : undefined });
       post({
         kadal: 1,
         type: "compiled",
@@ -385,10 +399,6 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
     const id = setInterval(() => {
       const rt = runtime();
       if (!rt || off) return;
-      if (pendingAt !== null) {
-        void rt.commands.run("nav.goto", { index: pendingAt }, "api");
-        pendingAt = null;
-      }
       const send = () => {
         const s = rt.nav.get();
         post({
@@ -421,6 +431,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       key={state.key}
       {...deck}
       chrome={chrome}
+      startAt={state.startAt}
       manifest={withKit(state.compiled.manifest, kit)}
       base={base}
     />

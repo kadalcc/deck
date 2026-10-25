@@ -1866,12 +1866,15 @@
   inset: 0;
   overflow: hidden;
   filter: blur(80px) saturate(1.2);
+  /* Its blobs are sized off this box (cqmax), not the window (vmax): a preview, a thumbnail and
+     the full-window view then show the same picture (react/Backgrounds.tsx). */
+  container-type: size;
 }
 .deck-bg-mesh span {
   position: absolute;
-  width: 55vmax;
-  height: 55vmax;
-  margin: -27vmax 0 0 -27vmax;
+  width: 55cqmax;
+  height: 55cqmax;
+  margin: -27cqmax 0 0 -27cqmax;
   border-radius: 50%;
   opacity: 0.55;
   mix-blend-mode: screen;
