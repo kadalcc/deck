@@ -69,6 +69,7 @@ import { useBuiltinCommands } from "./commands.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 import { ThumbnailHost } from "../export/thumbnail.tsx";
+import { PlacementFrameHost } from "./placement-frame.tsx";
 import type { DeckLayers } from "../theming/contract.ts";
 import { fontsForTheme, packageConfigLayer } from "../theming/merge.ts";
 import { useDeckFonts, useDeckPackages, usePackageSetup, useRootVars } from "../theming/react.tsx";
@@ -790,6 +791,8 @@ export function DeckRuntimeView({
         {mode !== "print" ? <ThemeNotice /> : null}
         {/* A picture of a slide for a host's lists (export.thumbnail); nothing until one is asked for. */}
         {mode !== "print" && mode !== "remote" ? <ThumbnailHost /> : null}
+        {/* Where placed elements' x/y start on the slide shown (layout.frame), for a host placing one. */}
+        {mode !== "print" && mode !== "remote" ? <PlacementFrameHost /> : null}
       </DeckRoot>
     </DeckContext.Provider>
   );

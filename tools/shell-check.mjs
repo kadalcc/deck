@@ -191,6 +191,54 @@ async function editInPlace(page, deckText) {
  * arrows pill, the progress bar, the theme button — across recompiles, while the free plan's
  * watermark stays. `on:true` brings them back.
  */
+/**
+ * `layout.frame` (feature "frame", 0.6.3): where a placed element's x/y start on the slide shown.
+ * Proved the way an editor uses it — a sticker placed with the frame's numbers lands on the stage
+ * point asked for, inside the theme's padding or not.
+ */
+async function placementFrame(page, deckText, ask) {
+  const ready = await page.evaluate(() => window.msgs.find((m) => m.type === "ready"));
+  check("frame: ready lists the \"frame\" feature", ready.features?.includes("frame"), JSON.stringify(ready.features));
+  const send = (text) =>
+    page.evaluate((t) => document.querySelector("iframe").contentWindow.postMessage({ kadal: 1, type: "source", text: t, at: 0 }, "*"), text);
+  const withSlide = (body) => deckText.replace(/\n---\n/, `\n---\n\n# Frame check\n\n${body}\n\n---\n`);
+  const frame = page.frameLocator("iframe");
+  await send(withSlide(""));
+  await frame.getByRole("heading", { name: "Frame check" }).waitFor({ timeout: 20_000 });
+  await ask("nav.goto", { index: 0 }, 1200);
+  const r = await ask("layout.frame", {}, 1201);
+  const f = r.ok ? r.value : null;
+  check(
+    "frame: layout.frame answers with the shown slide's frame",
+    !!f && f.slide === 0 && f.x > 0 && f.y > 0 && f.unit === 1 && f.width > 0 && f.height > 0,
+    JSON.stringify(r.ok ? f : r),
+  );
+  if (!f) return;
+  const at = { x: 600, y: 400 };
+  const dot = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Crect width='10' height='10' fill='red'/%3E%3C/svg%3E";
+  await send(withSlide(`<Sticker src="${dot}" size={100} x={${(at.x - f.x) / f.unit}} y={${(at.y - f.y) / f.unit}} />`));
+  const sticker = frame.locator('.deck-stage [data-active="true"] .deck-sticker');
+  await sticker.waitFor({ timeout: 20_000 });
+  // Measured against the slide (which covers the stage at rest), so a transition still running
+  // doesn't move the answer.
+  const landed = await sticker.evaluate((el) => {
+    const stage = el.closest(".deck-stage");
+    const k = stage.getBoundingClientRect().width / stage.offsetWidth;
+    const s = el.closest("[data-index]").getBoundingClientRect();
+    const b = el.getBoundingClientRect();
+    return { x: Math.round((b.left - s.left) / k), y: Math.round((b.top - s.top) / k) };
+  });
+  check(
+    "frame: a sticker placed with it lands on the stage point asked for",
+    Math.abs(landed.x - at.x) <= 2 && Math.abs(landed.y - at.y) <= 2,
+    `asked ${at.x},${at.y} → landed ${landed.x},${landed.y} (frame at ${f.x},${f.y})`,
+  );
+  // Back to the deck, and wait for that compile: a late one would answer the next step's wait.
+  await page.evaluate(() => (window.msgs.length = 0));
+  await send(deckText);
+  await page.waitForFunction(() => window.msgs.some((m) => m.type === "compiled"), null, { timeout: 30_000 });
+}
+
 async function chromeOff(page, deckText) {
   const frame = page.frameLocator("iframe");
   const toShell = (message) =>
@@ -356,6 +404,7 @@ try {
   }
   const bad = await ask("export.thumbnail", { width: "big" }, 999);
   check("preview: export.thumbnail refuses bad params", !bad.ok, bad.error ?? "");
+  await placementFrame(page, deck, ask);
   // A theme this shell does not bundle: the deck still runs, in minimal, and says so — a warning
   // diagnostic to the editor and a dismissible notice to the presenter (theming/registry.ts).
   await page.evaluate((deckText) => {
