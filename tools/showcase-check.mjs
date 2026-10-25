@@ -16,9 +16,12 @@
  *   node tools/showcase-check.mjs --export-format <list>
  *                                                   the formats `kadal-deck export` makes and checks
  *                                                   (default pdf,png,pptx,pptx-editable,md)
+ *   node tools/showcase-check.mjs --export-range <spec>
+ *                                                   export only those slides (`kadal-deck export
+ *                                                   --range`, e.g. 1-74 or 75-)
  *
  * CI runs this in parallel jobs, each with a share of the checks (.github/workflows/ci.yml): the
- * walk with the print and /export views that count against it, every other view, and the CLI
+ * walk with the views that count against it (print, /export, scroll), every other view, and the CLI
  * export split by format. A run that does not walk checks its export against the print view's own
  * page count; the walk's run checks that count against the walk, so the export is still held to
  * Σ(clicks + 1) over every slide.
@@ -889,8 +892,10 @@ await step("scroll view: slides stacked full width, on a phone and a desktop", a
       if (Math.abs(geo.segs[i].top - (prev.top + prev.height)) > 1) gaps++;
     }
     expect(gaps === 0, `${vp.width}px: ${gaps} slides do not follow straight on from the one above`);
-    // A slide with no steps takes its own height and no more: no empty page between slides.
-    const plain = flat().map((s, i) => ({ s, g: geo.segs[i] })).filter(({ s }) => (visited.get(`${s.h},${s.v}`) ?? 0) === 0);
+    // A slide with no steps takes its own height and no more: no empty page between slides. Which
+    // slides have steps is what the walk counted, so CI runs this view in the walk's job.
+    if (!visited.size) note(`${vp.width}px: not walked in this run, so slide heights were not checked`);
+    const plain = flat().map((s, i) => ({ s, g: geo.segs[i] })).filter(({ s }) => visited.size && (visited.get(`${s.h},${s.v}`) ?? 0) === 0);
     const tall = plain.filter(({ g }) => g && g.height > slideH + 2);
     expect(tall.length === 0, `${vp.width}px: ${tall.length} slides without steps are taller than a slide (${tall[0]?.g.height.toFixed(0)} > ${slideH.toFixed(0)})`);
     // What is on screen at the top is a slide with words on it, not an empty stretch.
@@ -939,16 +944,29 @@ await step("?embedded and ?projector", async () => {
 // A slide with `clicksStart` opens (and prints) from that step.
 const startOf = (key) => flat().find((s) => `${s.h},${s.v}` === key)?.start ?? 0;
 const expectedPages = () => [...visited.entries()].reduce((n, [key, clicks]) => n + clicks + 1 - Math.min(startOf(key), clicks), 0);
+// Slide numbers (1-based, in deck order) a `--range` spec such as "1-74" or "75-" names.
+const slidesIn = (spec, total) =>
+  spec.split(",").flatMap((part) => {
+    const [a, b] = part.trim().split("-");
+    const lo = Number(a);
+    const hi = b === undefined ? lo : b === "" ? total : Number(b);
+    return Array.from({ length: Math.max(0, Math.min(hi, total) - lo + 1) }, (_, i) => lo + i);
+  });
 // What an export must have: the walked count, or, in a run that did not walk, the print view's
-// own count (which the walk's run holds to the walked count: see the header).
-async function pagesWanted() {
-  if (visited.size) return expectedPages();
+// own count (which the walk's run holds to the walked count: see the header). With a range, the
+// same for just those slides.
+async function pagesWanted(range) {
+  if (visited.size) {
+    if (!range) return expectedPages();
+    const keys = new Set(slidesIn(range, flat().length).map((n) => `${flat()[n - 1].h},${flat()[n - 1].v}`));
+    return [...visited.entries()].filter(([key]) => keys.has(key)).reduce((n, [key, clicks]) => n + clicks + 1 - Math.min(startOf(key), clicks), 0);
+  }
   const { page, context } = await openPage({ viewport: { width: 1920, height: 1080 } });
-  await page.goto(`${base}?print-pdf`);
+  await page.goto(`${base}?print-pdf${range ? `&range=${encodeURIComponent(range)}` : ""}`);
   await page.waitForSelector(".deck-print-pages[data-ready]", { timeout: 120_000 });
   const pages = await page.locator(".deck-print-page").count();
   await context.close();
-  note(`not walked in this run: ${pages} pages expected, the print view's count`);
+  note(`not walked in this run: ${pages} pages expected, the print view's count${range ? ` for slides ${range}` : ""}`);
   return pages;
 }
 await step("print: ?print-pdf has a page per click step", async () => {
@@ -1001,18 +1019,19 @@ for (const f of exportFormats)
     process.exit(2);
   }
 const exporting = (f) => exportFormats.includes(f);
+const exportRange = val("--export-range", null);
 if (!flag("--no-export")) {
-  await step(`export: kadal-deck export — ${exportFormats.map((f) => FORMATS[f]).join(", ")}`, async () => {
+  await step(`export: kadal-deck export — ${exportFormats.map((f) => FORMATS[f]).join(", ")}${exportRange ? `, slides ${exportRange}` : ""}`, async () => {
     const dir = join(out, "export");
     const bin = join(root, "packages/deck/dist/cli/bin.js");
     await run(
       "node",
-      [bin, "export", "--url", base, "--no-posters", "--format", exportFormats.join(","), "--scale", "1", "--out", dir],
+      [bin, "export", "--url", base, "--no-posters", "--format", exportFormats.join(","), "--scale", "1", "--out", dir, ...(exportRange ? ["--range", exportRange] : [])],
       deckDir,
     );
     const pdf = join(dir, "showcase.pdf");
     const pptx = join(dir, "showcase.pptx");
-    const want = await pagesWanted();
+    const want = await pagesWanted(exportRange);
     if (exporting("pdf")) expect(existsSync(pdf) && statSync(pdf).size > 200_000, "no PDF, or a tiny one");
     if (exporting("pdf") && existsSync(pdf)) {
       const text = readFileSync(pdf).toString("latin1");

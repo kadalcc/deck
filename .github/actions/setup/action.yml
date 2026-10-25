@@ -47,6 +47,9 @@ runs:
       shell: bash
       run: |
         echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+        # The runner image (ImageOS/ImageVersion are the runner's own variables, not in `env`).
+        echo "image=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
+        echo "image-version=${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
         mkdir -p ~/.cache/apt-archives/partial
         echo "Dir::Cache::Archives \"$HOME/.cache/apt-archives/\";" | sudo tee /etc/apt/apt.conf.d/99-cached-archives > /dev/null
     - if: inputs.playwright == 'true'
@@ -56,8 +59,8 @@ runs:
           ~/.cache/ms-playwright
           ~/.cache/apt-archives/*.deb
         # A new runner image restores the last image's packages and adds what changed.
-        key: playwright-${{ runner.os }}-${{ env.ImageOS }}-${{ steps.pw.outputs.version }}-${{ env.ImageVersion }}
-        restore-keys: playwright-${{ runner.os }}-${{ env.ImageOS }}-${{ steps.pw.outputs.version }}-
+        key: playwright-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-${{ steps.pw.outputs.image-version }}
+        restore-keys: playwright-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-
     - if: inputs.playwright == 'true'
       shell: bash
       run: npx playwright install --with-deps chromium

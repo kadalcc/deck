@@ -2,7 +2,7 @@ name: CI
 
 # Every check runs in its own job, all at once, on GitHub's hosted runners (free for a public
 # repo), so the wall time is the slowest job rather than the sum: the showcase tour alone was
-# ~15 minutes in one process, and is now five jobs (tools/showcase-check.mjs says how a split run
+# ~15 minutes in one process, and is now six jobs (tools/showcase-check.mjs says how a split run
 # still holds the export to the walk). Each job builds what it needs; that is ~30 s, less than
 # handing a build between jobs costs.
 
@@ -95,19 +95,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Every slide and click (~3.5 min), and the two views whose page count must match it.
+          # Every slide and click (~3.5 min), and the views that count against what it saw.
           - shard: walk
-            args: '--only "walk:" --only "print:" --only "export: /export"'
+            args: '--only "walk:" --only "print:" --only "export: /export" --only "scroll view:"'
           # Every other view: dark, themes, keys, tools, presenter, audience, scroll, embeds.
           - shard: views
-            args: '--skip "walk:" --skip "print:" --skip "export:"'
+            args: '--skip "walk:" --skip "print:" --skip "export:" --skip "scroll view:"'
           # `kadal-deck export` (~7 min for all five formats in one process), a share each.
           - shard: export-pdf
             args: '--only "export: kadal-deck" --export-format pdf'
           - shard: export-png-pptx-md
             args: '--only "export: kadal-deck" --export-format png,pptx,md'
-          - shard: export-pptx-editable
-            args: '--only "export: kadal-deck" --export-format pptx-editable'
+          # The editable PPTX is the slowest format (~6 min alone): half the slides each.
+          - shard: export-pptx-editable-1
+            args: '--only "export: kadal-deck" --export-format pptx-editable --export-range 1-74'
+          - shard: export-pptx-editable-2
+            args: '--only "export: kadal-deck" --export-format pptx-editable --export-range 75-'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
