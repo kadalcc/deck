@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-shibainu",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Shibainu: Slidev's shibainu theme, ported to Kadal Deck. Soft blobs in a shiba's browns, Titillium Web, fourteen layouts; dark.",
   "keywords": [
     "kadal-theme",
@@ -84,7 +84,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.5.2",
+    "@kadal/deck": "^0.5.3",
     "react": "^19.2.0"
   },
   "devDependencies": {
