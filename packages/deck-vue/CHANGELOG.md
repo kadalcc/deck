@@ -1,5 +1,12 @@
 # @kadal/deck-vue
 
+## 0.6.3
+
+### Patch Changes
+
+- Updated dependencies [531428e]
+  - @kadal/deck@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes
