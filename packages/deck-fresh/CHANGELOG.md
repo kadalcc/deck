@@ -1,5 +1,13 @@
 # @kadal/deck-fresh
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [15ba20e]
+  - @kadal/deck@0.6.1
+  - @kadal/deck-preact@0.6.1
+
 ## 0.6.0
 
 ### Patch Changes

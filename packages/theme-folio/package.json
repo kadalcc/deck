@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-folio",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Folio, a theme for Kadal Deck (@kadal/deck). An editorial serif theme for essays and keynotes: warm paper, a high-contrast display serif, generous whitespace.",
   "keywords": [
     "kadal-theme",
@@ -96,7 +96,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.6.0",
+    "@kadal/deck": "^0.6.1",
     "react": "^19.2.0"
   },
   "devDependencies": {
