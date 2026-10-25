@@ -1130,3 +1130,24 @@
   background: color-mix(in oklab, var(--deck-bg) 85%, transparent);
   font: 600 0.95em var(--deck-mono-font);
 }
+
+/* pro/mosaic-gallery where the library does not render (a local preview, a self-hosted build):
+   the default layout gets the ::gallery:: slot as one row of pictures, so the slide fits instead
+   of stacking five full-width images and auto-fitting its text down to nothing. The real item
+   lays the slot out itself and never wears .deck-layout-default. */
+.deck-layout-default > .deck-slot-gallery {
+  display: flex;
+  gap: 24px;
+  margin-top: 48px;
+}
+.deck-layout-default > .deck-slot-gallery > p {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+.deck-layout-default > .deck-slot-gallery img {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+  border-radius: 14px;
+}
