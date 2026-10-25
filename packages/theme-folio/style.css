@@ -365,9 +365,12 @@
 .theme-folio .deck-layout-center p {
   max-width: 30em;
 }
+/* Bottom-aligned, but SAFE: a two-line title too tall for the slide grew upwards through the
+   masthead rule, beyond the auto-fit's reach; now it starts below the rule and the fit scales it. */
 .theme-folio .deck-layout-cover {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   align-items: flex-start;
+  padding-top: 1.4em;
   padding-bottom: 0.4em;
 }
 .theme-folio .deck-layout-cover::before {

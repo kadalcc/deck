@@ -378,9 +378,13 @@
 .theme-swiss .deck-layout-center :is(h1, h2) {
   letter-spacing: -0.04em;
 }
+/* Bottom-aligned, but SAFE: a title too tall for the slide used to overflow upwards — under the
+   accent square and the rule, and out of the auto-fit's reach (overflow above the box is not
+   scrollable, so it was never measured). Now it starts below the square and the fit scales it. */
 .theme-swiss .deck-layout-cover {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   align-items: flex-start;
+  padding-top: 2.4em;
 }
 .theme-swiss .deck-layout-cover::before {
   content: "";
@@ -416,7 +420,7 @@
   margin-bottom: 1.2em;
 }
 .theme-swiss .deck-layout-intro {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   align-items: flex-start;
 }
 .theme-swiss .deck-layout-intro h1 {
@@ -436,7 +440,7 @@
   pointer-events: none;
 }
 .theme-swiss .deck-layout-section {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   align-items: flex-start;
   color: var(--swiss-on-signal);
 }
@@ -457,7 +461,7 @@
 }
 .theme-swiss .deck-layout-end {
   align-items: flex-start;
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   text-align: start;
 }
 .theme-swiss .deck-layout-end :is(h1, h2) {
@@ -479,7 +483,7 @@
 .theme-swiss .deck-layout-fact {
   align-items: flex-start;
   text-align: start;
-  justify-content: flex-end;
+  justify-content: safe flex-end;
 }
 .theme-swiss .deck-layout-fact > :is(h1, h2, p, .deck-counter):first-child {
   font-family: var(--deck-heading-font);
@@ -571,7 +575,7 @@
 }
 .theme-swiss :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content {
   padding: var(--deck-pad);
-  justify-content: flex-end;
+  justify-content: safe flex-end;
 }
 .theme-swiss :is(.deck-layout-image-left, .deck-layout-image-right) .deck-layout-image-content :is(h1, h2) {
   font-size: 2.4em;
@@ -591,7 +595,7 @@
 /* ── the theme's own layouts (index.tsx) ───────────────────────────────── */
 /* poster: one word or number, as large as the slide allows, and a line of small print */
 .theme-swiss .deck-layout-poster {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   align-items: flex-start;
 }
 .theme-swiss .deck-layout-poster :is(h1, h2) {
