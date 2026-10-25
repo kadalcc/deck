@@ -26,6 +26,7 @@
   <a href="https://deck.kadal.cc/docs/">Docs</a> ·
   <a href="https://deck.kadal.cc/tour/">Live tour</a> ·
   <a href="https://deck.kadal.cc/themes/">Themes</a> ·
+  <a href="https://deck.kadal.cc/library/">Pro library</a> ·
   <a href="https://deck.kadal.cc/pricing/">Hosting</a> ·
   <a href="https://deck.kadal.cc/changelog/">Changelog</a>
 </p>
@@ -92,7 +93,7 @@ report of anything that didn't carry over.
 | **Clicks and motion** ([docs](https://deck.kadal.cc/docs/clicks-and-animation/)) | `<Click>`, `<Clicks>`, `at="+2"`, notes that follow your clicks, 7 transitions (a different one in and out if you like), auto-animate, `<Motion>` |
 | **Code** ([docs](https://deck.kadal.cc/docs/code/)) | Shiki highlighting stepped line by line, magic move, Monaco editors, runnable JS/TS/Python, TwoSlash hovers, code groups, snippet imports |
 | **Maths, diagrams, sketches** ([docs](https://deck.kadal.cc/docs/math-diagrams-sketches/)) | KaTeX at build time, Mermaid in the deck's colours, Excalidraw drawings revealed region by region |
-| **Looks** ([docs](https://deck.kadal.cc/docs/themes-and-backgrounds/)) | 16 themes in light and dark, 42 backgrounds (most of them animated), 200,000 icons through Iconify, Tailwind |
+| **Looks** ([docs](https://deck.kadal.cc/docs/themes-and-backgrounds/)) | 16 themes in light and dark, 28 built-in backgrounds (most of them animated), the [Pro library](#backgrounds-and-layouts) of 95 backgrounds and layouts on deck.kadal.cc, 200,000 icons through Iconify, Tailwind |
 | **Any framework** ([docs](https://deck.kadal.cc/docs/islands/)) | React and web components built in; Vue, Svelte, Solid, Preact, Qwik, Angular, Fresh, Rust/WebAssembly and Python as islands, each loaded only when its slide appears |
 | **Presenting** ([docs](https://deck.kadal.cc/docs/presenter-and-keyboard/)) | Presenter view with notes, timer and next slide; drawing, laser, spotlight, blackout, camera, recording; a share window for video calls; a phone remote; vim keys |
 | **The live room** ([docs](https://deck.kadal.cc/docs/live-room/)) | The audience follows on their phones: reactions, questions with upvotes, polls, word clouds, timed quizzes, a pace dial and a raised hand |
@@ -108,6 +109,57 @@ report of anything that didn't carry over.
 <tr>
 <td valign="top">Notes that highlight with each click, the next step, a timer with pacing and every tool on one screen. Press <kbd>S</kbd> in any deck.</td>
 <td valign="top">Scan the QR code: no app, no account. The slide stays in step with you, or roams ahead and catches up.</td>
+</tr>
+</table>
+
+## Backgrounds and layouts
+
+**The Pro library.** 95 backgrounds and layouts in 15 genres — board-pack covers, KPI boards,
+magazine spreads, terminal covers, lecture outlines, synthwave grids, wedding invitations — each in
+light and dark, each wearing your deck's theme. One line of frontmatter picks one:
+
+```yaml
+---
+layout: pro/kpi-board
+background: pro/neon-drift
+---
+```
+
+<table>
+<tr>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/exec-cover/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/exec-cover/card.webp" alt="Executive Cover, a Pro layout from the corporate genre" width="100%"></picture></a><br><code>layout: pro/exec-cover</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/kpi-board/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/kpi-board/card.webp" alt="KPI Board, a Pro layout from the finance genre" width="100%"></picture></a><br><code>layout: pro/kpi-board</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/pull-quote/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/pull-quote/card.webp" alt="Pull Quote, a Pro layout from the editorial genre" width="100%"></picture></a><br><code>layout: pro/pull-quote</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/terminal-cover/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/terminal-cover/card.webp" alt="Terminal Cover, a Pro layout from the developer genre" width="100%"></picture></a><br><code>layout: pro/terminal-cover</code></td>
+</tr>
+<tr>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/neon-drift/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/neon-drift/card.webp" alt="Neon Drift, a Pro background from the gaming genre" width="100%"></picture></a><br><code>background: pro/neon-drift</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/ridges/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/ridges/card.webp" alt="Ridges, a Pro background from the nature genre" width="100%"></picture></a><br><code>background: pro/ridges</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/riso-shapes/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/riso-shapes/card.webp" alt="Riso Shapes, a Pro background from the creative genre" width="100%"></picture></a><br><code>background: pro/riso-shapes</code></td>
+<td align="center" width="25%"><a href="https://deck.kadal.cc/library/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://deck.kadal.cc/api/v1/library/previews/breathe/card-dark.webp"><img src="https://deck.kadal.cc/api/v1/library/previews/breathe/card.webp" alt="Breathe, a Pro background from the health genre" width="100%"></picture></a><br><code>background: pro/breathe</code></td>
+</tr>
+</table>
+
+The library renders on decks published to [deck.kadal.cc](https://deck.kadal.cc/pricing/) from a
+**Pro or Team** workspace. Anywhere else — a static build on your own host, or the free plan — a
+`pro/` name falls back to the theme's own background and the default layout, so the slide still
+reads; only the dev server says why, in a small chip. Every item, moving, in light and dark:
+[deck.kadal.cc/library](https://deck.kadal.cc/library/).
+
+**Built in, free everywhere.** 28 backgrounds ship with the engine — `background: aurora`, or
+`<Background name="aurora" />` inside a slide — most of them animated, all paused off-slide and
+still under reduced motion. A few of them:
+
+<table>
+<tr>
+<td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/backgrounds/gradient-mesh-dark.webp"><img src=".github/assets/backgrounds/gradient-mesh.webp" alt="The gradient-mesh background: slow, drifting, blurred colour blobs" width="100%"></picture><br><code>background: gradient-mesh</code></td>
+<td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/backgrounds/aurora-dark.webp"><img src=".github/assets/backgrounds/aurora.webp" alt="The aurora background: soft northern-lights bands" width="100%"></picture><br><code>background: aurora</code></td>
+<td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/backgrounds/waves-dark.webp"><img src=".github/assets/backgrounds/waves.webp" alt="The waves background: layered noise waves" width="100%"></picture><br><code>background: waves</code></td>
+</tr>
+<tr>
+<td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/backgrounds/glows-dark.webp"><img src=".github/assets/backgrounds/glows.webp" alt="The glows background: large slow glows of colour" width="100%"></picture><br><code>background: glows</code></td>
+<td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/backgrounds/constellation-dark.webp"><img src=".github/assets/backgrounds/constellation.webp" alt="The constellation background: points joined to their near neighbours, drifting" width="100%"></picture><br><code>background: constellation</code></td>
+<td align="center" width="33%"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/backgrounds/globe-dark.webp"><img src=".github/assets/backgrounds/globe.webp" alt="The globe background: a wire globe, turning slowly" width="100%"></picture><br><code>background: globe</code></td>
 </tr>
 </table>
 

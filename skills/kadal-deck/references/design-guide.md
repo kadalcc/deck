@@ -29,6 +29,11 @@ the three seconds after it appears.
 - Contrast first: dark text on light or light on dark; check both schemes if the deck allows the
   theme menu (`kadal-deck screenshot --scheme dark`). Animated backgrounds are ambience — keep
   text off their brightest parts, lower their opacity (`rgba()` colours) or tint the layer.
+- A finished look in one line: the Pro library (`layout: pro/<slug>`, `background: pro/<slug>`,
+  95 items in 15 genres — covers, agendas, KPI boards, quotes, galleries) renders on decks
+  published to deck.kadal.cc from a Pro or Team workspace. Elsewhere it falls back to the theme's
+  background and the default layout, so check the slide still reads in `kadal-deck dev`. Use it
+  only when the user publishes there; otherwise pick a built-in background.
 - Images: large, relevant, with `alt` text. `layout: image-right` + a short point on the left
   beats a small picture under bullets.
 - Diagrams: `<Mermaid>` or `<Sketch>` with `steps` to tour a system one region per click.

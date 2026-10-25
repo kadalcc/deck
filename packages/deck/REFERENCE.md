@@ -28,6 +28,8 @@ Pick one with `layout: <name>` in a slide's frontmatter.
 
 Custom layouts: add `"layout:name": Component` to `src/components.tsx`.
 
+**The Pro library.** `layout: pro/<slug>` and `background: pro/<slug>` (or `<Background name="pro/<slug>" />`) pick one of 95 items in 15 genres that deck.kadal.cc serves to decks published from a Pro or Team workspace; browse them at https://deck.kadal.cc/library/ (JSON: https://deck.kadal.cc/api/v1/library/catalog). On any other host or plan a `pro/` name falls back to the theme's own background and the `default` layout, so write the slide to read well either way.
+
 ## Components
 
 Every component below works in any slide without an import. Your own go in `src/components.tsx`.
@@ -1410,6 +1412,10 @@ Links glossary mentions inside a plain string at render time — for words that 
 ## Backgrounds
 
 `background: <name>` in frontmatter, `{ component: <name>, ...props }` for props, or `<Background name>` in the slide. Colours are CSS strings; `rgba()` sets their weight. With a component, `color` is its stroke and `fill`/`tint` washes the layer.
+
+**The Pro library.** `layout: pro/<slug>` and `background: pro/<slug>` (or `<Background name="pro/<slug>" />`) pick one of 95 items in 15 genres that deck.kadal.cc serves to decks published from a Pro or Team workspace; browse them at https://deck.kadal.cc/library/ (JSON: https://deck.kadal.cc/api/v1/library/catalog). On any other host or plan a `pro/` name falls back to the theme's own background and the `default` layout, so write the slide to read well either way.
+
+Removed in 0.6: `signer`, `variants`, `handshapes`, `trails`, `window`, `embedding`, `lattice` and `track`. A deck that needs one copies it from https://deck.kadal.cc/docs/backgrounds/#removed-in-06 into `src/components.tsx` and registers it with `registerBackground`.
 
 ### Ambient
 

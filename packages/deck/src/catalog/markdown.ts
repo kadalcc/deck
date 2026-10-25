@@ -62,6 +62,14 @@ const TITLES: Record<CatalogSection, string> = {
 };
 
 /** One section as Markdown, with a `##` heading (or `#` with `level: 1`). */
+/** The host's library, named wherever layouts and backgrounds are listed (react/premium.tsx). */
+const PRO_LIBRARY =
+  '**The Pro library.** `layout: pro/<slug>` and `background: pro/<slug>` (or `<Background name="pro/<slug>" />`) pick one of 95 items in 15 genres that deck.kadal.cc serves to decks published from a Pro or Team workspace; browse them at https://deck.kadal.cc/library/ (JSON: https://deck.kadal.cc/api/v1/library/catalog). On any other host or plan a `pro/` name falls back to the theme\'s own background and the `default` layout, so write the slide to read well either way.';
+
+/** What 0.6 took out, so an agent meeting an old deck knows why the name no longer resolves. */
+const REMOVED_NOTE =
+  "Removed in 0.6: `signer`, `variants`, `handshapes`, `trails`, `window`, `embedding`, `lattice` and `track`. A deck that needs one copies it from https://deck.kadal.cc/docs/backgrounds/#removed-in-06 into `src/components.tsx` and registers it with `registerBackground`.";
+
 export function sectionMarkdown(catalog: Catalog, section: CatalogSection, level = 2): string {
   const h = "#".repeat(level);
   const out: string[] = [`${h} ${TITLES[section]}`, ""];
@@ -104,11 +112,21 @@ export function sectionMarkdown(catalog: Catalog, section: CatalogSection, level
           `- **${l.name}** — ${l.summary}${l.keys.length ? ` Reads: ${l.keys.map(code).join(", ")}.` : ""}${l.slots.length ? ` Slots: ${l.slots.map((s) => code(`::${s}::`)).join(", ")}.` : ""}`,
         );
       }
-      out.push("", 'Custom layouts: add `"layout:name": Component` to `src/components.tsx`.', "");
+      out.push(
+        "",
+        'Custom layouts: add `"layout:name": Component` to `src/components.tsx`.',
+        "",
+        PRO_LIBRARY,
+        "",
+      );
       break;
     case "backgrounds": {
       out.push(
         "`background: <name>` in frontmatter, `{ component: <name>, ...props }` for props, or `<Background name>` in the slide. Colours are CSS strings; `rgba()` sets their weight. With a component, `color` is its stroke and `fill`/`tint` washes the layer.",
+        "",
+        PRO_LIBRARY,
+        "",
+        REMOVED_NOTE,
         "",
       );
       for (const fam of ["ambient", "quiet", "map", "plain"]) {
