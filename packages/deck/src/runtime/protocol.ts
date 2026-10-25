@@ -67,8 +67,9 @@ export type FromPreview =
       kit?: { kitVersion: number; engine: string; modules: string[]; snippets?: string[] };
       /**
        * What this shell can do beyond the messages every shell answers: "edit" = editing in
-       * place (`edit`, `edited`, `located`; 0.6.1), "chrome" = the `chrome` message (0.6.2).
-       * Absent from shells before 0.6.1.
+       * place (`edit`, `edited`, `located`; 0.6.1), "chrome" = the `chrome` message (0.6.2),
+       * "frame" = the `layout.frame` command: where placed elements' x/y start on the slide
+       * shown, in stage pixels (0.6.3). Absent from shells before 0.6.1.
        */
       features?: string[];
     }

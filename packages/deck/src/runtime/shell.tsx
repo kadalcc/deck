@@ -357,7 +357,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       kadal: 1,
       type: "ready",
       version: VERSION,
-      features: ["edit", "chrome"],
+      features: ["edit", "chrome", "frame"],
       ...(kit
         ? {
             kit: {
