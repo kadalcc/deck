@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-crisp",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Crisp: plain black on white for Kadal Deck, ported from a Slidev theme. Helvetica Neue, bold titles, pictures set in a margin; light and dark.",
   "keywords": [
     "kadal-theme",
@@ -79,7 +79,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.6.1",
+    "@kadal/deck": "^0.6.2",
     "react": "^19.2.0"
   },
   "devDependencies": {
