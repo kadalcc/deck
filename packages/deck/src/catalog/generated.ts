@@ -191,6 +191,7 @@ export const GENERATED: GeneratedData = {
     {"name":"title","type":{"text":"string","variants":[{"type":"string"}]}},
     {"name":"author","type":{"text":"string","variants":[{"type":"string"}]}},
     {"name":"info","type":{"text":"string","variants":[{"type":"string"}]}},
+    {"name":"date","type":{"text":"string","variants":[{"type":"string"}]},"description":"When the talk is given, as YYYY-MM-DD. The deck doesn't show it; listings sort by it."},
     {"name":"width","type":{"text":"number","variants":[{"type":"number"}]},"description":"The authored size; the stage scales uniformly to fit any viewport."},
     {"name":"height","type":{"text":"number","variants":[{"type":"number"}]}},
     {"name":"margin","type":{"text":"number","variants":[{"type":"number"}]},"description":"Fraction of the viewport left empty around the stage. 0 by default: a 16:9 window shows the slide edge to edge, any other shape gets bars on two sides — the content never reflows."},

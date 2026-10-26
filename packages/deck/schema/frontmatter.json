@@ -673,6 +673,11 @@
           "description": "A line about the deck (Markdown).",
           "default": ""
         },
+        "date": {
+          "type": "string",
+          "description": "When the talk is given, as YYYY-MM-DD. The deck doesn't show it; listings sort by it.",
+          "default": ""
+        },
         "width": {
           "type": "number",
           "description": "The authored size; the stage scales uniformly to fit any viewport.",
