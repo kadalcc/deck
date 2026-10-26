@@ -18,7 +18,7 @@
  *   kadal-deck info [topic]               the catalog: components, layouts, backgrounds, keys…
  *   kadal-deck screenshot                 PNGs of slides (headless Chromium)
  *   kadal-deck export [--format …]        PDF/PNG/PPTX/editable PPTX/Markdown into export/ (Playwright)
- *   kadal-deck login [--host URL]         sign this machine in to a Kadal Deck host
+ *   kadal-deck login [--host URL] [--workspace H]  sign this machine in to a Kadal Deck host
  *   kadal-deck logout                     forget the saved token
  *   kadal-deck whoami                     who and which workspace the token is for
  *   kadal-deck publish [--slug s] [--workspace handle] [--title t]
@@ -49,7 +49,15 @@ import {
 import { NoDeckError } from "./project.ts";
 import { MissingDependencyError, keepStdoutClean, runVite } from "./vite.ts";
 
-export const EXIT = { ok: 0, failed: 1, usage: 2, auth: 3, missing: 4, diverged: 4, conflicts: 5 } as const;
+export const EXIT = {
+  ok: 0,
+  failed: 1,
+  usage: 2,
+  auth: 3,
+  missing: 4,
+  diverged: 4,
+  conflicts: 5,
+} as const;
 
 export const HELP = `kadal-deck <command> [options]
 
@@ -102,7 +110,7 @@ export const HELP = `kadal-deck <command> [options]
               --output <name>   --timeout <ms> --wait <ms> --wait-until networkidle|load|domcontentloaded|none
               --executable-path <chrome>   --port <n> (the local preview server)
               --vector-pdf (print with the browser alone: all vector, effects vary by viewer)
-  login       sign in to a Kadal Deck host (opens the browser)   --host <url>
+  login       sign in to a Kadal Deck host (opens the browser)   --host <url> --workspace <handle>
   logout      forget the saved token on this machine
   whoami      show the signed-in account and workspace
   media       the workspace's media library: media list [--kind k] [--q text]
@@ -182,7 +190,7 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     url: { kind: "string" },
     dev: { kind: "boolean" },
   },
-  login: { host: { kind: "string" } },
+  login: { host: { kind: "string" }, workspace: { kind: "string" } },
   logout: {},
   whoami: {},
   publish: {
@@ -278,14 +286,14 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
         : name === "ConflictsError"
           ? EXIT.conflicts
           : e instanceof UsageError || name === "TargetNotEmptyError"
-        ? EXIT.usage
-        : e instanceof MissingDependencyError ||
-            e instanceof NoDeckError ||
-            (e as Error)?.name === "PackageResolveError"
-          ? EXIT.missing
-          : e instanceof HostError && e.status === 401
-            ? EXIT.auth
-            : EXIT.failed;
+            ? EXIT.usage
+            : e instanceof MissingDependencyError ||
+                e instanceof NoDeckError ||
+                (e as Error)?.name === "PackageResolveError"
+              ? EXIT.missing
+              : e instanceof HostError && e.status === 401
+                ? EXIT.auth
+                : EXIT.failed;
     // oxlint-disable-next-line no-control-regex -- colour codes from Playwright and Vite
     const message = (e instanceof Error ? e.message : String(e)).replace(/\u001b\[[0-9;]*m/g, "");
     if (json)
@@ -299,7 +307,9 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
                 next: ["kadal-deck pull", "kadal-deck publish --force"],
               }
             : {}),
-          ...(name === "ConflictsError" ? { conflicts: (e as { conflicts?: unknown }).conflicts } : {}),
+          ...(name === "ConflictsError"
+            ? { conflicts: (e as { conflicts?: unknown }).conflicts }
+            : {}),
           code:
             name === "DivergedError"
               ? "diverged"
@@ -308,14 +318,14 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
                 : name === "NoSourceError"
                   ? "no_source"
                   : e instanceof HostError
-              ? e.code
-              : code === EXIT.usage
-                ? "usage"
-                : code === EXIT.missing
-                  ? "missing_prerequisite"
-                  : code === EXIT.auth
-                    ? "unauthorized"
-                    : "failed",
+                    ? e.code
+                    : code === EXIT.usage
+                      ? "usage"
+                      : code === EXIT.missing
+                        ? "missing_prerequisite"
+                        : code === EXIT.auth
+                          ? "unauthorized"
+                          : "failed",
           message,
           exitCode: code,
         },
@@ -363,7 +373,11 @@ async function run(
       const extra: string[] = [];
       if (flags.tunnel === true || flags.remote !== undefined) {
         const { devRemote } = await import("./remote.ts");
-        const r = devRemote({ tunnel: flags.tunnel === true, remote: flags.remote, viteArgs: passed });
+        const r = devRemote({
+          tunnel: flags.tunnel === true,
+          remote: flags.remote,
+          viteArgs: passed,
+        });
         Object.assign(process.env, r.env);
         extra.push(...r.args);
       }
@@ -627,7 +641,11 @@ async function run(
       return screenshot(dir, flags, io);
     case "login": {
       const { login } = await import("./login.ts");
-      const creds = await login({ host: hostFrom(process.env, str(flags.host)), log: say });
+      const creds = await login({
+        host: hostFrom(process.env, str(flags.host)),
+        workspace: str(flags.workspace),
+        log: say,
+      });
       const path = await saveCredentials(creds);
       if (json)
         emit({ ok: true, host: creds.host, workspace: creds.workspace ?? null, credentials: path });
@@ -894,7 +912,9 @@ async function screenshot(
         let from = m ? Number(m[1]) : NaN;
         let to = m?.[2] ? Number(m[2]) : from;
         if (from === 0) {
-          console.error("[deck] --slide counts from 1, as --range does: 0 is read as 1, the first slide.");
+          console.error(
+            "[deck] --slide counts from 1, as --range does: 0 is read as 1, the first slide.",
+          );
           from = 1;
           to = Math.max(to, 1);
         }
@@ -1121,15 +1141,20 @@ export async function publishCommand(
       thumbnail,
       source: prep.source ? { files: prep.source.length, sourceHash: hash } : null,
       kit: kitBuilt,
-      ...(replaced ? { replaced: { ...replaced, restore: `kadal-deck pull --version ${replaced.version}` } } : {}),
+      ...(replaced
+        ? { replaced: { ...replaced, restore: `kadal-deck pull --version ${replaced.version}` } }
+        : {}),
     });
   else {
     say(
       `\nPublished version ${result.version}: ${result.files} files (${formatBytes(result.bytes)}), ${result.uploaded} uploaded.`,
     );
     if (replaced)
-      say(`Replaced the web's ${describeVersion(replaced)}. It is still in the version history: \`kadal-deck pull --version ${replaced.version}\` brings it back.`);
-    if (prep.off) say("Source not uploaded (--no-source): quick edit on the web is off for this deck.");
+      say(
+        `Replaced the web's ${describeVersion(replaced)}. It is still in the version history: \`kadal-deck pull --version ${replaced.version}\` brings it back.`,
+      );
+    if (prep.off)
+      say("Source not uploaded (--no-source): quick edit on the web is off for this deck.");
     say(result.url);
   }
   return EXIT.ok;

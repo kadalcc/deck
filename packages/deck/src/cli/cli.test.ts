@@ -30,16 +30,35 @@ beforeAll(async () => {
       const path = url.pathname.replace(/^\/api\/v1/, "");
       calls.push(`${req.method} ${path}`);
       const json = (data: unknown, status = 200) => Response.json(data, { status });
-      if (path === "/cli/start") return json({ code: "ABCD-EFGH", poll: "p0ll", verify_url: `${host}/app/cli/?code=ABCD-EFGH`, expires_in: 60, interval: 1 });
+      if (path === "/cli/start")
+        return json({
+          code: "ABCD-EFGH",
+          poll: "p0ll",
+          verify_url: `${host}/app/cli/?code=ABCD-EFGH`,
+          expires_in: 60,
+          interval: 1,
+        });
       if (path === "/cli/poll") {
-        if (url.searchParams.get("poll") !== "p0ll") return json({ error: "denied", message: "Unknown login." }, 403);
-        return ++polls < 3 ? json({ status: "pending" }, 202) : json({ token: TOKEN, workspace: { handle: "ana", name: "Ana" } });
+        if (url.searchParams.get("poll") !== "p0ll")
+          return json({ error: "denied", message: "Unknown login." }, 403);
+        return ++polls < 3
+          ? json({ status: "pending" }, 202)
+          : json({ token: TOKEN, workspace: { handle: "ana", name: "Ana" } });
       }
       if (req.headers.get("authorization") !== `Bearer ${TOKEN}`)
         return json({ error: "unauthorized", message: "Sign in." }, 401);
       if (req.method === "POST" && path === "/workspaces/ana/decks") {
         const body = (await req.json()) as { slug: string };
-        return json({ id: "dabc123def456", slug: body.slug, title: body.slug, url: `${host}/@ana/${body.slug}/`, base: `/@ana/${body.slug}/` }, 201);
+        return json(
+          {
+            id: "dabc123def456",
+            slug: body.slug,
+            title: body.slug,
+            url: `${host}/@ana/${body.slug}/`,
+            base: `/@ana/${body.slug}/`,
+          },
+          201,
+        );
       }
       if (req.method === "POST" && path === "/workspaces/full/decks")
         return json({ id: "dfull", slug: "x", title: "x", url: "", base: "/@full/x/" }, 201);
@@ -48,7 +67,13 @@ beforeAll(async () => {
       if (req.method === "POST" && path === "/decks/dabc123def456/versions") {
         const body = (await req.json()) as { files: { path: string; sha256: string }[] };
         versions.push(body);
-        return json({ version: versions.length, missing: [...new Set(body.files.map((f) => f.sha256))].filter((s) => !blobs.has(s)) }, 201);
+        return json(
+          {
+            version: versions.length,
+            missing: [...new Set(body.files.map((f) => f.sha256))].filter((s) => !blobs.has(s)),
+          },
+          201,
+        );
       }
       if (req.method === "PUT" && path.startsWith("/blobs/")) {
         if (failNextPut-- > 0) return json({ error: "oops", message: "temporary" }, 503);
@@ -62,7 +87,8 @@ beforeAll(async () => {
       if (req.method === "POST" && commit) {
         const v = versions[Number(commit[1]) - 1];
         const missing = v.files.map((f) => f.sha256).filter((s) => !blobs.has(s));
-        if (missing.length) return json({ error: "missing_blobs", message: "missing", missing }, 409);
+        if (missing.length)
+          return json({ error: "missing_blobs", message: "missing", missing }, 409);
         return json({ ok: true, version: Number(commit[1]), url: `${host}/@ana/my-talk/` });
       }
       return json({ error: "not_found", message: "no" }, 404);
@@ -78,27 +104,50 @@ afterAll(async () => {
 
 const fakeBuild = (files: Record<string, string>) => async (base: string, out: string) => {
   await mkdir(join(out, "assets"), { recursive: true });
-  for (const [p, body] of Object.entries(files)) await writeFile(join(out, p), body.replace("%BASE%", base));
+  for (const [p, body] of Object.entries(files))
+    await writeFile(join(out, p), body.replace("%BASE%", base));
 };
 
 describe("kadal-deck publish", () => {
   test("first publish uploads everything, retries a 503, and prints the URL", async () => {
     const out = join(dir, "build1");
     const r = await publish({
-      host, token: TOKEN, workspace: "ana", slug: "my-talk", outDir: out,
-      build: fakeBuild({ "index.html": '<script src="%BASE%assets/a.js"></script>', "assets/a.js": "console.log(1)", "assets/b.css": "x{}" }),
+      host,
+      token: TOKEN,
+      workspace: "ana",
+      slug: "my-talk",
+      outDir: out,
+      build: fakeBuild({
+        "index.html": '<script src="%BASE%assets/a.js"></script>',
+        "assets/a.js": "console.log(1)",
+        "assets/b.css": "x{}",
+      }),
     });
     expect(r.url).toBe(`${host}/@ana/my-talk/`);
     expect(r.files).toBe(3);
     expect(r.uploaded).toBe(3);
-    expect(new TextDecoder().decode(blobs.get(sha(new TextEncoder().encode('<script src="/@ana/my-talk/assets/a.js"></script>')))!)).toContain("/@ana/my-talk/");
+    expect(
+      new TextDecoder().decode(
+        blobs.get(
+          sha(new TextEncoder().encode('<script src="/@ana/my-talk/assets/a.js"></script>')),
+        )!,
+      ),
+    ).toContain("/@ana/my-talk/");
   });
 
   test("a second publish sends only what changed", async () => {
     const before = calls.filter((c) => c.startsWith("PUT")).length;
     const r = await publish({
-      host, token: TOKEN, workspace: "ana", slug: "my-talk", outDir: join(dir, "build2"),
-      build: fakeBuild({ "index.html": '<script src="%BASE%assets/a.js"></script>', "assets/a.js": "console.log(2)", "assets/b.css": "x{}" }),
+      host,
+      token: TOKEN,
+      workspace: "ana",
+      slug: "my-talk",
+      outDir: join(dir, "build2"),
+      build: fakeBuild({
+        "index.html": '<script src="%BASE%assets/a.js"></script>',
+        "assets/a.js": "console.log(2)",
+        "assets/b.css": "x{}",
+      }),
     });
     expect(r.version).toBe(2);
     expect(r.uploaded).toBe(1);
@@ -107,11 +156,25 @@ describe("kadal-deck publish", () => {
 
   test("plan limits and bad tokens come back as readable errors", async () => {
     const build = fakeBuild({ "index.html": "hi" });
-    const limit = await publish({ host, token: TOKEN, workspace: "full", slug: "x", outDir: join(dir, "b3"), build }).catch((e) => e);
+    const limit = await publish({
+      host,
+      token: TOKEN,
+      workspace: "full",
+      slug: "x",
+      outDir: join(dir, "b3"),
+      build,
+    }).catch((e) => e);
     expect(limit).toBeInstanceOf(HostError);
     expect((limit as HostError).status).toBe(402);
     expect((limit as HostError).message).toContain("/app/billing");
-    const denied = await publish({ host, token: "nope", workspace: "ana", slug: "x", outDir: join(dir, "b4"), build }).catch((e) => e);
+    const denied = await publish({
+      host,
+      token: "nope",
+      workspace: "ana",
+      slug: "x",
+      outDir: join(dir, "b4"),
+      build,
+    }).catch((e) => e);
     expect((denied as HostError).status).toBe(401);
     expect((denied as HostError).message).toContain("kadal-deck login");
   });
@@ -120,11 +183,19 @@ describe("kadal-deck publish", () => {
 describe("the published URL", () => {
   test("a bare path from the host prints as a full address", () => {
     // deck.kadal.cc with its decks origin unset answered "/@ana/talk/", and that was all it printed.
-    expect(publicUrl("https://deck.kadal.cc", "/@ana/talk/")).toBe("https://decks.kadal.cc/@ana/talk/");
-    expect(publicUrl("http://localhost:8787", "/@ana/talk/")).toBe("http://localhost:8787/@ana/talk/");
-    expect(publicUrl("https://decks.example.org/api", "@ana/talk/")).toBe("https://decks.example.org/@ana/talk/");
+    expect(publicUrl("https://deck.kadal.cc", "/@ana/talk/")).toBe(
+      "https://decks.kadal.cc/@ana/talk/",
+    );
+    expect(publicUrl("http://localhost:8787", "/@ana/talk/")).toBe(
+      "http://localhost:8787/@ana/talk/",
+    );
+    expect(publicUrl("https://decks.example.org/api", "@ana/talk/")).toBe(
+      "https://decks.example.org/@ana/talk/",
+    );
     // The host's own full answer always wins.
-    expect(publicUrl("https://deck.kadal.cc", "https://decks.kadal.cc/@ana/talk/")).toBe("https://decks.kadal.cc/@ana/talk/");
+    expect(publicUrl("https://deck.kadal.cc", "https://decks.kadal.cc/@ana/talk/")).toBe(
+      "https://decks.kadal.cc/@ana/talk/",
+    );
   });
 });
 
@@ -140,6 +211,26 @@ describe("kadal-deck login", () => {
     expect((await Bun.file(path).stat()).mode & 0o777).toBe(0o600);
     expect(await loadCredentials(env)).toEqual(creds);
     expect((await loadCredentials({ ...env, KADAL_DECK_TOKEN: "kd_ci" }))?.token).toBe("kd_ci");
+  });
+
+  test("--workspace names the workspace on the approval page and insists on it", async () => {
+    let opened = "";
+    const creds = await login({
+      host,
+      workspace: "ana",
+      open: (u) => (opened = u),
+      intervalMs: 10,
+    });
+    expect(new URL(opened).searchParams.get("workspace")).toBe("ana");
+    expect(new URL(opened).searchParams.get("code")).toBe("ABCD-EFGH");
+    expect(creds.workspace).toBe("ana");
+    // Approved for another workspace: nothing to save, and the way to tidy up.
+    const wrong = await login({ host, workspace: "kadal", open: () => {}, intervalMs: 10 }).catch(
+      (e: Error) => e,
+    );
+    expect(wrong).toBeInstanceOf(Error);
+    expect((wrong as Error).message).toContain("@ana");
+    expect((wrong as Error).message).toContain("@kadal");
   });
 });
 

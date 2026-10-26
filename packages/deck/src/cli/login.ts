@@ -12,6 +12,10 @@ import { type Credentials, HostError, request } from "./host.ts";
  *
  * `poll` is a secret only this terminal holds: the code on screen is safe to show, because
  * nobody who merely sees it can collect the token.
+ *
+ * With `workspace`, the approval page is opened with that workspace chosen (and locked), and a
+ * token approved for any other is refused rather than saved: the page's picker otherwise starts
+ * on the browser's current workspace, which is easy to approve without looking.
  */
 
 interface Started {
@@ -30,6 +34,8 @@ interface Approved {
 
 export interface LoginOptions {
   host: string;
+  /** The workspace handle the token must be for (`kadal-deck login --workspace <handle>`). */
+  workspace?: string;
   fetch?: typeof fetch;
   /** Open the verification page (default: the system browser). */
   open?: (url: string) => void;
@@ -45,9 +51,12 @@ export async function login(o: LoginOptions): Promise<Credentials> {
     json: {},
     fetch: o.fetch,
   });
+  const want = o.workspace?.replace(/^@/, "");
+  const verify = new URL(s.verify_url);
+  if (want) verify.searchParams.set("workspace", want);
   log(`Your code: ${s.code}`);
-  log(`Approve it at ${s.verify_url}`);
-  (o.open ?? openBrowser)(s.verify_url);
+  log(`Approve it at ${verify.href}${want ? ` (for @${want})` : ""}`);
+  (o.open ?? openBrowser)(verify.href);
 
   const every = o.intervalMs ?? Math.max(1, s.interval ?? 2) * 1000;
   const deadline = Date.now() + (s.expires_in ?? 600) * 1000;
@@ -56,12 +65,21 @@ export async function login(o: LoginOptions): Promise<Credentials> {
     await new Promise((r) => setTimeout(r, every));
     let answer: { status: number; data: Approved };
     try {
-      answer = await request<Approved>(o.host, `/cli/poll${query}`, { accept: [202], fetch: o.fetch });
+      answer = await request<Approved>(o.host, `/cli/poll${query}`, {
+        accept: [202],
+        fetch: o.fetch,
+      });
     } catch (e) {
       if (e instanceof HostError && (e.status === 429 || e.status >= 500)) continue;
       throw e;
     }
     if (answer.status === 202 || !answer.data?.token) continue;
+    const got = answer.data.workspace?.handle;
+    if (want && got !== want)
+      throw new Error(
+        `That code was approved for @${got ?? "another workspace"}, not @${want}, so nothing was saved. ` +
+          `Revoke the new "CLI" token under API tokens in @${got ?? "that workspace"}, then run \`kadal-deck login --workspace ${want}\` again.`,
+      );
     return {
       host: o.host,
       token: answer.data.token,
