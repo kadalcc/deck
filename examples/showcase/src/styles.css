@@ -61,19 +61,181 @@
   font-size: 0.8em;
 }
 
-/* the cover */
-.deck-slide.hero h1 {
-  margin-bottom: 0.4em;
-  font-size: 3.4em;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
-}
-.deck-slide.hero .sc-eyebrow {
-  font-size: 0.66em;
-}
 .sc-keys {
   color: var(--deck-muted);
   font-size: 0.8em;
+}
+
+/* ── the keynote opening: the headline, its last words lit, the four stages ── */
+/* The cover, the four stages and the end. The accent is set here, not by the theme, so pro/orbit
+   (which paints in --deck-accent) is a blue planet whichever theme the deck wears. */
+.deck-slide.sc-keynote {
+  --deck-accent: #0ea5e9;
+  --sc-lit-1: #0369a1;
+  --sc-lit-2: #6d28d9;
+  --sc-lit-3: #be185d;
+}
+:where([data-color-scheme="dark"]) .deck-slide.sc-keynote,
+.deck-slide.sc-keynote[data-color-scheme="dark"] {
+  --sc-lit-1: #38bdf8;
+  --sc-lit-2: #a78bfa;
+  --sc-lit-3: #f472b6;
+}
+.deck-slide.sc-keynote h1 {
+  margin: 0 0 0.32em;
+  font-size: 3.5em;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+.sc-lit {
+  background: linear-gradient(100deg, var(--sc-lit-1), var(--sc-lit-2) 55%, var(--sc-lit-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* the descenders of "room" keep their paint */
+  padding-bottom: 0.08em;
+}
+.deck-slide.sc-keynote .sc-lede {
+  max-width: 34em;
+  color: var(--deck-fg);
+  font-size: 0.9em;
+  line-height: 1.45;
+  opacity: 0.86;
+}
+.deck-slide .sc-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin: 0.9em 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: stage;
+}
+.deck-slide .sc-stages li {
+  counter-increment: stage;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  margin: 0;
+  padding: 0.38em 0.95em 0.38em 0.5em;
+  border: 1px solid color-mix(in srgb, var(--deck-fg) 16%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--deck-bg) 62%, transparent);
+  backdrop-filter: blur(10px);
+  font-size: 0.74em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.deck-slide .sc-stages li::before {
+  content: counter(stage);
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--deck-fg);
+  color: var(--deck-bg);
+  font: 700 0.78em/1 var(--deck-mono-font);
+}
+.deck-slide .sc-stages li:last-child::before {
+  background: linear-gradient(135deg, var(--sc-lit-1), var(--sc-lit-2), var(--sc-lit-3));
+  color: #fff;
+}
+/* In-slide <Background> layers are positioned (z-index 0): the words go above them. */
+.deck-slide.sc-keynote :where(h1, h2, p, ol, .sc-stage-cards) {
+  position: relative;
+  z-index: 1;
+}
+/* The free stand-in for a pro/ background: it fades out once the library item has arrived (the
+   item's wrapper exists only when it is ready), so a host without the library keeps it. */
+.deck-slide .sc-fallback {
+  transition: opacity 0.6s;
+}
+.deck-slide:has(.deck-premium-item) .sc-fallback {
+  opacity: 0 !important;
+}
+.deck-layout-end.sc-keynote h1,
+.sc-keynote .deck-layout-end h1 {
+  font-size: 3em;
+}
+.deck-slide.sc-keynote .deck-layout-end .sc-lede {
+  margin-inline: auto;
+}
+
+/* the four stages, as cards */
+.sc-stage-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7em;
+  min-height: 9.5em;
+  margin: 0.5em 0 0.9em;
+  counter-reset: stage;
+}
+.sc-stage-cards > section {
+  counter-increment: stage;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  padding: 1em 1em 1.05em;
+  border: 1px solid color-mix(in srgb, var(--deck-fg) 14%, transparent);
+  border-radius: 0.6em;
+  background: color-mix(in srgb, var(--deck-bg) 70%, transparent);
+  backdrop-filter: blur(12px);
+}
+.sc-stage-cards > section::before {
+  content: counter(stage);
+  display: inline-grid;
+  place-items: center;
+  width: 2.2em;
+  height: 2.2em;
+  margin-bottom: 0.5em;
+  border-radius: 50%;
+  background: var(--deck-fg);
+  color: var(--deck-bg);
+  font: 700 0.7em/1 var(--deck-mono-font);
+}
+.sc-stage-cards > section:last-child::before {
+  background: linear-gradient(135deg, var(--sc-lit-1), var(--sc-lit-2), var(--sc-lit-3));
+  color: #fff;
+}
+.deck-slide .sc-stage-cards h3 {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.sc-stage-cards > section:last-child h3 {
+  background: linear-gradient(100deg, var(--sc-lit-1), var(--sc-lit-2) 55%, var(--sc-lit-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.deck-slide .sc-stage-line {
+  margin: 0;
+  color: var(--deck-muted);
+  font-size: 0.74em;
+  line-height: 1.4;
+}
+.deck-slide .sc-stage-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+  margin: auto 0 0;
+  padding-top: 0.4em;
+  font-size: 0.62em;
+}
+.deck-slide .sc-stage-links a {
+  padding: 0.12em 0.55em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--deck-accent) 12%, transparent);
+  color: var(--deck-fg);
+  text-decoration: none;
+}
+.deck-slide .sc-stage-links a:hover {
+  background: color-mix(in srgb, var(--deck-accent) 26%, transparent);
 }
 
 /* the table of contents on the second slide */
@@ -1150,4 +1312,10 @@
   height: 360px;
   object-fit: cover;
   border-radius: 14px;
+}
+
+.deck-slide.sc-keynote h2 {
+  font-size: 1.9em;
+  font-weight: 800;
+  letter-spacing: -0.04em;
 }

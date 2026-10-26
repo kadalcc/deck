@@ -5,7 +5,7 @@ layout, component, background, transition, click effect, code option and view of
 [@kadal/deck](../../packages/deck) is on a slide here, and every slide says how it was written and
 carries speaker notes.
 
-`deck.mdx` holds the cover, the contents and the end; each chapter is its own file, pulled in with
+`deck.mdx` holds the cover (`pro/orbit`, with a free globe under it for hosts without the Pro library), the four stages, the contents and the end; each chapter is its own file, pulled in with
 `src:` (which is itself one of the features):
 
 | File | Chapter |

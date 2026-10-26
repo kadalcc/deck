@@ -518,7 +518,7 @@ await step("tools: pen, laser, Alt+click zoom, lightbox, links", async () => {
   expect(!(await ui(page)).lightbox, "Esc did not close the lightbox");
 
   // the table of contents and the layout chips are links into the deck
-  await page.evaluate(() => window.__deck.actions.goto(1, 0));
+  await page.evaluate(({ h, v }) => window.__deck.actions.goto(h, v), at("contents"));
   await page.waitForTimeout(800);
   await page.locator(".deck-slide.is-present .sc-toc a", { hasText: "Clicks" }).click();
   await page.waitForTimeout(800);
@@ -768,9 +768,12 @@ await step("presenter: the pen, the overview, and keys typed into fields", async
   await page.click(".deck-presenter-tools button[aria-label='Overview']");
   await page.waitForTimeout(500);
   expect(await page.locator(".deck-presenter .deck-overview").isVisible(), "the Overview button showed no overview");
+  // Tiles are in deck order, column by column, so the fifth is the deck's fifth slide.
   await page.locator(".deck-overview-tile").nth(4).click();
   await page.waitForTimeout(500);
-  expect((await page.locator(".deck-overview").count()) === 0 && (await nav(page)).h === 3, "an overview tile did not go to its slide");
+  const tile = flat()[4];
+  const landed = await nav(page);
+  expect((await page.locator(".deck-overview").count()) === 0 && landed.h === tile.h && landed.v === tile.v, "an overview tile did not go to its slide");
   // Keys typed into a field are the field's: one in a shadow root (a host's panel), and search.
   const before = await nav(page);
   const layout = await page.evaluate(() => document.querySelector(".deck-presenter").className);
