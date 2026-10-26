@@ -6,6 +6,7 @@ import { PrintDrawings } from "../draw/PrintDrawings.tsx";
 import { fileDrawings } from "../draw/source.ts";
 import { BackgroundLayer } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
+import { usePremiumSettled } from "./premium.tsx";
 import { loadSlide, SlideFrame } from "./SlideFrame.tsx";
 import { useFontsReady } from "../theming/react.tsx";
 import { MDXProvider } from "./mdx.tsx";
@@ -108,21 +109,31 @@ export function PrintView({
   // The deck's web fonts (`fonts`), loaded: an export taken before them is in the fallback face.
   const fontsReady = useFontsReady();
 
-  // One more beat after the last change of page count, so the newest pages, fonts, KaTeX and
-  // diagrams have painted.
+  // `pro/` backgrounds and layouts come from the host after the slides mount: an export or a
+  // thumbnail taken before they arrive pictures the theme's fallback in their place.
+  // Never longer than the slides' own grace: a host that never answers must not hold the export.
+  const [premiumGrace, setPremiumGrace] = useState(false);
   useEffect(() => {
-    if (!settled) return;
+    const t = setTimeout(() => setPremiumGrace(true), 15_000);
+    return () => clearTimeout(t);
+  }, []);
+  const premiumSettled = usePremiumSettled() || premiumGrace;
+
+  // One more beat after the last change of page count (or the last library item arriving), so
+  // the newest pages, fonts, KaTeX, diagrams and posters have painted.
+  useEffect(() => {
+    if (!settled || !premiumSettled) return;
     setReady(false);
     const t = setTimeout(() => setReady(true), 400);
     return () => clearTimeout(t);
-  }, [settled, pages.length]);
+  }, [settled, pages.length, premiumSettled]);
 
   return (
     <div
       className={["deck-print-pages", omitBackground ? "is-transparent" : ""]
         .filter(Boolean)
         .join(" ")}
-      data-ready={(ready && fontsReady) || undefined}
+      data-ready={(ready && fontsReady && premiumSettled) || undefined}
       style={{ width: deck.config.width, zoom: fixedZoom ?? zoom }}
     >
       {pages.map((p) => {

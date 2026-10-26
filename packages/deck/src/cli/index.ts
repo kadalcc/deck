@@ -117,6 +117,11 @@ export const HELP = `kadal-deck <command> [options]
               --force  replace what was published since your last sync (it stays in the history)
               --showcase / --no-showcase  list the deck in the public showcase, or take it out
               Exits 4 when the deck moved since your last sync (run pull), 5 while conflicts are left
+  thumbnail   take the picture of slide 1 the host lists the deck by again, for the version that
+              is live, without publishing (after an engine update; a deck pictured without its
+              Pro background or in the wrong light or dark)   --slug <slug>  --workspace <handle>
+              --host <url>  --all  every published deck in the workspace
+              --out <dir>  save the PNGs there instead of sending them
   pull        merge the web's edits (quick edit, agents) into your files, slide by slide
               --version <n>  that version instead of the newest   --dry-run  say what would change
               --ours / --theirs  settle every conflict that way instead of leaving markers
@@ -191,6 +196,13 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     source: { kind: "boolean" },
     force: { kind: "boolean" },
     showcase: { kind: "boolean" },
+  },
+  thumbnail: {
+    slug: { kind: "string" },
+    workspace: { kind: "string" },
+    host: { kind: "string" },
+    all: { kind: "boolean" },
+    out: { kind: "string" },
   },
   pull: {
     slug: { kind: "string" },
@@ -668,6 +680,8 @@ async function run(
     }
     case "publish":
       return publishCommand(dir, flags, io);
+    case "thumbnail":
+      return thumbnailCommand(dir, flags, io);
     case "pull":
     case "status":
     case "resolve": {
@@ -931,6 +945,93 @@ async function screenshot(
   }
 }
 
+/** `kadal-deck thumbnail`: the live version's picture again, for one deck or all of them. */
+export async function thumbnailCommand(
+  dir: string,
+  flags: Record<string, unknown>,
+  { json, say, emit }: Io,
+): Promise<number> {
+  const { hostContext } = await import("./sync-command.ts");
+  const ctx = await hostContext(dir, flags);
+  if (!ctx) {
+    const message = "Not signed in. Run `kadal-deck login`, or set KADAL_DECK_TOKEN.";
+    if (json) emit({ ok: false, error: { code: "unauthorized", message, exitCode: EXIT.auth } });
+    else say(message);
+    return EXIT.auth;
+  }
+  const { refreshThumbnail } = await import("./thumbnail.ts");
+  const { loadSync } = await import("./sync.ts");
+  const { data: listed } = await request<
+    Array<{ id: string; slug: string; version: number | null }>
+  >(ctx.host, `/workspaces/${encodeURIComponent(ctx.workspace)}/decks`, { token: ctx.token });
+  const decks = Array.isArray(listed) ? listed : [];
+  let targets: Array<{ id: string; slug: string; version: number | null }>;
+  if (flags.all === true) targets = decks.filter((d) => d.version != null);
+  else {
+    // This folder's deck (sync.json), unless --slug names another.
+    const state = str(flags.slug) ? null : await loadSync(dir);
+    const deck = decks.find((d) => (state ? d.id === state.deckId : d.slug === ctx.slug));
+    if (!deck) {
+      const message = `No deck "${ctx.slug}" in @${ctx.workspace}. Pass --slug, or --all.`;
+      if (json) emit({ ok: false, error: { code: "not_found", message, exitCode: EXIT.missing } });
+      else say(message);
+      return EXIT.missing;
+    }
+    targets = [deck];
+  }
+  const out = str(flags.out) ? resolve(str(flags.out)!) : null;
+  if (out) await mkdir(out, { recursive: true });
+  const results: Array<{
+    slug: string;
+    ok: boolean;
+    version?: number;
+    schemes?: string;
+    reason?: string;
+    files?: string[];
+  }> = [];
+  for (const d of targets) {
+    const files: string[] = [];
+    // oxlint-disable-next-line no-await-in-loop -- one browser at a time; a dozen decks at most
+    const r = await refreshThumbnail({
+      dir,
+      host: ctx.host,
+      token: ctx.token,
+      deckId: d.id,
+      keep: out
+        ? async (pictures) => {
+            for (const p of pictures) {
+              const file = join(out, `${d.slug}${p.variant === "dark" ? "-dark" : ""}.png`);
+              // oxlint-disable-next-line no-await-in-loop -- two files at most
+              await writeFile(file, p.png);
+              files.push(file);
+            }
+          }
+        : undefined,
+    });
+    results.push(
+      r.ok
+        ? {
+            slug: d.slug,
+            ok: true,
+            version: r.version,
+            schemes: r.schemes,
+            ...(out ? { files } : {}),
+          }
+        : { slug: d.slug, ok: false, version: r.version, reason: r.reason },
+    );
+    if (!json)
+      say(
+        r.ok
+          ? `${d.slug}  v${r.version}  ${r.schemes === "both" ? "light + dark" : "one picture (its colorScheme is fixed)"}${out ? `  → ${files.map((f) => relative(process.cwd(), f)).join(", ")}` : "  sent"}`
+          : `${d.slug}  skipped: ${r.reason}`,
+      );
+  }
+  const ok = results.every((r) => r.ok);
+  if (json) emit({ ok, decks: results });
+  else if (!targets.length) say(`No published decks in @${ctx.workspace}.`);
+  return ok ? EXIT.ok : EXIT.failed;
+}
+
 export async function publishCommand(
   dir: string,
   flags: Record<string, unknown>,
@@ -1001,6 +1102,8 @@ export async function publishCommand(
       token: creds.token,
       deckId: result.deck.id,
       version: result.version,
+      // Its `pro/` items, through the host as this workspace's: pictured as visitors see them.
+      workspace,
     });
     thumbnail = shot.ok;
     if (!shot.ok && !json) say(`thumbnail skipped: ${shot.reason}`);

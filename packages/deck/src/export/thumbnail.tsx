@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
+import { type ColorScheme, resolveBackground, type SlideOptions } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
 import { BackgroundLayer } from "../react/Backgrounds.tsx";
 import { cmd, useCommand } from "../react/commands.ts";
 import { useDeck } from "../react/context.ts";
+import { useUi } from "../react/hooks.ts";
+import { whenPremiumSettled } from "../react/premium.tsx";
 import { SlideFrame } from "../react/SlideFrame.tsx";
 
 /**
@@ -19,8 +22,17 @@ import { SlideFrame } from "../react/SlideFrame.tsx";
  * copies 2D canvases (the animated backgrounds draw on one) and embeds the deck's web fonts, so
  * the picture is the slide, not an approximation. Nothing the presenter sees moves.
  *
- *   params  { slide?: number  (flat index, default 0), width?: number (default 640, 160–1920) }
- *   value   { type: "image/png", dataUrl, width, height }   height = width × the deck's aspect
+ *   params  { slide?: number  (flat index, default 0), width?: number (default 640, 160–1920),
+ *             scheme?: "light" | "dark"  (default: the one on screen) }
+ *   value   { type: "image/png", dataUrl, width, height, scheme, auto }
+ *           height = width × the deck's aspect; `scheme` is the one pictured; `auto` says the
+ *           deck follows the viewer's light or dark (`colorScheme: auto`), so a host that wants
+ *           to show it as its viewers see it asks for both.
+ *
+ * SCHEME. A deck with a fixed `colorScheme` is always pictured in it, whatever was asked. An
+ * `auto` deck is pictured in the asked scheme by forcing it on the off-screen slide alone — the
+ * same per-slide mechanism as a slide's own `colorScheme:` — so the preview on screen never
+ * flips.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -28,8 +40,29 @@ export const thumbnailParams = z
   .object({
     slide: z.number().int().min(0).optional(),
     width: z.number().optional(),
+    scheme: z.enum(["light", "dark"]).optional(),
   })
   .strict();
+
+/** The scheme a picture is made in: a fixed deck's own, else the asked one, else the screen's. */
+export function thumbnailScheme(
+  deck: ColorScheme,
+  asked: "light" | "dark" | undefined,
+  onScreen: "light" | "dark",
+): "light" | "dark" {
+  if (deck === "light" || deck === "dark") return deck;
+  return asked ?? onScreen;
+}
+
+/**
+ * A slide's options with `scheme` forced on it, as its own `colorScheme:` would: the slide and
+ * its background layer wear that scheme's tokens. A slide that forces its own keeps it.
+ */
+export function withScheme(options: SlideOptions, scheme: "light" | "dark"): SlideOptions {
+  if (options.colorScheme) return options;
+  const bg = options.background ?? resolveBackground({ background: "transparent" })!;
+  return { ...options, colorScheme: scheme, background: { ...bg, scheme: bg.scheme ?? scheme } };
+}
 
 /** The size a picture is made at: the asked width (clamped), the deck's shape. */
 export function thumbnailSize(
@@ -45,11 +78,14 @@ export interface Thumbnail {
   dataUrl: string;
   width: number;
   height: number;
+  scheme: "light" | "dark";
+  auto: boolean;
 }
 
 interface Job {
   slide: number;
   width: number;
+  scheme: "light" | "dark";
   done: (t: Thumbnail) => void;
   fail: (e: unknown) => void;
 }
@@ -75,6 +111,7 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 /** Registers `export.thumbnail` and renders the slide it is asked for, off-screen, one at a time. */
 export function ThumbnailHost() {
   const deck = useDeck();
+  const onScreen = useUi((s) => s.colorScheme);
   const [job, setJob] = useState<Job | null>(null);
   const chain = useRef<Promise<unknown>>(Promise.resolve());
   const flat = useMemo(() => deck.columns.flatMap((c) => c.slides), [deck.columns]);
@@ -84,7 +121,7 @@ export function ThumbnailHost() {
       id: "export.thumbnail",
       title: "Slide picture",
       description:
-        "A PNG of one slide (flat index `slide`, default the first) at `width` pixels (default 640, 160–1920), every step shown, for a host's list of decks. Returns { type, dataUrl, width, height }.",
+        "A PNG of one slide (flat index `slide`, default the first) at `width` pixels (default 640, 160–1920), every step shown, for a host's list of decks. `scheme` (light|dark) pictures an auto deck in that scheme without changing the screen; a deck with a fixed colorScheme is always pictured in its own. Returns { type, dataUrl, width, height, scheme, auto }.",
       group: "query",
       readOnly: true,
       params: thumbnailParams,
@@ -92,6 +129,7 @@ export function ThumbnailHost() {
         if (!flat.length) throw new Error("This deck has no slides.");
         const slide = Math.min(flat.length - 1, p.slide ?? 0);
         const { width } = thumbnailSize(p.width, deck.config);
+        const scheme = thumbnailScheme(deck.config.colorScheme, p.scheme, onScreen);
         // One at a time: each needs the off-screen frame to itself. A picture that never finishes
         // fails at the deadline and gives the frame up, so the ones after it still get theirs.
         const next = chain.current.then(
@@ -100,6 +138,7 @@ export function ThumbnailHost() {
               const job: Job = {
                 slide,
                 width,
+                scheme,
                 done: (t) => {
                   clearTimeout(timer);
                   done(t);
@@ -129,8 +168,14 @@ function Capture({ job, onDone }: { job: Job; onDone: () => void }) {
   const deck = useDeck();
   const node = useRef<HTMLDivElement>(null);
   const { width: W, height: H } = deck.config;
+  const onScreen = useUi((s) => s.colorScheme);
   const meta = deck.columns.flatMap((c) => c.slides)[job.slide]!;
-  const options = deck.options.get(navKey(meta.h, meta.v))!;
+  const own = deck.options.get(navKey(meta.h, meta.v))!;
+  // Another scheme than the screen's: forced on this copy of the slide alone.
+  const options = useMemo(
+    () => (job.scheme === onScreen ? own : withScheme(own, job.scheme)),
+    [own, job.scheme, onScreen],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -140,6 +185,8 @@ function Capture({ job, onDone }: { job: Job; onDone: () => void }) {
         const until = Date.now() + SETTLE_MS;
         // The slide's module loads on demand; wait for it to have drawn something.
         while (alive && Date.now() < until && !el.querySelector(".deck-slide *")) await sleep(30);
+        // A `pro/` background or layout arrives from the host after the slide mounts.
+        await Promise.race([whenPremiumSettled(), sleep(SETTLE_MS)]);
         await document.fonts?.ready;
         await Promise.all(
           [...el.querySelectorAll("img")].map((img) => img.decode().catch(() => undefined)),
@@ -161,7 +208,14 @@ function Capture({ job, onDone }: { job: Job; onDone: () => void }) {
           style: { position: "static", left: "0", top: "0" },
           timeout: 8000,
         });
-        job.done({ type: "image/png", dataUrl, width: size.width, height: size.height });
+        job.done({
+          type: "image/png",
+          dataUrl,
+          width: size.width,
+          height: size.height,
+          scheme: job.scheme,
+          auto: deck.config.colorScheme === "auto",
+        });
       } catch (err) {
         job.fail(err);
       } finally {
