@@ -122,8 +122,26 @@ export async function publishThumbnail(o: ThumbnailOptions): Promise<ThumbnailOu
     return { ok: false, reason: msg.slice(0, 160) };
   } finally {
     await renderer?.close().catch(() => {});
-    await new Promise<void>((r) => (server ? server.close(() => r()) : r()));
+    if (server) await closeServer(server);
   }
+}
+
+/**
+ * Stop the build server without waiting on what's still in flight. close() waits for every open
+ * request, and one still waiting on the host (a premium picture the host never answered) kept
+ * `thumbnail --all` waiting for hours; Bun's closeAllConnections() doesn't cut those, so give up
+ * after `wait` ms. The CLI exits when its command returns, so nothing is left running.
+ */
+export function closeServer(server: Server, wait = 5_000): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, wait);
+    timer.unref?.();
+    server.close(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+    server.closeAllConnections?.();
+  });
 }
 
 /**
@@ -206,6 +224,8 @@ export function premiumFromHost(o: {
   return (path) =>
     doFetch(`${o.host}/api/v1/premium/w/${encodeURIComponent(o.workspace)}/${path}`, {
       headers: { authorization: `Bearer ${o.token}` },
+      // A picture the host never answers would hold the page (and the server's close) forever.
+      signal: AbortSignal.timeout(60_000),
     });
 }
 
