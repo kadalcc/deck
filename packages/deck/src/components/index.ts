@@ -55,6 +55,7 @@ export {
 export { FlipBoard } from "./FlipBoard.tsx";
 export { BlueSky } from "./BlueSky.tsx";
 export { Case, Switch } from "./Switch.tsx";
+export { Stepper, type StepperProps } from "./Stepper.tsx";
 export { Drag, DragArrow } from "./Drag.tsx";
 export {
   LightOrDark,

@@ -8,6 +8,12 @@ export interface BgProps {
    * few backgrounds that need a different treatment on a light page (starfield, sweep).
    */
   scheme?: "light" | "dark";
+  /**
+   * The step the slide is at (0 before its first click), for a background that moves with the
+   * explanation — a module that fills, a light that travels — while the layout stays still. A
+   * still copy (print, a thumbnail) gets the step it shows.
+   */
+  click?: number;
   [key: string]: unknown;
 }
 

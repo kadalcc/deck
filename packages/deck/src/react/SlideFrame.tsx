@@ -3,6 +3,7 @@ import {
   type ComponentType,
   type ErrorInfo,
   type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -243,6 +244,20 @@ export function SlideFrame({
     [options.clicksStart, meta.index],
   );
   const root = useRef<HTMLElement>(null);
+  // The rails `<Stepper place>` draws on. Set from callback refs during the first commit, so the
+  // re-render that portals into them lands before the browser paints.
+  const [rails, setRails] = useState<{ top: HTMLElement | null; bottom: HTMLElement | null }>({
+    top: null,
+    bottom: null,
+  });
+  const railTop = useCallback(
+    (el: HTMLDivElement | null) => setRails((r) => (r.top === el ? r : { ...r, top: el })),
+    [],
+  );
+  const railBottom = useCallback(
+    (el: HTMLDivElement | null) => setRails((r) => (r.bottom === el ? r : { ...r, bottom: el })),
+    [],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -341,6 +356,15 @@ export function SlideFrame({
   // after it renders and again when a click reveals more, fonts arrive or images load. Every
   // mount fits — the stage, a mirror on a phone, the presenter's next-slide box, an overview
   // tile, a print page — so the same slide looks the same everywhere.
+  // The smallest fit this showing of the slide has needed, at this size. A click that reveals
+  // something taller shrinks the slide once; a later step needing less must not grow it back, or
+  // the whole slide would breathe in and out under the audience as the explanation goes on. A new
+  // slide, a new showing or a new size (the window, a mirror) starts over.
+  const sticky = useRef<{ width: number; have: number; k: number } | null>(null);
+  useEffect(() => {
+    sticky.current = null;
+  }, [Component, active]);
+
   useEffect(() => {
     if (!deck.config.autoFit || !Component) return;
     const host = root.current;
@@ -367,8 +391,13 @@ export function SlideFrame({
       const need = el.scrollHeight;
       placed.forEach((n, i) => (n.style.display = shown[i]!));
       const have = el.clientHeight;
-      if (need > have + 2) {
-        el.style.setProperty("--deck-fit", Math.max(0.45, (have / need) * 0.985).toFixed(3));
+      const width = el.clientWidth;
+      let k = need > have + 2 ? Math.max(0.45, (have / need) * 0.985) : 1;
+      const was = sticky.current;
+      if (was && was.width === width && was.have === have && was.k < k) k = was.k;
+      sticky.current = { width, have, k };
+      if (k < 1) {
+        el.style.setProperty("--deck-fit", k.toFixed(3));
         el.classList.add("is-fitted");
       }
     };
@@ -399,8 +428,8 @@ export function SlideFrame({
   }, [Component, click, active, preview, deck.config.autoFit]);
 
   const value = useMemo<SlideContextValue>(
-    () => ({ meta, options, h, v, active, click, registry, magic, preview, terms }),
-    [meta, options, h, v, active, click, registry, magic, preview, terms],
+    () => ({ meta, options, h, v, active, click, registry, magic, preview, terms, rails }),
+    [meta, options, h, v, active, click, registry, magic, preview, terms, rails],
   );
 
   const Layout = layoutFor(options.layout, deck.components);
@@ -411,8 +440,7 @@ export function SlideFrame({
     "background",
   );
   const colorScheme =
-    options.colorScheme ??
-    (premiumBg?.status === "ready" ? (premiumBg.item.scheme ?? null) : null);
+    options.colorScheme ?? (premiumBg?.status === "ready" ? (premiumBg.item.scheme ?? null) : null);
   // A slide that forces a scheme wears the theme's class too: the theme's tokens for that scheme
   // are keyed `.theme-x[data-color-scheme]`, which only an element carrying both can match.
   const theme = useUi((s) => s.theme);
@@ -483,6 +511,9 @@ export function SlideFrame({
         ) : (
           <div className="deck-slide-loading" />
         )}
+        {/* Rails: out of the layout, so what sits on them is neither centred nor auto-fitted. */}
+        <div className="deck-slide-rail is-top" ref={railTop} />
+        <div className="deck-slide-rail is-bottom" ref={railBottom} />
         {layer("slide-top")}
         {layer("global-top")}
         {active &&
