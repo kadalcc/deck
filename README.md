@@ -85,9 +85,9 @@ _Practise out loud until it's yours._
 _Walk on stage with everything at your fingertips._
 
 <p align="center">
-  <img src=".github/assets/presenter.webp" alt="The presenter view: the current slide with a hand-drawn diagram, speaker notes with numbered click markers and the current one highlighted, the next step, a timer, and buttons for drawing, pointer, spotlight, blackout, share window, camera, recording, phone remote and stats" width="100%">
+  <img src=".github/assets/presenter.webp" alt="The presenter view of the tour, in the dark scheme, on slide 149, a live poll: the speaker notes on the left with the next slide under them, the current slide with the poll bars filling in the middle, and on the right the Room tab with the QR code and the join link, 7 watching and the pace votes, beside the Q&amp;A, Polls and Copilot tabs and Report a bug, Request a feature and Send feedback. Along the top: the timer with its pacing badge, the rehearsal menu and every tool, from Draw and Spotlight to Teleprompter, Camera, Record and Phone remote; along the bottom, the rehearsal timeline" width="100%">
   <br>
-  <sub>The presenter view: notes that highlight with each click, the next step, a timer with pacing and every tool on one screen. Press <kbd>S</kbd> in any deck.</sub>
+  <sub>The presenter view: your notes, the next slide, a timer with pacing, the room beside you and every tool on one screen. Press <kbd>S</kbd> in any deck.</sub>
 </p>
 
 - **The [presenter view](https://deck.kadal.cc/docs/presenter-and-keyboard/):** notes, timer, next
@@ -105,9 +105,9 @@ _Walk on stage with everything at your fingertips._
 _Keep every seat with you._
 
 <p align="center">
-  <img src=".github/assets/phone.webp" alt="The audience page on a phone, live: the presenter's current slide, reactions, tabs for pace, questions, polls and notes, and buttons for slower, just right, faster and raise a hand" width="300">
+  <img src=".github/assets/phone.webp" alt="The audience page on a phone, joined to the same slide of the tour: Live, 7 here, the presenter's current slide, Slide 149 of 154, a row of reactions, and the open poll with this phone's vote ticked and the room's results beside each answer; tabs along the bottom for pace, ask, polls, notes and mine" width="300">
   <br>
-  <sub>The audience page: scan the QR code, no app, no account. The slide stays in step with you, or roams ahead and catches up.</sub>
+  <sub>The audience page, on the same poll as the presenter view above: scan the QR code, no app, no account. The slide stays in step with you, or roams ahead and catches up.</sub>
 </p>
 
 - **The audience joins from their phones**, from a link or the QR code on your slide, with no app
@@ -175,7 +175,7 @@ writes a report of anything that didn't carry over.
 ## Everything in the engine
 
 <p align="center">
-  <img src=".github/assets/slides.webp" alt="Four slides from the tour: code with one highlighted line per click, a hand-drawn diagram beside a Mermaid chart and an Excalidraw file, eleven framework islands each counting how long it has been alive, and a grid of animated backgrounds" width="100%">
+  <img src=".github/assets/slides.webp" alt="Four slides from the tour, in the dark scheme: a hand-drawn diagram beside a Mermaid chart and an Excalidraw file, a grid of the 28 built-in backgrounds running, one item from each genre of the Pro library, and eleven framework islands each counting how long it has been alive" width="100%">
 </p>
 
 | | |
