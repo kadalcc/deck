@@ -1,5 +1,20 @@
 # @kadal/deck
 
+## 0.7.1
+
+### Patch Changes
+
+- ddbbe62: `date:` (YYYY-MM-DD) is a known headmatter key, so `kadal-deck check` no longer warns about it. The
+  deck doesn't show it; listings such as a showcase sort by it.
+- fd65dde: The phone remote no longer shows a poll as "offline · 0 answers" while the room is answering it. A
+  still copy of a slide with no room behind it (the remote's mirror, the overview, print and
+  thumbnails) shows the poll's question and options without a status or counts; the slide itself,
+  the presenter's preview and the audience page are unchanged.
+- 223cc30: `kadal-deck thumbnail --all` (and the picture `publish` takes) no longer waits forever when the host
+  never answers a premium picture: that request now gives up after a minute, and the local server
+  stops waiting on what's still in flight after 5 seconds.
+- @kadal/prettier-plugin@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
