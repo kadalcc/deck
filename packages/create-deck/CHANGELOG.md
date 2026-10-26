@@ -1,5 +1,9 @@
 # @kadal/create-deck
 
+## 0.8.0
+
+No changes in this release.
+
 ## 0.7.1
 
 No changes in this release.

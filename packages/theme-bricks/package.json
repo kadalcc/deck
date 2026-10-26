@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-bricks",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Bricks: Slidev's bricks theme, ported to Kadal Deck. Building blocks in coral, butter, rose and sky on a cream page, with the Polygon components.",
   "keywords": [
     "kadal-theme",
@@ -88,7 +88,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.7.1",
+    "@kadal/deck": "^0.8.0",
     "react": "^19.2.0"
   },
   "devDependencies": {

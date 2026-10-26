@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-brand",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Brand, a theme for Kadal Deck (@kadal/deck). A corporate theme a company brands without CSS: primary and secondary colours, a logo and a footer line, all from themeConfig, on a clean and trustworthy layout.",
   "keywords": [
     "kadal-theme",
@@ -98,7 +98,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.7.1",
+    "@kadal/deck": "^0.8.0",
     "react": "^19.2.0"
   },
   "devDependencies": {
