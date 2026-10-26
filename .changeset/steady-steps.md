@@ -13,3 +13,5 @@ Nothing moves while a slide explains itself:
   scale only ever shrinks, so the whole slide stops breathing in and out as steps reveal.
 - `<Counter>`, `<Typewriter>` and `<Encrypted>` hold the width of their final text from the first
   frame, so the line around them no longer reflows while they animate.
+- Backgrounds receive the slide's current step (`click` in their props), so a background can move
+  with an explanation — a module that fills, a light that travels — while the layout stays still.

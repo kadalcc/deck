@@ -10,6 +10,7 @@ import {
 import { splitTransition } from "../core/model.ts";
 
 import type { SlideBackground } from "../core/model.ts";
+import { createStore, useStore } from "../core/store.ts";
 import { useDeck } from "./context.ts";
 import { removedBackgroundHint } from "../core/removed.ts";
 import { PremiumBackground, isPremiumBackground, useAuthoring } from "./premium.tsx";
@@ -99,6 +100,8 @@ function OnStage({ children }: { children: ReactNode }) {
   );
 }
 
+const NO_NAV = createStore({ click: 0 });
+
 export function BackgroundLayer({
   bg,
   active,
@@ -110,6 +113,9 @@ export function BackgroundLayer({
 }) {
   const theme = useUi((s) => s.theme);
   const deckScheme = useUi((s) => s.colorScheme);
+  // The deck-level layer belongs to the slide being shown, so its step is navigation's (none in a
+  // runtime without navigation: a test, a standalone render).
+  const click = useStore(useDeck().nav ?? NO_NAV, (s) => s.click);
   if (!bg)
     return (
       <div
@@ -172,13 +178,19 @@ export function BackgroundLayer({
               active={active}
               // Inactive and not a slide leaving: a still copy (print, a thumbnail, a preview).
               still={!active && !className?.includes("is-leaving")}
+              click={active ? click : undefined}
             />
           </OnStage>
         </div>
       ) : Comp ? (
         <div className="deck-background-component" style={{ opacity: bg.opacity }}>
           <OnStage>
-            <Comp {...bg.props} active={active} scheme={bg.scheme ?? deckScheme} />
+            <Comp
+              {...bg.props}
+              active={active}
+              scheme={bg.scheme ?? deckScheme}
+              click={active ? click : undefined}
+            />
           </OnStage>
         </div>
       ) : bg.component ? (

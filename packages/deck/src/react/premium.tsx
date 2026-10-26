@@ -321,10 +321,13 @@ export function PremiumBackground({
   props,
   active,
   still,
+  click,
 }: {
   name: string;
   props: Record<string, unknown>;
   active: boolean;
+  /** The slide's step, for a click-aware item (BgProps.click). */
+  click?: number;
   /** Draw the poster: a still copy of a slide (print, export, a thumbnail, a preview). */
   still: boolean;
 }) {
@@ -336,7 +339,7 @@ export function PremiumBackground({
   >;
   return (
     <div className="deck-premium-item" data-premium={name}>
-      <C {...props} active={usePoster ? false : active} />
+      <C {...props} active={usePoster ? false : active} click={click} />
     </div>
   );
 }

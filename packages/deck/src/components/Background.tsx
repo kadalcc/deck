@@ -39,6 +39,7 @@ export function Background({
             props={props}
             active={slide.active}
             still={slide.preview}
+            click={slide.click}
           />
         </div>
         {slide.active && !slide.preview ? <PremiumNotice background={name} layout={null} /> : null}
@@ -52,7 +53,7 @@ export function Background({
       aria-hidden
     >
       {Comp ? (
-        <Comp {...props} active={slide.active} scheme={scheme} />
+        <Comp {...props} active={slide.active} scheme={scheme} click={slide.click} />
       ) : name && !children && !slide.preview ? (
         <UnknownBackground name={name} />
       ) : (
