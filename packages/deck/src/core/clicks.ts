@@ -116,8 +116,24 @@ export function createClickRegistry(base = 0): ClickRegistry {
       return range;
     },
     release(id) {
-      // The range is kept so a remount lands on the same step; only its weight is dropped.
-      if (active.delete(id)) queueMicrotask(notify);
+      if (!active.delete(id)) return;
+      // StrictMode releases and re-allocates the same id within one commit; anything still
+      // released once that has settled is gone for good — most often a slide's content remounted
+      // under new ids when a library layout replaced the fallback one. React renders (and so
+      // allocates) the new elements BEFORE it releases the old, so they were placed after steps
+      // nobody will ever take: a six-step slide needed twelve clicks, the first six doing nothing.
+      // Drop what stayed released and lay the rest out again in registration order, in place.
+      queueMicrotask(() => {
+        if (active.has(id) || !ranges.has(id)) return notify();
+        for (const gone of [...ranges.keys()]) {
+          if (active.has(gone)) continue;
+          ranges.delete(gone);
+          specs.delete(gone);
+        }
+        cursor = base;
+        for (const [other, range] of ranges) place(specs.get(other)!, range);
+        notify();
+      });
     },
     total,
     onChange(listener) {
