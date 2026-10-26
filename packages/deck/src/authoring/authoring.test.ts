@@ -283,6 +283,10 @@ describe("lint", () => {
     expect(d).toEqual(["warning:frontmatter-unclosed:4"]);
   });
 
+  test("a talk's date is a known headmatter key (listings sort by it)", async () => {
+    expect(await codes("---\ntitle: X\ndate: 2026-10-11\n---\n\n# A\n")).toEqual([]);
+  });
+
   test("frontmatter: unknown keys, wrong types, unknown layouts, backgrounds, transitions", async () => {
     const d = await codes(
       "---\ntitle: X\nthemee: rla\n---\n\n# A\n\n---\nlayout: two-col\nbackground: aurorra\nclicks: many\ntransition: wobble\n---\n\n# B\n",

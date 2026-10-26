@@ -247,6 +247,8 @@ export interface DeckConfig {
   title: string;
   author: string;
   info: string;
+  /** When the talk is given, as YYYY-MM-DD. The deck doesn't show it; listings sort by it. */
+  date: string;
   /** The authored size; the stage scales uniformly to fit any viewport. */
   width: number;
   height: number;
@@ -485,6 +487,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   title: "Untitled deck",
   author: "",
   info: "",
+  date: "",
   width: 1920,
   height: 1080,
   margin: 0,

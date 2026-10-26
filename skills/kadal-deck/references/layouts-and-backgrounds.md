@@ -188,6 +188,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `title` | `string` | `"Untitled deck"` | The deck's title (browser tab, table of contents, publish). |
 | `author` | `string` | `""` | Who gives the talk. |
 | `info` | `string` | `""` | A line about the deck (Markdown). |
+| `date` | `string` | `""` | When the talk is given, as YYYY-MM-DD. The deck doesn't show it; listings sort by it. |
 | `width` | `number` | `1920` | The authored size; the stage scales uniformly to fit any viewport. |
 | `height` | `number` | `1080` | The authored height in px; with width, the stage every screen scales. |
 | `margin` | `number` | `0` | Fraction of the viewport left empty around the stage. 0 by default: a 16:9 window shows the slide edge to edge, any other shape gets bars on two sides — the content never reflows. |
