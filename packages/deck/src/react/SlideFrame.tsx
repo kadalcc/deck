@@ -360,7 +360,9 @@ export function SlideFrame({
   // something taller shrinks the slide once; a later step needing less must not grow it back, or
   // the whole slide would breathe in and out under the audience as the explanation goes on. A new
   // slide, a new showing or a new size (the window, a mirror) starts over.
-  const sticky = useRef<{ width: number; have: number; k: number } | null>(null);
+  // It belongs to one layout element: a library layout replacing the fallback is a fresh
+  // measurement (the fallback may have overflowed where the real layout doesn't).
+  const sticky = useRef<{ el: Element; width: number; have: number; k: number } | null>(null);
   useEffect(() => {
     sticky.current = null;
   }, [Component, active]);
@@ -394,8 +396,8 @@ export function SlideFrame({
       const width = el.clientWidth;
       let k = need > have + 2 ? Math.max(0.45, (have / need) * 0.985) : 1;
       const was = sticky.current;
-      if (was && was.width === width && was.have === have && was.k < k) k = was.k;
-      sticky.current = { width, have, k };
+      if (was && was.el === el && was.width === width && was.have === have && was.k < k) k = was.k;
+      sticky.current = { el, width, have, k };
       if (k < 1) {
         el.style.setProperty("--deck-fit", k.toFixed(3));
         el.classList.add("is-fitted");
