@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+### Patch Changes
+
+- b35fa9f: README and listing copy: the whole-talk story. Every package page now opens with "Build it. Rehearse it. Own the room." and what the package does for the talk (a theme is how it looks on the day, a renderer puts a live demo on a slide), with links to the tour and the docs. The engine's description and keywords cover rehearsal (narration, the teleprompter), the phone remote and the live room; the VS Code extension's Marketplace and Open VSX description says you build the talk there, then rehearse and present it from the same deck. No code changes.
+
 ## 0.1.1
 
 - A new Marketplace page: screenshots and an animation taken from the extension itself (the preview following the cursor, the Slides outline, completion for settings and components), a getting-started section, every command and setting, and links to the docs, issues and Discussions.

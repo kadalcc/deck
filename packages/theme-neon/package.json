@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-neon",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Neon, a theme for Kadal Deck (@kadal/deck). A dark synthwave theme for meetups and launches: a sunset horizon, glows that stay legible, and a solid print fallback.",
   "keywords": [
     "kadal-theme",
@@ -92,7 +92,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.6.4",
+    "@kadal/deck": "^0.6.5",
     "react": "^19.2.0"
   },
   "devDependencies": {

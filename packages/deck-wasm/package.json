@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-wasm",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "The WebAssembly renderer for Kadal Deck (@kadal/deck): islands whose component is not JavaScript.",
   "keywords": [
     "kadal-deck",
@@ -60,6 +60,6 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.6.4"
+    "@kadal/deck": "^0.6.5"
   }
 }
