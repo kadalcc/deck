@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    @kadal/deck — the live pieces: drawing, pointer, reactions, polls, the presenter
-   view, the audience page, stats, backgrounds. Loaded by base.css.
+   view, stats, backgrounds. Loaded by base.css. The audience page has its own: audience.css.
    ───────────────────────────────────────────────────────────────────────────── */
 .deck-muted {
   color: var(--deck-muted);
@@ -195,8 +195,7 @@
   color: var(--deck-fg);
   font-weight: 650;
 }
-.deck-follow button,
-.deck-audience-follow {
+.deck-follow button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -214,60 +213,9 @@
 .deck-follow button:hover {
   filter: brightness(1.08);
 }
-.deck-follow svg,
-.deck-audience-follow svg {
+.deck-follow svg {
   width: 1.05em;
   height: 1.05em;
-}
-
-/* The phone's own way through the deck: a chevron on each edge of the slide, a swipe across it,
-   and the same way back as a full-width button under it. */
-.deck-audience-tap {
-  position: relative;
-  /* A sideways drag is ours; up and down still scroll the page. */
-  touch-action: pan-y;
-}
-.deck-audience-step {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 48px;
-  padding: 0;
-  border: 1px solid var(--deck-border);
-  border-radius: 10px;
-  background: color-mix(in oklab, var(--deck-bg) 76%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  color: var(--deck-fg);
-  cursor: pointer;
-}
-.deck-audience-step.is-prev {
-  left: 6px;
-}
-.deck-audience-step.is-next {
-  right: 6px;
-}
-.deck-audience-step:disabled {
-  opacity: 0.22;
-}
-.deck-audience-step svg {
-  width: 20px;
-  height: 20px;
-}
-.deck-audience-follow {
-  justify-content: center;
-  width: calc(100% - 32px);
-  margin: 10px 16px 0;
-  padding: 11px 14px;
-  border-radius: 12px;
-  font-size: 15px;
-}
-.deck-audience-follow small {
-  font-weight: 500;
-  opacity: 0.82;
 }
 
 /* presence, pace, qr */
@@ -477,8 +425,7 @@
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
-.deck-questions ul,
-.deck-audience-questions {
+.deck-questions ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -486,8 +433,7 @@
   flex-direction: column;
   gap: 0.4em;
 }
-.deck-questions li,
-.deck-audience-questions li {
+.deck-questions li {
   display: flex;
   gap: 0.6em;
   align-items: flex-start;
@@ -495,8 +441,7 @@
   padding: 0.3em 0;
   border-bottom: 1px solid var(--deck-border);
 }
-.deck-questions li.is-answered,
-.deck-audience-questions li.is-answered {
+.deck-questions li.is-answered {
   opacity: 0.45;
   text-decoration: line-through;
 }
@@ -963,8 +908,7 @@
   box-shadow: 0 0 10px -4px color-mix(in oklch, var(--deck-ai-from) 60%, transparent);
   font-weight: 600;
 }
-.deck-side-tabs em,
-.deck-audience-tabs em {
+.deck-side-tabs em {
   font-style: normal;
   font: 600 10px/16px var(--deck-body-font);
   min-width: 16px;
@@ -1240,7 +1184,12 @@
   flex: 1;
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #f59e0b, color-mix(in oklab, var(--deck-muted) 30%, transparent) 50%, #3b82f6);
+  background: linear-gradient(
+    90deg,
+    #f59e0b,
+    color-mix(in oklab, var(--deck-muted) 30%, transparent) 50%,
+    #3b82f6
+  );
   opacity: 0.85;
 }
 .deck-side-pace-track::after {
@@ -1580,326 +1529,6 @@
   padding: 0;
 }
 
-/* audience page */
-.deck-audience {
-  position: absolute;
-  inset: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  font: 15px var(--deck-body-font);
-  background: var(--deck-bg);
-  color: var(--deck-fg);
-}
-.deck-audience-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--deck-border);
-}
-.deck-audience-head > div:first-child {
-  flex: 1;
-  min-width: 0;
-}
-.deck-audience-head strong {
-  display: block;
-}
-.deck-audience-count {
-  white-space: nowrap;
-}
-.deck-audience-status {
-  font-size: 12px;
-  color: var(--deck-muted);
-}
-.deck-audience-status.is-open {
-  color: #22c55e;
-}
-.deck-audience-count {
-  font-size: 12px;
-  color: var(--deck-muted);
-}
-.deck-audience-slide {
-  position: relative;
-  padding: 12px 16px 0;
-}
-.deck-audience-canvas-box {
-  position: relative;
-  width: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--deck-border);
-  background: var(--deck-bg);
-}
-.deck-audience-canvas-box.fit-contain {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.deck-audience-canvas {
-  position: absolute;
-  left: 0;
-  top: 0;
-  transform-origin: 0 0;
-  overflow: hidden;
-  background: var(--deck-bg);
-}
-.deck-audience-canvas .deck-background {
-  position: absolute;
-  inset: 0;
-}
-/* The mirror is a real slide: its embedded pages and controls answer to touch. */
-.deck-audience-canvas .deck-slide {
-  pointer-events: auto;
-}
-.deck-audience .deck-sketch-open {
-  display: none;
-}
-.deck-audience-expand {
-  font-size: 12px !important;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--deck-border) !important;
-  background: var(--deck-surface) !important;
-}
-.deck-audience-expand:disabled {
-  opacity: 0.5;
-}
-
-/* the slide, full screen */
-.deck-audience-full {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: var(--deck-bars, #0b0b0c);
-  display: grid;
-}
-.deck-audience-full-stage {
-  position: absolute;
-  inset: 0;
-}
-.deck-audience-full-close {
-  position: absolute;
-  top: max(8px, env(safe-area-inset-top));
-  right: max(10px, env(safe-area-inset-right));
-  z-index: 2;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 0;
-  font: 22px/1 var(--deck-body-font);
-  color: #fff;
-  background: rgba(0, 0, 0, 0.45);
-  cursor: pointer;
-}
-.deck-audience-full-react {
-  /* Bottom-left, clear of an embedded page's "tap to interact" pill at the bottom centre. */
-  position: absolute;
-  left: max(10px, env(safe-area-inset-left));
-  bottom: max(10px, env(safe-area-inset-bottom));
-  z-index: 2;
-  display: flex;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(8px);
-}
-.deck-audience-full-react button {
-  font-size: 24px;
-  line-height: 1;
-  padding: 6px;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.deck-audience-full-react button:active {
-  transform: scale(1.4);
-}
-.deck-audience-full .deck-audience-flash {
-  right: max(16px, env(safe-area-inset-right));
-  top: 56px;
-}
-.deck-audience-empty {
-  padding: 30px;
-  text-align: center;
-  color: var(--deck-muted);
-  border: 1px dashed var(--deck-border);
-  border-radius: 10px;
-}
-.deck-audience-slide-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 4px;
-  font-size: 12px;
-  color: var(--deck-muted);
-}
-.deck-audience-slide-bar button {
-  background: transparent;
-  border: 0;
-  font-size: 18px;
-  color: var(--deck-muted);
-  cursor: pointer;
-}
-.deck-audience-slide-bar button.is-on {
-  color: #f59e0b;
-}
-.deck-audience-slide-bar a {
-  margin-inline-start: auto;
-  color: inherit;
-}
-.deck-audience-flash {
-  position: absolute;
-  right: 20px;
-  top: 12px;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 2px;
-  pointer-events: none;
-}
-.deck-audience-flash span {
-  font-size: 22px;
-  animation: deck-flash 1.5s ease-out forwards;
-}
-@keyframes deck-flash {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-}
-.deck-audience-react {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 16px;
-}
-.deck-audience-react button {
-  font-size: 26px;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.deck-audience-react button:active {
-  transform: scale(1.4);
-}
-.deck-audience-tabs {
-  display: flex;
-  border-top: 1px solid var(--deck-border);
-  border-bottom: 1px solid var(--deck-border);
-}
-.deck-audience-tabs button {
-  flex: 1;
-  padding: 10px 4px;
-  font: 13px var(--deck-body-font);
-  text-transform: capitalize;
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--deck-muted);
-  cursor: pointer;
-}
-.deck-audience-tabs button.is-on {
-  color: inherit;
-  border-bottom-color: var(--deck-accent);
-}
-.deck-audience-panel {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.deck-audience-pace p {
-  margin: 0 0 8px;
-}
-.deck-audience-pace-buttons {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.deck-audience-pace-buttons button,
-.deck-audience-hand {
-  font: 14px var(--deck-body-font);
-  padding: 12px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--deck-border);
-  background: var(--deck-surface);
-  color: inherit;
-  cursor: pointer;
-}
-.deck-audience-pace-buttons button.is-on,
-.deck-audience-hand.is-on {
-  border-color: var(--deck-accent);
-  box-shadow: inset 0 0 0 1px var(--deck-accent);
-}
-.deck-audience-hand {
-  width: 100%;
-  margin-top: 12px;
-}
-.deck-audience-name {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 16px;
-  font-size: 13px;
-  color: var(--deck-muted);
-}
-.deck-audience-name input,
-.deck-audience-ask textarea {
-  font: 15px var(--deck-body-font);
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--deck-border);
-  background: var(--deck-surface);
-  color: var(--deck-fg);
-  width: 100%;
-  box-sizing: border-box;
-  resize: vertical;
-}
-.deck-audience-ask form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.deck-audience-ask button[type="submit"] {
-  align-self: flex-end;
-  font: 14px var(--deck-body-font);
-  padding: 8px 18px;
-  border-radius: 999px;
-  border: 0;
-  background: var(--deck-accent);
-  color: var(--deck-bg);
-  cursor: pointer;
-}
-.deck-audience-ask button:disabled {
-  opacity: 0.5;
-}
-.deck-audience-questions li em {
-  font-size: 11px;
-  color: var(--deck-muted);
-}
-.deck-audience-polls {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 18px;
-}
-.deck-audience-mine ul {
-  list-style: none;
-  padding: 0;
-}
-.deck-audience-mine a {
-  color: inherit;
-}
-
 /* backgrounds */
 .deck-bg-canvas {
   position: absolute;
@@ -1987,13 +1616,6 @@
     transform: rotateX(0deg);
   }
 }
-.deck-audience-share {
-  font-size: 15px !important;
-}
-.deck-audience-toast {
-  font-size: 12px;
-  color: var(--deck-accent);
-}
 .deck-leaderboard li.deck-muted {
   display: block;
 }
@@ -2008,23 +1630,15 @@
 
 /* ── icons in the toolbars ────────────────────────────────────────────────── */
 .deck-presenter-tools button,
-.deck-presenter-link,
-.deck-audience-slide-bar button,
-.deck-audience-slide-bar a,
-.deck-audience-expand {
+.deck-presenter-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.deck-presenter-tools .deck-icon,
-.deck-audience-slide-bar .deck-icon {
+.deck-presenter-tools .deck-icon {
   width: 14px;
   height: 14px;
   flex: none;
-}
-.deck-audience-slide-bar button {
-  font-size: 14px;
-  padding: 4px 6px;
 }
 .deck-draw-toolbar button {
   display: inline-flex;
