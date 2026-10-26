@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-angular",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "The Angular renderer for Kadal Deck (@kadal/deck): Angular standalone components as islands on a slide.",
   "keywords": [
     "kadal-deck",
@@ -65,7 +65,7 @@
   "peerDependencies": {
     "@angular/core": "^20.0.0 || ^21.0.0 || ^22.0.0",
     "@angular/platform-browser": "^20.0.0 || ^21.0.0 || ^22.0.0",
-    "@kadal/deck": "^0.8.0",
+    "@kadal/deck": "^0.8.1",
     "@angular/compiler": "^20.0.0 || ^21.0.0 || ^22.0.0"
   }
 }
