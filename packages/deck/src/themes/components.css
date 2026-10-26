@@ -76,6 +76,175 @@
   transition: none;
 }
 
+/* ── <Stepper> and the slide's rails ─────────────────────────────────────── */
+/* Nothing in a stepper may change size with the current step: the cells are equal and fixed,
+   the weight is the same in every state, and the current one is told apart by colour, a filled
+   number and a bar that scales (a transform) — so moving along never moves anything. */
+.deck-slide-rail {
+  position: absolute;
+  left: var(--deck-pad);
+  right: var(--deck-pad);
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.deck-slide-rail.is-top {
+  top: calc(var(--deck-pad) * 0.42);
+}
+.deck-slide-rail.is-bottom {
+  bottom: calc(var(--deck-pad) * 0.42);
+}
+/* A slide carrying something on a rail gives it room, for the whole slide: the padding is the
+   slide's, not a step's, so it never changes while the slide is up. */
+.deck-slide:has(> .deck-slide-rail.is-top:not(:empty)) {
+  padding-top: calc(var(--deck-pad) + 56px);
+}
+.deck-slide:has(> .deck-slide-rail.is-bottom:not(:empty)) {
+  padding-bottom: calc(var(--deck-pad) + 56px);
+}
+.deck-stepper {
+  --stepper-gap: 0.5em;
+  display: grid;
+  grid-template-columns: repeat(var(--stepper-n, 4), minmax(0, 1fr));
+  gap: var(--stepper-gap);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.62em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.deck-stepper.on-rail {
+  width: min(100%, 64em);
+  font-size: 20px;
+}
+.deck-stepper-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  min-width: 0;
+  margin: 0;
+  padding: 0.55em 0.8em 0.7em;
+  border-radius: 0.6em;
+  color: var(--deck-muted);
+  background: color-mix(in oklab, var(--deck-fg) 5%, transparent);
+  transition:
+    color 0.35s ease,
+    background-color 0.35s ease;
+}
+.deck-stepper-step::after {
+  content: "";
+  position: absolute;
+  left: 0.8em;
+  right: 0.8em;
+  bottom: 0.32em;
+  height: 0.16em;
+  border-radius: 1em;
+  background: var(--deck-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.deck-stepper-step.is-done {
+  color: var(--deck-fg);
+}
+.deck-stepper-step.is-done::after {
+  transform: scaleX(1);
+  opacity: 0.45;
+}
+.deck-stepper-step.is-current {
+  color: var(--deck-fg);
+  background: color-mix(in oklab, var(--deck-accent) 16%, transparent);
+}
+.deck-stepper-step.is-current::after {
+  transform: scaleX(1);
+}
+.deck-stepper-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.deck-stepper-num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  font-size: 0.85em;
+  border: 1.5px solid currentColor;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
+}
+.deck-stepper-step.is-current .deck-stepper-num {
+  background: var(--deck-accent);
+  border-color: var(--deck-accent);
+  color: var(--deck-bg);
+}
+/* bar: one track, the cells are its labels; the fill is a scaled layer, never a width */
+.deck-stepper.is-bar {
+  position: relative;
+  padding-top: 0.9em;
+}
+.deck-stepper.is-bar::before,
+.deck-stepper.is-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 0.3em;
+  border-radius: 1em;
+  background: color-mix(in oklab, var(--deck-fg) 12%, transparent);
+}
+.deck-stepper.is-bar::after {
+  background: var(--deck-accent);
+  transform: scaleX(calc(var(--stepper-at, 0) / var(--stepper-n, 1)));
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.deck-stepper.is-bar .deck-stepper-step,
+.deck-stepper.is-dots .deck-stepper-step {
+  background: none;
+  padding-inline: 0;
+}
+.deck-stepper.is-bar .deck-stepper-step::after,
+.deck-stepper.is-dots .deck-stepper-step::after {
+  display: none;
+}
+.deck-stepper-dot {
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+.deck-stepper-step.is-done .deck-stepper-dot {
+  opacity: 0.7;
+}
+.deck-stepper-step.is-current .deck-stepper-dot {
+  opacity: 1;
+  background: var(--deck-accent);
+  transform: scale(1.35);
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-stepper *,
+  .deck-stepper::after,
+  .deck-stepper-step::after {
+    transition: none !important;
+  }
+}
+
 /* ── <Drag> and <DragArrow> ──────────────────────────────────────────────── */
 /* Sizes in the controls are multiplied by --drag-k (1 / the stage's scale), so the handles are
    the same size on screen however small the slide is drawn. */

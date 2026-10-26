@@ -331,6 +331,32 @@ Another name for `<Click>`; identical.
 <Fragment effect="highlight-red">Same as Click</Fragment>
 ```
 
+#### `<Stepper>`
+
+Where the talk (or this slide) is, as fixed furniture: equal cells, so the current step never nudges the others. `place="top"` or `"bottom"` puts it on the slide's rail, outside the layout, so it sits pixel-identical on every slide; `follow` walks it with this slide's clicks.
+
+```mdx
+<Stepper steps={["Build", "Rehearse", "Present", "Own the room"]} current={2} place="top" />
+
+<Stepper steps={["Ask", "Measure", "Change"]} follow at={1} />
+<Switch at={1}>
+<Case at={0}>Ask what the room needs</Case>
+<Case>Measure it out loud</Case>
+<Case>Change what ran long</Case>
+</Switch>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `steps` * | `ReactNode[]` |  | The steps' labels, in order. |
+| `current` | `number` |  | The current step, 1-based; 0 for none yet. Ignored with `follow`. |
+| `follow` | `boolean` |  | Advance with this slide's clicks (one step per click) instead of `current`. |
+| `at` | `ClickAt` |  | With `follow`: when the second step arrives, as `<Click at>`. Default one after the previous click. |
+| `place` | `"top" \| "bottom"` |  | "top" or "bottom": on the slide's rail, the same place on every slide. Default: inline. |
+| `variant` | `"chips" \| "bar" \| "dots"` |  | chips (default), bar, dots. |
+| `numbered` | `boolean` |  | Number the steps (chips only). Default true. |
+| `label` | `string` |  | What a screen reader calls it. Default "Progress". |
+
 #### `<Switch>`
 
 One child at a time, switched by clicks: each `<Case>` takes the next step, or `at={n}` / `at="a-b"` in the switch's own steps; the cases share one spot, so nothing below jumps.

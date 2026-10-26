@@ -1245,6 +1245,44 @@ pre.deck-code.has-lines .line::before {
 .deck-counter {
   font-variant-numeric: tabular-nums;
 }
+/* <Counter>, <Typewriter>: the final text laid out invisibly in the same cell (content.tsx Held),
+   so the line keeps the width its last frame needs from the first one. */
+.deck-held {
+  display: inline-grid;
+  vertical-align: bottom;
+}
+.deck-held > * {
+  grid-area: 1 / 1;
+}
+.deck-held > .deck-held-live {
+  justify-self: start;
+}
+.deck-held-ghost {
+  visibility: hidden;
+}
+/* For screen readers only: what a decorative rendering (letter by letter) means as text. */
+.deck-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* <Encrypted>: a slot per letter, as wide as the letter it resolves to, the noise drawn over it. */
+.deck-encrypted-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.deck-encrypted-ch {
+  position: relative;
+  display: inline-block;
+}
+.deck-encrypted-live {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
 .deck-typewriter-cursor {
   animation: deck-blink 1s steps(2) infinite;
 }

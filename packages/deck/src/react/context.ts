@@ -269,6 +269,11 @@ export interface SlideContextValue {
   preview: boolean;
   /** Whether glossary terms respond here (see `SlideFrameProps.terms`). */
   terms: boolean;
+  /**
+   * The slide's rails: elements at its top and bottom edge, outside the layout (so neither
+   * centred nor auto-fitted), where `<Stepper place>` draws. Null until the frame has mounted.
+   */
+  rails?: { top: HTMLElement | null; bottom: HTMLElement | null };
 }
 
 export const SlideContext = createContext<SlideContextValue | null>(null);

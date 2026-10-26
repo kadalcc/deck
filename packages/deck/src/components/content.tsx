@@ -228,7 +228,11 @@ export function tocShown<T extends { level: number }>(
   if (mode === "onlySiblings") {
     const line = new Set([currentFlat, ...ancestry(currentFlat)]);
     return entries.filter(
-      (_e, i) => line.has(i) || line.has(parent[i]!) || parent[i] === -1 || ancestry(i).includes(currentFlat),
+      (_e, i) =>
+        line.has(i) ||
+        line.has(parent[i]!) ||
+        parent[i] === -1 ||
+        ancestry(i).includes(currentFlat),
     );
   }
   // onlyCurrentTree: top-level items, plus the children of the current branch.
@@ -753,6 +757,32 @@ export function Callout({
   );
 }
 
+/**
+ * Text that animates in place — a count, typing, decoding — holds the room its final form needs
+ * from the first frame: the final text (and any other widest form) is laid out invisibly in the
+ * same grid cell, so the line around it never reflows while it runs.
+ */
+function Held({
+  className,
+  ghosts,
+  children,
+}: {
+  className: string;
+  ghosts: string[];
+  children: ReactNode;
+}) {
+  return (
+    <span className={["deck-held", className].filter(Boolean).join(" ")}>
+      {ghosts.map((g, i) => (
+        <span key={i} className="deck-held-ghost" aria-hidden>
+          {g}
+        </span>
+      ))}
+      <span className="deck-held-live">{children}</span>
+    </span>
+  );
+}
+
 /** A number that counts up when its slide is shown (or at its click). */
 export function Counter({
   value,
@@ -792,15 +822,18 @@ export function Counter({
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [slide.active, slide.preview, value, from, duration]);
+  const format = (n: number) =>
+    `${prefix}${n.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })}${suffix}`;
   return (
-    <span className={["deck-counter", className].filter(Boolean).join(" ")}>
-      {prefix}
-      {shown.toLocaleString(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })}
-      {suffix}
-    </span>
+    <Held
+      className={["deck-counter", className].filter(Boolean).join(" ")}
+      ghosts={[format(value), format(from)]}
+    >
+      {format(shown)}
+    </Held>
   );
 }
 
@@ -834,10 +867,10 @@ export function Typewriter({
     return () => clearInterval(t);
   }, [slide.active, slide.preview, text, speed]);
   return (
-    <span className={["deck-typewriter", className].filter(Boolean).join(" ")}>
+    <Held className={["deck-typewriter", className].filter(Boolean).join(" ")} ghosts={[text]}>
       {text.slice(0, n)}
       {cursor && n < text.length ? <span className="deck-typewriter-cursor">▍</span> : null}
-    </span>
+    </Held>
   );
 }
 
@@ -900,7 +933,34 @@ export function Encrypted({
       clearTimeout(raf);
     };
   }, [slide.active, slide.preview, text, speed, delay]);
-  return <span className={["deck-encrypted", className].filter(Boolean).join(" ")}>{out}</span>;
+  // Each character sits in a slot the width of its final letter, the noise drawn over it, and the
+  // words are kept whole: noise glyphs are wider than most letters, and swapping them inline made
+  // the whole line shimmer sideways while it decoded.
+  const live = [...out];
+  let at = 0;
+  return (
+    <span className={["deck-encrypted", className].filter(Boolean).join(" ")}>
+      <span className="deck-sr-only">{text}</span>
+      {text.split(/(\s+)/).map((word, w) => {
+        if (/^\s+$/.test(word)) {
+          at += word.length;
+          return word;
+        }
+        const chars = [...word].map((ch, i) => (
+          <span key={i} className="deck-encrypted-ch" aria-hidden>
+            <span className="deck-held-ghost">{ch}</span>
+            <span className="deck-encrypted-live">{live[at + i] ?? ch}</span>
+          </span>
+        ));
+        at += word.length;
+        return (
+          <span key={w} className="deck-encrypted-word">
+            {chars}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 /** A countdown or stopwatch that starts when its slide is shown. */

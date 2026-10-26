@@ -24,8 +24,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   // ── steps ────────────────────────────────────────────────────────────────────────────────
   Click: {
     category: "steps",
-    summary:
-      "One click step: shows its children from its step on, or hides them with `hide`.",
+    summary: "One click step: shows its children from its step on, or hides them with `hide`.",
     example: `<Click>Appears on the first click</Click>\n<Click at="+2" effect="fade-up">Two clicks later, sliding up</Click>`,
     props: {
       at: 'When: omitted = one after the previous step; "+N" relative ("+0" shares the previous step); a number is absolute (0 = always shown); [from, to] shows it from `from` until `to`.',
@@ -119,7 +118,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   CodeGroup: {
     category: "code",
     summary:
-      "Code blocks as tabs, each named by its fence's `[title]` with a file-type badge. Usually written as `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print=\"all\"` prints every tab.",
+      'Code blocks as tabs, each named by its fence\'s `[title]` with a file-type badge. Usually written as `::code-group` … `::` around the fences (`:::` works too); ←/→ move between tabs. `clicks` turns tabs on each click; `print="all"` prints every tab.',
     example:
       "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
     props: {
@@ -180,8 +179,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   },
   Stretch: {
     category: "layout",
-    summary:
-      "Grows to fill the slide's remaining height (an image under a heading).",
+    summary: "Grows to fill the slide's remaining height (an image under a heading).",
     example: `## The whole map\n\n<Stretch>![](/map.png)</Stretch>`,
   },
   Absolute: {
@@ -414,11 +412,13 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     example: `<Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />`,
     props: {
       src: "Video URL (public/ path or https), or `<source>` children.",
-      autoplay: 'Play on arrival (or at `at`, or when its <Click> shows it); "once": not again after it has played.',
+      autoplay:
+        'Play on arrival (or at `at`, or when its <Click> shows it); "once": not again after it has played.',
       at: "The click at which it starts playing (implies autoplay).",
       pauseAt: "The click at which it pauses.",
       steps: '{ click: "play" | "pause" | "rewind" | seconds } — what happens at further clicks.',
-      autoreset: '"slide": back to `timestamp` when the slide is left; "click": when the deck steps back before `at`.',
+      autoreset:
+        '"slide": back to `timestamp` when the slide is left; "click": when the deck steps back before `at`.',
       timestamp: "Start here, seconds.",
       printTimestamp: 'The frame shown in print and previews: seconds, or "last".',
       poster: "Poster image.",
@@ -745,7 +745,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   LightOrDark: {
     category: "content",
     summary:
-      "One thing in the light colour scheme, another in the dark (the slide's own scheme when its frontmatter forces one): `light`/`dark` props, children marked `slot=\"light\"`/`slot=\"dark\"`, or a function of the scheme.",
+      'One thing in the light colour scheme, another in the dark (the slide\'s own scheme when its frontmatter forces one): `light`/`dark` props, children marked `slot="light"`/`slot="dark"`, or a function of the scheme.',
     example: `<LightOrDark>\n  <div slot="dark">![](/logo-white.svg)</div>\n  <div slot="light">![](/logo-black.svg)</div>\n</LightOrDark>`,
     props: {
       light: "Shown in the light scheme.",
@@ -759,7 +759,8 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       "Renders its children only in some places: `main` (the deck and the presenter's current slide), `slide`, `presenter`, `previewNext`, `overview`, `print`/`export`, `audience`, `visible`; `fallback` everywhere else.",
     example: `<RenderWhen context="presenter">Only the speaker sees this.</RenderWhen>\n\n<RenderWhen context={["print", "overview"]} fallback={<Iframe src="https://example.com" />}>![](/still.png)</RenderWhen>`,
     props: {
-      context: 'A context, several ("presenter overview" or an array): main, slide, presenter, previewNext, overview, print, export, audience, visible.',
+      context:
+        'A context, several ("presenter overview" or an array): main, slide, presenter, previewNext, overview, print, export, audience, visible.',
       fallback: "Rendered where the context does not match.",
     },
   },
@@ -782,7 +783,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     props: {
       total: "Show the slide's number of clicks instead of the current one.",
       offset: "Added to the number shown (`offset={1}` counts from 1).",
-      when: '`(click, total) => boolean`: render the children only while it is true.',
+      when: "`(click, total) => boolean`: render the children only while it is true.",
       children:
         "With `when`, what to show; otherwise a function `(click, total) => …` rendered instead of the number.",
     },
@@ -812,7 +813,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Switch: {
     category: "steps",
     summary:
-      "One child at a time, switched by clicks: each `<Case>` takes the next step, or `at={n}` / `at=\"a-b\"` in the switch's own steps; the cases share one spot, so nothing below jumps.",
+      'One child at a time, switched by clicks: each `<Case>` takes the next step, or `at={n}` / `at="a-b"` in the switch\'s own steps; the cases share one spot, so nothing below jumps.',
     example: `<Switch transition="slide-up">\n<Case>First</Case>\n<Case>Then</Case>\n<Case at="4-6">Steps 4 and 5</Case>\n</Switch>`,
     props: {
       at: "When the switch's first step is, as <Click at>.",
@@ -822,17 +823,37 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       childAs: "Each case's element (div).",
     },
   },
+  Stepper: {
+    category: "steps",
+    summary:
+      'Where the talk (or this slide) is, as fixed furniture: equal cells, so the current step never nudges the others. `place="top"` or `"bottom"` puts it on the slide\'s rail, outside the layout, so it sits pixel-identical on every slide; `follow` walks it with this slide\'s clicks.',
+    example: `<Stepper steps={["Build", "Rehearse", "Present", "Own the room"]} current={2} place="top" />\n\n<Stepper steps={["Ask", "Measure", "Change"]} follow at={1} />\n<Switch at={1}>\n<Case at={0}>Ask what the room needs</Case>\n<Case>Measure it out loud</Case>\n<Case>Change what ran long</Case>\n</Switch>`,
+    props: {
+      steps: "The labels, in order.",
+      current: "The current step, 1-based (0: none yet). Ignored with follow.",
+      follow: "Advance one step per click on this slide instead.",
+      at: "With follow: when the second step arrives, as <Click at>. Give a <Switch> the same at to move in lockstep.",
+      place: "top or bottom: on the slide's rail. Default inline.",
+      variant: "chips (default), bar, dots.",
+      numbered: "Number the chips (default true).",
+      label: "Accessible name (default Progress).",
+    },
+  },
   Case: {
     category: "steps",
     summary:
       "One case of a `<Switch>`. Without `at` it is one step after the case before; `at={0}` is what the slide starts with; the last case stays unless it has a range.",
     example: `<Switch>\n<Case at={0}>Before</Case>\n<Case>After one click</Case>\n</Switch>`,
-    props: { at: 'A step (n), a range ("a-b" or [a, b]).', as: "This case's element.", className: "Extra classes." },
+    props: {
+      at: 'A step (n), a range ("a-b" or [a, b]).',
+      as: "This case's element.",
+      className: "Extra classes.",
+    },
   },
   Drag: {
     category: "layout",
     summary:
-      "A block you place by hand. `pos` is \"x,y,w,h[,rotation]\" in stage pixels (`_` height: automatic) or a name in the slide's `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.",
+      'A block you place by hand. `pos` is "x,y,w,h[,rotation]" in stage pixels (`_` height: automatic) or a name in the slide\'s `dragPos` frontmatter. In `kadal-deck dev`, double-click it to move, resize, turn and nudge it; the position is saved into deck.mdx. Elsewhere it is simply placed.',
     example: `<Drag pos="1400,120,380,_">\n\n![](/badge.png)\n\n</Drag>`,
     props: {
       pos: '"x,y,w,h[,r]" or a dragPos name; omitted: where it lies, until the first drag writes one.',
@@ -845,7 +866,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   DragArrow: {
     category: "layout",
     summary:
-      "An `<Arrow>` whose ends are dragged into place in `kadal-deck dev`. `pos` is \"x,y,dx,dy\" (from x,y by dx,dy) or a dragPos name.",
+      'An `<Arrow>` whose ends are dragged into place in `kadal-deck dev`. `pos` is "x,y,dx,dy" (from x,y by dx,dy) or a dragPos name.',
     example: `<DragArrow pos="300,700,600,-280" color="var(--deck-accent)" width={4} />`,
     props: {
       pos: '"x,y,dx,dy" or a dragPos name (default 100,100,300,300).',
