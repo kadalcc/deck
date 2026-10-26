@@ -24,10 +24,9 @@ beside you if you want it; you rehearse it with the deck reading your notes and 
 present it with your phone in your hand; and the audience joins from theirs to vote, ask and react.
 The engine is open source, and hosting is free for public decks.
 
-<!-- TODO(media): new hero -->
 <p align="center">
   <a href="https://decks.kadal.cc/@pmithunish/tour/">
-    <img src=".github/assets/tour.webp" alt="The Kadal Deck tour in a browser: the cover, a slide of deck.mdx source stepping one highlight per click, code that steps line by line, a magic-move code morph, a hand-drawn diagram revealed region by region, a grid of animated backgrounds, eleven framework islands on one slide, and the join slide with its QR code" width="100%">
+    <img src=".github/assets/hero.webp" alt="Kadal Deck on stage: the tour's title slide, Build it. Rehearse it. Own the room., on a big screen in front of an audience, a phone in the speaker's hand as the remote with a laser, and an audience phone voting in a live poll" width="100%">
   </a>
 </p>
 
