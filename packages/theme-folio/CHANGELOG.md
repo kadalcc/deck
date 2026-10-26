@@ -1,5 +1,12 @@
 # @kadal/theme-folio
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [6b6adca]
+  - @kadal/deck@0.8.1
+
 ## 0.8.0
 
 ### Patch Changes
