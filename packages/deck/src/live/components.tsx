@@ -141,7 +141,10 @@ export function Poll({
   const total = state?.total ?? 0;
   const open = state?.open ?? false;
   const mine = state?.mine ?? localVote;
-  const showResults = liveResults || !open || role === "presenter";
+  // A still copy with no room behind it (the phone remote's mirror, the overview, print) knows
+  // nothing of the answers: "offline · 0" and empty bars there would contradict the room.
+  const still = !live && !!slide?.preview;
+  const showResults = !still && (liveResults || !open || role === "presenter");
 
   const vote = (i: number) => {
     if (kind === "multi") {
@@ -168,11 +171,13 @@ export function Poll({
     >
       <div className="deck-poll-head">
         <strong>{question}</strong>
-        <span className="deck-poll-meta">
-          {/* Offline there is no one to open it: say so, rather than "closed" over live buttons. */}
-          {live ? (open ? "open" : "closed") : "offline"} · {total}{" "}
-          {total === 1 ? "answer" : "answers"}
-        </span>
+        {still ? null : (
+          <span className="deck-poll-meta">
+            {/* Offline there is no one to open it: say so, rather than "closed" over live buttons. */}
+            {live ? (open ? "open" : "closed") : "offline"} · {total}{" "}
+            {total === 1 ? "answer" : "answers"}
+          </span>
+        )}
         {role === "presenter" ? (
           <span className="deck-poll-controls">
             <button
