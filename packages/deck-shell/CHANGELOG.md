@@ -1,5 +1,11 @@
 # @kadal/deck-shell
 
+## 0.7.0
+
+### Minor Changes
+
+- fd6b6ea: The presenter view's rail and rehearsal bar. The rehearsal timeline at the bottom can be hidden — the × on the bar, "Show rehearsal timeline" in the new rehearsal menu (an arrow beside Start session, or a Rehearsal button without a live room, built as Camera's), Shift R, or the `narrate.timeline` command — and each deck remembers the choice in the browser. Hiding never stops narration: while it plays a small pill keeps pause and the way back. The menu also holds speed, voice, engine and follow, so the bar drops voice and engine in the presenter view. Rail tabs now show their names under the icons, and `deck.panels.register` takes `accent: "ai"` to dress a host panel's tab with the AI accent (iris-to-teal gradient sparkle, gradient hairline, AI ink label; a panel with the id "copilot" gets it by default, `accent: "none"` opts out). Hosts that set `window.__KADAL_DECK__.feedback` (a URL) get Report a bug, Request a feature and Send feedback in the rail: a small dialog that POSTs `{kind, title, description, severity?, screenshotDataUrl?, url, deck, slide, engine, userAgent}` with the presenter ticket and shows the host's `{id}`. The Vite plugin now defines `__KADAL_DECK_VERSION__` in every build so the engine knows its version.
+
 ## 0.6.5
 
 No changes in this release.

@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-seriph",
-  "version": "0.6.5",
+  "version": "0.7.0",
   "description": "Seriph: Slidev's seriph theme, ported to Kadal Deck. PT Serif, headings in a slate-teal primary, a centred cover; light and dark.",
   "keywords": [
     "kadal-theme",
@@ -77,7 +77,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.6.5",
+    "@kadal/deck": "^0.7.0",
     "react": "^19.2.0"
   },
   "devDependencies": {
