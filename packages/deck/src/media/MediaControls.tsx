@@ -37,7 +37,11 @@ import {
  */
 
 /** A panel under (or over) the button that opened it, kept on screen. */
-function usePanel(anchor: React.RefObject<HTMLElement | null>, open: boolean, close: () => void) {
+export function usePanel(
+  anchor: React.RefObject<HTMLElement | null>,
+  open: boolean,
+  close: () => void,
+) {
   const panel = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number }>({ left: 0 });
   useLayoutEffect(() => {

@@ -1875,6 +1875,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 - `D` — Dark or light
 - `T` — Theme and light or dark
 - `R` — Read the notes aloud and turn the pages (narration), or pause it
+- `Shift R` — Show or hide the rehearsal timeline (presenter view)
 - `,` — Display settings: brightness, contrast, colour for a projector
 - `Shift F10` — The context menu (or right-click a slide)
 - `V` — Your camera in a bubble on the slide (drag to move, drag its corner to resize)

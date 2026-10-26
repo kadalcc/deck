@@ -10,9 +10,15 @@ import { createStore, type Store } from "./store.ts";
  * the panel a tab beside Room, Questions and Polls, and an element to render into.
  *
  *   const off = window.__deck.panels.register({
- *     id: "copilot", title: "Copilot", icon: "sparkles",
+ *     id: "copilot", title: "Copilot", icon: "sparkles", accent: "ai",
  *     mount(el) { render(<App />, el); return () => unmount(el); },
  *   });
+ *
+ * Every tab shows its title: beside the icon in the open sidebar, small under it in the folded
+ * rail. `accent: "ai"` dresses the tab as AI — the iris-to-teal gradient on its icon, a gradient
+ * hairline and tint, the label in the AI ink — the accent deck.kadal.cc gives everything a model
+ * does, recreated in the presenter's CSS (themes/live.css, `--deck-ai-*`). A panel without it is
+ * an ordinary tab; one with the id "copilot" gets the accent unless it says `accent: "none"`.
  *
  * `mount` runs once, the first time the tab is shown. The element then stays in the page, hidden
  * while another tab is on, so whatever the panel holds (a chat) survives switching tabs. `open`
@@ -28,8 +34,20 @@ export interface HostPanel {
   title: string;
   /** A lucide icon name for the tab and the collapsed rail; a generic one when absent or unknown. */
   icon?: string;
+  /**
+   * How the tab is dressed. "ai": the AI accent (a model is behind this panel). "none": plain,
+   * even for the id "copilot". Absent: plain, except that a "copilot" panel takes "ai".
+   */
+  accent?: "ai" | "none";
   /** Render into `el`. Called once, the first time the tab is shown; may return a cleanup. */
   mount: (el: HTMLElement) => void | (() => void);
+}
+
+/** The accent a panel's tab is drawn with (see `HostPanel.accent`). */
+export function panelAccent(panel: Pick<HostPanel, "id" | "accent">): "ai" | null {
+  if (panel.accent === "ai") return "ai";
+  if (panel.accent === undefined && panel.id === "copilot") return "ai";
+  return null;
 }
 
 export interface PanelsState {

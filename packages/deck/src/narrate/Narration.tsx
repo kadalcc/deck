@@ -28,6 +28,7 @@ import {
   hasSpeechSynthesis,
   KokoroClient,
 } from "./engines.ts";
+import { activeNarrator } from "./active.ts";
 import { isKokoroVoice, KOKORO_VOICES } from "./kokoro-protocol.ts";
 import { type NarrationState, Narrator, type NarratorHost, RATES } from "./player.ts";
 import { barFill, barSpan, narrationPosition, steadyPosition } from "./progress.ts";
@@ -42,6 +43,11 @@ import { speechMs, type Timeline, timelineOf } from "./text.ts";
  * key (react/NarrationGate.tsx). It is a lazy chunk: a deck that never narrates never loads it.
  * Every control is a `narrate.*` command, so a key, the phone remote and an agent can run the
  * same rehearsal the buttons do.
+ *
+ * In the presenter view the bar can be hidden (presenter/rehearsal.ts): it stays mounted, so the
+ * narrator keeps going, and shows as a small pill while it plays or waits paused mid-talk. There
+ * the voice and the engine sit in the toolbar's rehearsal menu (`RehearsalSettings` below) rather
+ * than on the bar.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -133,6 +139,7 @@ function useNarrator(rt: DeckRuntime) {
   useEffect(() => {
     const { narrator, kokoro, engines } = made;
     const detach = narrator.attach();
+    activeNarrator.set(narrator);
     const offKokoro = kokoro.status.subscribe((s) => narrator.setKokoro(s));
     const offState = narrator.state.subscribe((s, prev) => {
       if (s.volume !== prev.volume || s.muted !== prev.muted)
@@ -152,6 +159,7 @@ function useNarrator(rt: DeckRuntime) {
       offKokoro();
       offState();
       detach();
+      if (activeNarrator.get() === narrator) activeNarrator.set(null);
       kokoro.destroy();
     };
   }, [made]);
@@ -380,14 +388,28 @@ function useNarrateCommands(narrator: Narrator, slideCount: number, total: () =>
   );
 }
 
-/** The bar. `onClose` (the play view) adds a close button. */
+/**
+ * The bar. `onClose` (the play view) adds a close button that pauses and closes. The presenter
+ * view passes `hidden`/`onHide`/`onShow` instead (presenter/rehearsal.ts): its × hides the bar
+ * and leaves the narrator running, and `menu` says the voice and engine are in its toolbar menu.
+ */
 export default function Narration({
   autoplay = false,
   onClose,
+  hidden = false,
+  onHide,
+  onShow,
+  menu = false,
 }: {
   /** Start playing once mounted (from slide `from` when given). */
   autoplay?: { from?: number } | false;
   onClose?: () => void;
+  /** Hidden: no bar; while narrating (or paused mid-way) a pill with the way back. */
+  hidden?: boolean;
+  onHide?: () => void;
+  onShow?: () => void;
+  /** The voice and the engine are picked elsewhere (the presenter's rehearsal menu). */
+  menu?: boolean;
 }) {
   const rt = useDeck();
   const { narrator, slides } = useNarrator(rt);
@@ -428,15 +450,6 @@ export default function Narration({
     return () => clearInterval(t);
   }, [s.playing]);
 
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  useEffect(() => {
-    let alive = true;
-    void browserVoices().then((v) => alive && setVoices(v));
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   // `now` is re-read on every render (the ticker above only asks for one), so a step that has just
   // begun is measured from its own start rather than from the last tick.
   void now;
@@ -474,38 +487,49 @@ export default function Narration({
                   ? "The end"
                   : "Ready");
 
-  const voiceValue = s.engine === "browser" ? `browser:${s.browserVoice ?? ""}` : s.voice;
-  const voiceGroups = useMemo<ListboxGroup[]>(
-    () => [
-      {
-        label: "Kokoro",
-        options: KOKORO_VOICES.map((v) => ({
-          value: v.id,
-          label: v.name,
-          detail: `${v.lang === "en-gb" ? "UK" : "US"} ${v.gender}`,
-        })),
-      },
-      ...(voices.length
-        ? [
-            {
-              label: "This browser",
-              options: voices.map((v) => ({
-                value: `browser:${v.name}`,
-                label: v.name,
-                detail: v.lang,
-              })),
-            },
-          ]
-        : []),
-    ],
-    [voices],
-  );
-  const voiceShown = (() => {
-    if (voiceValue.startsWith("browser:")) return voiceValue.slice(8) || "Browser default";
-    const k = KOKORO_VOICES.find((v) => v.id === voiceValue);
-    return k ? `${k.name} (${k.lang === "en-gb" ? "UK" : "US"} ${k.gender})` : voiceValue;
-  })();
-  const rates = [...new Set([...RATES, s.rate])].sort((a, b) => a - b);
+  const { voiceValue, voiceGroups, voiceShown, rates, engineGroups } = useChoices(s);
+
+  if (hidden) {
+    // Nothing to come back to while it is idle: the toolbar's menu and Shift R bring the bar back.
+    if (!s.playing && s.phase !== "paused") return null;
+    return (
+      <div
+        className={["deck-narration-pill", s.playing ? "is-playing" : ""].filter(Boolean).join(" ")}
+        role="region"
+        aria-label="Narration (timeline hidden)"
+        onKeyDown={(e) => {
+          if (e.key === " " || e.key === "Enter") e.stopPropagation();
+        }}
+      >
+        <button
+          type="button"
+          className="deck-narration-play"
+          onClick={() => run("narrate.toggle")}
+          aria-label={s.playing ? "Pause narration (R)" : "Narrate (R)"}
+          aria-pressed={s.playing}
+          title={s.playing ? "Pause (R)" : "Narrate (R)"}
+        >
+          <Icon name={s.playing ? "pause" : "play"} />
+        </button>
+        <span className="deck-narration-pill-text">
+          <b>{s.playing ? "Narrating" : "Paused"}</b>
+          <span className="deck-narration-time">
+            {clock(elapsed)} <span aria-hidden="true">/</span> {clock(timeline.total)}
+          </span>
+        </span>
+        {onShow ? (
+          <button
+            type="button"
+            className="deck-narration-pill-show"
+            onClick={onShow}
+            title="Show the rehearsal timeline (Shift R)"
+          >
+            <Icon name="chevrons-up" /> Timeline
+          </button>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -620,45 +644,33 @@ export default function Narration({
               aria-label="Volume"
             />
           </span>
-          <Listbox
-            label="Voice"
-            prefix="Voice"
-            className="deck-narration-voice"
-            minWidth={240}
-            value={voiceValue}
-            display={voiceShown}
-            onChange={(v) =>
-              run("narrate.voice", {
-                voice: v.startsWith("browser:") ? v.slice(8) || "default" : v,
-              })
-            }
-            groups={voiceGroups}
-          />
-          <Listbox
-            label="Engine"
-            prefix="Engine"
-            className="deck-narration-engine"
-            minWidth={200}
-            value={s.engine}
-            onChange={(v) => run("narrate.engine", { engine: v })}
-            groups={[
-              {
-                options: [
-                  { value: "auto", label: "Auto", detail: "best available" },
-                  { value: "baked", label: "Recorded", detail: "pre-recorded clips" },
-                  {
-                    value: "kokoro",
-                    label: "Kokoro",
-                    detail:
-                      s.kokoro.state === "unavailable" ? "not installed" : "neural, in the browser",
-                    disabled: s.kokoro.state === "unavailable",
-                  },
-                  { value: "browser", label: "Browser", detail: "system voice" },
-                  { value: "silent", label: "Silent", detail: "timing only" },
-                ],
-              },
-            ]}
-          />
+          {menu ? null : (
+            <Listbox
+              label="Voice"
+              prefix="Voice"
+              className="deck-narration-voice"
+              minWidth={240}
+              value={voiceValue}
+              display={voiceShown}
+              onChange={(v) =>
+                run("narrate.voice", {
+                  voice: v.startsWith("browser:") ? v.slice(8) || "default" : v,
+                })
+              }
+              groups={voiceGroups}
+            />
+          )}
+          {menu ? null : (
+            <Listbox
+              label="Engine"
+              prefix="Engine"
+              className="deck-narration-engine"
+              minWidth={200}
+              value={s.engine}
+              onChange={(v) => run("narrate.engine", { engine: v })}
+              groups={engineGroups}
+            />
+          )}
           <button
             type="button"
             className={["deck-narration-follow", s.follow ? "is-on" : ""].filter(Boolean).join(" ")}
@@ -680,10 +692,148 @@ export default function Narration({
             >
               <Icon name="x" />
             </button>
+          ) : onHide ? (
+            <button
+              type="button"
+              className="deck-narration-hide"
+              onClick={onHide}
+              aria-label="Hide the rehearsal timeline"
+              title={
+                s.playing
+                  ? "Hide the timeline; narration keeps playing (Shift R)"
+                  : "Hide the timeline (Shift R)"
+              }
+            >
+              <Icon name="x" />
+            </button>
           ) : null}
         </div>
       </div>
     </div>
+  );
+}
+
+/** The speeds, voices and engines the bar and the rehearsal menu offer, for the state `s`. */
+function useChoices(s: NarrationState) {
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void browserVoices().then((v) => alive && setVoices(v));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const voiceValue = s.engine === "browser" ? `browser:${s.browserVoice ?? ""}` : s.voice;
+  const voiceGroups = useMemo<ListboxGroup[]>(
+    () => [
+      {
+        label: "Kokoro",
+        options: KOKORO_VOICES.map((v) => ({
+          value: v.id,
+          label: v.name,
+          detail: `${v.lang === "en-gb" ? "UK" : "US"} ${v.gender}`,
+        })),
+      },
+      ...(voices.length
+        ? [
+            {
+              label: "This browser",
+              options: voices.map((v) => ({
+                value: `browser:${v.name}`,
+                label: v.name,
+                detail: v.lang,
+              })),
+            },
+          ]
+        : []),
+    ],
+    [voices],
+  );
+  const voiceShown = (() => {
+    if (voiceValue.startsWith("browser:")) return voiceValue.slice(8) || "Browser default";
+    const k = KOKORO_VOICES.find((v) => v.id === voiceValue);
+    return k ? `${k.name} (${k.lang === "en-gb" ? "UK" : "US"} ${k.gender})` : voiceValue;
+  })();
+  const rates = [...new Set([...RATES, s.rate])].sort((a, b) => a - b);
+  const engineGroups: ListboxGroup[] = [
+    {
+      options: [
+        { value: "auto", label: "Auto", detail: "best available" },
+        { value: "baked", label: "Recorded", detail: "pre-recorded clips" },
+        {
+          value: "kokoro",
+          label: "Kokoro",
+          detail: s.kokoro.state === "unavailable" ? "not installed" : "neural, in the browser",
+          disabled: s.kokoro.state === "unavailable",
+        },
+        { value: "browser", label: "Browser", detail: "system voice" },
+        { value: "silent", label: "Silent", detail: "timing only" },
+      ],
+    },
+  ];
+  return { voiceValue, voiceGroups, voiceShown, rates, engineGroups };
+}
+
+/**
+ * The rehearsal settings in the presenter toolbar's menu (presenter/RehearsalMenu.tsx): speed,
+ * voice, engine and following, for the narrator the bar is running. The same commands as the
+ * bar's controls, so the two never disagree.
+ */
+export function RehearsalSettings() {
+  const narrator = useStore(activeNarrator);
+  if (!narrator) return <p className="deck-record-note">Loading the narrator…</p>;
+  return <Settings narrator={narrator} />;
+}
+
+function Settings({ narrator }: { narrator: Narrator }) {
+  const rt = useDeck();
+  const s = useStore(narrator.state);
+  const run = (id: string, params: unknown = {}) => void rt.commands.run(id, params, "ui");
+  const { voiceValue, voiceGroups, voiceShown, rates, engineGroups } = useChoices(s);
+  return (
+    <>
+      <div className="deck-record-row">
+        <span>Speed</span>
+        <Listbox
+          label="Speed"
+          value={String(s.rate)}
+          display={`${s.rate}×`}
+          onChange={(v) => run("narrate.rate", { rate: Number(v) })}
+          groups={[{ options: rates.map((r) => ({ value: String(r), label: `${r}×` })) }]}
+        />
+      </div>
+      <div className="deck-record-row">
+        <span>Voice</span>
+        <Listbox
+          label="Voice"
+          minWidth={240}
+          value={voiceValue}
+          display={voiceShown}
+          onChange={(v) =>
+            run("narrate.voice", { voice: v.startsWith("browser:") ? v.slice(8) || "default" : v })
+          }
+          groups={voiceGroups}
+        />
+      </div>
+      <div className="deck-record-row">
+        <span>Engine</span>
+        <Listbox
+          label="Engine"
+          minWidth={200}
+          value={s.engine}
+          onChange={(v) => run("narrate.engine", { engine: v })}
+          groups={engineGroups}
+        />
+      </div>
+      <label className="deck-record-check">
+        <input
+          type="checkbox"
+          checked={s.follow}
+          onChange={(e) => run("narrate.follow", { on: e.target.checked })}
+        />
+        Follow the narrator: let it turn the pages
+      </label>
+    </>
   );
 }
 
