@@ -5,8 +5,8 @@ layout, component, background, transition, click effect, code option and view of
 [@kadal/deck](../../packages/deck) is on a slide here, and every slide says how it was written and
 carries speaker notes.
 
-`deck.mdx` holds the cover (`pro/orbit`, with a free globe under it for hosts without the Pro library), the four stages, the contents and the end; each chapter is its own file, pulled in with
-`src:` (which is itself one of the features):
+`deck.mdx` holds the cover (`pro/orbit`, with a free globe under it for hosts without the Pro library), the four stages, the contents, a divider before each stage and the end; each chapter is its own file, pulled in with
+`src:` (which is itself one of the features). The chapters walk the four stages in order — Build it, Rehearse it, Present it, Own the room — so the table is in tour order, not file order:
 
 | File | Chapter |
 | --- | --- |
@@ -18,10 +18,11 @@ carries speaker notes.
 | `slides/05-motion.mdx` | every transition, `-in`/`-out`, three speeds, a transition of the deck's own, auto-animate, `<Motion>`, `autoSlide` |
 | `slides/06-media.mdx` | image layouts, the lightbox, Markdown images, video, audio, embeds, YouTube and X, QR |
 | `slides/07-islands.mdx` | eleven runtimes on one slide, and how a renderer is written |
-| `slides/08-live.mdx` | joining, reactions, polls, the word cloud, the quiz, questions and pace |
-| `slides/09-presenting.mdx` | the presenter view, the keys, pen and laser, the camera, the phone remote, narration, commands, every view, per-slide options, export |
 | `slides/10-slidev.mdx` | Slidev's Markdown as it is: the importer, comment notes, YAML frontmatter, scoped styles, diagram fences, maths lines, `src:` ranges (`slides/extras.mdx`), `defaults`, layers, routes, the build, Comark, `$clicks` |
 | `slides/11-components.mdx` | icons, marks and their options, switches, dragged elements, pieces that know their context |
+| `slides/rehearsing.mdx` | narration (the deck reads its notes aloud and turns the pages), the presenter view's timer and pacing |
+| `slides/09-presenting.mdx` | the presenter tools, the keys, pen and laser, the camera, the phone remote, commands, every view, per-slide options, export |
+| `slides/08-live.mdx` | joining, reactions, polls, the word cloud, the quiz, questions and pace |
 
 The headmatter in `deck.mdx` lists all sixteen themes under `themes:`, so the theme menu (T) offers every one; `slide-top.tsx`, `custom-nav-controls.tsx` and `routes.tsx` beside it are the deck's own layer, buttons and page.
 
