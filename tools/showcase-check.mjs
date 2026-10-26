@@ -610,11 +610,11 @@ await step("transitions: a click never replays the entrance; cuts and view trans
 await step("links: #/h/v/click, #/id, ?at", async () => {
   const { page, context, take } = await openPage();
   const fmt = at("format");
-  await page.goto(`${base}#/${fmt.h}/0/2`);
+  await page.goto(`${base}#/${fmt.h}/${fmt.v}/2`);
   await ready(page);
   await page.waitForTimeout(800);
   let n = await nav(page);
-  expect(n.h === fmt.h && n.v === 0 && n.click === 2, `#/${fmt.h}/0/2 landed on ${n.h}/${n.v}/${n.click}`);
+  expect(n.h === fmt.h && n.v === fmt.v && n.click === 2, `#/${fmt.h}/${fmt.v}/2 landed on ${n.h}/${n.v}/${n.click}`);
   // A step link typed into the address bar of an open deck, onto a slide not mounted yet.
   const effects = at("click-effects");
   await page.evaluate((h) => (location.hash = h), `#/${effects.h}/${effects.v}/3`);
@@ -674,7 +674,7 @@ await step("presenter: current, next, notes for the click, timer, L", async () =
   const s = at("presenter-view");
   for (const scheme of ["light", "dark"]) {
     const { page, context, take } = await openPage({ viewport: { width: 1440, height: 900 }, scheme });
-    await page.goto(`${base}presenter#/${s.h}/0/2`);
+    await page.goto(`${base}presenter#/${s.h}/${s.v}/2`);
     await page.waitForSelector(".deck-presenter", { timeout: 30_000 });
     await page.waitForTimeout(1500);
     expect((await page.locator(".deck-presenter-current .deck-slide").count()) > 0, "no current slide");
@@ -722,7 +722,7 @@ await step("presenter: current, next, notes for the click, timer, L", async () =
 await step("presenter: the pen, the overview, and keys typed into fields", async () => {
   const { page, context, take } = await openPage({ viewport: { width: 1440, height: 900 } });
   const s = at("writing");
-  await page.goto(`${base}presenter#/${s.h}`);
+  await page.goto(`${base}presenter#/${s.h}/${s.v}`);
   await page.waitForSelector(".deck-presenter", { timeout: 30_000 });
   await page.waitForTimeout(1500);
   // Strokes stay: through a change of colour and tool, past the time a scribble would fade.
@@ -804,7 +804,7 @@ await step("presenter: the pen, the overview, and keys typed into fields", async
 await step("typing in fields on the deck and the audience page", async () => {
   const { page, context, take } = await openPage();
   const s = at("writing");
-  await page.goto(`${base}#/${s.h}`);
+  await page.goto(`${base}#/${s.h}/${s.v}`);
   await ready(page);
   await page.waitForTimeout(500);
   await page.keyboard.press("/");

@@ -1,0 +1,118 @@
+---
+layout: section
+id: rehearsing
+background:
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
+---
+
+<p className="sc-eyebrow">Chapter 11</p>
+
+# Rehearsing
+
+The deck reads your notes aloud and turns its own pages, and a timer paces every slide against the plan.
+
+<Notes>
+Chapter eleven: rehearsing. Before the day, narration reads each slide's notes aloud and moves on by itself, with a timeline of the chapters under it; the presenter view times every slide against the slot it was given. The glow behind this slide is `background: glows` with three colours of its own.
+</Notes>
+
+---
+id: narration
+say: "This slide is read from its say key, not from its notes. [click] Narration reads each slide's notes aloud and turns the pages. [click] The timeline has a point for every chapter. [click] And kadal-deck narrate bakes the voice into files."
+---
+
+<p className="sc-eyebrow">Rehearsing · narration</p>
+
+## The deck reads itself aloud
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Clicks>
+
+- <Kbd>R</Kbd> (or <code>?narrate</code>) opens the narration bar: the notes are read aloud, each <code>[click]</code> part at its step, and the pages turn by themselves
+- The timeline has a point for every chapter — every <code>layout: section</code> slide — and a dot for every slide; hover for a picture of it
+- Three voices: clips baked by <code>kadal-deck narrate</code>, Kokoro running in the browser, or the browser's own speech
+
+</Clicks>
+
+</Col>
+<Col>
+
+<How>
+
+```yaml
+---
+say: "Read this instead of my notes. [click] And this on the step."
+---
+```
+
+```yaml
+---
+narration: false   # a slide the narrator skips
+---
+```
+
+</How>
+
+<p className="sc-small">The presenter view has the same bar along its bottom: rehearse the talk with it, or let it run a kiosk.</p>
+
+</Col>
+</Cols>
+
+<Notes>
+Narration, for rehearsing or for a deck that presents itself.
+[click] Press R and listen: this slide has a `say:` key in its frontmatter, so the narrator reads that rather than these notes.
+[click] The bar's timeline marks the chapters, and the dots between them are the slides.
+[click] The voices: baked files, a model in the browser, or the browser's speech.
+</Notes>
+
+---
+id: presenter-view
+timing: 90
+---
+
+<p className="sc-eyebrow">Rehearsing · timer and notes</p>
+
+## The presenter view
+
+<Cols cols="1fr 1fr" gap="3rem" align="start">
+<Col>
+
+<Clicks>
+
+- <Kbd>S</Kbd> opens it: this slide, the next one, and your notes
+- Notes follow the clicks — the part for this step is lit
+- A timer with pacing: `timing: 90` gives this slide ninety seconds
+- <Kbd>L</Kbd> changes its layout; the room panel opens polls and the quiz
+
+</Clicks>
+
+</Col>
+<Col>
+
+<How>
+
+```mdx
+---
+timing: 90
+---
+## The presenter view
+
+<Notes>
+Open it with S. [click] Notes follow…
+</Notes>
+```
+
+</How>
+
+</Col>
+</Cols>
+
+<Notes>
+Press S to open the presenter window; it stays in step with this one through the browser, and with the room when there is one.
+[click] The notes are split at each `[click]` marker, and the presenter view lights the part for the current step — this sentence is lit at step two.
+[click] Pacing: `defaultTiming: 45` in the headmatter gives every slide forty-five seconds, and this one asks for ninety. The timer tells you whether you are ahead or behind.
+[click] L cycles three layouts: notes on the right, notes on the left, and the next slide large.
+</Notes>
+

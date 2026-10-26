@@ -72,22 +72,22 @@ background:
 
 <div className="sc-stage-cards">
   <section>
-    <h3>Build it</h3>
+    <h3><Link to="stage-build">Build it</Link></h3>
     <p className="sc-stage-line">Start from an idea, not a blank slide.</p>
     <p className="sc-stage-links"><Link to="writing">Writing</Link> <Link to="code">Code</Link> <Link to="looks">Looks</Link> <Link to="pro">Pro library</Link> <Link to="motion">Movement</Link> <Link to="islands">Islands</Link></p>
   </section>
   <section>
-    <h3>Rehearse it</h3>
+    <h3><Link to="stage-rehearse">Rehearse it</Link></h3>
     <p className="sc-stage-line">Practise out loud until it’s yours.</p>
     <p className="sc-stage-links"><Link to="narration">Narration</Link> <Link to="presenter-view">Timer and pacing</Link> <Link to="presenter-view">Speaker notes</Link></p>
   </section>
   <section>
-    <h3>Present it</h3>
+    <h3><Link to="stage-present">Present it</Link></h3>
     <p className="sc-stage-line">Walk on stage with everything at your fingertips.</p>
     <p className="sc-stage-links"><Link to="presenter-tools">Presenter view</Link> <Link to="phone-remote">Phone remote</Link> <Link to="draw">Pen and laser</Link> <Link to="camera">Camera</Link></p>
   </section>
   <section>
-    <h3>Own the room</h3>
+    <h3><Link to="stage-own">Own the room</Link></h3>
     <p className="sc-stage-line">Keep every seat with you.</p>
     <p className="sc-stage-links"><Link to="join">Join from a phone</Link> <Link to="poll">Polls</Link> <Link to="quiz">Quizzes</Link> <Link to="questions">Q&amp;A</Link></p>
   </section>
@@ -110,7 +110,7 @@ background:
   color: "rgba(100,116,139,0.28)"
 ---
 
-<p className="sc-eyebrow">Twelve chapters, four stages</p>
+<p className="sc-eyebrow">Thirteen chapters, four stages</p>
 
 ## The tour
 
@@ -136,7 +136,29 @@ background:
 <Notes>
 The table of contents is generated, not written: each chapter opens with a first-level heading, and `<Toc maxDepth={1} />` lists those. Click any line to go there.
 
-The tour goes right through twelve chapters; down, under many slides, are the variations — every layout, every background, every transition.
+The tour goes right through thirteen chapters, in the order of the four stages; down, under many slides, are the variations — every layout, every background, every transition.
+</Notes>
+
+---
+id: stage-build
+layout: center
+class: sc-keynote sc-stage-divider
+hideInToc: true
+background:
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
+---
+
+<p className="sc-stage-number">1</p>
+
+<p className="sc-eyebrow">Stage 1 of 4</p>
+
+# Build it.
+
+<p className="sc-lede">Start from an idea, not a blank slide.</p>
+
+<Notes>
+Stage 1 of 4: build it. Ten chapters on writing the deck: the format, clicks, code, looks, the Pro library, movement, media, other frameworks, the Markdown you already know, and the components. The number and the line under it are the same as on the stage card on slide 2.
 </Notes>
 
 ---
@@ -172,19 +194,89 @@ src: ./slides/07-islands.mdx
 ---
 
 ---
-src: ./slides/08-live.mdx
+src: ./slides/10-slidev.mdx
 ---
+
+---
+src: ./slides/11-components.mdx
+---
+
+---
+id: stage-rehearse
+layout: center
+class: sc-keynote sc-stage-divider
+hideInToc: true
+background:
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
+---
+
+<p className="sc-stage-number">2</p>
+
+<p className="sc-eyebrow">Stage 2 of 4</p>
+
+# Rehearse it.
+
+<p className="sc-lede">Practise out loud until it’s yours.</p>
+
+<Notes>
+Stage 2 of 4: rehearse it. One chapter: the deck reads your notes aloud and turns its own pages, and the presenter view paces every slide. The number and the line under it are the same as on the stage card on slide 2.
+</Notes>
+
+---
+src: ./slides/rehearsing.mdx
+---
+
+---
+id: stage-present
+layout: center
+class: sc-keynote sc-stage-divider
+hideInToc: true
+background:
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
+---
+
+<p className="sc-stage-number">3</p>
+
+<p className="sc-eyebrow">Stage 3 of 4</p>
+
+# Present it.
+
+<p className="sc-lede">Walk on stage with everything at your fingertips.</p>
+
+<Notes>
+Stage 3 of 4: present it. One chapter: the presenter view, the keys, the pen and laser, the camera, your phone as the clicker, every view, and export. The number and the line under it are the same as on the stage card on slide 2.
+</Notes>
 
 ---
 src: ./slides/09-presenting.mdx
 ---
 
 ---
-src: ./slides/10-slidev.mdx
+id: stage-own
+layout: center
+class: sc-keynote sc-stage-divider
+hideInToc: true
+background:
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
 ---
 
+<p className="sc-stage-number">4</p>
+
+<p className="sc-eyebrow">Stage 4 of 4</p>
+
+# <span className="sc-lit">Own the room.</span>
+
+<p className="sc-lede">Keep every seat with you.</p>
+
+<Notes>
+Stage 4 of 4: own the room. The last chapter: the audience joins from their phones and votes, answers, asks and reacts. The number and the line under it are the same as on the stage card on slide 2.
+</Notes>
+
 ---
-src: ./slides/11-components.mdx
+src: ./slides/08-live.mdx
 ---
 
 ---
