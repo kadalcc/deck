@@ -1,5 +1,9 @@
 # Kadal Deck for VS Code
 
+> **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. This extension is where you build it, in your editor: write, see and check every slide without leaving VS Code, then rehearse and present from the same deck.
+>
+> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+
 Write [Kadal Deck](https://deck.kadal.cc) presentations with the deck beside your text. A
 presentation is one `deck.mdx` file: Markdown slides, split at `---`, with components when you need
 them. This extension shows the slide your cursor is in, lists every slide in an outline you can
@@ -113,7 +117,7 @@ version the deck uses.
 ## Links
 
 - [Kadal Deck docs](https://deck.kadal.cc/docs/) and [getting started](https://deck.kadal.cc/docs/getting-started/)
-- [The tour](https://deck.kadal.cc/tour/): every feature of the engine on one deck
+- [The tour](https://decks.kadal.cc/@pmithunish/tour/): every feature of the engine on one deck
 - [Themes](https://deck.kadal.cc/themes/)
 - [Issues](https://github.com/kadalcc/deck/issues) and [Discussions](https://github.com/kadalcc/deck/discussions)
 - [Source](https://github.com/kadalcc/deck/tree/main/packages/vscode)

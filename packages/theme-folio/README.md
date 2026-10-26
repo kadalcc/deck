@@ -1,5 +1,9 @@
 # @kadal/theme-folio
 
+> **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. A theme is how your talk looks on the day, on the projector and on every phone in the room.
+>
+> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+
 **Folio**, a theme for [Kadal Deck](https://deck.kadal.cc). An editorial theme for essays and keynotes. Warm paper and ink, Playfair Display for the display lines, Newsreader for reading text, IBM Plex Mono for code; one oxblood accent and a gilt second. Generous margins, a measure kept to reading length, booktabs tables, an asterism for a rule, small capitals for labels, a fleuron over a section.
 
 <p>

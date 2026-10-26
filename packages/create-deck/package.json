@@ -1,13 +1,14 @@
 {
   "name": "@kadal/create-deck",
   "version": "0.6.4",
-  "description": "Start a Kadal Deck: npm create @kadal/deck@latest my-talk (or a theme or addon package: -- --theme <name>, -- --addon <name>)",
+  "description": "Start your talk with Kadal Deck (build it, rehearse it, own the room): npm create @kadal/deck@latest my-talk, or a theme or addon package with -- --theme <name> or -- --addon <name>",
   "keywords": [
     "kadal-deck",
     "presentation",
     "slides",
     "mdx",
-    "create"
+    "create",
+    "talk"
   ],
   "homepage": "https://deck.kadal.cc/docs/getting-started/",
   "funding": {

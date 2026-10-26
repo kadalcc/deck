@@ -1,5 +1,9 @@
 # @kadal/deck-svelte
 
+> **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. This package is part of building it: a live Svelte component on a slide, so your demo runs in front of the room, not in a screenshot.
+>
+> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+
 The Svelte renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Svelte code as an island on a slide, loaded only when its slide appears.
 
 [Svelte islands guide](https://deck.kadal.cc/docs/islands/svelte/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-svelte)

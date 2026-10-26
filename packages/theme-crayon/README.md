@@ -1,5 +1,9 @@
 # @kadal/theme-crayon
 
+> **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. A theme is how your talk looks on the day, on the projector and on every phone in the room.
+>
+> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+
 **Crayon**, a theme for [Kadal Deck](https://deck.kadal.cc). A playful pastel theme for workshops and classrooms. Fredoka for headings, Nunito for text, Fira Code for code; cream paper and plum ink, six pastels, chunky ink outlines and offset shadows that look like paper cut-outs. Callouts are stickers, a blockquote is a speech bubble, list bullets are coloured dots, a section title is a big sticker and a fact sits in a round one. The shadows are solid offsets, never blurred, so print and PDF look like the screen.
 
 <p>
