@@ -1,5 +1,9 @@
 # @kadal/deck-preact
 
+> **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. This package is part of building it: a live Preact component on a slide, so your demo runs in front of the room, not in a screenshot.
+>
+> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+
 The Preact renderer for [Kadal Deck](https://deck.kadal.cc), presentations written in MDX: Preact code as an island on a slide, loaded only when its slide appears.
 
 [Preact islands guide](https://deck.kadal.cc/docs/islands/preact/) · [Islands in any framework](https://deck.kadal.cc/docs/islands/) · [Docs](https://deck.kadal.cc/docs/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck-preact)

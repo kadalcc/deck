@@ -7,7 +7,7 @@
     "url": "https://kadal.cc"
   },
   "metadata": {
-    "description": "Kadal Deck for AI agents: write, check, look at and publish MDX presentations."
+    "description": "Kadal Deck for AI agents: draft, check, look at and publish the talk, so you can rehearse it and own the room."
   },
   "plugins": [
     {

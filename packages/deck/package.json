@@ -1,7 +1,7 @@
 {
   "name": "@kadal/deck",
   "version": "0.6.4",
-  "description": "Kadal Deck: presentations written in MDX, with a live room for the audience (polls, questions, reactions from their phones), islands in any framework, export to PDF, PNG and PPTX, and the kadal-deck CLI and MCP server.",
+  "description": "Kadal Deck: build it, rehearse it, own the room. Talks written in MDX, with an MCP server and CLI for your AI agent, narration and a teleprompter to rehearse, a phone remote to present, and a live room for polls, Q&A and reactions. Export to PDF, PNG and PPTX.",
   "keywords": [
     "presentation",
     "slides",
@@ -11,13 +11,20 @@
     "slideshow",
     "presenter-view",
     "speaker-notes",
+    "teleprompter",
+    "narration",
+    "rehearsal",
+    "phone-remote",
     "live-polling",
     "audience",
+    "audience-engagement",
+    "public-speaking",
     "vite",
     "react",
     "pdf-export",
     "pptx",
-    "mcp"
+    "mcp",
+    "ai-agent"
   ],
   "homepage": "https://deck.kadal.cc",
   "funding": {

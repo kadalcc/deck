@@ -1,7 +1,7 @@
 {
   "name": "kadal-deck",
   "displayName": "Kadal Deck",
-  "description": "Write Kadal Deck presentations in MDX with the deck beside your text: a live preview that follows your cursor, a slide outline you drag to reorder, IntelliSense for every setting and component, the deck's checks as problems, and formatting.",
+  "description": "Build your Kadal Deck talk in VS Code, then rehearse and present it from the same deck: MDX slides with a live preview that follows your cursor, an outline you drag to reorder, IntelliSense for every setting and component, the deck's checks as problems, and formatting.",
   "version": "0.1.1",
   "private": true,
   "type": "module",

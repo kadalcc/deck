@@ -1,12 +1,16 @@
 # @kadal/deck
 
+> **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. This is the engine under every stage: the slides you write, the narration and teleprompter you rehearse with, the presenter view and phone remote you present from, and the live room your audience joins.
+>
+> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+
 The engine behind **[Kadal Deck](https://deck.kadal.cc)**: presentations written in MDX, with a
 live room so the audience can follow, react, ask and vote from their phones, islands in any
 framework, and export to PDF, PNG, PPTX (pictures or editable) and Markdown. It is the MDX compiler
 and Vite plugin, the React runtime and components, the themes, the `kadal-deck` CLI and the MCP
 server for AI agents.
 
-[Docs](https://deck.kadal.cc/docs/) · [The tour](https://deck.kadal.cc/tour/) · [Themes](https://deck.kadal.cc/themes/) · [AI agents](https://deck.kadal.cc/docs/ai-agents/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck)
+[Docs](https://deck.kadal.cc/docs/) · [The tour](https://decks.kadal.cc/@pmithunish/tour/) · [Themes](https://deck.kadal.cc/themes/) · [AI agents](https://deck.kadal.cc/docs/ai-agents/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/deck)
 
 [![npm](https://img.shields.io/npm/v/@kadal/deck?color=0e7490)](https://www.npmjs.com/package/@kadal/deck)
 [![CI](https://img.shields.io/github/actions/workflow/status/kadalcc/deck/ci.yml?branch=main&label=CI)](https://github.com/kadalcc/deck/actions/workflows/ci.yml)

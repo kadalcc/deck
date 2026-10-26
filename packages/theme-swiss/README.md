@@ -1,5 +1,9 @@
 # @kadal/theme-swiss
 
+> **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. A theme is how your talk looks on the day, on the projector and on every phone in the room.
+>
+> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+
 **Swiss**, a theme for [Kadal Deck](https://deck.kadal.cc). The International Typographic Style for design talks. Huge Inter Tight headings set tight and flush left on a twelve-column grid, heavy black rules, and one signal colour used sparingly. Facts, statements and quotes sit flush left, not centred; a section is the signal colour edge to edge; a running header carries the deck's title, the current section and the page.
 
 <p>

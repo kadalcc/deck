@@ -1,7 +1,11 @@
 <h1 align="center">Kadal Deck</h1>
 
+<h3 align="center">Build it. Rehearse it. Own the room.</h3>
+
 <p align="center">
-  <strong>Write your talk in MDX. Present it in a browser. Let the room follow, vote and ask from their phones.</strong>
+  Kadal Deck has your back from the first idea to the last applause: AI that drafts with you,
+  rehearsal with a voice and a timeline, a teleprompter and your phone as the clicker, and a live
+  room that keeps every seat in it — polls, quizzes, Q&amp;A and reactions.
 </p>
 
 <p align="center">
@@ -13,18 +17,27 @@
   <a href="https://github.com/sponsors/pmithunish"><img alt="Sponsor Kadal Deck" src="https://img.shields.io/badge/sponsor-%E2%99%A5-db61a2?logo=githubsponsors&logoColor=white"></a>
 </p>
 
+A talk is more than its slides. You need an outline that holds, slides that look the part, a few
+run-throughs out loud, the right notes in front of you on the day, and a room that stays with you
+to the end. Kadal Deck is built for all of it. You write the deck in one `deck.mdx` file, with AI
+beside you if you want it; you rehearse it with the deck reading your notes and keeping time; you
+present it with your phone in your hand; and the audience joins from theirs to vote, ask and react.
+The engine is open source, and hosting is free for public decks.
+
 <p align="center">
-  <a href="https://deck.kadal.cc/tour/">
-    <img src=".github/assets/tour.webp" alt="The Kadal Deck tour in a browser: the cover, a slide of deck.mdx source stepping one highlight per click, code that steps line by line, a magic-move code morph, a hand-drawn diagram revealed region by region, a grid of animated backgrounds, eleven framework islands on one slide, and the join slide with its QR code" width="100%">
+  <a href="https://decks.kadal.cc/@pmithunish/tour/">
+    <img src=".github/assets/hero.webp" alt="Kadal Deck on stage: the tour's title slide, Build it. Rehearse it. Own the room., on a big screen in front of an audience, a phone in the speaker's hand as the remote with a laser, and an audience phone voting in a live poll" width="100%">
   </a>
-  <br>
-  <sub>The <a href="https://deck.kadal.cc/tour/">tour</a>, the engine's own feature deck: over a hundred slides, all written in MDX. Open it and press <kbd>?</kbd>.</sub>
+</p>
+
+<p align="center">
+  <a href="https://decks.kadal.cc/@pmithunish/tour/"><strong>Take the tour →</strong></a><br>
+  <sub>A deck that shows every feature, built with Kadal Deck. Open it and press <kbd>?</kbd>.</sub>
 </p>
 
 <p align="center">
   <a href="https://deck.kadal.cc/docs/getting-started/">Get started</a> ·
   <a href="https://deck.kadal.cc/docs/">Docs</a> ·
-  <a href="https://deck.kadal.cc/tour/">Live tour</a> ·
   <a href="https://deck.kadal.cc/themes/">Themes</a> ·
   <a href="https://deck.kadal.cc/library/">Pro library</a> ·
   <a href="https://deck.kadal.cc/pricing/">Hosting</a> ·
@@ -32,6 +45,83 @@
 </p>
 
 ---
+
+## Build it
+
+_Start from an idea, not a blank slide._
+
+- ✦ **An AI assistant that drafts with you.** In the [builder on deck.kadal.cc](https://deck.kadal.cc/docs/guides/ai-agent/#the-builder-on-deckkadalcc),
+  tell it about the talk ("turn my notes into eight slides", "add a poll after the intro") and it
+  writes and revises the deck slide by slide, checks its work against the compiler, and answers
+  the comments on your draft. Every change is a revision you can undo. It runs on your own key
+  from OpenAI, Anthropic, Google or OpenRouter.
+- ✦ **Your own agent, too.** The [Agent Skill and the MCP server](#for-ai-agents) teach Claude
+  Code, Cursor, VS Code or any MCP client the format, then let it outline, write slides, lint them,
+  render them to look at its own work, and fix what it sees. The hosted MCP server brings your
+  published decks to Claude, ChatGPT and Cursor.
+- **Write where you like.** Markdown and MDX in your editor, with the [VS Code extension](packages/vscode)
+  and the `kadal-deck` CLI, or in the browser builder: edit right on the slide, and drop in emoji,
+  icons, stickers, shapes, free photos, GIFs and memes from the media panel.
+- **Look the part.** [16 themes](#themes) in light and dark, 28 built-in backgrounds, and the
+  [Pro library](#backgrounds-and-layouts) of 95 backgrounds and layouts.
+
+## Rehearse it
+
+_Practise out loud until it's yours._
+
+- **The deck reads your notes aloud** and turns its own pages as it goes, in the browser's voice
+  or the Kokoro AI voice running in your browser. [Narration](https://deck.kadal.cc/docs/narration/)
+  shows every chapter and slide on a timeline, so you hear how long the talk really runs.
+- **A plan for every slide.** Give each slide a time; the timer's bar marks where you should be,
+  and a pacing badge says how far ahead or behind you are, so you find the long parts before the day.
+- **A teleprompter and the presenter view.** Your notes, big, on the screen you read from, following
+  each click; and beside the slide, the notes, the next slide and the timer.
+- ✦ **Copilot can quiz you** on your notes while you rehearse a hosted deck.
+- **Glossary cards.** The first mention of a term links to its [definition](https://deck.kadal.cc/docs/glossary/),
+  so you, and later the room, never lose the thread.
+
+## Present it
+
+_Walk on stage with everything at your fingertips._
+
+<p align="center">
+  <img src=".github/assets/presenter.webp" alt="The presenter view: the current slide with a hand-drawn diagram, speaker notes with numbered click markers and the current one highlighted, the next step, a timer, and buttons for drawing, pointer, spotlight, blackout, share window, camera, recording, phone remote and stats" width="100%">
+  <br>
+  <sub>The presenter view: notes that highlight with each click, the next step, a timer with pacing and every tool on one screen. Press <kbd>S</kbd> in any deck.</sub>
+</p>
+
+- **The [presenter view](https://deck.kadal.cc/docs/presenter-and-keyboard/):** notes, timer, next
+  slide, drawing, camera and recording, and a share window for video calls.
+- **Your phone is the remote.** A live copy of the slide, your notes, the timer, a laser and a pen,
+  and an air pointer you aim by moving the phone, paired by a QR code. It works from a static host
+  too. [Phone remote](https://deck.kadal.cc/docs/phone-remote/)
+- ✦ **Copilot in the presenter view** of a hosted deck. Ask it to go to the results slide, black
+  out the screen, circle the total on this slide, or tell you what's in your notes here.
+- **Laser, spotlight, pen, zoom, blackout.** A built deck presents offline, and exports to PDF, PNG
+  and PPTX.
+
+## Own the room
+
+_Keep every seat with you._
+
+<p align="center">
+  <img src=".github/assets/phone.webp" alt="The audience page on a phone, live: the presenter's current slide, reactions, tabs for pace, questions, polls and notes, and buttons for slower, just right, faster and raise a hand" width="300">
+  <br>
+  <sub>The audience page: scan the QR code, no app, no account. The slide stays in step with you, or roams ahead and catches up.</sub>
+</p>
+
+- **The audience joins from their phones**, from a link or the QR code on your slide, with no app
+  and no sign-in, and follows along. The room runs on deck.kadal.cc or on your own server.
+  [The live room](https://deck.kadal.cc/docs/live-room/)
+- **Live polls, quizzes, word clouds, Q&A with upvotes, reactions**, a pace check and a raised hand,
+  all written as components in your deck.
+- **Afterwards, see how it went.** Every hosted deck counts its views; paid plans add the time
+  spent on each slide, and Pro and Team keep the sessions and their peak audience, the questions,
+  reactions and poll results. [Analytics](https://deck.kadal.cc/docs/publishing/#analytics)
+
+**Open source, on your side.** The engine is AGPL. One `deck.mdx`, in git, published with one command. AI on your own
+key: nothing sold, no lock-in. Hosting is [free for public decks](https://deck.kadal.cc/pricing/),
+with paid plans from $4 a month.
 
 ## Start in 30 seconds
 
@@ -78,10 +168,11 @@ npx kadal-deck export     # PDF in export/ (add --png or --pptx)
 npx kadal-deck publish    # a URL on deck.kadal.cc with a live room (free plan)
 ```
 
-Already have a Slidev deck? `npx kadal-deck import slidev slides.md` converts it and writes a
-report of anything that didn't carry over.
+Rather not install anything? Write it in the [builder](https://deck.kadal.cc/app/build) on
+deck.kadal.cc. Already have a Slidev deck? `npx kadal-deck import slidev slides.md` converts it and
+writes a report of anything that didn't carry over.
 
-## What you get
+## Everything in the engine
 
 <p align="center">
   <img src=".github/assets/slides.webp" alt="Four slides from the tour: code with one highlighted line per click, a hand-drawn diagram beside a Mermaid chart and an Excalidraw file, eleven framework islands each counting how long it has been alive, and a grid of animated backgrounds" width="100%">
@@ -95,22 +186,10 @@ report of anything that didn't carry over.
 | **Maths, diagrams, sketches** ([docs](https://deck.kadal.cc/docs/math-diagrams-sketches/)) | KaTeX at build time, Mermaid in the deck's colours, Excalidraw drawings revealed region by region |
 | **Looks** ([docs](https://deck.kadal.cc/docs/themes-and-backgrounds/)) | 16 themes in light and dark, 28 built-in backgrounds (most of them animated), the [Pro library](#backgrounds-and-layouts) of 95 backgrounds and layouts on deck.kadal.cc, 200,000 icons through Iconify, Tailwind |
 | **Any framework** ([docs](https://deck.kadal.cc/docs/islands/)) | React and web components built in; Vue, Svelte, Solid, Preact, Qwik, Angular, Fresh, Rust/WebAssembly and Python as islands, each loaded only when its slide appears |
+| **Rehearsing** ([docs](https://deck.kadal.cc/docs/narration/)) | Narration that reads the notes and turns the pages, per-slide timings with a pacing badge, a teleprompter window, glossary cards |
 | **Presenting** ([docs](https://deck.kadal.cc/docs/presenter-and-keyboard/)) | Presenter view with notes, timer and next slide; drawing, laser, spotlight, blackout, camera, recording; a share window for video calls; a phone remote; vim keys |
 | **The live room** ([docs](https://deck.kadal.cc/docs/live-room/)) | The audience follows on their phones: reactions, questions with upvotes, polls, word clouds, timed quizzes, a pace dial and a raised hand |
 | **Export** ([docs](https://deck.kadal.cc/docs/export/)) | PDF, PNG and PPTX, with or without each click step; a static build that works offline |
-
-### The presenter view, and the audience's phone
-
-<table>
-<tr>
-<td width="70%" valign="top"><img src=".github/assets/presenter.webp" alt="The presenter view: the current slide with a hand-drawn diagram, speaker notes with numbered click markers and the current one highlighted, the next step, a timer, and buttons for drawing, pointer, spotlight, blackout, share window, camera, recording, phone remote and stats" width="100%"></td>
-<td width="30%" valign="top"><img src=".github/assets/phone.webp" alt="The audience page on a phone, live: the presenter's current slide, reactions, tabs for pace, questions, polls and notes, and buttons for slower, just right, faster and raise a hand" width="100%"></td>
-</tr>
-<tr>
-<td valign="top">Notes that highlight with each click, the next step, a timer with pacing and every tool on one screen. Press <kbd>S</kbd> in any deck.</td>
-<td valign="top">Scan the QR code: no app, no account. The slide stays in step with you, or roams ahead and catches up.</td>
-</tr>
-</table>
 
 ## Backgrounds and layouts
 
