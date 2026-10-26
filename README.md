@@ -26,7 +26,7 @@ The engine is open source, and hosting is free for public decks.
 
 <p align="center">
   <a href="https://decks.kadal.cc/@pmithunish/tour/">
-    <img src=".github/assets/hero.webp" alt="Kadal Deck on stage: the tour's title slide, Build it. Rehearse it. Own the room., on a big screen in front of an audience, a phone in the speaker's hand as the remote with a laser, and an audience phone voting in a live poll" width="100%">
+    <img src=".github/assets/hero.webp" alt="Kadal Deck on stage: the tour's title slide, Build it. Rehearse it. Own the room., on a big screen in front of an audience, the AI Assistant adding a poll slide, the speaker's phone as the remote with the notes, and an audience phone on the same slide answering a live poll" width="100%">
   </a>
 </p>
 
