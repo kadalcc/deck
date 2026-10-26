@@ -2,7 +2,7 @@ import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 
 import { Icon } from "../components/bling.tsx";
 import { Qr } from "../components/content.tsx";
-import type { HostPanel } from "../core/panels.ts";
+import { type HostPanel, panelAccent } from "../core/panels.ts";
 import { readItem, writeItem } from "../core/storage.ts";
 import { createStore, useStore } from "../core/store.ts";
 import type { Status } from "../live/client.ts";
@@ -10,6 +10,7 @@ import { useJoinUrl } from "../live/components.tsx";
 import { useLiveOptional, useRoomStatus } from "../live/context.ts";
 import type { RoomState } from "../live/protocol.ts";
 import { useDeck } from "../react/context.ts";
+import { FeedbackActions } from "./Feedback.tsx";
 import { ScheduleLine } from "./Timer.tsx";
 
 /**
@@ -23,8 +24,11 @@ import { ScheduleLine } from "./Timer.tsx";
  *   Polls      the deck's polls and quizzes, opened and closed from here
  *   + panels   a host's own (deck.kadal.cc's Copilot), from `deck.panels` (core/panels.ts)
  *
- * It folds to a rail of icons with counts. A host panel is mounted the first time its tab is shown
- * and then kept, hidden, through tab switches and folding, so a chat isn't lost.
+ * It folds to a rail of icons with counts, each with its name small underneath. A host panel is
+ * mounted the first time its tab is shown and then kept, hidden, through tab switches and folding,
+ * so a chat isn't lost; one with the AI accent (core/panels.ts) wears the AI gradient. Under the
+ * tabs, on a host that takes them, Report a bug / Request a feature / Send feedback (Feedback.tsx):
+ * in the rail's empty space when folded, along the foot when open.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -43,8 +47,38 @@ const STATUS: Record<Status, { label: string; tone: "live" | "wait" | "off" }> =
 interface TabInfo {
   id: Tab;
   title: string;
+  /** The rail's label, when the title is too long for it. */
+  short?: string;
   icon: string;
   count: number;
+  accent?: "ai" | null;
+}
+
+/** The AI accent's gradient, for an icon's stroke (`url(#…)`): defined once, in the sidebar. */
+const AI_GRADIENT = "deck-ai-gradient";
+
+function AiGradient() {
+  return (
+    <svg className="deck-ai-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient
+          id={AI_GRADIENT}
+          x1="2"
+          y1="2"
+          x2="22"
+          y2="22"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" style={{ stopColor: "var(--deck-ai-from)" }} />
+          <stop offset="1" style={{ stopColor: "var(--deck-ai-to)" }} />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+function TabIcon({ tab }: { tab: TabInfo }) {
+  return <Icon name={tab.icon} color={tab.accent === "ai" ? `url(#${AI_GRADIENT})` : undefined} />;
 }
 
 export function PresenterSidebar({
@@ -81,6 +115,7 @@ export function PresenterSidebar({
           {
             id: "questions",
             title: "Questions",
+            short: "Q&A",
             icon: "message-circle-question",
             count: questions.filter((q) => !q.answered).length,
           },
@@ -97,6 +132,7 @@ export function PresenterSidebar({
       title: p.title,
       icon: p.icon ?? "panel-right",
       count: 0,
+      accent: panelAccent(p),
     })),
   ];
   // A remembered tab whose panel isn't here (yet, or any more) falls back to the room.
@@ -122,11 +158,13 @@ export function PresenterSidebar({
                 type="button"
                 role="tab"
                 aria-selected={current === t.id}
-                className={current === t.id ? "is-on" : ""}
+                className={[current === t.id ? "is-on" : "", t.accent ? `is-${t.accent}` : ""]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={() => setTab(t.id)}
                 title={t.title}
               >
-                <Icon name={t.icon} />
+                <TabIcon tab={t} />
                 <span>{t.title}</span>
                 {t.count ? <em>{t.count}</em> : null}
               </button>
@@ -157,15 +195,26 @@ export function PresenterSidebar({
             <button
               key={t.id}
               type="button"
-              className={["deck-room-rail-item", current === t.id ? "is-on" : ""].join(" ")}
+              className={[
+                "deck-room-rail-item",
+                current === t.id ? "is-on" : "",
+                t.accent ? `is-${t.accent}` : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => select(t.id)}
               title={`${t.title}${t.count ? ` · ${t.count}` : ""}`}
               aria-label={t.title}
             >
-              <Icon name={t.icon} />
+              <TabIcon tab={t} />
+              <span className="deck-room-rail-label" aria-hidden="true">
+                {t.short ?? t.title}
+              </span>
               {t.count ? <em>{t.count}</em> : null}
             </button>
           ))}
+          <span className="deck-room-rail-space" />
+          <FeedbackActions layout="rail" />
           {live ? (
             <span className={["deck-room-dot", `is-${status}`].join(" ")} title={s.label} />
           ) : null}
@@ -194,6 +243,8 @@ export function PresenterSidebar({
       {panels.map((p) => (
         <HostPanelSlot key={p.id} panel={p} active={open && current === `panel:${p.id}`} />
       ))}
+      {open ? <FeedbackActions layout="row" /> : null}
+      {tabs.some((t) => t.accent === "ai") ? <AiGradient /> : null}
     </div>
   );
 }

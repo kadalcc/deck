@@ -858,6 +858,30 @@
 .deck-click-marker.is-current {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
 }
+/* ── the AI accent ────────────────────────────────────────────────────────────
+   What a model does wears one signature (deck.kadal.cc's, recreated here since the engine can't
+   import its UI kit): an iris→teal gradient on the sparkle, a gradient hairline with a faint tint
+   of the same, and text in a solid AI ink that keeps AA contrast. It stays out of the deck's own
+   theme on purpose — it means "a model is involved", and reads the same under every theme. */
+:root {
+  --deck-ai-from: oklch(0.56 0.2 285);
+  --deck-ai-to: oklch(0.66 0.13 185);
+  --deck-ai-ink: oklch(0.46 0.18 285);
+  --deck-ai-gradient: linear-gradient(120deg, var(--deck-ai-from), var(--deck-ai-to));
+}
+[data-color-scheme="dark"] {
+  --deck-ai-from: oklch(0.74 0.15 285);
+  --deck-ai-to: oklch(0.82 0.12 182);
+  --deck-ai-ink: oklch(0.84 0.09 285);
+}
+.deck-ai-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 /* ── the presenter's sidebar (presenter/Sidebar.tsx) ──────────────────────────
    Tabs along the top: Room, Questions, Polls, then any host panel (a Copilot). The panel is a
    size container, so the tabs drop their labels to icons when the column is narrow. */
@@ -915,6 +939,29 @@
   width: 15px;
   height: 15px;
   flex: none;
+}
+/* A host panel with the AI accent (core/panels.ts): the gradient sparkle, ink label, hairline. */
+.deck-side-tabs button.is-ai {
+  border: 1px solid transparent;
+  padding: 5px 9px;
+  color: var(--deck-ai-ink);
+  background:
+    linear-gradient(
+        120deg,
+        color-mix(in oklch, var(--deck-ai-from) var(--deck-ai-tint, 6%), var(--deck-bg)),
+        color-mix(in oklch, var(--deck-ai-to) var(--deck-ai-tint, 6%), var(--deck-bg))
+      )
+      padding-box,
+    var(--deck-ai-gradient) border-box;
+}
+.deck-side-tabs button.is-ai:hover {
+  --deck-ai-tint: 12%;
+  color: var(--deck-ai-ink);
+}
+.deck-side-tabs button.is-ai.is-on {
+  --deck-ai-tint: 16%;
+  box-shadow: 0 0 10px -4px color-mix(in oklch, var(--deck-ai-from) 60%, transparent);
+  font-weight: 600;
 }
 .deck-side-tabs em,
 .deck-audience-tabs em {
@@ -2020,21 +2067,64 @@
   margin-inline-start: 0;
   margin-bottom: 4px;
 }
+/* Each tab: its icon, and its name small underneath (the title has the whole of it). */
 .deck-room-rail-item {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  min-height: 46px;
+  padding: 6px 2px 5px;
   border-radius: 10px;
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--deck-muted);
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   cursor: pointer;
 }
 .deck-room-rail-item .deck-icon {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
+  flex: none;
+}
+.deck-room-rail-label {
+  max-width: 100%;
+  font: 500 10px/1.1 var(--deck-body-font);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The AI accent in the rail: the hairline and tint always, raised on hover and when open. */
+.deck-room-rail-item.is-ai {
+  color: var(--deck-ai-ink);
+  background:
+    linear-gradient(
+        120deg,
+        color-mix(in oklch, var(--deck-ai-from) var(--deck-ai-tint, 7%), var(--deck-bg)),
+        color-mix(in oklch, var(--deck-ai-to) var(--deck-ai-tint, 7%), var(--deck-bg))
+      )
+      padding-box,
+    var(--deck-ai-gradient) border-box;
+}
+.deck-room-rail-item.is-ai .deck-room-rail-label {
+  font-weight: 600;
+}
+.deck-room-rail-item.is-ai:hover,
+.deck-room-rail-item.is-ai.is-on {
+  --deck-ai-tint: 15%;
+  color: var(--deck-ai-ink);
+  background:
+    linear-gradient(
+        120deg,
+        color-mix(in oklch, var(--deck-ai-from) var(--deck-ai-tint, 7%), var(--deck-bg)),
+        color-mix(in oklch, var(--deck-ai-to) var(--deck-ai-tint, 7%), var(--deck-bg))
+      )
+      padding-box,
+    var(--deck-ai-gradient) border-box;
+  box-shadow: 0 0 12px -4px color-mix(in oklch, var(--deck-ai-from) 60%, transparent);
 }
 .deck-room-rail-item:hover,
 .deck-room-rail-item.is-on {
@@ -2044,7 +2134,7 @@
 .deck-room-rail-item em {
   position: absolute;
   top: 1px;
-  right: 1px;
+  right: 4px;
   font-style: normal;
   font: 600 10px/16px var(--deck-body-font);
   min-width: 16px;
@@ -2056,22 +2146,95 @@
   text-align: center;
   box-shadow: 0 0 0 2px var(--deck-bg);
 }
+.deck-room-rail-space {
+  flex: 1;
+}
 .deck-room-dot {
+  flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--deck-muted);
-  margin-top: auto;
+  margin-top: 4px;
   margin-bottom: 6px;
+}
+/* Report a bug / Request a feature / Send feedback (presenter/Feedback.tsx): under the tabs,
+   smaller and quieter than them, set apart by a hairline. */
+.deck-rail-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--deck-border);
+  width: 44px;
+}
+.deck-rail-action {
+  width: 48px;
+  padding: 5px 2px 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: color-mix(in oklab, var(--deck-muted) 85%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  font: 500 9px/1.1 var(--deck-body-font);
+}
+.deck-rail-action .deck-icon {
+  width: 15px;
+  height: 15px;
+}
+.deck-rail-action:hover {
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+}
+.deck-rail-action:focus-visible,
+.deck-room-rail-item:focus-visible,
+.deck-side-foot-btn:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+}
+/* The same three along the foot of the open sidebar. */
+.deck-side-foot {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 4px;
+  padding: 5px 6px;
+  border-top: 1px solid var(--deck-border);
+}
+.deck-side-foot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--deck-muted);
+  font: 500 11.5px var(--deck-body-font);
+  cursor: pointer;
+}
+.deck-side-foot-btn .deck-icon {
+  width: 13px;
+  height: 13px;
+}
+.deck-side-foot-btn:hover {
+  background: var(--deck-surface);
+  color: var(--deck-fg);
 }
 .deck-room-dot.is-open {
   background: #22c55e;
 }
 .deck-presenter.room-collapsed .deck-presenter-main {
-  grid-template-columns: 1fr var(--pane) 52px;
+  grid-template-columns: 1fr var(--pane) 62px;
 }
 .deck-presenter.room-collapsed.layout-notes-left .deck-presenter-main {
-  grid-template-columns: var(--pane) 1fr 52px;
+  grid-template-columns: var(--pane) 1fr 62px;
 }
 .deck-presenter.room-collapsed .deck-presenter-room {
   overflow: visible;
@@ -2089,4 +2252,266 @@
 .deck-confetti-layer.in-canvas {
   position: absolute;
   z-index: 36;
+}
+
+/* ── the feedback dialog (presenter/Feedback.tsx) ─────────────────────────────
+   Small, over the presenter view, the deck's own tokens; the slide stays in sight behind it. */
+.deck-feedback-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in oklab, #000 28%, transparent);
+}
+.deck-feedback {
+  width: min(440px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-border);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  font: 13px/1.45 var(--deck-body-font);
+}
+.deck-feedback-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.deck-feedback-head h3 {
+  flex: 1;
+  margin: 0;
+  font: 600 15px/1.3 var(--deck-body-font);
+}
+.deck-feedback-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-border);
+}
+.deck-feedback[data-kind="bug"] .deck-feedback-icon {
+  color: #dc2626;
+}
+.deck-feedback[data-kind="feature"] .deck-feedback-icon {
+  color: #ca8a04;
+}
+.deck-feedback-icon .deck-icon {
+  width: 16px;
+  height: 16px;
+}
+.deck-feedback-field {
+  display: grid;
+  gap: 4px;
+}
+.deck-feedback-field > span,
+.deck-feedback-severity legend {
+  padding: 0;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--deck-muted);
+}
+.deck-feedback-field input,
+.deck-feedback-field textarea {
+  font: inherit;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  min-width: 0;
+}
+.deck-feedback-field textarea {
+  resize: vertical;
+  min-height: 92px;
+}
+.deck-feedback-field input:focus-visible,
+.deck-feedback-field textarea:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--deck-accent) 70%, transparent);
+  outline-offset: 0;
+  border-color: var(--deck-accent);
+}
+.deck-feedback-severity {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.deck-feedback-severity [role="radiogroup"] {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+}
+.deck-feedback-severity label {
+  position: relative;
+  text-align: center;
+  padding: 5px 4px;
+  border-radius: 7px;
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--deck-muted);
+  cursor: pointer;
+}
+.deck-feedback-severity input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.deck-feedback-severity label.is-on {
+  background: var(--deck-bg);
+  color: var(--deck-fg);
+  box-shadow:
+    0 0 0 1px var(--deck-border),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.deck-feedback-severity label.is-on[data-severity="high"] {
+  color: #ea580c;
+}
+.deck-feedback-severity label.is-on[data-severity="critical"] {
+  color: #dc2626;
+}
+.deck-feedback-severity label:has(input:focus-visible) {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 1px;
+}
+.deck-feedback-attach {
+  align-items: flex-start;
+}
+.deck-feedback-attach input {
+  margin-top: 3px;
+}
+.deck-feedback-attach small {
+  display: block;
+  color: var(--deck-muted);
+  font-size: 12px;
+}
+.deck-feedback-shot {
+  display: grid;
+  place-items: center;
+  min-height: 64px;
+  border-radius: 8px;
+  border: 1px dashed var(--deck-border);
+  overflow: hidden;
+}
+.deck-feedback-shot {
+  padding: 6px;
+  background: var(--deck-surface);
+}
+.deck-feedback-shot img {
+  display: block;
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+.deck-feedback-muted {
+  margin: 0;
+  color: var(--deck-muted);
+  font-size: 12px;
+}
+.deck-feedback-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 12.5px;
+}
+[data-color-scheme="dark"] .deck-feedback-error {
+  color: #f87171;
+}
+.deck-feedback-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.deck-feedback-actions button {
+  font: 500 13px var(--deck-body-font);
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-fg);
+  cursor: pointer;
+}
+.deck-feedback-actions button.is-primary {
+  background: var(--deck-accent);
+  border-color: var(--deck-accent);
+  color: var(--deck-bg);
+}
+.deck-feedback-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.deck-feedback-actions button:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+.deck-feedback-sent {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 8px 0 2px;
+  text-align: center;
+}
+.deck-feedback-sent p {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.deck-feedback-sent strong {
+  font-size: 15px;
+}
+.deck-feedback-sent p span {
+  color: var(--deck-muted);
+  font-size: 12.5px;
+}
+.deck-feedback-sent code {
+  font: 12px var(--deck-mono-font);
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-border);
+  color: var(--deck-fg);
+}
+.deck-feedback-sent .deck-feedback-actions {
+  width: 100%;
+  justify-content: center;
+}
+.deck-feedback-check {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #16a34a;
+}
+.deck-feedback-check .deck-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* ── the rehearsal menu (presenter/RehearsalMenu.tsx) ───────────────────────── */
+.deck-rehearsal-key {
+  margin-inline-start: auto;
+  font: 11px var(--deck-mono-font);
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-muted);
 }

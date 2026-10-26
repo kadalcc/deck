@@ -31,6 +31,8 @@ import { NotesView } from "../react/NotesView.tsx";
 import { RemoteHost } from "../remote/host.tsx";
 import { useNarrationOn } from "../react/NarrationGate.tsx";
 import { EditOnWebButton } from "./EditButton.tsx";
+import { deckKey, SessionControl, useTimelineCommand } from "./RehearsalMenu.tsx";
+import { timelineShown } from "./rehearsal.ts";
 import { PresenterSidebar } from "./Sidebar.tsx";
 import { TeleprompterControl, usePresenterStateFeed } from "./TeleprompterControl.tsx";
 import { PresenterTimer } from "./Timer.tsx";
@@ -78,6 +80,9 @@ export function PresenterPage() {
   const [mirror, setMirror] = useState(false);
   const [roomOpen, setRoomOpen] = useState(() => readItem("deck.presenter.room") !== "closed");
   const narrate = useNarrationOn();
+  const timeline = timelineShown(deckKey(deck));
+  const timelineOn = useStore(timeline);
+  useTimelineCommand(narrate);
   usePresenterStateFeed();
   useEffect(() => {
     writeItem("deck.presenter.layout", layout);
@@ -149,7 +154,12 @@ export function PresenterPage() {
       <div className="deck-presenter-toolbar-slot" />
       {narrate ? (
         <Suspense fallback={null}>
-          <Narration />
+          <Narration
+            hidden={!timelineOn}
+            onHide={() => timeline.set(false)}
+            onShow={() => timeline.set(true)}
+            menu
+          />
         </Suspense>
       ) : null}
       <Toast />
@@ -548,7 +558,6 @@ function PresenterTools({
   }));
   const paused = useNav((s) => s.paused);
   const notesPublic = useStore(live?.client.state ?? noStore, (s) => (s ? s.notesPublic : false));
-  const started = useStore(live?.client.state ?? noStore, (s) => (s ? s.startedAt : null));
   const toggle = (key: "drawing" | "pointer" | "spotlight") =>
     deck.ui.update((s) => ({ ...s, [key]: !s[key] }));
   return (
@@ -631,16 +640,10 @@ function PresenterTools({
           >
             <Icon name="party-popper" /> Confetti
           </button>
-          <button
-            type="button"
-            className={started ? "is-on" : ""}
-            onClick={() => live.client.send({ type: "session", action: started ? "end" : "start" })}
-            title="Mark the session for the stats"
-          >
-            <Icon name={started ? "radio" : "play"} /> {started ? "Live" : "Start session"}
-          </button>
         </>
       ) : null}
+      {/* Start session (with a room), and the rehearsal menu beside it: RehearsalMenu.tsx. */}
+      <SessionControl />
       <button
         type="button"
         className={ui.projectorOpen ? "is-on" : ""}

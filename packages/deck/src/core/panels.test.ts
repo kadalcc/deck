@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createPanelRegistry } from "./panels.ts";
+import { createPanelRegistry, panelAccent } from "./panels.ts";
 
 const panel = (id: string) => ({ id, title: id, mount: () => {} });
 
@@ -37,5 +37,14 @@ describe("host panels", () => {
     const r = createPanelRegistry();
     expect(() => r.register({ id: "", title: "x", mount: () => {} })).toThrow();
     expect(() => r.register({ id: "x", title: "x" } as never)).toThrow();
+  });
+
+  test("the AI accent: asked for, or a copilot's by default; anything else is plain", () => {
+    expect(panelAccent({ id: "notes", accent: "ai" })).toBe("ai");
+    expect(panelAccent({ id: "copilot" })).toBe("ai");
+    expect(panelAccent({ id: "copilot", accent: "none" })).toBeNull();
+    expect(panelAccent({ id: "notes" })).toBeNull();
+    // A host on an older or newer contract passing something unknown gets a plain tab.
+    expect(panelAccent({ id: "notes", accent: "sparkly" as never })).toBeNull();
   });
 });

@@ -495,12 +495,11 @@ export function deck(options: DeckPluginOptions = {}): Plugin {
           if (outside.length) out.server = { fs: { allow: [workspace, ...outside] } };
         }
       }
+      // The engine's version (core/version.ts): said in the kit preview's `ready` as the prebuilt
+      // shell says it, and in the presenter's feedback reports.
+      out.define = { __KADAL_DECK_VERSION__: JSON.stringify(engineVersion()) };
       // The kit (vite/kit.ts) rides beside the deck's own build, whose public/ files it shares.
-      // The engine's version, said in the preview's `ready` as the prebuilt shell says it.
-      if (kitMode() && env.command === "build") {
-        out.build = { copyPublicDir: false };
-        out.define = { __KADAL_DECK_VERSION__: JSON.stringify(engineVersion()) };
-      }
+      if (kitMode() && env.command === "build") out.build = { copyPublicDir: false };
       // The Kokoro worker splits into chunks (transformers.js loads its runtime lazily), which
       // only an ES-module worker can do. A deck that set its own worker format keeps it.
       if (!user.worker?.format) out.worker = { format: "es" };
@@ -906,7 +905,7 @@ function peekPackages(file: string): DeckPackageSet | null {
 
 export { deckPackages, type DeckPackagesOptions } from "./packages.ts";
 
-/** This package's version, for kit.json. */
+/** This package's version, for kit.json and `__KADAL_DECK_VERSION__`. */
 function engineVersion(): string {
   for (const rel of ["../../package.json", "../package.json"]) {
     const file = fileURLToPath(new URL(rel, import.meta.url));

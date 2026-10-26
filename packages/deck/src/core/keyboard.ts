@@ -34,6 +34,7 @@ export type KeyAction =
   | "hints"
   | "themeMenu"
   | "narrate"
+  | "narrateTimeline"
   | "settings"
   | "contextMenu"
   | "camera";
@@ -154,6 +155,12 @@ export const KEY_BINDINGS: KeyBinding[] = [
     action: "narrate",
     label: "R",
     description: "Read the notes aloud and turn the pages (narration), or pause it",
+  },
+  {
+    keys: ["Shift+KeyR"],
+    action: "narrateTimeline",
+    label: "Shift R",
+    description: "Show or hide the rehearsal timeline (presenter view)",
   },
   {
     keys: ["Comma"],

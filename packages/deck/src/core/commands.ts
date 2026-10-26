@@ -242,6 +242,8 @@ export const KEY_COMMANDS = {
   hints: "view.hints",
   themeMenu: "view.themeMenu",
   narrate: "narrate.toggle",
+  // The presenter view registers it (presenter/RehearsalMenu.tsx); elsewhere the key does nothing.
+  narrateTimeline: "narrate.timeline",
   settings: "view.settings",
   contextMenu: "view.contextMenu",
   camera: "media.camera",

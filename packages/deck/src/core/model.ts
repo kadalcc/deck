@@ -1037,6 +1037,12 @@ export interface HostOverride {
    * (`/emoji`). Without one, `https://decks.kadal.cc/emoji`, so a deck works anywhere.
    */
   emoji?: string;
+  /**
+   * Where the presenter's "Report a bug", "Request a feature" and "Send feedback" go (an http(s)
+   * URL, or a same-site path): each is a JSON POST with the presenter's ticket, answered `{ id }`
+   * (presenter/Feedback.tsx has the body). Absent: the presenter view shows none of the three.
+   */
+  feedback?: string;
 }
 
 /** The global a host sets, validated: anything malformed is ignored rather than trusted. */
@@ -1065,6 +1071,12 @@ export function readHostOverride(scope: unknown = globalThis): HostOverride | nu
   if (premium) out.premium = premium;
   if (typeof o.emoji === "string" && /^(https?:\/\/[^\s"'<>]+|\/(?!\/)[\w./-]*)$/.test(o.emoji))
     out.emoji = o.emoji.replace(/\/+$/, "");
+  // An http(s) URL with a host, or a same-site path ("//elsewhere" is neither).
+  if (
+    typeof o.feedback === "string" &&
+    /^(https?:\/\/[^\s"'<>/]+[^\s"'<>]*|\/(?!\/)[^\s"'<>]*)$/.test(o.feedback)
+  )
+    out.feedback = o.feedback;
   return out;
 }
 

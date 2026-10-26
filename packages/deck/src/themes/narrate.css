@@ -458,3 +458,84 @@
   word-break: normal;
   overflow-wrap: normal;
 }
+
+/* ── the presenter's bar, hidden (presenter/rehearsal.ts) ─────────────────────
+   While the narrator reads (or waits, paused mid-talk) a pill stands in for the bar at the
+   bottom: play or pause, where it is, and the way back. Nothing shows while it is idle. */
+.deck-narration-pill {
+  position: absolute;
+  z-index: 60;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--deck-border);
+  background: color-mix(in oklab, var(--deck-bg) 94%, var(--deck-fg));
+  color: var(--deck-fg);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+  font: 12.5px/1.2 var(--deck-body-font);
+}
+.deck-narration-pill button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  cursor: pointer;
+  font: 500 12px var(--deck-body-font);
+  color: inherit;
+}
+.deck-narration-pill .deck-narration-play {
+  width: 30px;
+  height: 30px;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--deck-accent);
+  color: var(--deck-bg);
+}
+.deck-narration-pill .deck-icon {
+  width: 14px;
+  height: 14px;
+}
+.deck-narration-pill-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.deck-narration-pill-text .deck-narration-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--deck-muted);
+}
+.deck-narration-pill-show {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--deck-surface) !important;
+  box-shadow: inset 0 0 0 1px var(--deck-border);
+}
+.deck-narration-pill-show:hover {
+  background: color-mix(in oklab, var(--deck-fg) 10%, transparent) !important;
+}
+.deck-narration-pill.is-playing .deck-narration-pill-text b::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-end: 6px;
+  border-radius: 50%;
+  background: var(--deck-accent);
+  vertical-align: 1px;
+  animation: deck-narration-pulse 1.4s ease-in-out infinite;
+}
+@keyframes deck-narration-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-narration-pill.is-playing .deck-narration-pill-text b::before {
+    animation: none;
+  }
+}

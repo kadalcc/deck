@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import type { DeckConfigInput, DeckManifest } from "../core/model.ts";
 import { flatIndex, totalSlides } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
+import { ENGINE_VERSION } from "../core/version.ts";
 import { setConflictResolver } from "../react/ConflictCard.tsx";
 import type { DeckRuntime, ViewMode } from "../react/context.ts";
 import { DeckRuntimeView, type DeckProps } from "../react/Deck.tsx";
@@ -37,8 +38,7 @@ import { type FromPreview, type OutlineEntry, isToPreview } from "./protocol.ts"
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-declare const __KADAL_DECK_VERSION__: string | undefined;
-const VERSION = typeof __KADAL_DECK_VERSION__ === "string" ? __KADAL_DECK_VERSION__ : "dev";
+const VERSION = ENGINE_VERSION;
 
 const MODE_SEGMENTS = new Set([
   "presenter",
