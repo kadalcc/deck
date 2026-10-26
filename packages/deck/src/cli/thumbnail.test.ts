@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { freePort } from "./render.ts";
 import {
   type Shot,
+  closeServer,
   hostFiles,
   picturesOf,
   publishThumbnail,
@@ -52,9 +53,12 @@ function fakeHost(status = 200) {
       auth: h.get("authorization"),
       body: new Uint8Array(init.body as ArrayBuffer),
     });
-    return new Response(status === 200 ? JSON.stringify({ ok: true }) : JSON.stringify({ error: "not_found" }), {
-      status,
-    });
+    return new Response(
+      status === 200 ? JSON.stringify({ ok: true }) : JSON.stringify({ error: "not_found" }),
+      {
+        status,
+      },
+    );
   }) as unknown as typeof fetch;
   return { fetch, got };
 }
@@ -138,6 +142,25 @@ describe("the deck's picture after a publish", () => {
       ok: false,
       reason: "Rendering slides needs Playwright and Chromium.",
     });
+  });
+});
+
+describe("a request still in flight", () => {
+  test("doesn't keep the build server from closing", async () => {
+    // The page asked for a premium picture the host never answers, and is still waiting.
+    const port = await freePort();
+    const server = await serveBuild(out, "/@me/talk/", port, {
+      premium: () => new Promise(() => {}),
+    });
+    const page = new AbortController();
+    fetch(`http://127.0.0.1:${port}/@me/talk/__kadal/premium/backgrounds/orbit.webp`, {
+      signal: page.signal,
+    }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 100));
+    const started = Date.now();
+    await closeServer(server, 300);
+    page.abort();
+    expect(Date.now() - started).toBeLessThan(1_000);
   });
 });
 
