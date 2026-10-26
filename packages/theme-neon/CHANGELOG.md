@@ -1,5 +1,14 @@
 # @kadal/theme-neon
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [ddbbe62]
+- Updated dependencies [fd65dde]
+- Updated dependencies [223cc30]
+  - @kadal/deck@0.7.1
+
 ## 0.7.0
 
 ### Patch Changes
