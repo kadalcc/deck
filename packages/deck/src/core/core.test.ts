@@ -290,6 +290,35 @@ describe("click registry under StrictMode", () => {
   });
 });
 
+describe("click registry when a slide's content is replaced", () => {
+  test("the new elements take the steps the old ones held", async () => {
+    // A library layout arriving swaps the fallback layout out: the slide's content mounts again,
+    // with new ids, before the old elements are released.
+    const r = createClickRegistry(0);
+    r.allocate("old-1", {});
+    r.allocate("old-2", { span: 2 });
+    const a = r.allocate("new-1", {});
+    const b = r.allocate("new-2", { span: 2 });
+    expect([a.start, b.start]).toEqual([4, 5]);
+    r.release("old-1");
+    r.release("old-2");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect([a.start, b.start, b.last, r.total()]).toEqual([1, 2, 3, 3]);
+  });
+
+  test("an id released and re-allocated in the same turn (StrictMode) is kept", async () => {
+    const r = createClickRegistry(0);
+    const a = r.allocate("a", {});
+    const b = r.allocate("b", {});
+    r.release("a");
+    expect(r.allocate("a", {})).toBe(a);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect([a.start, b.start, r.total()]).toEqual([1, 2, 2]);
+  });
+});
+
 describe("click registry when a spec changes", () => {
   test("a block whose steps arrive late takes them, and the elements after it move along", async () => {
     const r = createClickRegistry(0);
