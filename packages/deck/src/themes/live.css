@@ -1110,7 +1110,9 @@
 .deck-side-btn.is-primary {
   background: var(--deck-accent);
   border-color: var(--deck-accent);
-  color: #fff;
+  /* The deck's own background, as every accent-filled control does: a light accent (minimal in
+     dark is near white) would hide white text. */
+  color: var(--deck-bg);
 }
 
 /* three stat tiles */
