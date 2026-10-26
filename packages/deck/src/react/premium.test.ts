@@ -11,7 +11,9 @@ import {
   PremiumLoader,
   installRuntime,
   premiumLoaderFor,
+  premiumSettled,
   usePremiumItem,
+  whenPremiumSettled,
 } from "./premium.tsx";
 
 /** A fake host: a catalog, modules by URL, and a log of what was asked for. */
@@ -195,5 +197,28 @@ describe("the runtime global", () => {
     expect(() => {
       scope.__KADAL_DECK_RUNTIME__ = {};
     }).toThrow();
+  });
+});
+
+describe("settled: what a still copy of a slide waits for", () => {
+  test("loading items keep the page unsettled until each is ready or failed", async () => {
+    const { deps } = fakeHost({ modules: MODULES });
+    const loader = new PremiumLoader(BASE, deps);
+    expect(premiumSettled()).toBe(true);
+    const ready = loader.load("pro/wave", "background");
+    const failed = loader.load("pro/broken", "background");
+    expect(premiumSettled()).toBe(false);
+    let settled = false;
+    const waiting = whenPremiumSettled().then(() => {
+      settled = true;
+    });
+    expect((await ready).status).toBe("ready");
+    expect((await failed).status).toBe("failed");
+    await waiting;
+    expect(settled).toBe(true);
+    expect(premiumSettled()).toBe(true);
+    // Asking again for a known item doesn't count as loading.
+    void loader.load("pro/wave", "background");
+    expect(premiumSettled()).toBe(true);
   });
 });

@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { nextFrame, thumbnailParams, thumbnailSize } from "./thumbnail.tsx";
+import { DEFAULT_CONFIG, resolveSlideOptions } from "../core/model.ts";
+import {
+  nextFrame,
+  thumbnailParams,
+  thumbnailScheme,
+  thumbnailSize,
+  withScheme,
+} from "./thumbnail.tsx";
 
 const deck = { width: 980, height: 551.25 };
 
@@ -12,6 +19,31 @@ describe("export.thumbnail", () => {
     expect(thumbnailParams.safeParse({ slide: 1.5 }).success).toBe(false);
     expect(thumbnailParams.safeParse({ width: "640" }).success).toBe(false);
     expect(thumbnailParams.safeParse({ height: 360 }).success).toBe(false);
+    expect(thumbnailParams.parse({ scheme: "dark" })).toEqual({ scheme: "dark" });
+    expect(thumbnailParams.safeParse({ scheme: "auto" }).success).toBe(false);
+  });
+
+  test("scheme: a fixed deck is pictured in its own; an auto deck in the asked one, else the screen's", () => {
+    expect(thumbnailScheme("dark", "light", "light")).toBe("dark");
+    expect(thumbnailScheme("light", "dark", "dark")).toBe("light");
+    expect(thumbnailScheme("auto", "dark", "light")).toBe("dark");
+    expect(thumbnailScheme("auto", undefined, "light")).toBe("light");
+  });
+
+  test("withScheme forces the scheme on the slide and its background, as `colorScheme:` would", () => {
+    const plain = resolveSlideOptions({}, DEFAULT_CONFIG, true);
+    const dark = withScheme(plain, "dark");
+    expect(dark.colorScheme).toBe("dark");
+    expect(dark.background?.scheme).toBe("dark");
+    // The slide's own background is kept, wearing the scheme.
+    const glows = resolveSlideOptions({ background: { component: "glows" } }, DEFAULT_CONFIG, true);
+    expect(withScheme(glows, "dark").background).toMatchObject({
+      component: "glows",
+      scheme: "dark",
+    });
+    // A slide that forces its own scheme keeps it.
+    const light = resolveSlideOptions({ colorScheme: "light" }, DEFAULT_CONFIG, true);
+    expect(withScheme(light, "dark")).toBe(light);
   });
 
   test("size: 640 by default, clamped to 160–1920, in the deck's shape", () => {

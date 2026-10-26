@@ -135,6 +135,7 @@ interface PageLike {
   goto(url: string, o?: Record<string, unknown>): Promise<unknown>;
   waitForSelector(sel: string, o?: Record<string, unknown>): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
+  waitForLoadState?(state: string, o?: Record<string, unknown>): Promise<void>;
   evaluate<T>(fn: () => T | Promise<T>): Promise<T>;
   $$(sel: string): Promise<ElementLike[]>;
   screenshot(o?: Record<string, unknown>): Promise<Buffer>;
@@ -173,6 +174,11 @@ export async function loadPlaywright(dir: string): Promise<PlaywrightLike> {
 export interface RenderRequest {
   /** Slide indexes (0-based, authored order); all slides when omitted. */
   slides?: number[];
+  /**
+   * Only these slides are laid out at all (the print view's `?range=`, counting visible slides
+   * from 1): "1" is the first slide the audience sees, without loading the other hundred.
+   */
+  range?: string;
   scheme?: "light" | "dark";
   /** A theme the deck ships (see the theme menu). */
   theme?: string;
@@ -183,7 +189,16 @@ export interface RenderRequest {
    * card: the middle 1920×1008 of a 16:9 slide). Default: the slide's own shape.
    */
   aspect?: number;
+  /**
+   * Wait for the page to go quiet first (no request for half a second, at most SETTLE_MS): what
+   * arrives after the print view is ready — a host's `pro/` items, a late image — is pictured
+   * too. Slower by a beat; a deck's picture for a host wants it, an agent's quick look doesn't.
+   */
+  settle?: boolean;
 }
+
+/** The longest `settle` waits for the network, after which the picture is taken anyway. */
+export const SETTLE_MS = 10_000;
 
 export interface RenderedSlide {
   index: number;
@@ -199,6 +214,11 @@ export interface RenderResult {
   missing: number[];
   /** Slides that failed to load, and errors the page logged. */
   errors: string[];
+  /**
+   * The scheme the deck was drawn in. Asked for one, a deck that follows the viewer (`auto`)
+   * answers with it; one with a fixed `colorScheme` answers with its own, whatever was asked.
+   */
+  scheme: "light" | "dark";
 }
 
 export class SlideRenderer {
@@ -277,6 +297,7 @@ export class SlideRenderer {
       });
       const url = new URL(this.baseUrl());
       url.searchParams.set("print-pdf", "");
+      if (req.range) url.searchParams.set("range", req.range);
       await page.goto(url.toString(), { waitUntil: "load", timeout: 120_000 });
       await page.waitForSelector(".deck-print-pages[data-ready]", { timeout: 120_000 });
       // On screen the print view spaces its pages 16px apart, centred, with a shadow. At the
@@ -291,8 +312,13 @@ export class SlideRenderer {
           ".deck-print-page{margin:0!important;box-shadow:none!important}";
         document.head.append(style);
       });
+      if (req.settle && page.waitForLoadState)
+        await page.waitForLoadState("networkidle", { timeout: SETTLE_MS }).catch(() => {});
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(req.settle ? 800 : 400);
+      const scheme = await page.evaluate(() =>
+        document.documentElement.dataset.colorScheme === "dark" ? "dark" : "light",
+      );
       const info = await page.evaluate(() =>
         [...document.querySelectorAll<HTMLElement>(".deck-print-page")].map((p) => {
           const slide = p.querySelector<HTMLElement>(".deck-slide");
@@ -361,7 +387,12 @@ export class SlideRenderer {
           png,
         });
       }
-      return { shots, missing, errors: [...new Set(errors.map(stripAnsi))].slice(0, 20) };
+      return {
+        shots,
+        missing,
+        errors: [...new Set(errors.map(stripAnsi))].slice(0, 20),
+        scheme,
+      };
     } finally {
       await context.close();
     }

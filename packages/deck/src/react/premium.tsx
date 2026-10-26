@@ -135,6 +135,42 @@ const defaultDeps = (): LoaderDeps => ({
         },
 });
 
+/**
+ * Items being fetched right now, on every loader: a still copy of a slide (print, export, a
+ * thumbnail) waits for this to reach 0, or it pictures the theme's fallback in the item's place.
+ */
+let inflight = 0;
+const inflightListeners = new Set<() => void>();
+const inflightChanged = (by: number) => {
+  inflight += by;
+  for (const fn of inflightListeners) fn();
+};
+const subscribeInflight = (fn: () => void) => {
+  inflightListeners.add(fn);
+  return () => {
+    inflightListeners.delete(fn);
+  };
+};
+
+/** Whether no `pro/` item is loading on this page (every one asked for is ready or failed). */
+export const premiumSettled = () => inflight === 0;
+
+/** `premiumSettled`, live. */
+export const usePremiumSettled = () =>
+  useSyncExternalStore(subscribeInflight, premiumSettled, premiumSettled);
+
+/** Resolves once no `pro/` item is loading (at once when none is). */
+export function whenPremiumSettled(): Promise<void> {
+  if (premiumSettled()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const off = subscribeInflight(() => {
+      if (!premiumSettled()) return;
+      off();
+      resolve();
+    });
+  });
+}
+
 class Failure extends Error {
   constructor(readonly reason: PremiumFailure) {
     super(reason);
@@ -174,14 +210,17 @@ export class PremiumLoader {
     let pending = this.pending.get(key);
     if (!pending) {
       this.states.set(key, LOADING);
-      pending = this.resolve(id, kind).then(
-        (item) => this.settle(key, { status: "ready", item }),
-        (err: unknown) =>
-          this.settle(key, {
-            status: "failed",
-            reason: err instanceof Failure ? err.reason : "bad-module",
-          }),
-      );
+      inflightChanged(1);
+      pending = this.resolve(id, kind)
+        .then(
+          (item) => this.settle(key, { status: "ready", item }),
+          (err: unknown) =>
+            this.settle(key, {
+              status: "failed",
+              reason: err instanceof Failure ? err.reason : "bad-module",
+            }),
+        )
+        .finally(() => inflightChanged(-1));
       this.pending.set(key, pending);
     }
     return pending;

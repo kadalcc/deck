@@ -514,11 +514,14 @@ try {
       const d = g.getImageData(0, 0, c.width, c.height).data;
       const colours = new Set();
       let ink = 0;
+      let luma = 0;
       for (let i = 0; i < d.length; i += 16) {
         colours.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`);
         if (Math.abs(d[i] - d[0]) + Math.abs(d[i + 1] - d[1]) + Math.abs(d[i + 2] - d[2]) > 60) ink++;
+        luma += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
       }
-      return { w: c.width, h: c.height, colours: colours.size, ink: ink / (d.length / 16) };
+      const n = d.length / 16;
+      return { w: c.width, h: c.height, colours: colours.size, ink: ink / n, luma: luma / n };
     }, dataUrl);
   for (const [i, params] of [[0, {}], [1, { slide: 2, width: 320 }], [2, { slide: 1, width: 5000 }]]) {
     const t = Date.now();
@@ -534,6 +537,25 @@ try {
     );
     if (i === 0 && v) await writeFile(join(root, "examples/starter/check-output/thumbnail-0.png"), Buffer.from(v.dataUrl.split(",")[1], "base64"));
   }
+  // An `auto` deck pictured in either scheme, forced on the off-screen copy only: the screen
+  // stays as it was, and the dark picture is darker than the light one.
+  const screenBefore = await page.frameLocator("iframe").locator("html").getAttribute("data-color-scheme");
+  const pair = {};
+  for (const [i, scheme] of [[0, "dark"], [1, "light"]]) {
+    const r = await ask("export.thumbnail", { scheme }, 950 + i);
+    const v = r.ok ? r.value : null;
+    pair[scheme] = v ? { ...v, px: await inspect(v.dataUrl) } : null;
+    if (v) await writeFile(join(root, `examples/starter/check-output/thumbnail-${scheme}.png`), Buffer.from(v.dataUrl.split(",")[1], "base64"));
+  }
+  const screenAfter = await page.frameLocator("iframe").locator("html").getAttribute("data-color-scheme");
+  check(
+    "preview: export.thumbnail {scheme} pictures an auto deck in that scheme, the screen unchanged",
+    !!pair.dark && !!pair.light && pair.dark.scheme === "dark" && pair.light.scheme === "light" &&
+      pair.dark.auto === true && pair.dark.px.luma + 40 < pair.light.px.luma && screenBefore === screenAfter,
+    pair.dark && pair.light
+      ? `luma dark ${pair.dark.px.luma.toFixed(0)} / light ${pair.light.px.luma.toFixed(0)}, screen ${screenBefore}`
+      : "no picture",
+  );
   const bad = await ask("export.thumbnail", { width: "big" }, 999);
   check("preview: export.thumbnail refuses bad params", !bad.ok, bad.error ?? "");
   await placementFrame(page, deck, ask);
