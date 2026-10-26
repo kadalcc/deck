@@ -1,7 +1,7 @@
 ---
 title: Kadal Deck — the tour
 author: Kadal
-info: Every feature of the engine, on one deck. Press ? for the keys.
+info: "Build it. Rehearse it. Own the room. Kadal Deck has your back from first idea to last applause — every feature, on one deck."
 lang: en
 seoMeta:
   ogImage: auto
@@ -30,36 +30,87 @@ transitions:
 slideNumber: c/t
 defaultTiming: 45
 layout: cover
-background: mesh
-class: hero
+# The free layer every host draws; on a Pro or Team host, pro/orbit (inside the slide) covers it.
+background:
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
+class: sc-keynote
 hideInToc: true
 terms: false
 comark: true
 ---
 
+<Background name="globe" className="sc-fallback" x={0.96} y={0.78} radius={0.52} color="rgba(14,165,233,0.75)" />
+<Background name="pro/orbit" />
+
 <p className="sc-eyebrow">Kadal Deck · the tour</p>
 
-# Slides in MDX.<br />A room for the audience.
+# Build it. Rehearse it.<br /><span className="sc-lit">Own the room.</span>
 
-<Motion initial={{ opacity: 0, y: 16 }} enter={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-  <p className="sc-keys"><Kbd>→</Kbd> or <Kbd>Space</Kbd> to move · <Kbd>↓</Kbd> to go deeper · <Kbd>?</Kbd> every key · <Kbd>S</Kbd> presenter view · <Kbd>T</Kbd> theme</p>
-</Motion>
+<p className="sc-lede">Kadal Deck has your back from first idea to last applause: AI to build it, tools to rehearse it, and a live room to own it.</p>
+
+<ol className="sc-stages" aria-label="The four stages"><li>Build</li><li>Rehearse</li><li>Present</li><li>Own the room</li></ol>
 
 <Notes>
-Welcome. This is the engine's own tour: every feature it has appears on a slide, and every slide says how it was written.
+Welcome. Build it, rehearse it, own the room: this tour walks a talk from the first idea to the last applause, and every feature it shows is on a slide of its own that says how it was written.
 
-The deck is wide and deep — moving right follows the chapters, moving down opens the variations under a slide. Press ? at any time for the keys, S for the presenter view you would use on stage.
+The planet behind this slide is `pro/orbit` from the Pro library, set with `<Background name="pro/orbit" />` inside the slide. Where the library is not served — your own host, a static build, the free plan — a free wireframe globe and three glows take its place, so the cover reads everywhere. Moving right follows the chapters, moving down opens the variations under a slide. Press ? at any time for the keys.
+</Notes>
+
+---
+id: stages
+hideInToc: true
+class: sc-keynote
+background:
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
+---
+
+<p className="sc-eyebrow">From first idea to last applause</p>
+
+## Four stages, one talk
+
+<div className="sc-stage-cards">
+  <section>
+    <h3>Build it</h3>
+    <p className="sc-stage-line">Start from an idea, not a blank slide.</p>
+    <p className="sc-stage-links"><Link to="writing">Writing</Link> <Link to="code">Code</Link> <Link to="looks">Looks</Link> <Link to="pro">Pro library</Link> <Link to="motion">Movement</Link> <Link to="islands">Islands</Link></p>
+  </section>
+  <section>
+    <h3>Rehearse it</h3>
+    <p className="sc-stage-line">Practise out loud until it’s yours.</p>
+    <p className="sc-stage-links"><Link to="narration">Narration</Link> <Link to="presenter-view">Timer and pacing</Link> <Link to="presenter-view">Speaker notes</Link></p>
+  </section>
+  <section>
+    <h3>Present it</h3>
+    <p className="sc-stage-line">Walk on stage with everything at your fingertips.</p>
+    <p className="sc-stage-links"><Link to="presenter-tools">Presenter view</Link> <Link to="phone-remote">Phone remote</Link> <Link to="draw">Pen and laser</Link> <Link to="camera">Camera</Link></p>
+  </section>
+  <section>
+    <h3>Own the room</h3>
+    <p className="sc-stage-line">Keep every seat with you.</p>
+    <p className="sc-stage-links"><Link to="join">Join from a phone</Link> <Link to="poll">Polls</Link> <Link to="quiz">Quizzes</Link> <Link to="questions">Q&amp;A</Link></p>
+  </section>
+</div>
+
+<p className="sc-keys"><Kbd>→</Kbd> or <Kbd>Space</Kbd> to move · <Kbd>↓</Kbd> to go deeper · <Kbd>?</Kbd> every key · <Kbd>S</Kbd> presenter view · <Kbd>T</Kbd> theme</p>
+
+<Notes>
+The journey the tour walks, in four stages. Build it: write the deck in MDX, with code, themes, backgrounds and motion. Rehearse it: let the deck read your notes aloud and pace you with a timer. Present it: the presenter view, your phone as the clicker, a pen and a laser. Own the room: the audience joins from their phones and votes, answers and asks.
+
+Every link on a card goes to the chapter or slide that shows it — `<Link to="poll">` jumps by a slide's id. The cards are plain HTML in the MDX, styled in this deck's own stylesheet.
 </Notes>
 
 ---
 title: The tour
+id: contents
 hideInToc: true
 background:
   component: dots
   color: "rgba(100,116,139,0.28)"
 ---
 
-<p className="sc-eyebrow">Twelve chapters</p>
+<p className="sc-eyebrow">Twelve chapters, four stages</p>
 
 ## The tour
 
@@ -139,24 +190,30 @@ src: ./slides/11-components.mdx
 ---
 layout: end
 id: the-end
+class: sc-keynote
 background:
-  component: sparkles
-  color: "rgba(14,165,233,0.7)"
+  component: glows
+  colors: ["#38bdf8", "#a78bfa", "#f472b6"]
 hideInToc: true
 ---
 
-# Thanks for reading
+<Background name="globe" className="sc-fallback" x={0.96} y={0.78} radius={0.52} color="rgba(14,165,233,0.75)" />
+<Background name="pro/orbit" />
 
-<p className="sc-lede">Start a deck of your own in one command:</p>
+<p className="sc-eyebrow">That was the tour</p>
 
-<p className="sc-command"><code>npm create @kadal/deck my-talk</code></p>
+# Now go <span className="sc-lit">own the room.</span>
+
+<p className="sc-lede">Start your talk in one command, or in the builder at deck.kadal.cc.</p>
+
+<p className="sc-command"><code>npm create @kadal/deck@latest my-talk</code></p>
 
 <p className="sc-small"><a href="https://github.com/kadalcc/deck">github.com/kadalcc/deck</a> · <a href="https://deck.kadal.cc">deck.kadal.cc</a> · <Link to="1">back to the start</Link></p>
 
 <Confetti />
 
 <Notes>
-That is the whole engine. The confetti is `<Confetti />`, fired when the slide arrives.
+That is the whole engine: build it, rehearse it, own the room. The confetti is `<Confetti />`, fired when the slide arrives, and the planet is the cover's `pro/orbit` again, with the same free globe under it for hosts without the library.
 
-`npm create @kadal/deck` scaffolds a deck like this one: deck.mdx, deck.config.ts, and a Vite config — `kadal-deck dev` to write, `kadal-deck build` for any static host, `kadal-deck export` for PDF, PNG and PowerPoint.
+`npm create @kadal/deck@latest` scaffolds a deck like this one: deck.mdx, deck.config.ts, and a Vite config — `kadal-deck dev` to write, `kadal-deck build` for any static host, `kadal-deck export` for PDF, PNG and PowerPoint.
 </Notes>
