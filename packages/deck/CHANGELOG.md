@@ -1,5 +1,19 @@
 # @kadal/deck
 
+## 0.9.2
+
+### Patch Changes
+
+- e3d511f: The credits read on any slide and theme. The footer's Credits line in print and the exports sits
+  on a wash of the deck's background, so a bright picture or a background that fills in at a later
+  click can't swallow it (it measured 1.94:1 on a bright slide in dark). The Credits slide's quiet
+  text uses a quiet ink a step toward the main one, because the cards sit on a raised surface where
+  a theme's muted colour can drop under 4.5:1 (minimal, light: 4.35), and its lede ignores a theme's
+  half-opacity subtitle rule (classic: 1.96:1). Checked with `kadal-deck contrast` on minimal, folio,
+  swiss, neon, classic, terminal, crayon and brand, light and dark: 0 failing.
+- 352fd42: The print view (`?print-pdf&clicks=1`) prints a page per click step again for a deck whose every slide sets `clicks:` in its frontmatter. Such a slide reports its total from its first effect, before the print view had subscribed to the navigation store, and nothing reported it again, so each slide printed once, at click 0: `kadal-deck export` and `kadal-deck contrast` saw only the first state of every slide. The print view now reads the totals already in the store.
+- @kadal/prettier-plugin@0.9.2
+
 ## 0.9.1
 
 ### Patch Changes
