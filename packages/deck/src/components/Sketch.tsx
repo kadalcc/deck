@@ -97,7 +97,9 @@ export function Sketch({
   const idx = n && click >= range.start ? Math.min(click - range.start, n - 1) : -1;
   const step = idx >= 0 ? stepOf(steps[idx]) : { focus: null };
   const focus = step.focus;
-  const shownCaption = step.caption ?? caption;
+  // Index 0 is the sketch's own caption; i + 1 is step i's. The shown one: the step's, else its own.
+  const captions = [caption, ...steps.map((s) => stepOf(s).caption)];
+  const shownAt = idx >= 0 && step.caption != null ? idx + 1 : 0;
   const actions = useActions();
   const hints = useUi((s) => s.hints);
 
@@ -178,9 +180,22 @@ export function Sketch({
           </svg>
         </button>
       ) : null}
-      {shownCaption ? (
-        <figcaption key={idx} className="deck-sketch-caption">
-          {shownCaption}
+      {captions.some((c) => c != null) ? (
+        // Every caption sits in one cell, the current one shown: the figure is as tall as its
+        // longest caption from the first step, so a caption arriving on a click never re-fits
+        // the slide or moves what is below it.
+        <figcaption className="deck-sketch-caption">
+          {captions.map((c, i) =>
+            c == null ? null : (
+              <span
+                key={i}
+                className={i === shownAt ? "is-current" : undefined}
+                aria-hidden={i === shownAt ? undefined : true}
+              >
+                {c}
+              </span>
+            ),
+          )}
         </figcaption>
       ) : null}
     </figure>

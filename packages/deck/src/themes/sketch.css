@@ -37,20 +37,24 @@
   color: var(--deck-muted);
   text-align: center;
   max-width: 60ch;
-  animation: deck-sketch-caption 0.4s ease both;
+  /* Every caption in one cell (Sketch.tsx): the tallest sets the height from the first step. */
+  display: grid;
+}
+.deck-sketch-caption > span {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.4s ease,
+    visibility 0s linear 0.4s;
+}
+.deck-sketch-caption > span.is-current {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.4s ease;
 }
 .deck-sketch-caption strong {
   color: var(--deck-fg);
-}
-@keyframes deck-sketch-caption {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 .deck-sketch-loading,
 .deck-sketch-missing {
@@ -115,7 +119,7 @@
   .deck-sketch .sk-el {
     transition: none;
   }
-  .deck-sketch-caption {
-    animation: none;
+  .deck-sketch-caption > span {
+    transition: none;
   }
 }
