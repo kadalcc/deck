@@ -283,6 +283,12 @@ describe("lint", () => {
     expect(d).toEqual(["warning:frontmatter-unclosed:4"]);
   });
 
+  test("a pro/ layout set by defaults owns its slides' keys too", async () => {
+    const md =
+      "---\ntitle: X\ndefaults:\n  layout: pro/claim\n---\n\n# A\n\n---\nkicker: Stop 1\n---\n\n# B\n";
+    expect(await codes(md)).toEqual([]);
+  });
+
   test("a talk's date is a known headmatter key (listings sort by it)", async () => {
     expect(await codes("---\ntitle: X\ndate: 2026-10-11\n---\n\n# A\n")).toEqual([]);
   });
