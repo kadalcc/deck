@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-preact",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "The Preact renderer for Kadal Deck (@kadal/deck): Preact components as islands on a slide.",
   "keywords": [
     "kadal-deck",
@@ -61,7 +61,7 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.8.1",
+    "@kadal/deck": "^0.8.2",
     "preact": "^10.0.0 || ^11.0.0"
   }
 }

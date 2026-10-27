@@ -1,5 +1,18 @@
 # @kadal/deck
 
+## 0.8.2
+
+### Patch Changes
+
+- f8a3c75: - A print or export with a page per step draws a click-aware background at that page's step, not
+  step 0 (a frontmatter `background:`; an in-slide `<Background>` already did).
+  - `kadal-deck check` accepts a `pro/` layout's own keys when the layout comes from the
+    headmatter's `defaults.layout`, as it already did for a slide's own `layout:`.
+- c5dd044: `kadal-deck thumbnail --all` holds each deck to three minutes and moves on, reporting the one that
+  took too long, and the renderer no longer waits on a browser that died while starting. A run over a
+  whole workspace had stalled on a late deck while every deck alone took seconds.
+- @kadal/prettier-plugin@0.8.2
+
 ## 0.8.1
 
 ### Patch Changes
