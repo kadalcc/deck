@@ -69,6 +69,12 @@ export interface SlideFrameProps {
   globalLayers?: boolean;
   /** Which way the deck moved, on the slides taking part in the move (core/direction.ts). */
   navDirection?: "forward" | "backward";
+  /**
+   * Off screen on the stage: a neighbour mounted hidden, or a slide whose way out is a cut. Nothing
+   * in it takes focus or the pointer, whatever its CSS says (the base stylesheet makes it draw
+   * nothing either).
+   */
+  inert?: boolean;
   className?: string;
   style?: React.CSSProperties;
   children?: ReactNode;
@@ -232,6 +238,7 @@ export function SlideFrame({
   layers,
   globalLayers = false,
   navDirection,
+  inert = false,
   className,
   style,
   children,
@@ -484,6 +491,7 @@ export function SlideFrame({
         data-nav-direction={navDirection}
         data-color-scheme={colorScheme ?? undefined}
         aria-hidden={active ? undefined : true}
+        inert={inert || undefined}
         style={{ ...style, ...(options.zoom !== 1 ? { zoom: options.zoom } : null) }}
       >
         {layer("global-bottom")}

@@ -606,6 +606,106 @@ await step("transitions: a click never replays the entrance; cuts and view trans
   await context.close();
 });
 
+/*
+ * The stage keeps the slides around the current one mounted and hidden. Hidden by `visibility`
+ * alone, a child styled `visibility: visible` showed anyway, over the current slide: a Pro item's
+ * dialogue drew lines from three slides away. Here every element of every slide not on show
+ * insists on showing and on taking the pointer, through every transition in the deck and again
+ * with reduced motion; none of it may be visible, and none of those slides may take focus.
+ */
+await step("hidden slides: nothing on a slide off screen paints, whatever its CSS says", async () => {
+  const { page, context, take } = await openPage();
+  const LEAK = ".deck-slide:not(.is-present) * { visibility: visible !important; pointer-events: auto !important; }";
+  const leaks = () =>
+    page.evaluate(() => {
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const found = [];
+      for (const slide of document.querySelectorAll(".deck-stage > .deck-slide:not(.is-present)")) {
+        const stage = slide.parentElement;
+        const cut = reduced || [stage.dataset.transitionOut, stage.dataset.transition].some((t) => t === "none" || t === "view-transition");
+        // The slide just left is on show while it animates out, unless its way out is a cut.
+        if (slide.classList.contains("is-leaving") && !cut) continue;
+        const where = `${slide.dataset.id} (${[...slide.classList].filter((c) => c.startsWith("is-")).join(" ")})`;
+        if (!slide.inert) found.push(`${where} is not inert`);
+        const shown = [...slide.querySelectorAll("*")].find((el) => {
+          if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        if (shown) found.push(`${where}: <${shown.tagName.toLowerCase()}> “${(shown.textContent ?? "").trim().slice(0, 30)}” is visible`);
+      }
+      return found;
+    });
+  const seen = new Set();
+  const transitions = new Set();
+  const sample = async (at) => {
+    transitions.add(await page.evaluate(() => document.querySelector(".deck-stage")?.dataset.transition ?? ""));
+    for (const l of await leaks()) if (!seen.has(l)) seen.add(l) && expect(false, `${at}: ${l}`);
+  };
+  /** Slide by slide (down a stack, then right), sampled mid-transition and once it is over. */
+  const walk = async (until) => {
+    let steps = 0;
+    for (let i = 0; i < 400; i++) {
+      const s = await nav(page);
+      const key = `${s.h}/${s.v}`;
+      await sample(key);
+      if (until?.(s)) break;
+      await page.keyboard.press("Shift+ArrowRight");
+      const moved = await page
+        .waitForFunction((k) => { const n = window.__deck.nav.get(); return `${n.h}/${n.v}` !== k; }, key, { timeout: 2000 })
+        .then(() => true, () => false);
+      if (!moved) break;
+      steps++;
+      await sample(`${key} → mid-transition`);
+      await page.waitForTimeout(150);
+      await sample(`${key} → mid-transition`);
+      await page.waitForFunction(() => !document.querySelector(".deck-stage > .deck-slide.is-leaving"), null, { timeout: 2500 }).catch(() => {});
+    }
+    return steps;
+  };
+  await page.goto(`${base}#/0`);
+  await ready(page);
+  await page.addStyleTag({ content: LEAK });
+  const steps = await walk();
+  note(`${steps} moves; transitions seen: ${[...transitions].filter(Boolean).sort().join(" ")}`);
+  // Reduced motion: no crossfade, so the slide that left is hidden at once too.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const motion = at("motion");
+  const end = at("auto-slide");
+  await page.evaluate(({ h, v }) => window.__deck.actions.goto(h, v, 0), motion);
+  await page.waitForTimeout(600);
+  const reducedSteps = await walk((s) => s.h >= end.h - 1);
+  note(`reduced motion: ${reducedSteps} moves through the motion chapter`);
+  for (const p of take()) expect(false, p);
+  await context.close();
+
+  // Where slides are meant to be seen side by side, they still are: the overview, the presenter's
+  // next slide, print pages and the scroll view.
+  const views = [
+    { name: "overview", url: `${base}#/1`, then: (p) => p.keyboard.press("KeyO"), sel: ".deck-overview .deck-slide.is-tile" },
+    { name: "presenter next slide", url: `${base}presenter#/1`, sel: ".deck-presenter-next .deck-slide" },
+    { name: "print", url: `${base}?print-pdf`, sel: ".deck-slide.is-print" },
+    { name: "scroll view", url: `${base}?view=scroll`, sel: ".deck-slide.is-scroll" },
+  ];
+  for (const v of views) {
+    const { page, context } = await openPage();
+    await page.goto(v.url);
+    if (v.then) {
+      await ready(page);
+      await v.then(page);
+    }
+    await page.waitForSelector(v.sel, { timeout: 30_000 });
+    await page.waitForTimeout(800);
+    const r = await page.evaluate((sel) => {
+      const slides = [...document.querySelectorAll(sel)].slice(0, 6);
+      const shown = slides.filter((s) => [...s.querySelectorAll("h1, h2, p")].some((e) => e.checkVisibility({ opacityProperty: true, visibilityProperty: true })));
+      return { n: slides.length, shown: shown.length };
+    }, v.sel);
+    expect(r.n > 0 && r.shown === r.n, `${v.name}: ${r.shown} of ${r.n} slides show their words`);
+    await context.close();
+  }
+});
+
 // ── 6 · addresses ──────────────────────────────────────────────────────────
 await step("links: #/h/v/click, #/id, ?at", async () => {
   const { page, context, take } = await openPage();
