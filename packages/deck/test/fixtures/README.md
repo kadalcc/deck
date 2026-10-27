@@ -13,3 +13,9 @@ them by path (`theme: ../path/to/kadal-theme-fixture`) or copied into its node_m
 
 `slidev/` holds Slidev decks the importer (`kadal-deck import slidev`, src/import/) is tested
 against; its README says where each came from.
+
+`reveal/demo/` is a reveal.js deck for `kadal-deck import reveal` (src/import/reveal.test.ts and
+src/cli/import.test.ts): written for these tests after reveal.js's own demo page — every slide
+kind the converter handles (stacks, fragment styles and indexes, background colour, gradient,
+image, video and iframe, notes, auto-animate, stepped code, inline and external Markdown, a table,
+maths, a script handler to report) — with no reveal.js files of its own.
