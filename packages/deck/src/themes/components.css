@@ -590,6 +590,12 @@
 .deck-meme.is-print .deck-meme-credit {
   opacity: 1;
 }
+/* A theme's link colour (`.theme-<t> .deck-slide a`, often its ink) would win over the chip's
+   white on its dark glass. */
+.deck-slide .deck-meme > a.deck-meme-credit,
+.deck-slide .deck-meme > a.deck-meme-credit:visited {
+  color: #fff;
+}
 @media print {
   .deck-meme-credit {
     opacity: 1;

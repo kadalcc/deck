@@ -286,12 +286,17 @@ const collect = (): Collected => {
         if (h.offsetWidth > 0) k = r.width / h.offsetWidth;
         else if (h.offsetHeight > 0) k = r.height / h.offsetHeight;
       }
-      // A map or chart label's halo (`paint-order: stroke` and a stroke of 3px or more): the
-      // glyph's own background, whatever the map does behind it.
+      // A halo (`paint-order: stroke` and a stroke of 3px or more) is the glyph's own background,
+      // whatever is drawn behind it: a map or chart label's SVG stroke, or a meme caption's
+      // `-webkit-text-stroke` (white Anton outlined in black reads on any picture).
       let halo: string | null = null;
-      if (svg && cs.paintOrder.startsWith("stroke") && /^(rgb|color|#|ok|lab|lch|hsl)/.test(cs.stroke)) {
-        const sw = ((parseFloat(cs.strokeWidth) || 0) * k) / scale;
-        if (sw >= 3) halo = cs.stroke;
+      const solid = (c: string) => /^(rgb|color|#|ok|lab|lch|hsl)/.test(c) && !clear(c);
+      if (cs.paintOrder.startsWith("stroke")) {
+        const [sc, sw] = svg
+          ? [cs.stroke, parseFloat(cs.strokeWidth) || 0]
+          : [cs.webkitTextStrokeColor, parseFloat(cs.webkitTextStrokeWidth || "0")];
+        // A stroke standing in for a clear fill is the text itself, not its halo.
+        if (solid(sc) && sc !== color && (sw * k) / scale >= 3) halo = sc;
       }
       runs.push({
         page: pi,
