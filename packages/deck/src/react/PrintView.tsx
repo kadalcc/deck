@@ -166,7 +166,10 @@ export function PrintView({
               active={false}
               click={p.click}
               preview
-              reportTotal={!separate || p.click === 0}
+              // The slide's first page, not its click-0 one: a `clicksStart` slide's first page
+              // moves to its start as soon as a total is known, and a click-0 reporter went with
+              // it, leaving the total at the start (one page) before its clicks had registered.
+              reportTotal={p.first}
               globalLayers
               // A page per step shows each step as it is; one page per slide shows everything.
               className={separate ? "is-print" : "is-print is-print-all"}
