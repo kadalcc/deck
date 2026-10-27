@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-swiss",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Swiss, a theme for Kadal Deck (@kadal/deck). A bold International-style theme for design talks: huge grotesk headings on a strict twelve-column grid, one signal colour.",
   "keywords": [
     "kadal-theme",
@@ -91,7 +91,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.8.2",
+    "@kadal/deck": "^0.8.3",
     "react": "^19.2.0"
   },
   "devDependencies": {
