@@ -1,5 +1,18 @@
 # @kadal/deck
 
+## 0.9.1
+
+### Patch Changes
+
+- 2ef85a1: `kadal-deck contrast` counts a heavy text outline as the text's own background, as it already did
+  for SVG labels: `paint-order: stroke` with a `-webkit-text-stroke` of 3px or more. Classic meme
+  captions (white Anton outlined in black) no longer fail on light templates; they read on any
+  picture. The meme template credit chip keeps its white text under a theme's link colour (it read
+  2.65:1 on the minimal theme).
+- dfac505: The tour moved to the Kadal workspace: every README now links https://decks.kadal.cc/@kadal-hq/tour/
+  (the old @pmithunish/tour address redirects there, slide position kept).
+- @kadal/prettier-plugin@0.9.1
+
 ## 0.9.0
 
 ### Minor Changes
