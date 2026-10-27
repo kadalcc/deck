@@ -111,6 +111,10 @@ layout: section
 - Fun media: `<Sticker src x y size />` (over the slide, draggable in dev), `<Emoji name="party-popper" />`,
   `<Gif provider="klipy" src title />` (hot-linked; exports show a link card), `<Meme src captions />` —
   see "Stickers, emoji, GIFs and memes" in references/authoring.md.
+- Find media instead of guessing URLs: `npx kadal-deck media search <icon|emoji|sticker|gif|meme|template|kadal> <words>`
+  (MCP `media_search` / `media_trending`) and paste the result's `mdx` unchanged; after a KLIPY one,
+  `media used klipy <id>` (MCP `media_used`). `credits: true` in the headmatter adds a Credits slide
+  and a corner link to it — the credits are automatic.
 
 ## Reference (load when needed)
 

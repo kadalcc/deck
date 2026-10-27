@@ -71,6 +71,28 @@ describe("compileDeck", () => {
   });
 });
 
+describe("credits in the hosted shell's compile", () => {
+  test("credits: true adds the slide before the last and resolves the list into the headmatter", async () => {
+    const out = await compileDeck(
+      [
+        "---\ncredits: true\n---\n\n# Hi",
+        '<Gif provider="klipy" slug="a" src="https://static.klipy.com/a.webp" title="A wave" />',
+        "# Thanks",
+      ].join("\n\n---\n\n"),
+    );
+    expect(out.ok).toBe(true);
+    expect(out.manifest.slides.map((s) => s.id)).toEqual(["s0", "s1", "credits", "s3"]);
+    expect(out.manifest.slides[2]!.title).toBe("Credits");
+    expect(out.manifest.slides[2]!.frontmatter.generated).toBe("credits");
+    const credits = out.manifest.headmatter.credits as {
+      at: string;
+      groups: Array<{ id: string }>;
+    };
+    expect(credits.at).toBe("credits");
+    expect(credits.groups.map((g) => g.id)).toEqual(["klipy"]);
+  });
+});
+
 describe("settings without their closing ---", () => {
   test("are reported as a warning on the slide, and the deck still compiles", async () => {
     const out = await compileDeck(`# One\n\n---\nbackground: spotlight\n\n## Two\n`);

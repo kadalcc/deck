@@ -52,6 +52,7 @@ export {
   type MemeTemplate,
   type StickerProps,
 } from "./media.tsx";
+export { Credits, type CreditsProps } from "../credits/Credits.tsx";
 export { FlipBoard } from "./FlipBoard.tsx";
 export { BlueSky } from "./BlueSky.tsx";
 export { Case, Switch } from "./Switch.tsx";

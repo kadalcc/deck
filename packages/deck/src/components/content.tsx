@@ -316,6 +316,10 @@ export function Image({
   preview,
   fit,
   className,
+  credit,
+  creditUrl: _creditUrl,
+  license: _license,
+  licenseUrl: _licenseUrl,
   ...rest
 }: {
   src?: string;
@@ -323,6 +327,13 @@ export function Image({
   preview?: boolean | string;
   fit?: string;
   className?: string;
+  /** Who to thank ("“Harbour at dawn” by Ana Ruiz"): listed by `<Credits />`, the title on hover. */
+  credit?: string;
+  /** The work's page, for the credit's link. */
+  creditUrl?: string;
+  /** Its licence ("CC BY 2.0"), for the credits. */
+  license?: string;
+  licenseUrl?: string;
   [key: string]: unknown;
 }) {
   const previewSrc = typeof preview === "string" ? preview : preview ? src : undefined;
@@ -335,6 +346,7 @@ export function Image({
       className={["deck-image", className].filter(Boolean).join(" ")}
       data-preview-image={previewSrc}
       data-preview-fit={fit}
+      title={typeof credit === "string" && credit ? credit : undefined}
       {...rest}
     />
   );

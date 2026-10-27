@@ -26,6 +26,7 @@
  *   kadal-deck publish [--slug s] [--workspace handle] [--title t]
  *   kadal-deck pull | status | resolve    two-way sync with the web's quick edits (cli/sync.ts)
  *   kadal-deck media list | add <id|name>  the workspace's uploaded stickers and images (cli/media.ts)
+ *   kadal-deck media search | trending | used   icons, emoji, stickers, GIFs, memes, templates, Kadal
  *   kadal-deck narrate [--voice v]        bake the notes as speech (Kokoro) into public/narration/
  *   kadal-deck mcp                        a Model Context Protocol server on stdio, for AI agents
  *
@@ -124,7 +125,11 @@ export const HELP = `kadal-deck <command> [options]
   login       sign in to a Kadal Deck host (opens the browser)   --host <url> --workspace <handle>
   logout      forget the saved token on this machine
   whoami      show the signed-in account and workspace
-  media       the workspace's media library: media list [--kind k] [--q text]
+  media       find media to put in a slide, each with its MDX and credit (the builder's sources):
+              media search <kind> <query> | media trending <kind>   --limit <n per source> --set <emoji set>
+              kinds: icon emoji sticker gif meme template kadal; KLIPY (gif/sticker/meme) needs login
+              media used klipy <id> [--q query]  tell KLIPY a result went into a deck
+              the workspace's media library: media list [--kind k] [--q text]
               media add <id|name> [--to public/stickers/] [--force]  download one into the project
   publish     build and publish the deck; prints its URL
               --slug <slug>  --workspace <handle>  --title <title>  --host <url>
@@ -266,6 +271,8 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
   },
   mcp: { "allow-outside": { kind: "boolean" } },
   media: {
+    limit: { kind: "number" },
+    set: { kind: "string" },
     kind: { kind: "string" },
     q: { kind: "string" },
     to: { kind: "string" },
@@ -1046,7 +1053,12 @@ async function screenshot(
     await mkdir(out, { recursive: true });
     const files: Array<{ slide: number; path: string; width: number; height: number }> = [];
     for (const s of result.shots) {
-      const path = join(out, `slide-${String(s.index + 1).padStart(3, "0")}.png`);
+      const path = join(
+        out,
+        s.generated
+          ? `slide-${s.generated}.png`
+          : `slide-${String(s.index + 1).padStart(3, "0")}.png`,
+      );
       await writeFile(path, s.png);
       files.push({ slide: s.index + 1, path, width: s.width, height: s.height });
       if (!json) say(`png    ${path}`);

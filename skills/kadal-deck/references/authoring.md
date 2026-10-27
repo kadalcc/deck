@@ -173,6 +173,47 @@ Ship it <Emoji name="party-popper" /> — or exactly: <Emoji char="👍🏽" set
 - The workspace's uploaded stickers: `kadal-deck media list`, then `kadal-deck media add <name>`
   (downloads into `public/stickers/` and prints the `<Sticker>` line).
 
+### Finding media (CLI and MCP)
+
+Don't guess URLs or slugs: search, then paste the result's `mdx` unchanged (edit only caption
+text, `size`, `x`/`y`). It is exactly what the hosted builder's Insert media panel writes.
+
+```sh
+npx kadal-deck media search sticker "ship it"      # Kadal's stickers, KLIPY's, emoji as stickers
+npx kadal-deck media search icon rocket --limit 5  # Iconify, free licences only
+npx kadal-deck media search emoji party --set twemoji
+npx kadal-deck media trending gif                  # Kadal's GIF loops, then KLIPY's trending
+npx kadal-deck media search template drake --json  # <Meme> with the template's caption boxes
+npx kadal-deck media used klipy gifs/<slug>        # after inserting a KLIPY result
+```
+
+Kinds: `icon`, `emoji`, `sticker`, `gif`, `meme` (KLIPY's finished memes), `template` (Kadal's and
+Imgflip's, with captions placed), `kadal` (Kadal's own library). MCP: `media_search`,
+`media_trending`, `media_used` — same results. Each result: `title`, `provider`, `id`, `preview`,
+`width`/`height`, `attribution`, `mdx`.
+
+- KLIPY (GIFs, stickers, memes) needs `kadal-deck login`; signed out, the other sources answer and
+  the output says KLIPY was skipped. Its results stay in KLIPY's order; report each one you insert
+  (`media used` / `media_used`; the MCP edit tools do it for results they saw).
+- Kadal's own items (`provider="kadal"`) are ours to print: exports draw them, where a KLIPY GIF
+  gets a link card. Prefer them when one fits.
+- Keep one emoji set per deck.
+
+### Credits
+
+```yaml
+credits: true          # or { slide: end, footer: false, title: "Thanks to" }
+```
+
+Every attributed item the slides use — `<Gif>`, `<Sticker>`, `<Meme>` templates (and Anton, their
+font), `<Emoji>` sets, `<Icon>` sets, Kadal items, and `<Image credit="…" creditUrl license>` —
+is collected when the deck compiles and listed on a "Credits" slide (`id: credits`) inserted
+before the last slide (at the end with `slide: end`, or in a one-slide deck), grouped by source
+with licences and links. Every other slide gets a small "Credits" link at its bottom centre,
+outside the layout (nothing moves; in print it is a line naming the page). Place `<Credits />` on
+a slide yourself to put the list there instead. `slide_render` with `"credits"` (MCP) draws the
+generated slide; `kadal-deck screenshot` saves it as `slide-credits.png`.
+
 ## Look and feel
 
 - Themes: `theme: minimal | rla | stack` in the headmatter, or a package — `theme: seriph` finds

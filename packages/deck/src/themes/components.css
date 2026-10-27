@@ -598,3 +598,174 @@
     display: none;
   }
 }
+
+/* ── Credits (credits/Credits.tsx): the slide, and the corner link to it ───────────────────── */
+.deck-credits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  width: 100%;
+  text-align: left;
+}
+.deck-credits-title {
+  margin: 0;
+}
+.deck-credits-lede {
+  margin: 0 0 0.35em;
+  color: var(--deck-muted);
+  font-size: 0.8em;
+}
+.deck-credits-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5em), 1fr));
+  gap: 0.6em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.62em;
+  line-height: 1.35;
+}
+.deck-credits-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  margin: 0;
+  padding: 0.85em 1em 0.9em;
+  border: 1px solid var(--deck-border, rgba(127, 127, 127, 0.25));
+  border-radius: 0.7em;
+  background: var(--deck-surface, transparent);
+  break-inside: avoid;
+}
+.deck-credits-group::before,
+.deck-credits-items > li::before {
+  content: none;
+}
+.deck-credits-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25em 0.6em;
+}
+.deck-credits-name {
+  font-weight: 700;
+  font-size: 1.08em;
+  color: var(--deck-fg);
+}
+.deck-slide a.deck-credits-name,
+.deck-slide .deck-credits a {
+  color: var(--deck-fg);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklab, var(--deck-fg) 22%, transparent);
+}
+.deck-slide .deck-credits a:hover,
+.deck-slide .deck-credits a:focus-visible {
+  border-bottom-color: var(--deck-accent);
+}
+.deck-slide .deck-credits a.deck-credits-licence,
+.deck-credits-licence {
+  flex: none;
+  padding: 0.12em 0.55em;
+  border: 1px solid color-mix(in oklab, var(--deck-accent) 45%, transparent);
+  border-radius: 999px;
+  color: var(--deck-fg);
+  font-size: 0.82em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.deck-credits-by,
+.deck-credits-count,
+.deck-credits-notice {
+  margin: 0;
+  color: var(--deck-muted);
+}
+.deck-credits-notice {
+  font-size: 0.9em;
+}
+.deck-credits-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15em 0.9em;
+  margin: 0.1em 0 0;
+  padding: 0;
+  list-style: none;
+}
+.deck-credits-items > li {
+  margin: 0;
+  padding: 0;
+}
+.deck-credits-item-by,
+.deck-credits-more {
+  color: var(--deck-muted);
+}
+
+/* The slide's own list and paragraph spacing is not the cards'. */
+.deck-slide .deck-credits-groups,
+.deck-slide .deck-credits-items {
+  padding-inline-start: 0;
+}
+.deck-slide .deck-credits-groups,
+.deck-slide .deck-credits-group,
+.deck-slide .deck-credits-items > li,
+.deck-slide .deck-credits p {
+  margin: 0;
+}
+.deck-slide .deck-credits-lede {
+  margin-bottom: 0.35em;
+}
+
+/* Bottom centre: the play view's own controls sit in the bottom corners (the theme and sidebar
+   buttons left, the arrows right) and the free-plan mark top right. */
+.deck-credits-link {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  bottom: calc(var(--deck-base-size, 32px) * 0.45);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.38em 0.75em 0.38em 0.6em;
+  border-radius: 999px;
+  font: 500 calc(var(--deck-base-size, 32px) * 0.42) / 1
+    var(--deck-body-font, system-ui, sans-serif);
+  letter-spacing: 0.01em;
+  /* The deck's own text on a near-solid wash of its background: readable on any slide. */
+  color: var(--deck-fg);
+  background: color-mix(in oklab, var(--deck-bg) 88%, transparent);
+  border: 1px solid color-mix(in oklab, var(--deck-fg) 16%, transparent);
+  text-decoration: none;
+  opacity: 0.82;
+  pointer-events: auto;
+  transition: opacity 0.15s;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.deck-slide a.deck-credits-link,
+.deck-slide a.deck-credits-link:hover {
+  color: var(--deck-fg);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklab, var(--deck-fg) 16%, transparent);
+}
+.deck-credits-link:hover,
+.deck-credits-link:focus-visible {
+  opacity: 1;
+}
+.deck-credits-link:focus-visible {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+.deck-credits-link svg {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+}
+/* In print and the exports: a quiet line that says where the credits are. */
+.deck-credits-link.is-print {
+  font-size: calc(var(--deck-base-size, 32px) * 0.44);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--deck-muted);
+  opacity: 1;
+}

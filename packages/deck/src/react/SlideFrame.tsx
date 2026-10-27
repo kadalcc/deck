@@ -21,6 +21,7 @@ import { PremiumNotice, usePremiumItem } from "./premium.tsx";
 import { isPremiumName } from "../core/premium.ts";
 import { MDXProvider } from "./mdx.tsx";
 import { Watermark } from "./Watermark.tsx";
+import { CreditsLink } from "../credits/Credits.tsx";
 
 /**
  * One mounted slide: loads its module lazily, gives it a click registry, wraps it in its layout,
@@ -472,6 +473,10 @@ export function SlideFrame({
         data-h={h}
         data-v={v}
         data-index={meta.index}
+        // A slide the compiler made (the credits): tools that count authored slides skip it.
+        data-generated={
+          typeof meta.frontmatter.generated === "string" ? meta.frontmatter.generated : undefined
+        }
         data-id={meta.id}
         data-layout={options.layout}
         data-active={active ? "true" : undefined}
@@ -528,6 +533,14 @@ export function SlideFrame({
         ) : null}
         {children}
         {deck.config.badge ? <Watermark /> : null}
+        {/* Out of the layout like the watermark: the link to the credits slide moves nothing. */}
+        {deck.config.credits &&
+        (!preview ||
+          deck.mode === "print" ||
+          deck.mode === "export" ||
+          deck.mode === "audience") ? (
+          <CreditsLink slideId={meta.id} />
+        ) : null}
       </section>
     </SlideContext.Provider>
   );
