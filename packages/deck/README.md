@@ -42,6 +42,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | --- | --- |
 | `kadal-deck new <dir> [--title t] [--no-install] [--pm npm\|pnpm\|yarn\|bun] [--ci host]` | a deck from the starter, no questions asked; `--ci` adds a host's deploy files |
 | `kadal-deck import slidev <slides.md \| folder> [--out dir] [--force] [--install]` | a Kadal deck from a Slidev one, with `IMPORT-REPORT.md` for what did not carry over; see [Coming from Slidev](#coming-from-slidev) |
+| `kadal-deck import reveal <index.html \| folder> [--out dir] [--force] [--install]` | a Kadal deck from a reveal.js one, the same way; see [Coming from reveal.js](#coming-from-revealjs) |
 | `kadal-deck dev [--https] [--tunnel] [--remote [password]]` | Vite dev server for the deck in this folder, with the [side editor](#editors) (E). `--tunnel`: on the internet through a Cloudflare Quick Tunnel (needs `cloudflared`), with a QR in the terminal and the phone remote pairing through it; `--remote [password]`: on the network, the presenter and editing behind the password (a tunnel always has one) |
 | `kadal-deck build [deck files…] [--base /path/] [--out dir] [--without-notes] [--download] [--pwa] [--bundle-remote-assets]` | `dist/` for any static host; several deck files build into folders; `--without-notes` leaves the speaker notes out; `--download` (or `download: true`) also prints `dist/deck.pdf` for the deck's Download button. See [Build and host](#build-and-host) |
 | `kadal-deck serve [folder] [--port n] [--host addr] [--base /path/]` | serve a build as a static host would (routes, Range, cache headers), for checking it or a container |
@@ -96,6 +97,38 @@ over stays in the slide as an MDX comment and gets a line in `IMPORT-REPORT.md`.
 Slidev project is run. The converter itself is a pure function, `convertSlidev` in
 `@kadal/deck/import`, for tools and pages that want it.
 
+## Coming from reveal.js
+
+Kadal took reveal.js's model and names — sections, vertical stacks, fragments, `data-background-*`,
+auto-animate, and options like `controls`, `hash`, `slideNumber` and `transition` — so a reveal.js
+deck converts closely:
+
+```sh
+npx kadal-deck import reveal ./my-reveal-talk          # index.html → ./my-reveal-talk-kadal
+cd my-reveal-talk-kadal && npm install && npm run dev
+```
+
+Each `<section>` becomes a slide and a section of sections a vertical stack (`----`). Plain HTML
+becomes Markdown (so it can be retyped in place); elements with attributes Markdown cannot hold
+(`data-id`, `style`, classes) stay as JSX, spelt for React. `class="fragment"` becomes `<Click>`,
+its style the `effect` (reveal's fragment styles and Kadal's click effects share their names) and
+`data-fragment-index` an absolute `at`, ordered as reveal.js orders them; a list whose every item
+is a fragment becomes a `<Clicks>` list. `data-background-color`, `-image`, `-video`, `-gradient`
+and `-iframe`, with their size, position, opacity, loop and muted, become background frontmatter
+(a dark colour gets `colorScheme: dark`, as reveal's `has-dark-background` does);
+`data-transition`, `data-auto-animate` (Kadal's own `autoAnimate`, matching by text or `data-id`),
+`data-autoslide`, `data-state`, `data-visibility` and `id` keep their keys. `<aside
+class="notes">` and `data-notes` become `<Notes>`. Code blocks keep their language, and
+`data-line-numbers="1|2-3"` becomes the fence's `{1|2-3}{lines:true}`. `data-markdown` sections
+(inline or a file) pass through as Markdown, split on their separators, with `<!-- .slide: -->`
+read as frontmatter, `<!-- .element: class="fragment" -->` as a `<Click>`, `Note:` as notes and
+```` ```js [1|3] ```` as Kadal's steps. `\( … \)` maths becomes `$ … $`. `Reveal.initialize`'s
+literal options become headmatter; inline lengths are scaled from reveal's 960×700 to Kadal's
+1920×1080; the theme becomes Kadal's minimal in the matching scheme. Local images and media are
+copied into `public/`, the page's own CSS into `src/reveal.css`. Scripts and `on*` handlers are
+reported, never run. `IMPORT-REPORT.md` lists the rest, slide by slide. The converter is
+`convertReveal` in `@kadal/deck/import`.
+
 ## For AI agents and tools
 
 - `kadal-deck mcp` — 24 tools to read the reference, scaffold, outline, edit single slides (only
@@ -127,6 +160,15 @@ Slidev project is run. The converter itself is a pure function, `convertSlidev` 
   overwrite, and the deck shows the change. The panel is resizable, the slide shrinks beside it,
   and unsaved text survives a reload. CodeMirror is loaded only by the dev server; a build has
   none of it.
+- **Editing on the slide** (the web builder's preview, `@kadal/deck-shell` in `?preview`):
+  double-click a heading, paragraph, list item or table cell that is one plain run of the source
+  and retype it; Enter saves, Esc puts it back. <kbd>Cmd/Ctrl+B</kbd> and <kbd>I</kbd> make the
+  selection `**bold**` and `_italic_`, <kbd>Cmd/Ctrl+K</kbd> asks for an address under the text
+  and makes it `[a link](url)`; the same shortcut takes a mark off, <kbd>Cmd/Ctrl+Z</kbd> takes
+  the last one back, and the source gets the Markdown when you save (an editor turns this on with
+  `{type:"edit", on:true, marks:true}`; `markdownWithMarks` in `@kadal/deck/runtime` spells it).
+  Once formatted, the text is Markdown with markup in it, so it is edited in the source from then
+  on.
 - **VS Code** (`packages/vscode`, "Kadal Deck"): a Slides outline you can drag to reorder, a
   preview that follows the cursor, frontmatter and component IntelliSense from the catalog,
   `check` as problems, formatting, and dev/presenter/export commands.

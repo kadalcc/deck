@@ -169,8 +169,9 @@ npx kadal-deck publish    # a URL on deck.kadal.cc with a live room (free plan)
 ```
 
 Rather not install anything? Write it in the [builder](https://deck.kadal.cc/app/build) on
-deck.kadal.cc. Already have a Slidev deck? `npx kadal-deck import slidev slides.md` converts it and
-writes a report of anything that didn't carry over.
+deck.kadal.cc. Already have a Slidev or reveal.js deck? `npx kadal-deck import slidev slides.md` or
+`npx kadal-deck import reveal index.html` converts it and writes a report of anything that didn't
+carry over.
 
 ## Everything in the engine
 

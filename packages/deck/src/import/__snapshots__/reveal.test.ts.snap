@@ -1,0 +1,284 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`golden: a reveal.js demo deck converts, compiles in the runtime compiler, and reports what it should 1`] = `
+"---
+backgroundColor: "#0f172a"
+transition: slide
+title: reveal.js – The HTML Presentation Framework
+theme: minimal
+colorScheme: dark
+hash: true
+controls: true
+progress: true
+center: true
+slideNumber: c/t
+---
+
+# reveal.js
+
+### The HTML Presentation Framework
+
+<p className="tagline"><small>Created by [Hakim El Hattab](https://hakim.se) and [contributors](https://github.com/hakimel/reveal.js/graphs/contributors)</small></p>
+
+<Notes>
+
+Welcome everyone. This deck is a **tour** of what reveal.js does.
+
+</Notes>
+
+---
+
+## Hello There
+
+reveal.js enables you to create beautiful interactive slide decks using HTML. This presentation will show you examples of what it can do.
+
+---
+
+## Vertical Slides
+
+Slides can be nested inside of each other.
+
+Use the _Space_ key to navigate through all slides.
+
+----
+backgroundGradient: "linear-gradient(to bottom, #283b95, #17b2c3)"
+---
+
+## Basement Level 1
+
+Nested slides are useful for adding additional detail underneath a high level horizontal slide.
+
+----
+backgroundImage: /assets/wave.svg
+backgroundSize: cover
+backgroundOpacity: 0.5
+---
+
+## Basement Level 2
+
+That's it, time to go back up.
+
+---
+
+## Fragments
+
+Hit the next arrow...
+
+<Click>
+
+... to step through ...
+
+</Click>
+
+<Click as="span">... a</Click> <Click as="span">fragmented</Click> <Click as="span">slide.</Click>
+
+---
+
+## Fragment Styles
+
+There's different types of fragments, like:
+
+<Click effect="grow">
+
+grow
+
+</Click>
+
+<Click effect="shrink">
+
+shrink
+
+</Click>
+
+<Click effect="fade-out">
+
+fade-out
+
+</Click>
+
+<Click effect="fade-up">
+
+fade-up (also down, left and right!)
+
+</Click>
+
+<Click effect="highlight-red">
+
+highlight-red
+
+</Click>
+
+<Click effect="highlight-blue">
+
+highlight-blue
+
+</Click>
+
+---
+
+## Fragment Order
+
+- <Click as="span" at={3}>Appears last</Click>
+- <Click as="span" at={1}>Appears first</Click>
+- <Click as="span" at={2}>Appears second</Click>
+
+---
+
+## Point by point
+
+<Clicks>
+
+- Write it in HTML
+- Present it in the browser
+- Share a link
+
+</Clicks>
+
+---
+autoAnimate: true
+---
+
+<h2 data-id="code-title">Auto-Animate</h2>
+
+Matching elements animate between slides.
+
+---
+autoAnimate: true
+---
+
+<h2 data-id="code-title" style={{"marginTop":"200px","color":"red"}}>Auto-Animate</h2>
+
+Matching elements animate between slides.
+
+And new ones fade in.
+
+---
+
+## Pretty Code
+
+\`\`\`javascript {1|4-8}{lines:true}
+import React, { useState } from 'react';
+
+function Example() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <button onClick={() => setCount(count + 1)}>Clicked {count} times</button>
+  );
+}
+\`\`\`
+
+Code syntax highlighting courtesy of [highlight.js](https://highlightjs.org/usage/).
+
+---
+
+## Markdown support
+
+Write content using inline or external Markdown.
+
+- **Bold** and _italic_ text
+- <Click as="span">A [link](https://revealjs.com)</Click>
+- Inline \`code\`
+
+<Notes>
+
+These notes are written in Markdown.
+
+</Notes>
+
+---
+
+## External Markdown
+
+Slides can live in a Markdown file of their own.
+
+- Loaded with \`data-markdown="assets/notes.md"\`
+- Split on a line of three dashes
+
+<Notes>
+
+These notes come from the external file.
+
+</Notes>
+
+---
+
+## A second external slide
+
+\`\`\`js {1|3-4}{lines:true}
+const deck = await load("notes.md");
+
+deck.slides.forEach((slide) => {
+  render(slide);
+});
+\`\`\`
+
+---
+backgroundColor: "#ff6347"
+---
+
+## Inline slide one
+
+
+Separated by three blank lines.
+
+---
+
+## Inline slide two
+
+With a vertical one beneath.
+
+----
+
+## Inline vertical
+<div className="callout-box">Raw HTML in Markdown</div>
+
+---
+backgroundVideo: https://static.slid.es/site/homepage/v1/homepage-video-editor.mp4
+backgroundVideoLoop: true
+backgroundVideoMuted: true
+---
+
+## Video Backgrounds
+
+---
+
+## Tabular Tables
+
+| Item | Value | Quantity |
+| --- | --- | --- |
+| Apples | \\$1 | 7 |
+| Lemonade | \\$2 | 18 |
+
+---
+
+## Clever Quotes
+
+> “For years there has been a theory that millions of monkeys typing at random on millions of typewriters would reproduce the entire works of Shakespeare.”
+
+The math: $e^{i\\pi} + 1 = 0$
+
+---
+backgroundIframe: https://hakim.se
+backgroundInteractive: true
+---
+
+<div style={{"position":"absolute","width":"40%","right":"0","background":"rgba(0,0,0,0.9)","padding":"40px","fontSize":"40px"}}>
+
+## Iframe Backgrounds
+
+Since reveal.js runs on the web, you can easily embed other web content.
+
+</div>
+
+---
+state: finale
+---
+
+# THE END
+
+\\- [Try the online editor](https://revealjs.com) <br /> \\- [Source code & documentation](https://github.com/hakimel/reveal.js)
+
+<button>Say hi</button>
+"
+`;

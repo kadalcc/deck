@@ -1,4 +1,12 @@
 import { MULTILINE, lineColumn, lineStarts } from "./edit-map.ts";
+import {
+  type EditMark,
+  type EditMarkKind,
+  MARK_CLOSE,
+  MARK_OPEN,
+  cleanHref,
+  extractMarks,
+} from "./marks.ts";
 import type { FromPreview } from "./protocol.ts";
 
 /**
@@ -14,6 +22,11 @@ import type { FromPreview } from "./protocol.ts";
  *   · a double-click on editable text makes it plain-text editable in place. Enter (or leaving the
  *     element) saves, Esc puts it back, Shift+Enter is a line break in a paragraph and nothing
  *     anywhere else, a paste arrives as plain text.
+ *   · with `marks` armed (`{type:"edit", on:true, marks:true}`, for an editor that spells them),
+ *     Cmd/Ctrl+B and I make the selection bold and italic, and Cmd/Ctrl+K asks for an address in
+ *     a field under the element and makes it a link; the same shortcut on a mark takes it off
+ *     again, and Cmd/Ctrl+Z takes the last one back. They show at once, and are reported with
+ *     the text as `edited.marks` (runtime/marks.ts spells them in Markdown).
  *
  * Saving does not change the deck: it posts `edited` — this range of this file, what it said,
  * what it says now — and the editor applies it to its text and sends the source again, which
@@ -26,7 +39,8 @@ import type { FromPreview } from "./protocol.ts";
  */
 
 export interface InPlaceEditing {
-  arm(on: boolean): void;
+  /** `marks`: the editor spells `edited.marks`, so the formatting shortcuts are on. */
+  arm(on: boolean, options?: { marks?: boolean }): void;
   /** The text the editor sent last: every offset this reports is into these. */
   setSource(text: string, files: Record<string, string>): void;
   /** A new source is about to compile: an edit in progress is saved (its element goes away). */
@@ -58,7 +72,11 @@ interface Editing {
   multiline: boolean;
   restore: () => void;
   off: () => void;
+  /** Undo for each formatting shortcut, last first. */
+  undo: Array<() => void>;
 }
+
+const MARK_TAG: Record<EditMarkKind, string> = { bold: "strong", italic: "em", link: "a" };
 
 /** Where a pointer is, as a DOM caret (Chromium/WebKit spell it one way, Gecko another). */
 function caretAt(x: number, y: number): { node: Node; offset: number } | null {
@@ -85,22 +103,52 @@ function snapshot(el: HTMLElement): () => void {
   };
 }
 
-/** What a person typed, as plain text: line breaks are `<br>`s or new blocks. */
-function typed(el: HTMLElement): string {
+/**
+ * What a person typed, as plain text: line breaks are `<br>`s or new blocks. A formatting mark
+ * (an element with `data-deck-mark`) is bracketed with MARK_OPEN/MARK_CLOSE, and listed in
+ * `kinds` in the order it opens.
+ */
+function typed(el: HTMLElement): {
+  raw: string;
+  kinds: Array<{ mark: EditMarkKind; href?: string }>;
+} {
   let out = "";
+  const kinds: Array<{ mark: EditMarkKind; href?: string }> = [];
   const walk = (node: Node) => {
     for (const child of node.childNodes) {
       if (child.nodeType === 3) out += (child as Text).data;
       else if (child.nodeName === "BR") out += "\n";
       else {
         if ((child.nodeName === "DIV" || child.nodeName === "P") && out) out += "\n";
-        walk(child);
+        const mark = (child as HTMLElement).getAttribute?.("data-deck-mark") as EditMarkKind | null;
+        if (mark) {
+          const href = (child as HTMLElement).getAttribute("data-deck-href");
+          kinds.push(mark === "link" && href ? { mark, href } : { mark });
+          out += MARK_OPEN;
+          walk(child);
+          out += MARK_CLOSE;
+        } else walk(child);
       }
     }
   };
   walk(el);
-  return out;
+  return { raw: out, kinds };
 }
+
+/** Undo a wrap: the mark's children back where it stood. */
+function unwrap(mark: HTMLElement): () => void {
+  const parent = mark.parentNode!;
+  const next = mark.nextSibling;
+  const kids = [...mark.childNodes];
+  for (const k of kids) parent.insertBefore(k, mark);
+  mark.remove();
+  return () => {
+    parent.insertBefore(mark, kids[0] ?? next);
+    mark.append(...kids);
+  };
+}
+
+const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform ?? "");
 
 /**
  * The text to report: no-break spaces (which contenteditable inserts for runs of spaces) as
@@ -116,7 +164,10 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
   const deckFile = options.file ?? "deck.mdx";
   let source: { text: string; files: Record<string, string> } = { text: "", files: {} };
   let armed = false;
+  let marksOn = false;
   let editing: Editing | null = null;
+  /** Cmd/Ctrl+K's address field, while it is open: the selection it will link. */
+  let linking: { range: Range; form: HTMLFormElement; input: HTMLInputElement } | null = null;
   let hovered: HTMLElement | null = null;
   let pending: { restore: () => void; timer: ReturnType<typeof setTimeout> } | null = null;
 
@@ -160,8 +211,9 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
     const colour = editing || editable ? ACCENT : MUTED;
     box.style.border = `2px ${editing || editable ? "solid" : "dashed"} ${colour}`;
     label.style.background = colour;
+    const mod = IS_MAC ? "⌘" : "Ctrl+";
     label.textContent = editing
-      ? `Enter saves · Esc cancels${editing.multiline ? " · Shift+Enter: new line" : ""}`
+      ? `Enter saves · Esc cancels${editing.multiline ? " · Shift+Enter: new line" : ""}${marksOn ? ` · ${mod}B bold · ${mod}I italic · ${mod}K link` : ""}`
       : editable
         ? "Double-click to edit"
         : "Edit in source";
@@ -222,6 +274,7 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
   // ─── editing one element ───
   const finish = () => {
     if (!editing) return;
+    closeLink();
     const e = editing;
     editing = null;
     e.off();
@@ -240,9 +293,12 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
     const e = editing;
     if (!e) return;
     const shown = e.before.replace(/\r\n/g, "\n");
-    let after = cleanTyped(typed(e.el), e.multiline);
+    const t = typed(e.el);
+    const cleaned = extractMarks(cleanTyped(t.raw, e.multiline), t.kinds);
+    let after = cleaned.text;
+    const marks: EditMark[] = cleaned.marks;
     finish();
-    if (!after || after === shown) {
+    if (!after || (after === shown && !marks.length)) {
       e.restore();
       return;
     }
@@ -257,6 +313,7 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
       to: e.to,
       before: e.before,
       after,
+      ...(marks.length ? { marks } : {}),
     });
     if (pending) clearTimeout(pending.timer);
     pending = {
@@ -287,7 +344,10 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
     if (el.contentEditable !== "plaintext-only") el.contentEditable = "true";
     el.setAttribute("data-deck-editing", "");
 
-    const onBlur = () => commit();
+    // Focus moving to the link field is not leaving the element.
+    const onBlur = () => {
+      if (!linking) commit();
+    };
     const onPaste = (e: ClipboardEvent) => {
       e.preventDefault();
       const raw = e.clipboardData?.getData("text/plain") ?? "";
@@ -319,6 +379,7 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
       before,
       multiline,
       restore,
+      undo: [],
       off: () => {
         el.removeEventListener("blur", onBlur);
         el.removeEventListener("paste", onPaste);
@@ -346,10 +407,153 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
     return true;
   };
 
+  // ─── formatting: Cmd/Ctrl+B, I, K ───
+  /** The selection inside the edited element, its spaces left outside, or null. */
+  const selected = (): Range | null => {
+    const sel = window.getSelection();
+    if (!editing || !sel || !sel.rangeCount) return null;
+    const r = sel.getRangeAt(0);
+    if (r.collapsed || !editing.el.contains(r.commonAncestorContainer)) return null;
+    return r.toString().trim() ? r : null;
+  };
+  /** The mark of this kind the selection sits in (this edit's own), to take it off again. */
+  const markAround = (r: Range, kind: EditMarkKind): HTMLElement | null => {
+    let n: Node | null = r.commonAncestorContainer;
+    for (; n && n !== editing?.el; n = n.parentNode)
+      if ((n as HTMLElement).getAttribute?.("data-deck-mark") === kind) return n as HTMLElement;
+    return null;
+  };
+  const selectContents = (node: Node) => {
+    const sel = window.getSelection();
+    if (!sel) return;
+    const r = document.createRange();
+    r.selectNodeContents(node);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  };
+  const toggleMark = (kind: EditMarkKind, href?: string, at?: Range) => {
+    const e = editing;
+    const r = at ?? selected();
+    if (!e || !r) return;
+    const existing = markAround(r, kind);
+    if (existing && kind !== "link") {
+      const first = existing.firstChild;
+      const last = existing.lastChild;
+      e.undo.push(unwrap(existing));
+      const sel = window.getSelection();
+      if (sel && first && last) {
+        const nr = document.createRange();
+        nr.setStartBefore(first);
+        nr.setEndAfter(last);
+        sel.removeAllRanges();
+        sel.addRange(nr);
+      }
+      return;
+    }
+    if (existing) {
+      // a link again on a link: a new address
+      const was = existing.getAttribute("data-deck-href");
+      existing.setAttribute("data-deck-href", href!);
+      e.undo.push(() => existing.setAttribute("data-deck-href", was ?? ""));
+      return;
+    }
+    const mark = document.createElement(MARK_TAG[kind]);
+    mark.setAttribute("data-deck-mark", kind);
+    if (kind === "link") {
+      mark.setAttribute("data-deck-href", href!);
+      mark.style.textDecoration = "underline";
+    }
+    mark.append(r.extractContents());
+    r.insertNode(mark);
+    // a mark inside a mark of the same kind says nothing more
+    for (const inner of mark.querySelectorAll<HTMLElement>(`[data-deck-mark="${kind}"]`))
+      unwrap(inner);
+    e.undo.push(() => {
+      unwrap(mark);
+    });
+    selectContents(mark);
+  };
+  const closeLink = (refocus = false) => {
+    const l = linking;
+    if (!l) return;
+    linking = null;
+    l.form.remove();
+    if (refocus && editing) {
+      editing.el.focus({ preventScroll: true });
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(l.range);
+    }
+  };
+  const askLink = () => {
+    const r = selected();
+    if (!editing || !r || !box) return;
+    closeLink();
+    const form = document.createElement("form");
+    form.className = "deck-edit-link";
+    form.style.cssText =
+      "position:absolute;left:-2px;top:calc(100% + 6px);display:flex;gap:6px;align-items:center;padding:6px;border-radius:6px;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.25);pointer-events:auto;font:500 13px/1.4 system-ui,sans-serif;color:#0f172a";
+    const input = document.createElement("input");
+    input.type = "url";
+    input.placeholder = "Paste or type a link";
+    input.setAttribute("aria-label", "Link address");
+    input.style.cssText =
+      "width:260px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font:inherit;color:inherit;background:#fff;outline-color:" +
+      ACCENT;
+    const existing = markAround(r, "link");
+    input.value = existing?.getAttribute("data-deck-href") ?? "";
+    const hint = document.createElement("span");
+    hint.textContent = "Enter links · Esc cancels";
+    hint.style.cssText = "color:#64748b;white-space:nowrap;font-size:11px";
+    form.append(input, hint);
+    form.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      applyLink();
+    });
+    input.addEventListener("blur", () => {
+      // clicking away from the field: no link, and the edit is saved as it stands
+      setTimeout(() => {
+        if (linking?.input !== input) return;
+        closeLink();
+        if (editing && document.activeElement !== editing.el) commit();
+      }, 0);
+    });
+    box.append(form);
+    linking = { range: r.cloneRange(), form, input };
+    input.focus({ preventScroll: true });
+  };
+  const applyLink = () => {
+    const l = linking;
+    if (!l) return;
+    const href = cleanHref(l.input.value);
+    closeLink(true);
+    if (href) toggleMark("link", href, l.range);
+  };
+
   // ─── the listeners: capture phase on the window, ahead of the deck's ───
   const onKey = (e: KeyboardEvent) => {
     if (!editing) return;
-    if (e.type === "keydown") {
+    if (linking && e.target === linking.input) {
+      // The link field takes its own keys; Enter and Esc finish it, nothing reaches the deck.
+      if (e.type === "keydown" && e.key === "Enter" && !e.isComposing) {
+        e.preventDefault();
+        applyLink();
+      } else if (e.type === "keydown" && e.key === "Escape") {
+        e.preventDefault();
+        closeLink(true);
+      }
+      e.stopImmediatePropagation();
+      return;
+    }
+    const shortcut = (e.metaKey || e.ctrlKey) && !e.altKey ? e.key.toLowerCase() : "";
+    if (e.type === "keydown" && marksOn && ["b", "i", "k"].includes(shortcut) && !e.shiftKey) {
+      e.preventDefault();
+      if (shortcut === "k") askLink();
+      else toggleMark(shortcut === "b" ? "bold" : "italic");
+    } else if (e.type === "keydown" && shortcut === "z" && !e.shiftKey && editing.undo.length) {
+      e.preventDefault();
+      editing.undo.pop()!();
+    } else if (e.type === "keydown") {
       if (e.key === "Escape") {
         e.preventDefault();
         cancel();
@@ -406,7 +610,8 @@ export function inPlaceEditing(options: InPlaceOptions): InPlaceEditing {
   document.addEventListener("pointerout", onLeave, true);
 
   return {
-    arm(on) {
+    arm(on, opts) {
+      if (on) marksOn = opts?.marks === true;
       if (on === armed) return;
       armed = on;
       if (on) {
