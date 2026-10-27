@@ -1,5 +1,14 @@
 # @kadal/deck
 
+## 0.8.3
+
+### Patch Changes
+
+- 0049919: A `<Sketch>` whose steps carry captions no longer grows when a caption first appears: every caption
+  sits in one place and the figure is as tall as its longest from the first step, so auto-fit never
+  rescales the slide mid-explanation and nothing below it moves.
+- @kadal/prettier-plugin@0.8.3
+
 ## 0.8.2
 
 ### Patch Changes
