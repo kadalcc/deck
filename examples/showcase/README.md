@@ -1,6 +1,6 @@
 # The tour
 
-The engine's own feature deck — live at [decks.kadal.cc/@pmithunish/tour](https://decks.kadal.cc/@pmithunish/tour/). Every
+The engine's own feature deck — live at [decks.kadal.cc/@kadal-hq/tour](https://decks.kadal.cc/@kadal-hq/tour/). Every
 layout, component, background, transition, click effect, code option and view of
 [@kadal/deck](../../packages/deck) is on a slide here, and every slide says how it was written and
 carries speaker notes.

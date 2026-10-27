@@ -25,13 +25,13 @@ present it with your phone in your hand; and the audience joins from theirs to v
 The engine is open source, and hosting is free for public decks.
 
 <p align="center">
-  <a href="https://decks.kadal.cc/@pmithunish/tour/">
+  <a href="https://decks.kadal.cc/@kadal-hq/tour/">
     <img src=".github/assets/hero.webp" alt="Kadal Deck on stage: the tour's title slide, Build it. Rehearse it. Own the room., on a big screen in front of an audience, the AI Assistant adding a poll slide, the speaker's phone as the remote with the notes, and an audience phone on the same slide answering a live poll" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://decks.kadal.cc/@pmithunish/tour/"><strong>Take the tour →</strong></a><br>
+  <a href="https://decks.kadal.cc/@kadal-hq/tour/"><strong>Take the tour →</strong></a><br>
   <sub>A deck that shows every feature, built with Kadal Deck. Open it and press <kbd>?</kbd>.</sub>
 </p>
 

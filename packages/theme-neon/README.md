@@ -2,7 +2,7 @@
 
 > **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. A theme is how your talk looks on the day, on the projector and on every phone in the room.
 >
-> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+> [Take the tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Docs](https://deck.kadal.cc/docs/)
 
 **Neon**, a theme for [Kadal Deck](https://deck.kadal.cc). A dark synthwave theme for meetups and launches. Midnight violet, a striped sunset sun over a grid that runs to the horizon, Orbitron for display, Space Grotesk for text, the Synthwave '84 code colours. The glows stay legible: the letters keep near white and only the halo takes the colour. Every glow, blur and animation is dropped on a still copy (the print view, an export, an overview tile), so a PDF gets solid colour and clean edges rather than grey halos. Dark only.
 

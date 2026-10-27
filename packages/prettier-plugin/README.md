@@ -2,7 +2,7 @@
 
 > **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. This package keeps your `deck.mdx` tidy while you build it, in any editor that runs Prettier.
 >
-> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+> [Take the tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Docs](https://deck.kadal.cc/docs/)
 
 Prettier for [Kadal Deck](https://deck.kadal.cc) presentations: `deck.mdx` (and `slides.mdx`) formatted the way the engine reads them, in any editor that runs Prettier.
 
