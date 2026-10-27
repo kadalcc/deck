@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "description": "Kadal Deck: build it, rehearse it, own the room. Talks written in MDX, with an MCP server and CLI for your AI agent, narration and a teleprompter to rehearse, a phone remote to present, and a live room for polls, Q&A and reactions. Export to PDF, PNG and PPTX.",
   "keywords": [
     "presentation",
@@ -178,7 +178,7 @@
     "@codemirror/view": "^6.36.5",
     "@excalidraw/excalidraw": "0.18.1",
     "@excalidraw/mermaid-to-excalidraw": "2.2.2",
-    "@kadal/prettier-plugin": "^0.8.3",
+    "@kadal/prettier-plugin": "^0.9.0",
     "@lezer/highlight": "^1.2.1",
     "@mdx-js/mdx": "^3.1.1",
     "@modelcontextprotocol/sdk": "^1.32.1",

@@ -1,5 +1,52 @@
 # @kadal/deck
 
+## 0.9.0
+
+### Minor Changes
+
+- abc3029: `kadal-deck contrast` (and `kadal-deck check --contrast`): a legibility check for every text on
+  every slide, click step and colour scheme. Each print-view page is read twice in headless
+  Chromium — the text from the DOM (colour, opacity, size, weight), and a picture with every glyph
+  made transparent, so the background is measured as the audience sees it, over images, gradients,
+  canvas and WebGL backgrounds alike. The WCAG 2.x ratio is taken at the worst 10% of a grid of
+  samples under each line, so a caption crossing a bright patch fails. Normal text needs 4.5:1,
+  large text (24px, or 18.66px bold, on the 1920 × 1080 stage) 3:1; large text between 3 and 4.5 is
+  listed as a warning. Exits 1 on any failure.
+
+  `--scheme light|dark|both` (both), `--min`, `--min-large`, `--percentile`, `--range`,
+  `--no-clicks`, `--theme`, `--url` (a published deck), `--dev`, `--json`, and `--out <dir>` for a
+  picture of each failing page with the text outlined and its ratio. Purely decorative text opts out
+  with `data-contrast="ignore"` (aria-hidden text is measured: a chart's labels are often
+  aria-hidden); hidden or clipped text, the words a background draws (a marquee's texture) and the engine's own
+  dimmed parts (`.is-dim` code lines) are not. `SlideRenderer.withPrintView` opens the
+  print view for any such reader.
+
+- cc8fd19: Find media from the command line and from your agent, and credit it automatically.
+
+  - `kadal-deck media search <kind> <words>` and `kadal-deck media trending <kind>` (kinds `icon`,
+    `emoji`, `sticker`, `gif`, `meme`, `template`, `kadal`; `--limit`, `--set`, `--json`) search the
+    hosted builder's sources — Iconify, the emoji sets, KLIPY, Imgflip and Kadal's own library — and
+    print each result with the exact MDX the builder's Insert media panel writes, a preview URL, its
+    size and its credit. KLIPY is asked from your machine with the host's key once you `login`, in
+    KLIPY's order, with `content_filter=high`; `kadal-deck media used klipy <id>` is its share trigger.
+  - `kadal-deck mcp` has three more tools, `media_search`, `media_trending` and `media_used` (24 in
+    all); KLIPY results that an edit tool writes into a slide are reported to KLIPY on their own.
+  - `credits: true` in the headmatter (or `{ slide: "end", footer: false, title: "Thanks to" }`)
+    collects every attributed GIF, sticker, meme template, emoji set, icon set, Kadal item and
+    `<Image credit>` the slides use when the deck compiles, and lists them by source with licences
+    and links on a Credits slide before the last slide, with a small link to it in the corner of
+    every other slide — outside the layout, so nothing moves; a line of text in print and the
+    exports. It works the same in `kadal-deck build`, the hosted player and the audience page.
+    `<Credits />` places the list on a slide of your own.
+  - `<Sticker>`, `<Gif>` and `<Meme>` take `provider="kadal"` for Kadal's own library: credited
+    "Kadal", and drawn (their `still` first) in print and every export where a provider's GIF gets a
+    link card. `<Sticker>` also takes `still`, `credit`, `creditUrl`, `license`; `<Image>` takes
+    `credit`, `creditUrl`, `license`, `licenseUrl`.
+
+### Patch Changes
+
+- @kadal/prettier-plugin@0.9.0
+
 ## 0.8.3
 
 ### Patch Changes
