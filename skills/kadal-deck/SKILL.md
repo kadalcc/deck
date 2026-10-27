@@ -38,6 +38,11 @@ and `slide_render` (pictures of slides).
    `slide_render` returns the images). Open and inspect every picture: text overflowing or
    clipped, crowding, tiny type, low contrast, empty halves, broken images or components. Fix and
    look again. Try `--scheme dark` if the deck allows dark mode.
+   Then **measure legibility**: `npx kadal-deck contrast` (or `check --contrast`) checks every
+   text on every slide, click step and scheme against what is really behind it and exits 1 below
+   WCAG AA (4.5:1; 3:1 from 24px, or 18.66px bold). `--out contrast/` draws the failures. Fix the
+   colour per scheme, add a scrim, or go larger and heavier — never dim body text to set a mood.
+   `data-contrast="ignore"` is only for purely decorative text (a watermark numeral, a texture).
 6. **Ship** when the user asks: `npx kadal-deck build` (static `dist/`; `--base /path/` for a
    sub-path, `pwa: true` to present offline, `bundleRemoteAssets: true` for no network at all,
    `seoMeta.ogImage: auto` for a link-preview picture; `npx kadal-deck ci github-pages` — or
@@ -157,3 +162,7 @@ or from `publish`: the deck changed on the web (`error.code` "diverged") · 5 un
 conflicts (`pull`, `resolve`, `publish`).
 `screenshot` flags: `--slide N` (repeatable, or `all`), `--scheme light|dark`, `--theme <name>`,
 `--width <px>`, `--dev` (skip the production build). Each picture shows the slide with every click revealed.
+`contrast` flags: `--scheme light|dark|both` (both), `--min <ratio>` (4.5), `--min-large <ratio>`
+(3), `--percentile <p>` (10: the worst tenth of the background under a line decides), `--range
+1,3-5`, `--no-clicks`, `--url <published deck>`, `--out <dir>`, `--json` (`findings[]`: slide, id,
+steps, scheme, text, fontSize, ratio, required, fg, bg, path). Exit 1 when any text fails.

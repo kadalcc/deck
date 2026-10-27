@@ -13,7 +13,9 @@
  *                                         (cli/relay.ts)
  *   kadal-deck ci <host>                  the files a host needs: github-pages, netlify, vercel,
  *                                         cloudflare, docker (cli/hosting.ts)
- *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…)
+ *   kadal-deck check                      lint the deck (frontmatter, MDX, components, assets…);
+ *                                         --contrast also checks the text is legible (cli/contrast.ts)
+ *   kadal-deck contrast                   is every text legible, in light and dark (WCAG contrast)
  *   kadal-deck format [files] [--check]   format deck files (@kadal/prettier-plugin)
  *   kadal-deck info [topic]               the catalog: components, layouts, backgrounds, keys…
  *   kadal-deck screenshot                 PNGs of slides (headless Chromium)
@@ -95,6 +97,15 @@ export const HELP = `kadal-deck <command> [options]
               --force  replace files that are there
   check       lint the deck: frontmatter, layouts, backgrounds, MDX, components, assets, glossary
               --no-compile  skip compiling each slide's MDX
+              --contrast  also run the legibility check (contrast, below; its flags apply)
+  contrast    is every text legible: each slide, click step and scheme in headless Chromium, the
+              text's colour against what is really behind it (images, gradients, canvas), WCAG 2.x
+              ratio at the worst 10% of the background; exits 1 when any text is below the bar
+              --scheme light|dark|both (both)   --min <ratio> (4.5)   --min-large <ratio> (3, for
+              text from 24px, or 18.66px bold, on the 1920 × 1080 stage)   --percentile <p> (10)
+              --range 1,3-5   --no-clicks (one page per slide)   --theme <t>   --url <deck url>
+              --dev   --out <dir>  a picture of each page with failures, the text outlined
+              data-contrast="ignore" on an element leaves purely decorative text out
   format      format deck.mdx (and the files it includes) or the files named: separators,
               frontmatter YAML, each slide's Markdown; code, notes and sugar kept as written
               --check  write nothing; exit 1 if a file would change
@@ -178,7 +189,32 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
     tunnel: { kind: "boolean" },
   },
   ci: { force: { kind: "boolean" } },
-  check: { compile: { kind: "boolean" } },
+  check: {
+    compile: { kind: "boolean" },
+    contrast: { kind: "boolean" },
+    scheme: { kind: "string" },
+    min: { kind: "number" },
+    "min-large": { kind: "number" },
+    percentile: { kind: "number" },
+    clicks: { kind: "boolean" },
+    range: { kind: "string" },
+    theme: { kind: "string" },
+    out: { kind: "string" },
+    url: { kind: "string" },
+    dev: { kind: "boolean" },
+  },
+  contrast: {
+    scheme: { kind: "string" },
+    min: { kind: "number" },
+    "min-large": { kind: "number" },
+    percentile: { kind: "number" },
+    clicks: { kind: "boolean" },
+    range: { kind: "string" },
+    theme: { kind: "string" },
+    out: { kind: "string" },
+    url: { kind: "string" },
+    dev: { kind: "boolean" },
+  },
   format: { check: { kind: "boolean" } },
   info: { search: { kind: "string" }, markdown: { kind: "boolean" } },
   screenshot: {
@@ -580,14 +616,23 @@ async function run(
       const { formatDiagnostics } = await import("../authoring/index.ts");
       const project = openProject(dir);
       const result = await checkProject(project, { compile: flags.compile !== false });
-      if (json)
-        emit({
-          ...result,
-          diagnostics: result.diagnostics.map((d) => ({ ...d, file: rel(project, d.file) })),
-        });
+      const lint = {
+        ...result,
+        diagnostics: result.diagnostics.map((d) => ({ ...d, file: rel(project, d.file) })),
+      };
+      if (flags.contrast === true) {
+        // `check --contrast`: the lint, then the legibility check; one verdict for both.
+        if (!json) say(formatDiagnostics(result, (f) => rel(project, f)));
+        const contrast = await contrastCommand(dir, flags, { ...io, emit: () => {} });
+        if (json) emit({ ...lint, ok: result.ok && contrast.report.ok, contrast: contrast.report });
+        return result.ok && contrast.code === EXIT.ok ? EXIT.ok : EXIT.failed;
+      }
+      if (json) emit(lint);
       else say(formatDiagnostics(result, (f) => rel(project, f)));
       return result.ok ? EXIT.ok : EXIT.failed;
     }
+    case "contrast":
+      return (await contrastCommand(dir, flags, io)).code;
     case "format": {
       const { formatFiles } = await import("./format.ts");
       const check = flags.check === true;
@@ -881,6 +926,66 @@ async function themeCommand(rest: string[], cwd: string, { json, say, emit }: Io
       say(`its module imports ${result.dependencies.join(", ")}: keep them installed in the deck.`);
   }
   return EXIT.ok;
+}
+
+/** `kadal-deck contrast` (and `check --contrast`): is every text legible, in each scheme. */
+async function contrastCommand(
+  dir: string,
+  flags: Record<string, unknown>,
+  { json, say, emit }: Io,
+): Promise<{ code: number; report: import("./contrast.ts").ContrastReport }> {
+  const { DeckServer, SlideRenderer } = await import("./render.ts");
+  const { CONTRAST_DEFAULTS, checkContrast, formatContrast } = await import("./contrast.ts");
+  const { SlideRangeError, checkRange } = await import("../core/print-options.ts");
+  const scheme = str(flags.scheme) ?? "both";
+  if (!["light", "dark", "both"].includes(scheme))
+    throw new UsageError("--scheme must be light, dark or both");
+  const ratio = (name: string, fallback: number) => {
+    const v = num(flags[name]);
+    if (v === undefined) return fallback;
+    if (!(v >= 1 && v <= 21)) throw new UsageError(`--${name} is a contrast ratio, 1–21`);
+    return v;
+  };
+  const min = ratio("min", CONTRAST_DEFAULTS.min);
+  const minLarge = ratio("min-large", CONTRAST_DEFAULTS.minLarge);
+  const percentile = num(flags.percentile) ?? CONTRAST_DEFAULTS.percentile;
+  if (!(percentile >= 0 && percentile <= 100))
+    throw new UsageError("--percentile must be between 0 and 100");
+  const range = str(flags.range);
+  try {
+    checkRange(range);
+  } catch (e) {
+    if (e instanceof SlideRangeError) throw new UsageError(`--range: ${e.message}`);
+    throw e;
+  }
+  const url = str(flags.url);
+  let server: Awaited<ReturnType<typeof DeckServer.start>> | null = null;
+  if (!url) {
+    const { openProject } = await import("./project.ts");
+    openProject(dir);
+    say(flags.dev ? "serve  vite dev" : "build  vite build + preview");
+    server = await DeckServer.start(dir, flags.dev ? "dev" : "preview");
+  }
+  const renderer = new SlideRenderer(dir, () => url ?? server!.url);
+  try {
+    const report = await checkContrast(renderer, {
+      schemes: scheme === "both" ? ["light", "dark"] : [scheme as "light" | "dark"],
+      min,
+      minLarge,
+      percentile,
+      clicks: flags.clicks !== false,
+      range,
+      theme: str(flags.theme),
+      out: str(flags.out) ? resolve(dir, str(flags.out)!) : undefined,
+      say,
+    });
+    if (json) emit(report);
+    else say(formatContrast(report));
+    return { code: report.ok ? EXIT.ok : EXIT.failed, report };
+  } finally {
+    await renderer.close();
+    server?.stop();
+  }
 }
 
 async function screenshot(

@@ -800,9 +800,17 @@ export const CLI: CliCommand[] = [
   },
   {
     name: "check",
-    usage: "kadal-deck check [--json] [--no-compile]",
+    usage: "kadal-deck check [--json] [--no-compile] [--contrast [contrast flags]]",
     summary:
-      "Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta.",
+      "Lint the deck: frontmatter, layouts, backgrounds, MDX, components, includes, assets, glossary, code meta. `--contrast` also runs the legibility check (`contrast`, with its flags) and fails when either does.",
+    json: true,
+  },
+  {
+    name: "contrast",
+    usage:
+      "kadal-deck contrast [--scheme light|dark|both] [--min 4.5] [--min-large 3] [--percentile 10] [--range 1,3-5] [--no-clicks] [--theme t] [--url u] [--dev] [--out dir] [--json]",
+    summary:
+      "Is every text legible? Each slide, click step and scheme (both by default) in headless Chromium: every visible text's colour (its alpha and opacity applied) against a picture of the same page with the glyphs made transparent — what is really behind it, images, gradients and canvas backgrounds included — sampled on a grid under each line, judged by WCAG 2.x at the worst 10% of the samples. Normal text needs --min (4.5:1), large text — 24px, or 18.66px bold, on the 1920 × 1080 stage — --min-large (3:1); large text under 4.5 is a warning. Exits 1 on a failure. Each finding gives the slide, steps, scheme, text, size, ratio, the colours and an element path; --out writes a picture of each failing page with the text outlined. `data-contrast=\"ignore\"` on an element leaves purely decorative text out (aria-hidden text is measured — a chart's labels often are); hidden and clipped text, words a background itself draws and the engine's dimmed parts (`.is-dim` code lines) are not measured, and text drawn inside a canvas or image cannot be.",
     json: true,
   },
   {
