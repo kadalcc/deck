@@ -1,5 +1,14 @@
 # @kadal/deck-fresh
 
+## 0.9.1
+
+### Patch Changes
+
+- Updated dependencies [2ef85a1]
+- Updated dependencies [dfac505]
+  - @kadal/deck@0.9.1
+  - @kadal/deck-preact@0.9.1
+
 ## 0.9.0
 
 ### Patch Changes
