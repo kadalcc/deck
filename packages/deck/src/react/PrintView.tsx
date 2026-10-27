@@ -6,6 +6,7 @@ import { PrintDrawings } from "../draw/PrintDrawings.tsx";
 import { fileDrawings } from "../draw/source.ts";
 import { BackgroundLayer } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
+import { useNav } from "./hooks.ts";
 import { usePremiumSettled } from "./premium.tsx";
 import { loadSlide, SlideFrame } from "./SlideFrame.tsx";
 import { useFontsReady } from "../theming/react.tsx";
@@ -43,7 +44,11 @@ export function PrintView({
   const omitBackground = pick("omitBackground");
   const [settled, setSettled] = useState(false);
   const [ready, setReady] = useState(false);
-  const [totals, setTotals] = useState<Record<string, number>>({});
+  // Read from the store, not only listened to: a slide reports from its own effect, which runs
+  // before this component's, so a total known at mount (`clicks:` in the frontmatter) is in the
+  // store before any listener of ours exists, and nothing reports it again. A deck that set
+  // `clicks:` on every slide printed each one once, at click 0.
+  const totals = useNav((s) => s.totals);
   // On screen the pages are zoomed to the window's width (the print stylesheet pins zoom to 1).
   const [zoom, setZoom] = useState(1);
   useEffect(() => {
@@ -83,7 +88,6 @@ export function PrintView({
       clearTimeout(grace);
     };
   }, [flat.length, range]);
-  useEffect(() => deck.nav.subscribe((s) => setTotals(s.totals)), [deck.nav]);
   useEffect(() => {
     if (!omitBackground) return;
     document.documentElement.classList.add("deck-print-transparent");
@@ -162,7 +166,10 @@ export function PrintView({
               active={false}
               click={p.click}
               preview
-              reportTotal={!separate || p.click === 0}
+              // The slide's first page, not its click-0 one: a `clicksStart` slide's first page
+              // moves to its start as soon as a total is known, and a click-0 reporter went with
+              // it, leaving the total at the start (one page) before its clicks had registered.
+              reportTotal={p.first}
               globalLayers
               // A page per step shows each step as it is; one page per slide shows everything.
               className={separate ? "is-print" : "is-print is-print-all"}
