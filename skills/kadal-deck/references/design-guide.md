@@ -29,6 +29,14 @@ the three seconds after it appears.
 - Contrast first: dark text on light or light on dark; check both schemes if the deck allows the
   theme menu (`kadal-deck screenshot --scheme dark`). Animated backgrounds are ambience — keep
   text off their brightest parts, lower their opacity (`rgba()` colours) or tint the layer.
+- Measure it: `kadal-deck contrast` must pass (WCAG AA: 4.5:1 for text under 24px — 18.66px
+  bold — on the 1920 × 1080 stage, 3:1 above). What fails most: small grey captions, kickers,
+  footnotes, axis and map labels, chart annotations, and text set over a photo or a bright patch
+  of a background. Fixes that keep the look: a muted colour token per scheme (a grey that reads
+  on light is too dark on dark — define it for each), a scrim or solid chip behind text on images
+  and charts, a heavier weight or a few px more for small labels. Never fade text with `opacity`
+  to make it secondary — pick a lighter colour that still passes. Only purely decorative text
+  (a giant watermark numeral, a texture of letters) takes `data-contrast="ignore"`.
 - A finished look in one line: the Pro library (`layout: pro/<slug>`, `background: pro/<slug>`,
   95 items in 15 genres — covers, agendas, KPI boards, quotes, galleries) renders on decks
   published to deck.kadal.cc from a Pro or Team workspace. Elsewhere it falls back to the theme's

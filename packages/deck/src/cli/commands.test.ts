@@ -88,6 +88,14 @@ describe("kadal-deck commands", () => {
     expect(JSON.parse(missing.stdout).error.code).toBe("missing_prerequisite");
   });
 
+  test("contrast checks its flags before a browser starts; no deck exits 4", async () => {
+    expect((await cli(["contrast", "--scheme", "sepia"])).code).toBe(EXIT.usage);
+    expect((await cli(["contrast", "--min", "30"])).code).toBe(EXIT.usage);
+    expect((await cli(["contrast", "--percentile", "120"])).code).toBe(EXIT.usage);
+    expect((await cli(["contrast", "--range", "two"])).code).toBe(EXIT.usage);
+    expect((await cli(["contrast", "--json"])).code).toBe(EXIT.missing);
+  });
+
   test("--version and --json keep stdout to one document", async () => {
     const v = await cli(["--version", "--json"]);
     expect(JSON.parse(v.stdout).version).toMatch(/^\d+\.\d+\.\d+/);

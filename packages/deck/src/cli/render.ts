@@ -126,17 +126,18 @@ interface ContextLike {
   addInitScript(script: { content: string }): Promise<void>;
   close(): Promise<void>;
 }
-interface ElementLike {
+export interface ElementLike {
   screenshot(o?: Record<string, unknown>): Promise<Buffer>;
   scrollIntoViewIfNeeded(): Promise<void>;
   boundingBox(): Promise<{ x: number; y: number; width: number; height: number } | null>;
 }
-interface PageLike {
+export interface PageLike {
   goto(url: string, o?: Record<string, unknown>): Promise<unknown>;
   waitForSelector(sel: string, o?: Record<string, unknown>): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
   waitForLoadState?(state: string, o?: Record<string, unknown>): Promise<void>;
   evaluate<T>(fn: () => T | Promise<T>): Promise<T>;
+  evaluate<T, A>(fn: (arg: A) => T | Promise<T>, arg: A): Promise<T>;
   $$(sel: string): Promise<ElementLike[]>;
   screenshot(o?: Record<string, unknown>): Promise<Buffer>;
   on(
@@ -195,6 +196,23 @@ export interface RenderRequest {
    * too. Slower by a beat; a deck's picture for a host wants it, an agent's quick look doesn't.
    */
   settle?: boolean;
+}
+
+/** What `withPrintView` opens: the print view's own choices, and the browser's. */
+export interface PrintViewRequest extends Pick<
+  RenderRequest,
+  "range" | "scheme" | "theme" | "settle"
+> {
+  /** Device pixels per CSS pixel (1: a picture's pixel is a stage pixel). */
+  deviceScaleFactor?: number;
+  /** A page per click step (`?clicks=1`), or one per slide with every step revealed (`0`). */
+  clicks?: boolean;
+  /** `false`: no notes printed on or after the pages. */
+  notes?: false;
+  /** A script to run before the deck's own (a host's `window.__KADAL_DECK__`, for a test). */
+  init?: string;
+  /** How long the page may take to load and say it is ready (default two minutes). */
+  timeout?: number;
 }
 
 /** The longest `settle` waits for the network, after which the picture is taken anyway. */
@@ -264,12 +282,19 @@ export class SlideRenderer {
     return this.browser;
   }
 
-  async render(req: RenderRequest = {}): Promise<RenderResult> {
+  /**
+   * Open the print view as `render` sees it (the scheme and theme answered for, pages butted
+   * together, fonts loaded) and hand the page to `use`; the context closes after. `contrast`
+   * reads its pages through this too.
+   */
+  async withPrintView<T>(
+    req: PrintViewRequest,
+    use: (view: { page: PageLike; scheme: "light" | "dark"; errors: string[] }) => Promise<T>,
+  ): Promise<T> {
     const browser = await this.open();
-    const width = Math.max(320, Math.min(3840, req.width ?? 1280));
     const context = await browser.newContext({
       viewport: { width: 1952, height: 1100 },
-      deviceScaleFactor: width / 1920,
+      deviceScaleFactor: req.deviceScaleFactor ?? 1,
       colorScheme: req.scheme ?? "light",
       reducedMotion: "reduce",
     });
@@ -288,6 +313,7 @@ export class SlideRenderer {
         };
       })();`,
     });
+    if (req.init) await context.addInitScript({ content: req.init });
     const errors: string[] = [];
     try {
       const page = await context.newPage();
@@ -298,8 +324,11 @@ export class SlideRenderer {
       const url = new URL(this.baseUrl());
       url.searchParams.set("print-pdf", "");
       if (req.range) url.searchParams.set("range", req.range);
-      await page.goto(url.toString(), { waitUntil: "load", timeout: 120_000 });
-      await page.waitForSelector(".deck-print-pages[data-ready]", { timeout: 120_000 });
+      if (req.clicks !== undefined) url.searchParams.set("clicks", req.clicks ? "1" : "0");
+      if (req.notes === false) url.searchParams.set("notes", "0");
+      const timeout = req.timeout ?? 120_000;
+      await page.goto(url.toString(), { waitUntil: "load", timeout });
+      await page.waitForSelector(".deck-print-pages[data-ready]", { timeout });
       // On screen the print view spaces its pages 16px apart, centred, with a shadow. At the
       // picture's scale (1280/1920 by default) 16px is 10.67 device pixels, so every page started
       // mid-pixel and its last column and row were half shadow: a grey edge on every picture.
@@ -319,83 +348,93 @@ export class SlideRenderer {
       const scheme = await page.evaluate(() =>
         document.documentElement.dataset.colorScheme === "dark" ? "dark" : "light",
       );
-      const info = await page.evaluate(() =>
-        [...document.querySelectorAll<HTMLElement>(".deck-print-page")].map((p) => {
-          const slide = p.querySelector<HTMLElement>(".deck-slide");
-          const error = p.querySelector<HTMLElement>(".deck-slide-error pre");
-          return {
-            index: slide ? Number(slide.dataset.index) : -1,
-            click: slide ? Number(slide.dataset.click ?? 0) : 0,
-            notes: p.classList.contains("deck-print-notes-page"),
-            width: p.offsetWidth,
-            height: p.offsetHeight,
-            error: error?.innerText ?? null,
-          };
-        }),
-      );
-      const pages = await page.$$(".deck-print-page");
-      const byIndex = new Map<number, number[]>();
-      info.forEach((p, i) => {
-        if (p.notes || p.index < 0) return;
-        const list = byIndex.get(p.index) ?? [];
-        list.push(i);
-        byIndex.set(p.index, list);
-      });
-      for (const p of info)
-        if (p.error) errors.push(`slide ${p.index} failed to load: ${p.error.split("\n")[0]}`);
-      const wanted = req.slides ?? [...byIndex.keys()].sort((a, b) => a - b);
-      const shots: RenderedSlide[] = [];
-      const missing: number[] = [];
-      for (const index of wanted) {
-        const list = byIndex.get(index);
-        if (!list?.length) {
-          missing.push(index);
-          continue;
-        }
-        // The print view draws a slide as a still: every click revealed, backgrounds at rest.
-        const pick = list[list.length - 1]!;
-        const el = pages[pick]!;
-        await el.scrollIntoViewIfNeeded();
-        const meta = info[pick]!;
-        const box = req.aspect ? await el.boundingBox() : null;
-        let w = meta.width;
-        let h = meta.height;
-        let png: Buffer;
-        if (box && req.aspect) {
-          // The page's coordinates (fullPage), so the clip is where the box is however it scrolled.
-          const scrollY = await page.evaluate(() => window.scrollY);
-          const scrollX = await page.evaluate(() => window.scrollX);
-          w = Math.min(box.width, box.height * req.aspect);
-          h = w / req.aspect;
-          png = await page.screenshot({
-            type: "png",
-            animations: "disabled",
-            fullPage: true,
-            clip: {
-              x: box.x + scrollX + (box.width - w) / 2,
-              y: box.y + scrollY + (box.height - h) / 2,
-              width: w,
-              height: h,
-            },
-          });
-        } else png = await el.screenshot({ type: "png", animations: "disabled" });
-        shots.push({
-          index,
-          click: meta.click,
-          width: Math.round(w * (width / 1920)),
-          height: Math.round(h * (width / 1920)),
-          png,
-        });
-      }
-      return {
-        shots,
-        missing,
-        errors: [...new Set(errors.map(stripAnsi))].slice(0, 20),
-        scheme,
-      };
+      return await use({ page, scheme, errors });
     } finally {
       await context.close();
     }
+  }
+
+  async render(req: RenderRequest = {}): Promise<RenderResult> {
+    const width = Math.max(320, Math.min(3840, req.width ?? 1280));
+    return this.withPrintView(
+      { ...req, deviceScaleFactor: width / 1920 },
+      async ({ page, scheme, errors }) => {
+        const info = await page.evaluate(() =>
+          [...document.querySelectorAll<HTMLElement>(".deck-print-page")].map((p) => {
+            const slide = p.querySelector<HTMLElement>(".deck-slide");
+            const error = p.querySelector<HTMLElement>(".deck-slide-error pre");
+            return {
+              index: slide ? Number(slide.dataset.index) : -1,
+              click: slide ? Number(slide.dataset.click ?? 0) : 0,
+              notes: p.classList.contains("deck-print-notes-page"),
+              width: p.offsetWidth,
+              height: p.offsetHeight,
+              error: error?.innerText ?? null,
+            };
+          }),
+        );
+        const pages = await page.$$(".deck-print-page");
+        const byIndex = new Map<number, number[]>();
+        info.forEach((p, i) => {
+          if (p.notes || p.index < 0) return;
+          const list = byIndex.get(p.index) ?? [];
+          list.push(i);
+          byIndex.set(p.index, list);
+        });
+        for (const p of info)
+          if (p.error) errors.push(`slide ${p.index} failed to load: ${p.error.split("\n")[0]}`);
+        const wanted = req.slides ?? [...byIndex.keys()].sort((a, b) => a - b);
+        const shots: RenderedSlide[] = [];
+        const missing: number[] = [];
+        for (const index of wanted) {
+          const list = byIndex.get(index);
+          if (!list?.length) {
+            missing.push(index);
+            continue;
+          }
+          // The print view draws a slide as a still: every click revealed, backgrounds at rest.
+          const pick = list[list.length - 1]!;
+          const el = pages[pick]!;
+          await el.scrollIntoViewIfNeeded();
+          const meta = info[pick]!;
+          const box = req.aspect ? await el.boundingBox() : null;
+          let w = meta.width;
+          let h = meta.height;
+          let png: Buffer;
+          if (box && req.aspect) {
+            // The page's coordinates (fullPage), so the clip is where the box is however it scrolled.
+            const scrollY = await page.evaluate(() => window.scrollY);
+            const scrollX = await page.evaluate(() => window.scrollX);
+            w = Math.min(box.width, box.height * req.aspect);
+            h = w / req.aspect;
+            png = await page.screenshot({
+              type: "png",
+              animations: "disabled",
+              fullPage: true,
+              clip: {
+                x: box.x + scrollX + (box.width - w) / 2,
+                y: box.y + scrollY + (box.height - h) / 2,
+                width: w,
+                height: h,
+              },
+            });
+          } else png = await el.screenshot({ type: "png", animations: "disabled" });
+          shots.push({
+            index,
+            click: meta.click,
+            width: Math.round(w * (width / 1920)),
+            height: Math.round(h * (width / 1920)),
+            png,
+          });
+        }
+        return {
+          shots,
+          missing,
+          errors: [...new Set(errors.map(stripAnsi))].slice(0, 20),
+          scheme,
+        };
+      },
+    );
   }
 
   async close(): Promise<void> {
