@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
-import { UsageError, bool, str } from "./args.ts";
+import { UsageError, bool, num, str } from "./args.ts";
 import { HostError, hostFrom, loadCredentials, request } from "./host.ts";
 
 /**
@@ -11,6 +11,15 @@ import { HostError, hostFrom, loadCredentials, request } from "./host.ts";
  *
  *   kadal-deck media list [--kind sticker] [--q rocket] [--json]
  *   kadal-deck media add <id|name> [--to public/stickers/] [--force]
+ *   kadal-deck media search <kind> <query…> [--limit 12] [--set twemoji] [--json]
+ *   kadal-deck media trending <kind> [--limit 12] [--set …] [--json]
+ *   kadal-deck media used klipy <id> [--q query]
+ *
+ * `search` and `trending` are the hosted builder's media panel on the command line (icons, emoji,
+ * stickers, GIFs, memes, meme templates, Kadal's own library — media-search/), each result with
+ * the MDX the panel would insert and its credit. They work signed out; KLIPY's GIFs, stickers and
+ * memes need the sign-in (the key comes from the host) and are asked for from this machine.
+ * `used` is KLIPY's share trigger: run it for a KLIPY result you put in a deck.
  *
  * The library is what people upload in the hosted builder (stickers, images, GIFs, memes, short
  * videos). `add` downloads one item into the project — by default under public/stickers/, so the
@@ -101,17 +110,101 @@ interface Io {
   emit: (data: unknown) => void;
 }
 
+const USAGE = [
+  "Usage: kadal-deck media search <kind> <query> [--limit n] [--set s]",
+  "       kadal-deck media trending <kind> [--limit n] [--set s]",
+  "       kadal-deck media used klipy <id> [--q query]",
+  "       kadal-deck media list [--kind k] [--q text] | media add <id|name> [--to dir]",
+  "Kinds: icon, emoji, sticker, gif, meme, template, kadal. Sets: fluent, fluent-color, fluent-flat, noto, noto-animated, twemoji.",
+].join("\n");
+
+const kb = (n: number | null) =>
+  n === null
+    ? ""
+    : n >= 1024 * 1024
+      ? `${(n / 1024 / 1024).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(n / 1024))} KB`;
+
+/** `media search`, `media trending` and `media used`: the sources, from this machine. */
+async function findCommand(
+  sub: "search" | "trending" | "used",
+  args: string[],
+  flags: Record<string, unknown>,
+  { json, say, emit }: Io,
+): Promise<number> {
+  const [{ MediaSession }, { MEDIA_KINDS }] = await Promise.all([
+    import("../media-search/search.ts"),
+    import("../media-search/sources.ts"),
+  ]);
+  const creds = await loadCredentials();
+  const host = str(flags.host)
+    ? hostFrom(process.env, str(flags.host))
+    : (creds?.host ?? hostFrom());
+  const session = new MediaSession({ host, token: creds?.token ?? null });
+  if (sub === "used") {
+    const [provider, id] = args;
+    if (!provider || !id) throw new UsageError(USAGE);
+    const r = await session.used(provider, id, str(flags.q));
+    if (json) emit({ ok: r.reported || provider.toLowerCase() !== "klipy", ...r });
+    else say(r.note);
+    return r.reported || provider.toLowerCase() !== "klipy" ? 0 : 1;
+  }
+  const [kind, ...words] = args;
+  if (!kind || !(MEDIA_KINDS as readonly string[]).includes(kind))
+    throw new UsageError(`${kind ? `No kind "${kind}". ` : ""}${USAGE}`);
+  const query = sub === "search" ? words.join(" ").trim() : "";
+  if (sub === "search" && !query) throw new UsageError(USAGE);
+  const limit = num(flags.limit);
+  let found;
+  try {
+    found = await session.find({
+      kind: kind as (typeof MEDIA_KINDS)[number],
+      query,
+      ...(limit !== undefined ? { limit } : {}),
+      ...(str(flags.set) ? { set: str(flags.set) } : {}),
+    });
+  } catch (e) {
+    if (e instanceof RangeError) throw new UsageError(e.message);
+    throw e;
+  }
+  if (json) {
+    emit({ ok: true, ...found });
+    return 0;
+  }
+  for (const r of found.results) {
+    const size = [r.width && r.height ? `${r.width}×${r.height}` : "", kb(r.bytes)]
+      .filter(Boolean)
+      .join(" · ");
+    say(`${r.type} · ${r.provider} · ${r.title}${size ? ` · ${size}` : ""}`);
+    say(`  id       ${r.id}`);
+    if (r.preview) say(`  preview  ${r.preview}`);
+    say(`  credit   ${r.attribution}`);
+    say(r.mdx ? r.mdx.replace(/^/gm, "  ") : "  (KLIPY holds this place; nothing to insert)");
+    say("");
+  }
+  for (const s of found.sources) if (s.note) say(`${s.provider}: ${s.note}`);
+  if (!found.results.length) say(`Nothing for ${query ? `"${query}"` : "trending"} in ${kind}.`);
+  else {
+    say(
+      `${found.results.length} result(s). Paste the MDX into a slide; \`credits: true\` in the headmatter credits them all.`,
+    );
+    if (found.results.some((r) => r.reportUse))
+      say("Used a KLIPY result? Tell KLIPY: kadal-deck media used klipy <id>");
+  }
+  return 0;
+}
+
 export async function mediaCommand(
   positionals: string[],
   flags: Record<string, unknown>,
   dir: string,
-  { json, say, emit }: Io,
+  io: Io,
 ): Promise<number> {
+  const { json, say, emit } = io;
   const [sub, target] = positionals;
-  if (sub !== "list" && sub !== "add")
-    throw new UsageError(
-      "Usage: kadal-deck media list [--kind k] [--q text] | media add <id|name> [--to dir]",
-    );
+  if (sub === "search" || sub === "trending" || sub === "used")
+    return findCommand(sub, positionals.slice(1), flags, io);
+  if (sub !== "list" && sub !== "add") throw new UsageError(USAGE);
   if (sub === "add" && !target)
     throw new UsageError("Usage: kadal-deck media add <id|name> [--to dir]");
   const creds = await loadCredentials();

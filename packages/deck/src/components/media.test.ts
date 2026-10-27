@@ -19,6 +19,7 @@ import {
   memeTemplateCredit,
   readMediaReport,
   Sticker,
+  stickerCredit,
   stickerPlace,
 } from "./media.tsx";
 
@@ -255,5 +256,58 @@ describe("the report link", () => {
     const gif = { src: "https://static.klipy.com/a.gif", title: "A" };
     expect(render(createElement(Gif, gif))).toContain("deck=dabc123");
     expect(render(createElement(Gif, gif), "print")).not.toContain("Report");
+  });
+});
+
+describe('provider="kadal": our own media', () => {
+  test("a Kadal GIF is drawn in print (its still first), a provider's is a card", () => {
+    const src = "https://deck.kadal.cc/api/v1/media/kadal/files/v1/a.webp";
+    expect(gifMode({ src, still: "s.png", reduced: false, print: true, own: true })).toBe("still");
+    expect(gifMode({ src, reduced: false, print: true, own: true })).toBe("image");
+    expect(gifMode({ src, still: "s.png", reduced: false, print: true })).toBe("card");
+    expect(gifPlaceholder({ provider: "kadal", title: "Loading" }).label).toBe(
+      "GIF: Loading — via Kadal",
+    );
+    const html = render(
+      createElement(Gif, { provider: "kadal", src, still: "https://x/s.png", title: "Loading" }),
+      "print",
+    );
+    expect(html).toContain('src="https://x/s.png"');
+    expect(html).not.toContain("deck-gif-card");
+  });
+
+  test("stickers and memes are credited Kadal; a sticker's own credit wins", () => {
+    expect(stickerCredit({ provider: "kadal" })).toEqual({
+      label: "Kadal",
+      href: "https://kadal.cc",
+    });
+    expect(stickerCredit({ credit: "Photo by Ana", creditUrl: "https://a.test/p" })).toEqual({
+      label: "Photo by Ana",
+      href: "https://a.test/p",
+    });
+    expect(stickerCredit({})).toBeNull();
+    expect(memeTemplateCredit({ provider: "kadal", id: "kadal/two-doors" })).toEqual({
+      label: "Template by Kadal",
+      href: "https://kadal.cc",
+    });
+    const meme = render(
+      createElement(Meme, { src: "https://x/m.webp", provider: "kadal", captions: [] }),
+    );
+    expect(meme).toContain("Template by Kadal");
+  });
+
+  test("a sticker shows its still in print, and its provider id is not the element's id", () => {
+    const html = render(
+      createElement(Sticker, {
+        provider: "kadal",
+        id: "kadal/ship-it",
+        src: "https://x/a.webp",
+        still: "https://x/a.png",
+      }),
+      "print",
+    );
+    expect(html).toContain('src="https://x/a.png"');
+    expect(html).not.toContain('id="kadal/ship-it"');
+    expect(html).toContain(">Kadal</a>");
   });
 });

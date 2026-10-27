@@ -86,6 +86,96 @@ describe("kadal-deck media against a host", () => {
     expect(seen.some((s) => s.includes("/media/mA1/file"))).toBe(true);
   });
 
+  test("search --json: KLIPY straight from this machine, with the host's key and the rules", async () => {
+    dir = mkdtempSync(join(tmpdir(), "kd-media-"));
+    process.env.KADAL_DECK_TOKEN = "kd_test";
+    process.env.KADAL_DECK_HOST = "https://host.test";
+    const seen: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      seen.push(String(url));
+      const u = new URL(String(url));
+      if (u.host === "host.test" && u.pathname === "/api/v1/media/config")
+        return Response.json({ klipy: { key: "pk", customerId: "c9" } });
+      if (u.host === "host.test") return new Response("{}", { status: 404 });
+      if (u.host === "api.klipy.com")
+        return Response.json({
+          data: {
+            data: [
+              {
+                id: 1,
+                slug: "wave-1",
+                title: "Wave",
+                type: "gif",
+                file: {
+                  hd: { gif: { url: "https://static.klipy.com/w.gif", width: 400, height: 300 } },
+                },
+              },
+            ],
+          },
+        });
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    const logs: string[] = [];
+    const log = console.log;
+    const err = console.error;
+    console.log = (l: string) => void logs.push(l);
+    console.error = () => {};
+    try {
+      expect(
+        await main([
+          "media",
+          "search",
+          "gif",
+          "wave",
+          "hello",
+          "--limit",
+          "3",
+          "--json",
+          "-C",
+          dir,
+        ]),
+      ).toBe(0);
+    } finally {
+      console.log = log;
+      console.error = err;
+    }
+    const out = JSON.parse(logs.join("\n"));
+    expect(out.ok).toBe(true);
+    expect(out.query).toBe("wave hello");
+    expect(out.results[0]).toMatchObject({
+      provider: "klipy",
+      id: "gifs/wave-1",
+      attribution: "via KLIPY",
+    });
+    expect(out.results[0].mdx).toBe(
+      '<Gif provider="klipy" id="1" slug="wave-1" src="https://static.klipy.com/w.gif" title="Wave" width={400} height={300} />',
+    );
+    const klipy = new URL(seen.find((u) => u.includes("api.klipy.com"))!);
+    expect(klipy.pathname).toBe("/api/v1/pk/gifs/search");
+    expect(klipy.searchParams.get("customer_id")).toBe("c9");
+    expect(klipy.searchParams.get("content_filter")).toBe("high");
+    expect(klipy.searchParams.get("per_page")).toBe("3");
+    expect(out.sources.find((s: { provider: string }) => s.provider === "kadal").note).toContain(
+      "doesn't serve",
+    );
+  });
+
+  test("an unknown kind, or a search without words, is a usage error", async () => {
+    const err = console.error;
+    const log = console.log;
+    console.error = () => {};
+    console.log = () => {};
+    try {
+      expect(await main(["media", "search", "photo", "x"])).toBe(2);
+      expect(await main(["media", "search", "gif"])).toBe(2);
+      expect(await main(["media", "trending"])).toBe(2);
+      expect(await main(["media", "used", "imgflip", "1"])).toBe(0);
+    } finally {
+      console.error = err;
+      console.log = log;
+    }
+  });
+
   test("a missing subcommand is a usage error", async () => {
     const err = console.error;
     console.error = () => {};

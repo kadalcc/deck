@@ -463,6 +463,14 @@ export interface DeckConfig {
   /** Where the global and slide layers draw besides the deck, print and export. */
   layers: { presenter: boolean; overview: boolean };
   /**
+   * Media credits (credits/model.ts): `true` collects every attributed GIF, sticker, meme, emoji
+   * set, icon set and credited image the slides use, puts a "Credits" slide before the last slide
+   * (`slide: "end"`: after it), and a small link to it in the corner of every other slide
+   * (`footer: false`: none). `title` names the slide and the link. Once compiled, the value is the
+   * collected credits (`ResolvedCredits`) that `<Credits />` draws.
+   */
+  credits: boolean | { slide?: "before-last" | "end" | false; footer?: boolean; title?: string };
+  /**
    * The presenter's timer: "stopwatch" counts up, "countdown" counts down from `duration`.
    * Both pause, resume and reset, show a progress bar when the talk has a length, and
    * go into overtime past it; the pacing badge (ahead/behind) works with either.
@@ -585,6 +593,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   addons: [],
   themeConfig: {},
   layers: { presenter: true, overview: false },
+  credits: false,
   timer: "stopwatch",
   duration: null,
   contextMenu: true,

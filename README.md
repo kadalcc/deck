@@ -306,6 +306,7 @@ started with `--allow-outside`.
 | `slide_add`, `slide_update`, `slide_remove`, `slide_move`, `deck_update_frontmatter`, `notes_set` | edits that change only that slide's lines, linted on the spot |
 | `slide_render`, `deck_preview` | PNGs of slides from a dev server kept running between calls, and a live URL |
 | `deck_build`, `deck_export`, `deck_publish` | a static site, PDF/PNG/PPTX, and a published deck |
+| `media_search`, `media_trending`, `media_used` | icons, emoji, stickers, GIFs, memes, meme templates and Kadal's own library, each with the MDX to insert and its credit (`credits: true` lists them all on a Credits slide) |
 
 **Hosted decks, from any agent.** The hosted service runs a remote MCP server at
 `https://deck.kadal.cc/mcp` (OAuth; you pick one workspace and can make the connection read-only).

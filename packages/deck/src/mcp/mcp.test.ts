@@ -109,6 +109,9 @@ describe("the server describes itself", () => {
         "deck_resolve",
         "deck_sync_status",
         "deck_update_frontmatter",
+        "media_search",
+        "media_trending",
+        "media_used",
         "notes_set",
         "slide_add",
         "slide_move",
@@ -124,6 +127,34 @@ describe("the server describes itself", () => {
     }
     expect(tools.find((t) => t.name === "slide_remove")!.annotations!.destructiveHint).toBe(true);
     expect(tools.find((t) => t.name === "deck_outline")!.annotations!.readOnlyHint).toBe(true);
+  });
+
+  test("the media tools: kinds, sets and what they promise an agent", async () => {
+    const { tools } = await client.listTools();
+    const search = tools.find((t) => t.name === "media_search")!;
+    const props = search.inputSchema.properties as Record<string, { enum?: string[] }>;
+    expect(search.inputSchema.required).toEqual(["kind", "query"]);
+    expect(props.kind!.enum).toEqual(["icon", "emoji", "sticker", "gif", "meme", "template", "kadal"]);
+    expect(props.set!.enum).toContain("twemoji");
+    expect(search.description).toContain("mdx");
+    expect(search.description).toContain("credits: true");
+    expect(search.annotations?.readOnlyHint).toBe(true);
+    const trending = tools.find((t) => t.name === "media_trending")!;
+    expect(trending.inputSchema.required).toEqual(["kind"]);
+    const used = tools.find((t) => t.name === "media_used")!;
+    expect(used.inputSchema.required).toEqual(["provider", "id"]);
+    expect(used.annotations?.readOnlyHint).toBe(false);
+    expect(used.annotations?.idempotentHint).toBe(true);
+  });
+
+  test("media_used: only KLIPY counts uses, and KLIPY needs the sign-in", async () => {
+    const other = await call("media_used", { provider: "imgflip", id: "181913649" });
+    expect(other.isError).toBeFalsy();
+    expect(other.structuredContent).toMatchObject({ reported: false });
+    expect(text(other)).toContain("doesn't count uses");
+    const klipy = await call("media_used", { provider: "klipy", id: "gifs/hello-hi-662" });
+    expect(klipy.structuredContent).toMatchObject({ reported: false });
+    expect(text(klipy)).toContain("not signed in");
   });
 
   test("resources and prompts", async () => {

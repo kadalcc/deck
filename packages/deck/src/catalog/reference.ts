@@ -225,7 +225,8 @@ export const PLAIN_BACKGROUNDS: Array<{ name: string; summary: string; example: 
   },
   {
     name: "video",
-    summary: "A looping muted video (.mp4/.webm/.mov/.ogv); `{ video, loop: false }` plays it once.",
+    summary:
+      "A looping muted video (.mp4/.webm/.mov/.ogv); `{ video, loop: false }` plays it once.",
     example: "background: /loop.mp4",
   },
   {
@@ -521,13 +522,15 @@ export const CODE_META: CodeMetaOption[] = [
     syntax: "// [!code ++]",
     summary:
       "Shiki notation comments, at the end of a line (any comment style): `[!code ++]` / `[!code --]` added and removed lines, `[!code highlight]` (or `highlight:3` for 3 lines), `[!code focus]` blurs the rest until hover, `[!code error]` / `[!code warning]`, `[!code word:name]` marks every `name`. The comment is removed. Works with click steps; `deck({ shiki: { transformers } })` adds your own transformers.",
-    example: "```ts\nconst a = 1 // [!code --]\nconst a = 2 // [!code ++]\nconst b = a // [!code highlight]\n```",
+    example:
+      "```ts\nconst a = 1 // [!code --]\nconst a = 2 // [!code ++]\nconst b = a // [!code highlight]\n```",
   },
   {
     syntax: "::code-group",
     summary:
       "Fences between `::code-group` and `::` (or `:::`) become tabs (`<CodeGroup>`), named by each fence's `[title]`. Options after the opener: `{clicks:true}` turns tabs on clicks, `{print:'all'}` prints every tab.",
-    example: "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
+    example:
+      "::code-group\n\n```sh [npm]\nnpm i @kadal/deck\n```\n\n```sh [bun]\nbun add @kadal/deck\n```\n\n::",
   },
   {
     syntax: "<<< @/snippets/file.ts#region",
@@ -643,11 +646,13 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
   },
   {
     param: "?clicks=0|1",
-    summary: "With ?print-pdf: a page per click step (1) or one per slide at its last step (0); overrides pdfSeparateFragments.",
+    summary:
+      "With ?print-pdf: a page per click step (1) or one per slide at its last step (0); overrides pdfSeparateFragments.",
   },
   {
     param: "?notes=0|1|page",
-    summary: "With ?print-pdf: notes off, in a box on each slide, or on pages of their own; overrides showNotes.",
+    summary:
+      "With ?print-pdf: notes off, in a box on each slide, or on pages of their own; overrides showNotes.",
   },
   {
     param: "?omit-background",
@@ -655,7 +660,8 @@ export const QUERY_PARAMS: QueryParamInfo[] = [
   },
   {
     param: "?scheme=light|dark",
-    summary: "Open in that colour scheme (also ?dark), without changing the viewer's remembered choice.",
+    summary:
+      "Open in that colour scheme (also ?dark), without changing the viewer's remembered choice.",
   },
   {
     param: "?view=scroll",
@@ -862,6 +868,14 @@ export const CLI: CliCommand[] = [
     json: true,
   },
   {
+    name: "media",
+    usage:
+      "kadal-deck media search <icon|emoji|sticker|gif|meme|template|kadal> <query> [--limit n] [--set fluent|fluent-color|fluent-flat|noto|noto-animated|twemoji] [--json] · media trending <kind> · media used klipy <id> [--q query] · media list [--kind k] [--q text] · media add <id|name> [--to dir] [--force]",
+    summary:
+      "Media for a slide, from the hosted builder's sources, each result with its MDX (exactly what the builder inserts), a preview URL, its size and its credit: Iconify icons (free licences only), emoji (Fluent, Noto, Noto Animated, Twemoji), stickers (Kadal's, KLIPY's, emoji as stickers), GIFs (Kadal's loops, KLIPY), memes (KLIPY), meme templates with their caption boxes (Kadal's, Imgflip's top 100), and `kadal`, Kadal's own library. `--limit` is per source (default 12). Works signed out; KLIPY needs `login` (the host hands over its key) and is asked from this machine, in KLIPY's order, with content_filter=high. `used klipy <id>` is KLIPY's share trigger: run it for each KLIPY result you insert. `credits: true` in the headmatter credits everything automatically. `list` and `add` are the workspace's uploaded library.",
+    json: true,
+  },
+  {
     name: "publish",
     usage:
       "kadal-deck publish [--slug s] [--workspace w] [--title t] [--host url] [--without-notes] [--pwa] [--no-source] [--force] [--showcase|--no-showcase] [--json]",
@@ -921,7 +935,7 @@ export const EXIT_CODES = [
   {
     code: 4,
     meaning:
-      "Missing prerequisite: no deck.mdx here, dependencies not installed, or Playwright/Chromium missing. From `publish`: the published deck moved since your last sync (`error.code` \"diverged\"): run `kadal-deck pull`.",
+      'Missing prerequisite: no deck.mdx here, dependencies not installed, or Playwright/Chromium missing. From `publish`: the published deck moved since your last sync (`error.code` "diverged"): run `kadal-deck pull`.',
   },
   {
     code: 5,
@@ -1028,6 +1042,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
     'The theme\'s knobs, over its own defaults: each key becomes a CSS custom property `--theme-<kebab-key>` on the deck root (`primaryColor: "#0f766e"` → `--theme-primary-color`; nested keys join with dashes). What a theme reads is in its README.',
   comark:
     'Comark (formerly MDC) syntax: `:name[content]{prop=value .class #id}` inline components, `[text]{.class style="…"}` spans, `{…}` after `**bold**`, `` `code` ``, links and images, and `::name{props}` … `::` blocks (YAML props between `---` lines, `#slot` sections as props, nesting with more colons). Kadal\'s `::slot::` markers and `::code-group` keep their meaning.',
+  credits:
+    'Media credits: `true` (or `{ slide: "before-last" | "end", footer: true, title: "Credits" }`) collects every attributed GIF, sticker, meme template, emoji set, icon set and `<Image credit>` the slides use, groups them by source with licence and link, puts a "Credits" slide (`id: credits`) before the last slide — at the end with `slide: "end"` or in a one-slide deck — and a small "Credits" link in the corner of every other slide (outside the layout, so nothing moves; `footer: false` for none). A slide with `<Credits />` of its own is used instead of adding one. Default false.',
   layers:
     "Where the global and slide layers (global-top.tsx and friends, or a theme's or addon's) draw besides the deck, print and export: { presenter: true, overview: false }.",
 };
@@ -1058,7 +1074,7 @@ export const EXTRA_DECK_KEYS = [
       text: 'boolean | "build"',
       variants: [{ type: "boolean" as const }, { type: "string" as const }],
     },
-    description: "Another spelling of bundleRemoteAssets (true or \"build\"; \"dev\" does nothing).",
+    description: 'Another spelling of bundleRemoteAssets (true or "build"; "dev" does nothing).',
     scope: "deck" as const,
   },
 ];
@@ -1086,6 +1102,12 @@ export const SLIDE_KEYS = [
     description: "A stable id: `#/<id>` links here and <Link to> finds it.",
   },
   { name: "routeAlias", type: S(), description: "Another spelling of `id` for links." },
+  {
+    name: "generated",
+    type: S(),
+    description:
+      'Set by the compiler on a slide it adds ("credits", for `credits: true`); tools that count the author\'s slides skip it. Not for decks to write.',
+  },
   {
     name: "title",
     type: S(),

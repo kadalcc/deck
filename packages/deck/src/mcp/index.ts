@@ -183,6 +183,30 @@ export function createServer(options: McpOptions): {
     }
   }
 
+  /**
+   * The media sources (media-search/), one session for the server's life: the emoji index,
+   * Imgflip's list, Kadal's catalog and the KLIPY key are fetched once. KLIPY is asked from this
+   * machine, with the CLI's sign-in, as KLIPY's rules require.
+   */
+  let mediaSession: Promise<import("../media-search/search.ts").MediaSession> | null = null;
+  const media = () =>
+    (mediaSession ??= (async () => {
+      const [{ MediaSession }, { hostFrom }] = await Promise.all([
+        import("../media-search/search.ts"),
+        import("../cli/host.ts"),
+      ]);
+      const creds = await loadCredentials();
+      return new MediaSession({ host: creds?.host ?? hostFrom(), token: creds?.token ?? null });
+    })());
+
+  /** KLIPY's share trigger for every result this session handed out that an edit now uses. */
+  async function reportMediaUse(result: EditResult) {
+    if (!mediaSession) return;
+    const session = await mediaSession;
+    for (const text of Object.values(result.files))
+      for (const u of session.usedIn(text)) await session.used("klipy", `${u.kind}/${u.slug}`, u.query);
+  }
+
   async function renderer(p: DeckProject): Promise<SlideRenderer> {
     await devServer(p);
     const entry = live.get(p.dir)!;
@@ -225,6 +249,7 @@ export function createServer(options: McpOptions): {
     const refused = conflictRefusal(p, result);
     if (refused) return failure(refused, { conflict: true, next: ["deck_conflicts", "deck_resolve"] });
     const written = saveEdit(result, p);
+    await reportMediaUse(result).catch(() => {});
     const check = await checkProject(p);
     const outline = outlineDeck(p.files);
     const slide = result.index !== null ? (outline.slides[result.index] ?? null) : null;
@@ -277,6 +302,7 @@ export function createServer(options: McpOptions): {
         "Workflow: deck_reference (look up components/layouts/backgrounds before using them) → deck_create or deck_outline → slide_add / slide_update / notes_set → deck_check → slide_render and LOOK at the pictures → fix → deck_export or deck_publish.",
         "Edit slides through the slide tools rather than rewriting deck.mdx: they change only that slide's lines and lint the result.",
         "A published deck may be edited on the web too (quick edit). Before editing a published deck: deck_sync_status; if the web has newer versions, deck_pull first. Conflicts: deck_conflicts (both sides, per slide) → deck_resolve (prefer keeping both sides' intent; ask the person when the two edits contradict) → deck_check → deck_publish. Never force a publish over web edits unless the person says so.",
+        "Media: media_search / media_trending find icons, emoji, stickers, GIFs, memes, meme templates and Kadal's own library; put a result's `mdx` into a slide as it is. Add `credits: true` to the headmatter and every item is credited on a Credits slide automatically. After inserting a KLIPY result, call media_used.",
         "Resources: kadal-deck://guide/design-guide (how to make a good talk), kadal-deck://guide/authoring, kadal-deck://reference.",
       ].join("\n"),
     },
@@ -810,7 +836,9 @@ export function createServer(options: McpOptions): {
         slides: z
           .array(SLIDE)
           .optional()
-          .describe("Which slides (default: all, up to 12). Hidden slides are not drawn."),
+          .describe(
+            'Which slides (default: all, up to 12). Hidden slides are not drawn. "credits" draws the credits slide `credits: true` adds.',
+          ),
         scheme: z.enum(["light", "dark"]).optional().describe("Colour scheme (default light)."),
         theme: z.string().optional().describe("A theme the deck ships (minimal, rla, stack…)."),
         width: z
@@ -835,10 +863,16 @@ export function createServer(options: McpOptions): {
         const deck = readDeck(p.files);
         const MAX = 12;
         let indexes: number[];
+        const made: string[] = [];
         if (a.slides?.length) {
           indexes = [];
           for (const ref of a.slides) {
             const s = findSlide(deck.slides, ref);
+            // The credits slide `credits: true` adds is the compiler's, not in the outline.
+            if (!s && ref === "credits") {
+              made.push("credits");
+              continue;
+            }
             if (!s)
               return failure(
                 `No slide ${JSON.stringify(ref)}; the deck has ${deck.slides.length}.`,
@@ -850,13 +884,15 @@ export function createServer(options: McpOptions): {
         indexes = indexes.slice(0, MAX);
         const r = await (
           await renderer(p)
-        ).render({ slides: indexes, scheme: a.scheme, theme: a.theme, width: a.width ?? 1280 });
+        ).render({ slides: indexes, made, scheme: a.scheme, theme: a.theme, width: a.width ?? 1280 });
         const content: Content[] = [];
         for (const shot of r.shots) {
-          const meta = deck.slides[shot.index];
+          const meta = shot.generated ? undefined : deck.slides[shot.index];
           content.push({
             type: "text",
-            text: `Slide ${shot.index}${meta ? ` — ${outlineSlide(meta).title ?? outlineSlide(meta).id}` : ""} (${shot.width}×${shot.height})`,
+            text: shot.generated
+              ? `The ${shot.generated} slide (added by the compiler; not in the outline) (${shot.width}×${shot.height})`
+              : `Slide ${shot.index}${meta ? ` — ${outlineSlide(meta).title ?? outlineSlide(meta).id}` : ""} (${shot.width}×${shot.height})`,
           });
           content.push({ type: "image", data: shot.png.toString("base64"), mimeType: "image/png" });
         }
@@ -869,7 +905,11 @@ export function createServer(options: McpOptions): {
         return {
           content,
           structuredContent: {
-            rendered: r.shots.map((s) => ({ slide: s.index, width: s.width, height: s.height })),
+            rendered: r.shots.map((s) => ({
+              slide: s.generated ?? s.index,
+              width: s.width,
+              height: s.height,
+            })),
             missing: r.missing,
             errors: r.errors,
           },
@@ -1324,6 +1364,119 @@ export function createServer(options: McpOptions): {
         );
       },
     ),
+  );
+
+  // ── media ────────────────────────────────────────────────────────────────────────────────
+  const MEDIA_KIND = z
+    .enum(["icon", "emoji", "sticker", "gif", "meme", "template", "kadal"])
+    .describe(
+      "icon (Iconify: every free set), emoji (Fluent, Noto, Noto Animated, Twemoji: <Emoji> inline), sticker (Kadal's stickers, KLIPY stickers, emoji as placeable <Sticker>), gif (Kadal's GIF loops, KLIPY GIFs), meme (KLIPY's finished memes), template (meme templates with caption boxes: Kadal's and Imgflip's top 100, as <Meme>), kadal (all of Kadal's own library).",
+    );
+  const MEDIA_LIMIT = z
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .optional()
+    .describe("Results per source (default 12).");
+  const MEDIA_SET = z
+    .enum(["fluent", "fluent-3d", "fluent-color", "fluent-flat", "noto", "noto-animated", "twemoji"])
+    .optional()
+    .describe("Emoji set for emoji and emoji stickers (default fluent-3d). Keep one set per deck.");
+  const MEDIA_RESULT = z
+    .object({
+      provider: z.string(),
+      type: z.string(),
+      id: z.string(),
+      title: z.string(),
+      preview: z.string().nullable(),
+      attribution: z.string(),
+      mdx: z.string().nullable(),
+    })
+    .passthrough();
+
+  type MediaArgs = { kind: import("../media-search/sources.ts").MediaKind; query?: string; limit?: number; set?: string };
+  const findMedia = async (a: MediaArgs, verb: "search" | "trending") => {
+    const session = await media();
+    let found: import("../media-search/search.ts").MediaFind;
+    try {
+      found = await session.find(a);
+    } catch (e) {
+      if (e instanceof RangeError) return failure(e.message);
+      throw e;
+    }
+    const lines = found.results.map(
+      (r, i) =>
+        `${i + 1}. [${r.provider} ${r.type}] ${r.title} (id ${r.id}) — ${r.attribution}${r.preview ? `\n   preview: ${r.preview}` : ""}\n${r.mdx ? r.mdx.replace(/^/gm, "   ") : "   (a KLIPY slot with nothing to insert)"}`,
+    );
+    const notes = found.sources.filter((s) => s.note).map((s) => `${s.provider}: ${s.note}`);
+    const klipy = found.results.some((r) => r.reportUse);
+    return ok(
+      { ...found } as unknown as Record<string, unknown>,
+      [
+        found.results.length
+          ? `${found.results.length} result(s) for ${verb === "trending" ? `trending ${a.kind}` : `${a.kind} "${a.query}"`}. Put a result's MDX into a slide exactly as given (slide_update / slide_add); with \`credits: true\` in the headmatter the deck credits it on its Credits slide automatically.`
+          : `Nothing for ${verb === "trending" ? `trending ${a.kind}` : `${a.kind} "${a.query}"`}.`,
+        ...lines,
+        ...notes,
+        klipy
+          ? "KLIPY results are hot-linked (exports show a link card) and in KLIPY's order. After inserting one, call media_used with provider \"klipy\" and its id."
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    );
+  };
+
+  server.registerTool(
+    "media_search",
+    {
+      title: "Search media",
+      description:
+        "Find media for a slide — the same sources and the same MDX as the hosted builder's Insert media panel: Iconify icons, emoji, stickers, GIFs and memes (KLIPY), meme templates (Imgflip, with caption boxes placed), and Kadal's own stickers, GIF loops and templates. Each result has `mdx` (paste it into the slide unchanged; edit only caption text, `size`, `x`/`y`), `preview` (a picture URL), `attribution` and `id`. Credits are automatic: set `credits: true` in the headmatter (deck_update_frontmatter) and every item appears on a Credits slide with its licence. KLIPY needs the CLI's sign-in; without it the other sources still answer. Prefer one emoji set per deck; prefer Kadal's own items when they fit.",
+      inputSchema: {
+        kind: MEDIA_KIND,
+        query: z.string().min(1).describe("What to look for: a feeling, an object, a reaction (\"mind blown\", \"rocket\", \"thank you\")."),
+        limit: MEDIA_LIMIT,
+        set: MEDIA_SET,
+      },
+      outputSchema: out({ kind: z.string(), query: z.string(), results: z.array(MEDIA_RESULT), sources: z.array(LOOSE) }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    guard((a: MediaArgs) => findMedia(a, "search")),
+  );
+
+  server.registerTool(
+    "media_trending",
+    {
+      title: "Trending media",
+      description:
+        "What's popular now in a kind, with no query: KLIPY's trending GIFs, stickers and memes, Imgflip's top meme templates, the most-used emoji, a sample of the popular icon sets, Kadal's library in its own order. Same result shape as media_search (`mdx`, `preview`, `attribution`, `id`); paste the `mdx` into a slide unchanged. Credits are automatic with `credits: true` in the headmatter.",
+      inputSchema: { kind: MEDIA_KIND, limit: MEDIA_LIMIT, set: MEDIA_SET },
+      outputSchema: out({ kind: z.string(), results: z.array(MEDIA_RESULT), sources: z.array(LOOSE) }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    guard((a: Omit<MediaArgs, "query">) => findMedia({ ...a, query: "" }, "trending")),
+  );
+
+  server.registerTool(
+    "media_used",
+    {
+      title: "Report a media use",
+      description:
+        "Tell the source a result went into the deck. KLIPY requires it (its share trigger is how it counts a use): call it once for every KLIPY result you insert, with the result's `id` (\"gifs/<slug>\"). Edits made through slide_add / slide_update report KLIPY results from this session on their own, so this is for inserts made any other way; other providers need nothing and the call says so.",
+      inputSchema: {
+        provider: z.string().describe('The result\'s provider: "klipy" (others are accepted and ignored).'),
+        id: z.string().min(1).describe("The result's id, e.g. gifs/hello-hi-662."),
+        query: z.string().optional().describe("The search it came from, when you have it."),
+      },
+      outputSchema: out({ reported: z.boolean(), note: z.string() }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    guard(async (a: { provider: string; id: string; query?: string }) => {
+      const r = await (await media()).used(a.provider, a.id, a.query);
+      return ok(r, r.note);
+    }),
   );
 
   // ── resources ────────────────────────────────────────────────────────────────────────────

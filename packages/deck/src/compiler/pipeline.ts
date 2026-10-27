@@ -6,6 +6,7 @@ import type { Highlighter, ShikiTransformer } from "shiki";
 import { codeToKeyedTokens } from "shiki-magic-move/core";
 
 import type { MagicMoveData } from "../core/model.ts";
+import { CREDITS_FILE, withCredits } from "../credits/model.ts";
 import {
   DEFAULT_GLOSSARY,
   type GlossaryEntry,
@@ -119,7 +120,29 @@ export function prepareDeck(text: string, options: PrepareOptions): PreparedDeck
       snippets,
     };
   });
-  return { headmatter: split.headmatter, slides, styles: deckStylesheet(slides) };
+  // `credits:` (credits/model.ts): what the slides' media owe, and the slide that says so.
+  const credited = withCredits(split.headmatter, slides, (base) => ({
+    ...base,
+    frontmatter: withDefaults(base.frontmatter, defaults),
+    styles: [],
+    range: {
+      file: CREDITS_FILE,
+      start: 0,
+      end: 0,
+      separator: null,
+      frontmatter: null,
+      body: 0,
+      head: false,
+      includedBy: null,
+    },
+    magic: [],
+    snippets: [],
+  }));
+  return {
+    headmatter: credited.headmatter,
+    slides: credited.slides,
+    styles: deckStylesheet(credited.slides),
+  };
 }
 
 export interface DeckGlossary {

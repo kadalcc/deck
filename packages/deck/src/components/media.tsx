@@ -40,6 +40,11 @@ import { Drag } from "./Drag.tsx";
  *           over an image, as real text. `template` records where the picture came from and shows
  *           the link back ("Template via imgflip.com") on hover and in every export.
  *
+ * `provider="kadal"` marks an item from Kadal's own library (stickers, GIF loops, meme templates:
+ * `kadal-deck media search kadal …`). It is credited "Kadal", and because it is ours to copy, print
+ * and the exports draw it (its `still`) where a provider's GIF gets a card. Every attributed item
+ * is also listed by `<Credits />` (credits/model.ts reads these tags when the deck compiles).
+ *
  * A host that takes reports sets `window.__KADAL_DECK__.mediaReport` (a URL): each of these then
  * offers "Report" on hover, pointing there with the deck's room and the media's address.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -125,6 +130,19 @@ export interface StickerProps {
   shadow?: boolean;
   /** "x,y,w,h[,r]" — what dragging it in `kadal-deck dev` writes; wins over x/y/size/rotate. */
   pos?: string;
+  /** Where it came from: "kadal" for Kadal's own library (credited "Kadal"). */
+  provider?: string;
+  /** The provider's id for it ("kadal/ship-it"). Without a provider, `id` is the element's id. */
+  id?: string;
+  /** A still frame of an animated sticker: shown under reduced motion and in print. */
+  still?: string;
+  /** A credit of its own ("Photo by Ana Ruiz"), on hover and in the deck's credits. */
+  credit?: string;
+  /** The credit's link (the work's page). */
+  creditUrl?: string;
+  /** Its licence ("CC BY 4.0"), for the credits. */
+  license?: string;
+  licenseUrl?: string;
   className?: string;
   style?: CSSProperties;
   [key: string]: unknown;
@@ -145,6 +163,20 @@ export function stickerPlace(
 const flipOf = (flip: StickerProps["flip"]) =>
   flip === "y" ? "scaleY(-1)" : flip === true || flip === "x" ? "scaleX(-1)" : undefined;
 
+/** The words and link a sticker is credited with on hover, or null. */
+export function stickerCredit(
+  p: Pick<StickerProps, "provider" | "credit" | "creditUrl">,
+): { label: string; href: string | null } | null {
+  if (typeof p.credit === "string" && p.credit.trim())
+    return { label: p.credit.trim(), href: isWebUrl(p.creditUrl) ? p.creditUrl : null };
+  if (typeof p.provider === "string" && p.provider.toLowerCase() === "kadal")
+    return { label: "Kadal", href: KADAL_URL };
+  return null;
+}
+
+/** Kadal's own media: credited "Kadal", linked here. */
+export const KADAL_URL = "https://kadal.cc";
+
 export function Sticker({
   src,
   alt = "",
@@ -155,12 +187,23 @@ export function Sticker({
   flip,
   shadow,
   pos,
+  provider,
+  id,
+  still,
+  credit,
+  creditUrl,
+  license: _license,
+  licenseUrl: _licenseUrl,
   className,
   style,
   ...rest
 }: StickerProps) {
   const deck = useDeck();
+  const where = useRenderContext();
+  const reduced = useReducedMotion();
   const report = useReportHref(src);
+  const own = stickerCredit({ provider, credit, creditUrl });
+  const shown = still && (reduced || where.print) ? still : src;
   const place = stickerPlace(
     { x, y, size, rotate },
     { width: deck.config.width || 1920, height: deck.config.height || 1080 },
@@ -168,6 +211,7 @@ export function Sticker({
   return (
     <Drag
       {...rest}
+      {...(id && !provider ? { id } : {})}
       pos={pos}
       place={place}
       className={cls("deck-sticker", shadow && "has-shadow", className)}
@@ -175,13 +219,23 @@ export function Sticker({
     >
       <img
         className="deck-sticker-img"
-        src={src}
+        src={shown}
         alt={alt}
         draggable={false}
         decoding="async"
         style={flip ? { transform: flipOf(flip) } : undefined}
       />
-      <HoverCredit report={report} />
+      <HoverCredit report={report}>
+        {own ? (
+          own.href ? (
+            <a href={own.href} target="_blank" rel="noopener noreferrer">
+              {own.label}
+            </a>
+          ) : (
+            <span>{own.label}</span>
+          )
+        ) : null}
+      </HoverCredit>
     </Drag>
   );
 }
@@ -296,6 +350,7 @@ export function Emoji({ name, char, set, size = "1.2em", alt, className, childre
 // ── <Gif> ───────────────────────────────────────────────────────────────────────────────────
 
 const PROVIDERS: Record<string, { label: string; page: (slug?: string, id?: string) => string }> = {
+  kadal: { label: "Kadal", page: () => KADAL_URL },
   klipy: {
     label: "KLIPY",
     page: (slug) =>
@@ -309,7 +364,7 @@ const PROVIDERS: Record<string, { label: string; page: (slug?: string, id?: stri
 };
 
 export interface GifProps {
-  /** Who it came from: "klipy" (GIPHY and others later). */
+  /** Who it came from: "klipy" (default), "kadal" (Kadal's own library), "giphy". */
   provider?: string;
   id?: string;
   slug?: string;
@@ -337,14 +392,20 @@ export function gifPlaceholder(p: Pick<GifProps, "provider" | "id" | "slug" | "t
   return { provider, href, title, label: `GIF: ${title} — via ${provider}` };
 }
 
-/** How a GIF is drawn here: the export card, a still, a looping video, or the image itself. */
+/**
+ * How a GIF is drawn here: the export card, a still, a looping video, or the image itself. In
+ * print a provider's GIF is a card (its terms forbid copies); Kadal's own (`own`) is drawn, still
+ * first.
+ */
 export function gifMode(p: {
   src: string;
   still?: string;
   print: boolean;
   reduced: boolean;
+  own?: boolean;
 }): "card" | "still" | "video" | "image" {
-  if (p.print) return "card";
+  if (p.print && !p.own) return "card";
+  if (p.print && p.still) return "still";
   if (p.reduced && p.still) return "still";
   return /\.(mp4|webm)(?:[?#]|$)/i.test(p.src) ? "video" : "image";
 }
@@ -367,7 +428,13 @@ export function Gif({
   const reduced = useReducedMotion();
   const report = useReportHref(src);
   const info = gifPlaceholder({ provider, id, slug, title, href });
-  const mode = gifMode({ src, still, print: where.print, reduced });
+  const mode = gifMode({
+    src,
+    still,
+    print: where.print,
+    reduced,
+    own: provider.toLowerCase() === "kadal",
+  });
   const ratio = width && height ? `${width} / ${height}` : undefined;
   if (mode === "card")
     return (
@@ -450,6 +517,8 @@ export interface MemeTemplate {
 
 export interface MemeProps {
   src: string;
+  /** "kadal" for a template from Kadal's own library (the same as `template={{ provider: "kadal" }}`). */
+  provider?: string;
   alt?: string;
   template?: MemeTemplate;
   captions?: MemeCaption[];
@@ -501,6 +570,8 @@ export function memeCaptionStyle(c: Required<MemeCaption>): CSSProperties {
 export function memeTemplateCredit(t: unknown): { label: string; href: string } | null {
   if (!t || typeof t !== "object") return null;
   const o = t as MemeTemplate;
+  if (typeof o.provider === "string" && o.provider.toLowerCase() === "kadal")
+    return { label: "Template by Kadal", href: KADAL_URL };
   if (o.provider === "imgflip")
     return {
       label: "Template via imgflip.com",
@@ -514,12 +585,12 @@ export function memeTemplateCredit(t: unknown): { label: string; href: string } 
   return null;
 }
 
-export function Meme({ src, alt, template, captions, width, className }: MemeProps) {
+export function Meme({ src, alt, provider, template, captions, width, className }: MemeProps) {
   const where = useRenderContext();
   const report = useReportHref(src);
   useEffect(() => loadExtraFont("Anton"), []);
   const lines = memeLayout(captions);
-  const credit = memeTemplateCredit(template);
+  const credit = memeTemplateCredit(template ?? (provider ? { provider } : undefined));
   const label = alt ?? (lines.map((l) => l.text).join(" / ") || "Meme");
   return (
     <figure

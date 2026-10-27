@@ -52,6 +52,10 @@
           "type": "string",
           "description": "Another spelling of `id` for links."
         },
+        "generated": {
+          "type": "string",
+          "description": "Set by the compiler on a slide it adds (\"credits\", for `credits: true`); tools that count the author's slides skip it. Not for decks to write."
+        },
         "title": {
           "type": "string",
           "description": "The title the table of contents and search use (default: the first heading)."
@@ -337,6 +341,10 @@
         "routeAlias": {
           "type": "string",
           "description": "Another spelling of `id` for links."
+        },
+        "generated": {
+          "type": "string",
+          "description": "Set by the compiler on a slide it adds (\"credits\", for `credits: true`); tools that count the author's slides skip it. Not for decks to write."
         },
         "title": {
           "type": "string",
@@ -1463,6 +1471,43 @@
             }
           },
           "description": "Where the global and slide layers draw besides the deck, print and export."
+        },
+        "credits": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "slide": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "end",
+                        "before-last"
+                      ]
+                    },
+                    {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    }
+                  ]
+                },
+                "footer": {
+                  "type": "boolean"
+                },
+                "title": {
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "description": "Media credits (credits/model.ts): `true` collects every attributed GIF, sticker, meme, emoji set, icon set and credited image the slides use, puts a \"Credits\" slide before the last slide (`slide: \"end\"`: after it), and a small link to it in the corner of every other slide (`footer: false`: none). `title` names the slide and the link. Once compiled, the value is the collected credits (`ResolvedCredits`) that `<Credits />` draws.",
+          "default": false
         },
         "timer": {
           "type": "string",

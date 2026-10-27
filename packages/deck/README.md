@@ -56,6 +56,7 @@ frontmatter; the block at the top is the headmatter (deck settings and the title
 | `kadal-deck login` / `logout` / `whoami` | sign this machine in to a Kadal Deck host (device code, opens the browser); `--workspace <handle>` picks the workspace and refuses a token for any other |
 | `kadal-deck publish [--slug] [--workspace] [--title] [--host] [--without-notes] [--pwa] [--no-source] [--force] [--showcase\|--no-showcase]` | build for the host and publish; only changed files are uploaded. The editable source goes too (privately) for quick edit on the web; see [Edit on the web, sync back](#edit-on-the-web-sync-back) |
 | `kadal-deck pull [--version n] [--ours\|--theirs] [--dry-run]` / `status` / `resolve [file[#slide]] --ours\|--theirs\|--both` | bring web edits into your files slide by slide, see where you stand, settle conflicts |
+| `kadal-deck media search <kind> <words> [--limit n] [--set s]` / `trending <kind>` / `used klipy <id>` / `list` / `add <id\|name>` | media for a slide — kinds `icon`, `emoji`, `sticker`, `gif`, `meme`, `template`, `kadal` — each result with the MDX the hosted builder inserts, a preview URL and its credit (KLIPY needs `login`; `used` is KLIPY's share trigger); `list`/`add` fetch the workspace's uploads |
 | `kadal-deck narrate [--voice id] [--dtype q8\|fp32…] [--force] [--setup]` | bake the narration: each notes segment spoken by Kokoro into `public/narration/` (MP3/Opus with ffmpeg, else WAV) + `public/narration.json`; skips clips that exist. `--setup` installs `kokoro-js` |
 | `kadal-deck mcp [--dir path] [--allow-outside]` | a Model Context Protocol server on stdio for AI agents (see below); confined to `--dir` unless `--allow-outside` |
 
@@ -97,9 +98,10 @@ Slidev project is run. The converter itself is a pure function, `convertSlidev` 
 
 ## For AI agents and tools
 
-- `kadal-deck mcp` — tools to read the reference, scaffold, outline, edit single slides (only
+- `kadal-deck mcp` — 24 tools to read the reference, scaffold, outline, edit single slides (only
   their lines change), lint, **render slides to PNG** for the agent to look at, preview, build,
-  export and publish; resources for the catalog, the reference and the guides; prompts
+  export and publish, and find media (`media_search`, `media_trending`, `media_used`: icons, emoji,
+  stickers, GIFs, memes, templates, Kadal's library, each with its MDX and credit); resources for the catalog, the reference and the guides; prompts
   `draft_deck` and `review_deck`. Setup for each client: the repository README.
 - `skill/` in this package (and `skills/kadal-deck` in the repository) — the Agent Skill.
 - `@kadal/deck/catalog` — `catalog` (components with props/defaults/examples, layouts,

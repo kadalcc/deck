@@ -106,6 +106,11 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       alt: "Alternative text (always write one).",
       preview: "true, or a larger image's URL, to open a lightbox on click.",
       fit: "CSS object-fit (cover, contain…).",
+      credit:
+        "Who to thank (“Harbour at dawn” by Ana Ruiz): listed by `<Credits />` and shown on hover.",
+      creditUrl: "The work's page, for the credit's link.",
+      license: 'Its licence ("CC BY 2.0"), for the credits.',
+      licenseUrl: "The licence's text.",
     },
   },
   Code: {
@@ -443,6 +448,13 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       flip: 'Mirror: true or "x" left↔right, "y" upside down.',
       shadow: "A soft drop shadow that follows the outline.",
       pos: '"x,y,w,h[,r]" — written by dragging; wins over x/y/size/rotate.',
+      provider: '"kadal" for Kadal\'s own library (credited "Kadal").',
+      id: "The provider's id (\"kadal/ship-it\"); without a provider, the element's id.",
+      still: "A still frame, shown under reduced motion and in print.",
+      credit: "A credit of its own, on hover and in `<Credits />`.",
+      creditUrl: "The credit's link.",
+      license: "Its licence, for the credits.",
+      licenseUrl: "The licence's text.",
     },
   },
   Emoji: {
@@ -464,7 +476,8 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       "A GIF from a provider (KLIPY), hot-linked exactly as the provider returned it, with a small credit on hover. Print and every export (PDF, PNG, PPTX) show a card with its title and a link instead of the media — the providers' terms don't allow copying it.",
     example: `<Gif provider="klipy" slug="hello-hi-662" src="https://static.klipy.com/ii/…/hello.gif" title="Hello" width={498} height={498} />`,
     props: {
-      provider: 'Where it came from: "klipy" (default).',
+      provider:
+        'Where it came from: "klipy" (default), "kadal" (Kadal\'s own library: drawn in print and exports, its still first), "giphy".',
       id: "The provider's id.",
       slug: "The provider's slug (builds the link back).",
       src: "The media URL as the provider returned it (GIF, WebP, MP4 or WebM).",
@@ -484,10 +497,24 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     props: {
       src: "The image.",
       alt: "Alternative text (default: the captions).",
-      template: '{ provider: "imgflip", id, url, name } — the source, credited with a link.',
+      template:
+        '{ provider: "imgflip" | "kadal", id, url, name } — the source, credited with a link.',
+      provider: '"kadal": a Kadal template (the same as template.provider).',
       captions:
         "[{ text, x, y, width, size, align, color, stroke }]: x/y/width in % of the image (defaults 5, 4, 90), size in % of its width (default 9), align left|center|right, colours CSS (default white on black).",
       width: "CSS width; a number is px.",
+    },
+  },
+  Credits: {
+    category: "media",
+    summary:
+      "The deck's media credits: every attributed GIF, sticker, meme template, emoji set, icon set and `<Image credit>` the slides use, collected when the deck compiles and grouped by source, each with its licence and a link. `credits: true` in the headmatter adds a slide with it before the last slide and a corner link to it on every other slide, so it is rarely written by hand; a slide that has one is used instead.",
+    example: `---\nid: credits\n---\n\n<Credits title="Thanks to" />`,
+    props: {
+      title:
+        'The heading (default the headmatter\'s `credits.title`, else "Credits"); false for none.',
+      lede: "The line under the heading; false for none.",
+      className: "Extra classes.",
     },
   },
   Audio: {

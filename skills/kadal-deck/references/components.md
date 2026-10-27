@@ -769,6 +769,23 @@ A Bluesky post, through Bluesky's embed, in the slide's colour scheme; `deck exp
 | `scale` | `string \| number` | `1` | Scale factor. |
 | `poster` | `string` |  | Stands in for the post in print, the overview and while it loads. |
 
+#### `<Credits>`
+
+The deck's media credits: every attributed GIF, sticker, meme template, emoji set, icon set and `<Image credit>` the slides use, collected when the deck compiles and grouped by source, each with its licence and a link. `credits: true` in the headmatter adds a slide with it before the last slide and a corner link to it on every other slide, so it is rarely written by hand; a slide that has one is used instead.
+
+```mdx
+---
+id: credits
+---
+
+<Credits title="Thanks to" />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `title` | `string \| false` |  | The heading (default: the headmatter's `credits.title`, else "Credits"); `false` for none. |
+| `lede` | `string \| false` |  | One line under the heading; `false` for none. |
+
 #### `<Emoji>`
 
 One emoji as an image from an open set (Fluent 3D/Color/Flat, Noto, Noto Animated, Twemoji), served by the host (`https://decks.kadal.cc/emoji` by default). `char` is exact; `name` is looked up in the host's index. Animated Noto shows a still under reduced motion and in print.
@@ -796,7 +813,7 @@ A GIF from a provider (KLIPY), hot-linked exactly as the provider returned it, w
 
 | prop | type | default | |
 | --- | --- | --- | --- |
-| `provider` | `string` | `"klipy"` | Who it came from: "klipy" (GIPHY and others later). |
+| `provider` | `string` | `"klipy"` | Who it came from: "klipy" (default), "kadal" (Kadal's own library), "giphy". |
 | `id` | `string` |  | The provider's id. |
 | `slug` | `string` |  | The provider's slug (builds the link back). |
 | `src` * | `string` |  | The media URL exactly as the provider returned it (GIF, WebP, or MP4/WebM). |
@@ -841,6 +858,10 @@ The `img` mapping (every `![alt](src)`), lazy-loaded; also usable as a tag. `pre
 | `alt` | `string` | `""` | Alternative text (always write one). |
 | `preview` | `string \| boolean` |  | true, or a larger image's URL, to open a lightbox on click. |
 | `fit` | `string` |  | CSS object-fit (cover, contain…). |
+| `credit` | `string` |  | Who to thank ("“Harbour at dawn” by Ana Ruiz"): listed by `<Credits />`, the title on hover. |
+| `creditUrl` | `string` |  | The work's page, for the credit's link. |
+| `license` | `string` |  | Its licence ("CC BY 2.0"), for the credits. |
+| `licenseUrl` | `string` |  | The licence's text. |
 
 #### `<Meme>`
 
@@ -853,8 +874,9 @@ Image-macro captions over a picture: white Anton with a black outline by default
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `src` * | `string` |  | The image. |
+| `provider` | `string` |  | "kadal" for a template from Kadal's own library (the same as `template={{ provider: "kadal" }}`). |
 | `alt` | `string` |  | Alternative text (default: the captions). |
-| `template` | `MemeTemplate` |  | { provider: "imgflip", id, url, name } — the source, credited with a link. |
+| `template` | `MemeTemplate` |  | { provider: "imgflip" \| "kadal", id, url, name } — the source, credited with a link. |
 | `captions` | `MemeCaption[]` |  | [{ text, x, y, width, size, align, color, stroke }]: x/y/width in % of the image (defaults 5, 4, 90), size in % of its width (default 9), align left\|center\|right, colours CSS (default white on black). |
 | `width` | `string \| number` |  | CSS width (a number is px). Default: as wide as the image, up to its box. |
 
@@ -877,6 +899,13 @@ An image placed over the slide in stage pixels — a PNG cut-out, an animated GI
 | `flip` | `boolean \| "x" \| "y"` |  | Mirror it: true or "x" left↔right, "y" upside down. |
 | `shadow` | `boolean` |  | A soft drop shadow that follows the image's outline. |
 | `pos` | `string` |  | "x,y,w,h[,r]" — what dragging it in `kadal-deck dev` writes; wins over x/y/size/rotate. |
+| `provider` | `string` |  | Where it came from: "kadal" for Kadal's own library (credited "Kadal"). |
+| `id` | `string` |  | The provider's id for it ("kadal/ship-it"). Without a provider, `id` is the element's id. |
+| `still` | `string` |  | A still frame of an animated sticker: shown under reduced motion and in print. |
+| `credit` | `string` |  | A credit of its own ("Photo by Ana Ruiz"), on hover and in the deck's credits. |
+| `creditUrl` | `string` |  | The credit's link (the work's page). |
+| `license` | `string` |  | Its licence ("CC BY 4.0"), for the credits. |
+| `licenseUrl` | `string` |  | The licence's text. |
 
 #### `<Tweet>`
 

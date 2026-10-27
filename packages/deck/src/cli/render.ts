@@ -175,6 +175,8 @@ export async function loadPlaywright(dir: string): Promise<PlaywrightLike> {
 export interface RenderRequest {
   /** Slide indexes (0-based, authored order); all slides when omitted. */
   slides?: number[];
+  /** Slides the compiler made, by kind ("credits"), with `slides`; all of them come with all slides. */
+  made?: string[];
   /**
    * Only these slides are laid out at all (the print view's `?range=`, counting visible slides
    * from 1): "1" is the first slide the audience sees, without loading the other hundred.
@@ -219,7 +221,10 @@ export interface PrintViewRequest extends Pick<
 export const SETTLE_MS = 10_000;
 
 export interface RenderedSlide {
+  /** The slide's index in authored order; -1 for a slide the compiler made (see `generated`). */
   index: number;
+  /** "credits" for the credits slide the compiler adds (`credits: true`); absent otherwise. */
+  generated?: string;
   click: number;
   width: number;
   height: number;
@@ -365,6 +370,7 @@ export class SlideRenderer {
             const error = p.querySelector<HTMLElement>(".deck-slide-error pre");
             return {
               index: slide ? Number(slide.dataset.index) : -1,
+              generated: slide?.dataset.generated ?? null,
               click: slide ? Number(slide.dataset.click ?? 0) : 0,
               notes: p.classList.contains("deck-print-notes-page"),
               width: p.offsetWidth,
@@ -374,20 +380,39 @@ export class SlideRenderer {
           }),
         );
         const pages = await page.$$(".deck-print-page");
+        // Pages by authored index. A slide the compiler made (the credits) is not one of the
+        // author's, so the slides after it keep the numbers the outline gives them.
+        const made = [
+          ...new Set(info.filter((p) => p.generated && p.index >= 0).map((p) => p.index)),
+        ];
+        const authored = (index: number) => index - made.filter((m) => m < index).length;
         const byIndex = new Map<number, number[]>();
+        const byMade = new Map<string, number[]>();
         info.forEach((p, i) => {
           if (p.notes || p.index < 0) return;
-          const list = byIndex.get(p.index) ?? [];
-          list.push(i);
-          byIndex.set(p.index, list);
+          if (p.generated) byMade.set(p.generated, [...(byMade.get(p.generated) ?? []), i]);
+          else {
+            const k = authored(p.index);
+            byIndex.set(k, [...(byIndex.get(k) ?? []), i]);
+          }
         });
         for (const p of info)
           if (p.error) errors.push(`slide ${p.index} failed to load: ${p.error.split("\n")[0]}`);
         const wanted = req.slides ?? [...byIndex.keys()].sort((a, b) => a - b);
         const shots: RenderedSlide[] = [];
         const missing: number[] = [];
-        for (const index of wanted) {
-          const list = byIndex.get(index);
+        const jobs: Array<{ index: number; generated?: string; list: number[] | undefined }> = [
+          ...wanted.map((index) => ({ index, list: byIndex.get(index) })),
+          // Every slide asked for: the made ones too, after the author's.
+          ...(req.slides
+            ? (req.made ?? []).map((generated) => ({
+                index: -1,
+                generated,
+                list: byMade.get(generated),
+              }))
+            : [...byMade].map(([generated, list]) => ({ index: -1, generated, list }))),
+        ];
+        for (const { index, generated, list } of jobs) {
           if (!list?.length) {
             missing.push(index);
             continue;
@@ -421,6 +446,7 @@ export class SlideRenderer {
           } else png = await el.screenshot({ type: "png", animations: "disabled" });
           shots.push({
             index,
+            ...(generated ? { generated } : {}),
             click: meta.click,
             width: Math.round(w * (width / 1920)),
             height: Math.round(h * (width / 1920)),
