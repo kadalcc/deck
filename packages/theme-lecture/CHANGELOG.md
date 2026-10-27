@@ -1,5 +1,13 @@
 # @kadal/theme-lecture
 
+## 0.9.0
+
+### Patch Changes
+
+- Updated dependencies [abc3029]
+- Updated dependencies [cc8fd19]
+  - @kadal/deck@0.9.0
+
 ## 0.8.3
 
 ### Patch Changes
