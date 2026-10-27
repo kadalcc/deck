@@ -2,7 +2,7 @@
 
 > **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. This page shows a deck straight from its `deck.mdx`, compiled in the browser: it is how the builder on deck.kadal.cc previews your slides while you write them.
 >
-> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+> [Take the tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Docs](https://deck.kadal.cc/docs/)
 
 One static page that runs any [Kadal Deck](https://deck.kadal.cc) presentation from its
 `deck.mdx`, compiled in the browser by `@kadal/deck/runtime`. For hosts and editors; decks built

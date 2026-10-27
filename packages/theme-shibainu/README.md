@@ -2,7 +2,7 @@
 
 > **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. A theme is how your talk looks on the day, on the projector and on every phone in the room.
 >
-> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+> [Take the tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Docs](https://deck.kadal.cc/docs/)
 
 **Shibainu**, a theme for [Kadal Deck](https://deck.kadal.cc): Slidev's shibainu theme, ported.
 Soft blobs and paw-print dots in a shiba's browns, Titillium Web, and fourteen layouts that are

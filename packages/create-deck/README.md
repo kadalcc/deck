@@ -2,13 +2,13 @@
 
 > **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. This is where the talk starts: a new deck, ready to write, in one command.
 >
-> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+> [Take the tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Docs](https://deck.kadal.cc/docs/)
 
 Start a new [Kadal Deck](https://deck.kadal.cc) presentation in one command. The deck is one
 `deck.mdx` file: Markdown slides with clicks, stepping code, layouts, speaker notes and a poll,
 ready to present, export or publish.
 
-[Getting started](https://deck.kadal.cc/docs/getting-started/) · [Docs](https://deck.kadal.cc/docs/) · [The tour](https://decks.kadal.cc/@pmithunish/tour/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/create-deck)
+[Getting started](https://deck.kadal.cc/docs/getting-started/) · [Docs](https://deck.kadal.cc/docs/) · [The tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/create-deck)
 
 ```sh
 npm create @kadal/deck@latest my-talk

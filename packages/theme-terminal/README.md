@@ -2,7 +2,7 @@
 
 > **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. A theme is how your talk looks on the day, on the projector and on every phone in the room.
 >
-> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+> [Take the tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Docs](https://deck.kadal.cc/docs/)
 
 **Terminal**, a theme for [Kadal Deck](https://deck.kadal.cc). A developer theme for code-heavy talks. Mono-forward: JetBrains Mono for headings, labels and code, IBM Plex Sans for reading text. Dark first (a deck starts dark unless it says `colorScheme: light`) with a light variant made to the same standard; the palette is Ayu's, so the slide and the code colours agree. Code blocks are editor windows: a bar with three lights, line numbers, a lit active line, a clear dim. Headings keep their markdown (`#`), lists use `›`, the table of contents prints like `tree`, callouts read like log lines.
 

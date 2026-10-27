@@ -2,7 +2,7 @@
 
 > **Build it. Rehearse it. Own the room.** [Kadal Deck](https://deck.kadal.cc) has your back for the whole talk, from the first idea to the last applause. A theme is how your talk looks on the day, on the projector and on every phone in the room.
 >
-> [Take the tour](https://decks.kadal.cc/@pmithunish/tour/) · [Docs](https://deck.kadal.cc/docs/)
+> [Take the tour](https://decks.kadal.cc/@kadal-hq/tour/) · [Docs](https://deck.kadal.cc/docs/)
 
 **Lecture**, a theme for [Kadal Deck](https://deck.kadal.cc). An academic theme for lectures, seminars and defences. The Source family (Serif 4 for headings, Sans 3 for text, Code Pro for code), navy for structure and crimson for results, numbered sections, a footer on every slide, definition / theorem / proof blocks set the way a textbook sets them, citations, and a references layout. Made to print: white pages, hairlines that survive a laser printer, no shadows, the footer on every page.
 

@@ -34,7 +34,7 @@ npx kadal-deck login && npx kadal-deck publish   # a URL on deck.kadal.cc, with 
 ## Learn more
 
 - [Docs](https://deck.kadal.cc/docs/): writing slides, clicks, code, themes, the live room and the CLI
-- [The tour](https://decks.kadal.cc/@pmithunish/tour/): every feature on one deck
+- [The tour](https://decks.kadal.cc/@kadal-hq/tour/): every feature on one deck
 - [Themes](https://deck.kadal.cc/themes/): set `theme:` in the headmatter
 - [VS Code extension](https://marketplace.visualstudio.com/items?itemName=kadal.kadal-deck): a
   preview that follows your cursor, and an outline of the slides
