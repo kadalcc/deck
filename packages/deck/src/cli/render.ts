@@ -399,7 +399,11 @@ export class SlideRenderer {
   }
 
   async close(): Promise<void> {
-    await this.launching?.catch(() => {});
+    // A launch that never settles (a browser that died while starting) must not hold the close.
+    await Promise.race([
+      this.launching?.catch(() => {}),
+      new Promise<void>((r) => setTimeout(r, 10_000).unref?.()),
+    ]);
     const b = this.browser;
     this.browser = null;
     if (b?.isConnected()) await b.close();

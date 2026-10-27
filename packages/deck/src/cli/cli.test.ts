@@ -6,6 +6,7 @@ import { join } from "node:path";
 
 import { HostError, loadCredentials, saveCredentials } from "./host.ts";
 import { login } from "./login.ts";
+import { withTimeLimit } from "./index.ts";
 import { manifestOf, publicUrl, publish, slugFrom, titleFrom } from "./publish.ts";
 
 /** A fake host speaking the /api/v1 contract, keeping just enough state to check the client. */
@@ -243,5 +244,13 @@ describe("helpers", () => {
     const m = await manifestOf(join(dir, "build2"));
     expect(m.map((f) => f.path)).toEqual(["assets/a.js", "assets/b.css", "index.html"]);
     expect(m[0].type).toContain("javascript");
+  });
+});
+
+describe("a thumbnail run over a workspace", () => {
+  test("a deck that never finishes is reported and the run goes on", async () => {
+    const stuck = new Promise<{ ok: true }>(() => {});
+    expect(await withTimeLimit(stuck, 20)).toEqual({ ok: false, reason: "took longer than 0 s" });
+    expect(await withTimeLimit(Promise.resolve({ ok: true as const }), 1000)).toEqual({ ok: true });
   });
 });

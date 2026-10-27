@@ -965,6 +965,27 @@ async function screenshot(
   }
 }
 
+const THUMBNAIL_DECK_MS = 180_000;
+
+/** The outcome, or a "took too long" one once `ms` pass (the work itself is left behind). */
+export async function withTimeLimit<T extends { ok: boolean }>(
+  work: Promise<T>,
+  ms: number,
+): Promise<T | { ok: false; reason: string; version?: undefined }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<{ ok: false; reason: string }>((resolve) => {
+    timer = setTimeout(
+      () => resolve({ ok: false, reason: `took longer than ${Math.round(ms / 1000)} s` }),
+      ms,
+    );
+  });
+  try {
+    return await Promise.race([work, late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** `kadal-deck thumbnail`: the live version's picture again, for one deck or all of them. */
 export async function thumbnailCommand(
   dir: string,
@@ -1011,23 +1032,29 @@ export async function thumbnailCommand(
   }> = [];
   for (const d of targets) {
     const files: string[] = [];
+    // One browser at a time, each deck held to a time limit: a run over a whole workspace once
+    // stalled for hours on its ninth deck while each deck alone took seconds, so a stuck one is
+    // reported and the rest still get their pictures (the command exits when it ends).
     // oxlint-disable-next-line no-await-in-loop -- one browser at a time; a dozen decks at most
-    const r = await refreshThumbnail({
-      dir,
-      host: ctx.host,
-      token: ctx.token,
-      deckId: d.id,
-      keep: out
-        ? async (pictures) => {
-            for (const p of pictures) {
-              const file = join(out, `${d.slug}${p.variant === "dark" ? "-dark" : ""}.png`);
-              // oxlint-disable-next-line no-await-in-loop -- two files at most
-              await writeFile(file, p.png);
-              files.push(file);
+    const r = await withTimeLimit(
+      refreshThumbnail({
+        dir,
+        host: ctx.host,
+        token: ctx.token,
+        deckId: d.id,
+        keep: out
+          ? async (pictures) => {
+              for (const p of pictures) {
+                const file = join(out, `${d.slug}${p.variant === "dark" ? "-dark" : ""}.png`);
+                // oxlint-disable-next-line no-await-in-loop -- two files at most
+                await writeFile(file, p.png);
+                files.push(file);
+              }
             }
-          }
-        : undefined,
-    });
+          : undefined,
+      }),
+      THUMBNAIL_DECK_MS,
+    );
     results.push(
       r.ok
         ? {
