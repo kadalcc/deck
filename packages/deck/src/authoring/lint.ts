@@ -6,11 +6,7 @@ import {
 } from "../catalog/index.ts";
 import { CODE_OPTION_KEYS, parseCodeMeta } from "../compiler/code-meta.ts";
 import { DEFAULT_LANGS } from "../compiler/langs.ts";
-import {
-  type RawSlide,
-  unclosedSettings,
-  unclosedSettingsMessage,
-} from "../compiler/split.ts";
+import { type RawSlide, unclosedSettings, unclosedSettingsMessage } from "../compiler/split.ts";
 import { extractRegion, parseSnippetLine } from "../compiler/snippets.ts";
 import { comarkEnabled } from "../compiler/setup.ts";
 import { BUILTIN_RUNNER_LANGS, runnerLang } from "../monaco/runner-langs.ts";
@@ -19,7 +15,12 @@ import { isPremiumName } from "../core/premium.ts";
 import { removedBackgroundHint } from "../core/removed.ts";
 import { DEFAULT_GLOSSARY, buildMatcher, glossaryOptions } from "../glossary/model.ts";
 import { parseGlossary } from "../glossary/parse.ts";
-import { checkDeckSyntax, checkSlideSyntax, deckTransitionNames, maskSlideBody } from "./lint-syntax.ts";
+import {
+  checkDeckSyntax,
+  checkSlideSyntax,
+  deckTransitionNames,
+  maskSlideBody,
+} from "./lint-syntax.ts";
 import { checkSlidevLeftovers } from "./lint-slidev.ts";
 import { type DeckFiles, dirOf, idOf, joinPath, readDeck } from "./source.ts";
 import { checkValue, closest } from "./validate.ts";
@@ -188,14 +189,26 @@ function esmNames(code: string): string[] {
   return out;
 }
 
-const TWOSLASH_LANGS = new Set(["ts", "tsx", "js", "jsx", "typescript", "javascript", "mts", "cts"]);
+const TWOSLASH_LANGS = new Set([
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "typescript",
+  "javascript",
+  "mts",
+  "cts",
+]);
 
 /**
  * The slide's lines as MDX will see them: `<<<` imports and `::code-group` markers are the
  * compiler's own syntax (they become fences and `<CodeGroup>` before MDX runs), so they are
  * blanked — line numbers stay — after `onSnippet` has looked at each import.
  */
-function withoutCodeSugar(lines: string[], onSnippet: (line: string, index: number) => void): string {
+function withoutCodeSugar(
+  lines: string[],
+  onSnippet: (line: string, index: number) => void,
+): string {
   const out = [...lines];
   let fence: { mark: string; magic: boolean } | null = null;
   let group = false;
@@ -204,7 +217,11 @@ function withoutCodeSugar(lines: string[], onSnippet: (line: string, index: numb
     const open = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
     if (open) {
       if (!fence) fence = { mark: open[1]!, magic: /^\s*md\s+magic-move/.test(open[2]!) };
-      else if (open[1]![0] === fence.mark[0] && open[1]!.length >= fence.mark.length && !open[2]!.trim())
+      else if (
+        open[1]![0] === fence.mark[0] &&
+        open[1]!.length >= fence.mark.length &&
+        !open[2]!.trim()
+      )
         fence = null;
       continue;
     }
@@ -305,7 +322,8 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         ...at,
         severity: "warning",
         code: "code-meta",
-        message: "A {monaco-diff} block needs a line of ~~~ between the original and the modified code.",
+        message:
+          "A {monaco-diff} block needs a line of ~~~ between the original and the modified code.",
       });
     if (parsed.monaco && parsed.steps)
       add({
@@ -339,7 +357,9 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
     for (const b of markerBlocks(text)) conflictSpans.push({ file, from: b.start, to: b.end });
     for (const c of findConflicts(text, file)) {
       const at = (c.line ?? 1) - 1;
-      const slide = deck.slides.find((s) => s.range.file === file && at >= s.range.start && at < s.range.end);
+      const slide = deck.slides.find(
+        (s) => s.range.file === file && at >= s.range.start && at < s.range.end,
+      );
       if (slide) conflicted.add(slide.index);
       add({
         severity: "error",
@@ -406,6 +426,9 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       add,
     );
   const ids = new Map<string, RawSlide>();
+  // The layout a slide without its own `layout:` gets: the headmatter's `defaults.layout`.
+  const defaultLayout = (deck.slides[0]?.frontmatter.defaults as { layout?: unknown } | undefined)
+    ?.layout;
   for (const s of deck.slides) {
     const head = s.index === 0 && s.range.head;
     const fmLine = s.range.frontmatter ? s.range.frontmatter.open + 2 : s.range.start + 1;
@@ -420,9 +443,9 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       const also = head && dk && sk ? sk : null;
       // A layout of the deck's own is read from frontmatter by its author's code, and a `pro/`
       // one by the host's library: either way its keys are the layout's business, not unknown.
+      const layout = s.frontmatter.layout ?? (s.index > 0 ? defaultLayout : undefined);
       const ownLayout =
-        typeof s.frontmatter.layout === "string" &&
-        (ext.layouts.includes(s.frontmatter.layout) || isPremiumName(s.frontmatter.layout));
+        typeof layout === "string" && (ext.layouts.includes(layout) || isPremiumName(layout));
       if (!def && ownLayout) continue;
       if (!def) {
         const near = closest(key, [...slideKeys.keys(), ...(head ? deckKeys.keys() : [])]);
@@ -463,7 +486,7 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         severity: "warning",
         code: "duration-unreadable",
         message: `"duration": ${JSON.stringify(s.frontmatter.duration)} is not a length of time, so the timer ignores it.`,
-        hint: 'Write it as 30min, 1h, 1h30m, 90s, 25:00, or a number of minutes.',
+        hint: "Write it as 30min, 1h, 1h30m, 90s, 25:00, or a number of minutes.",
       });
     if (head) lintSiteKeys(s.frontmatter, at);
     const layout = s.frontmatter.layout;
@@ -500,7 +523,10 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       const t = s.frontmatter[key];
       // `zoom-in fade-out` (reveal.js's split form) is two known names, one for each half.
       const halves = typeof t === "string" ? splitTransition(t, "none") : null;
-      if (typeof t === "string" && !(transitions.has(t) || (transitions.has(halves!.in) && transitions.has(halves!.out))))
+      if (
+        typeof t === "string" &&
+        !(transitions.has(t) || (transitions.has(halves!.in) && transitions.has(halves!.out)))
+      )
         add({
           ...at,
           severity: "warning",
@@ -573,7 +599,8 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         ...at,
         severity: "info",
         code: "og-url-missing",
-        message: "og:image will be a path, not a full URL: most link previews (Slack, X, LinkedIn) skip it.",
+        message:
+          "og:image will be a path, not a full URL: most link previews (Slack, X, LinkedIn) skip it.",
         hint: "Add seoMeta.ogUrl: the address the deck will be served at, e.g. https://you.github.io/talk/.",
       });
     if (fm.pwa && typeof fm.pwa === "object" && !Array.isArray(fm.pwa))
@@ -683,38 +710,35 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
       // What the compiler compiles: HTML comments and <style> blocks out, lines kept.
       // What the compiler compiles: HTML comments and <style> blocks out, lines kept; `<<<`
       // imports checked and code-group / snippet sugar set aside.
-      const body = withoutCodeSugar(
-        maskSlideBody(raw).split("\n"),
-        (line, i) => {
-          // A `<<<` import: the file must be there, and the region in it.
-          const imp = parseSnippetLine(line);
-          if (!imp) return;
-          const raw = imp.spec.split("#")[0]!;
-          const target = raw.startsWith("@/")
-            ? joinPath(root, raw.slice(2))
-            : joinPath(dirOf(file), raw.replace(/^\//, ""));
-          const at = { file, line: offset + i + 1, slide: s.index };
-          const text = files.read(target);
-          if (text === null)
-            return add({
-              ...at,
-              severity: "warning",
-              code: "snippet-missing",
-              message: `<<< ${imp.spec}: ${target} does not exist; the slide shows a notice in its place.`,
-              hint: "`@/` is the deck's folder; other paths are relative to the file the slide is in.",
-            });
-          const region = extractRegion(text, imp.region);
-          if (!region)
-            return add({
-              ...at,
-              severity: "warning",
-              code: "snippet-region",
-              message: `<<< ${imp.spec}: there is no \`#region ${imp.region}\` in ${target}.`,
-              hint: "Mark it with `// #region name` and `// #endregion name` (any comment style).",
-            });
-          checkFence(imp.lang, imp.meta, region.code, at);
-        },
-      );
+      const body = withoutCodeSugar(maskSlideBody(raw).split("\n"), (line, i) => {
+        // A `<<<` import: the file must be there, and the region in it.
+        const imp = parseSnippetLine(line);
+        if (!imp) return;
+        const raw = imp.spec.split("#")[0]!;
+        const target = raw.startsWith("@/")
+          ? joinPath(root, raw.slice(2))
+          : joinPath(dirOf(file), raw.replace(/^\//, ""));
+        const at = { file, line: offset + i + 1, slide: s.index };
+        const text = files.read(target);
+        if (text === null)
+          return add({
+            ...at,
+            severity: "warning",
+            code: "snippet-missing",
+            message: `<<< ${imp.spec}: ${target} does not exist; the slide shows a notice in its place.`,
+            hint: "`@/` is the deck's folder; other paths are relative to the file the slide is in.",
+          });
+        const region = extractRegion(text, imp.region);
+        if (!region)
+          return add({
+            ...at,
+            severity: "warning",
+            code: "snippet-region",
+            message: `<<< ${imp.spec}: there is no \`#region ${imp.region}\` in ${target}.`,
+            hint: "Mark it with `// #region name` and `// #endregion name` (any comment style).",
+          });
+        checkFence(imp.lang, imp.meta, region.code, at);
+      });
       const nodes: Node[] = [];
       const collect = () => (tree: Node) => {
         const walk = (n: Node) => {

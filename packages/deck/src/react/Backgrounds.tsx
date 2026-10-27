@@ -106,16 +106,23 @@ export function BackgroundLayer({
   bg,
   active,
   className,
+  click: still,
 }: {
   bg: SlideBackground | null;
   active: boolean;
   className?: string;
+  /**
+   * The step a still copy shows (a print page per step): a click-aware background draws that
+   * step, not step 0. The stage leaves it out and follows navigation.
+   */
+  click?: number;
 }) {
   const theme = useUi((s) => s.theme);
   const deckScheme = useUi((s) => s.colorScheme);
   // The deck-level layer belongs to the slide being shown, so its step is navigation's (none in a
   // runtime without navigation: a test, a standalone render).
-  const click = useStore(useDeck().nav ?? NO_NAV, (s) => s.click);
+  const navClick = useStore(useDeck().nav ?? NO_NAV, (s) => s.click);
+  const click = still ?? (active ? navClick : undefined);
   if (!bg)
     return (
       <div
@@ -178,19 +185,14 @@ export function BackgroundLayer({
               active={active}
               // Inactive and not a slide leaving: a still copy (print, a thumbnail, a preview).
               still={!active && !className?.includes("is-leaving")}
-              click={active ? click : undefined}
+              click={click}
             />
           </OnStage>
         </div>
       ) : Comp ? (
         <div className="deck-background-component" style={{ opacity: bg.opacity }}>
           <OnStage>
-            <Comp
-              {...bg.props}
-              active={active}
-              scheme={bg.scheme ?? deckScheme}
-              click={active ? click : undefined}
-            />
+            <Comp {...bg.props} active={active} scheme={bg.scheme ?? deckScheme} click={click} />
           </OnStage>
         </div>
       ) : bg.component ? (

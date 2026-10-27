@@ -149,7 +149,11 @@ export function PrintView({
             data-click={p.click}
             style={{ width: deck.config.width, height: deck.config.height }}
           >
-            <BackgroundLayer bg={options.background} active={false} />
+            <BackgroundLayer
+              bg={options.background}
+              active={false}
+              click={separate ? p.click : undefined}
+            />
             <SlideFrame
               meta={meta}
               options={options}
