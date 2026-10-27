@@ -238,6 +238,9 @@ export function Stage() {
             click={frameClick}
             prefetch={prefetch}
             navDirection={isPresent || f.role === "leaving" ? navDir : undefined}
+            // Only the current slide answers to focus and the pointer; the rest also draw nothing
+            // (themes/base.css), so a child that insists on `visibility: visible` stays unseen.
+            inert={!isPresent}
             className={isPresent && arriving ? "is-present is-arriving" : `is-${f.role}`}
           />
         );

@@ -392,6 +392,15 @@ body {
 .deck-slide.is-scroll {
   pointer-events: auto;
 }
+/* A slide that is not on show draws nothing, whatever is inside it. `visibility` is inherited, so
+   a child styled `visibility: visible` (an author's CSS, a Pro item, a component) showed through
+   its hidden slide, over the current one: a Pro item's dialogue drew lines from three slides away.
+   Opacity is not inherited but composited, so nothing inside can undo a parent's 0. The stage
+   makes the same slides `inert` (react/Stage.tsx), so nothing in them takes focus or the pointer.
+   Layout is untouched: the neighbours stay laid out, and arriving at one costs nothing more. */
+.deck-slide:not(.is-present, .is-leaving, .is-tile, .is-scroll, .is-print, .is-mirror) {
+  opacity: 0;
+}
 .deck-slide-loading {
   position: absolute;
   inset: 0;
@@ -576,6 +585,7 @@ body {
 .deck-stage:is([data-transition="view-transition"], [data-transition-out="view-transition"])
   .deck-slide.is-leaving {
   visibility: hidden;
+  opacity: 0;
   animation: none;
 }
 /* Arriving, a slide's clicks take the state the move landed on at once (react/Stage.tsx). */
@@ -791,6 +801,7 @@ body {
   /* No crossfade at all: the slide that left is hidden at once, and backgrounds swap. */
   .deck-stage .deck-slide.is-leaving {
     visibility: hidden;
+    opacity: 0;
   }
   .deck-background {
     transition: none;
