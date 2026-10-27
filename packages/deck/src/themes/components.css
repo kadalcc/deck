@@ -679,11 +679,17 @@
   font-weight: 600;
   white-space: nowrap;
 }
+/* The cards' quiet ink. A theme's muted colour is tuned for the slide's own background, and the
+   cards sit on a raised surface where it can drop under 4.5:1 (minimal, light: 4.35); a step
+   toward the main ink keeps it quiet and readable on both. */
+.deck-credits {
+  --deck-credits-quiet: color-mix(in oklab, var(--deck-muted) 60%, var(--deck-fg));
+}
 .deck-credits-by,
 .deck-credits-count,
 .deck-credits-notice {
   margin: 0;
-  color: var(--deck-muted);
+  color: var(--deck-credits-quiet);
 }
 .deck-credits-notice {
   font-size: 0.9em;
@@ -702,7 +708,7 @@
 }
 .deck-credits-item-by,
 .deck-credits-more {
-  color: var(--deck-muted);
+  color: var(--deck-credits-quiet);
 }
 
 /* The slide's own list and paragraph spacing is not the cards'. */
@@ -716,8 +722,11 @@
 .deck-slide .deck-credits p {
   margin: 0;
 }
-.deck-slide .deck-credits-lede {
+.deck-slide .deck-credits .deck-credits-lede {
   margin-bottom: 0.35em;
+  /* A theme's subtitle rule (classic: "h1 + p" at half opacity) would halve this quiet line again. */
+  opacity: 1;
+  color: var(--deck-credits-quiet);
 }
 
 /* Bottom centre: the play view's own controls sit in the bottom corners (the theme and sidebar
@@ -766,12 +775,14 @@
   height: 1.1em;
   flex: none;
 }
-/* In print and the exports: a quiet line that says where the credits are. */
+/* In print and the exports: a quiet line that says where the credits are, on a wash of the
+   deck's own background so it reads over whatever the slide draws there (a bright picture or a
+   background that fills in at a later click). */
 .deck-credits-link.is-print {
   font-size: calc(var(--deck-base-size, 32px) * 0.44);
-  padding: 0;
+  padding: 0.2em 0.6em;
   border: 0;
-  background: none;
-  color: var(--deck-muted);
+  background: color-mix(in oklab, var(--deck-bg) 90%, transparent);
+  color: color-mix(in oklab, var(--deck-muted) 60%, var(--deck-fg));
   opacity: 1;
 }
