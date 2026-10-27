@@ -119,8 +119,63 @@ describe("kadal-deck import slidev", () => {
 
   test("usage errors", async () => {
     expect((await cli(["import"])).code).toBe(EXIT.usage);
-    expect((await cli(["import", "reveal", "x.md"])).stderr).toContain("imports Slidev decks");
+    expect((await cli(["import", "keynote", "x.key"])).stderr).toContain(
+      "imports Slidev and reveal.js decks",
+    );
+    expect((await cli(["import", "reveal"])).code).toBe(EXIT.usage);
+    expect((await cli(["import", "reveal", "nowhere.html"])).stderr).toContain("does not exist");
     expect((await cli(["import", "slidev"])).code).toBe(EXIT.usage);
     expect((await cli(["import", "slidev", "nowhere.md"])).stderr).toContain("does not exist");
+  });
+});
+
+const revealDemo = fileURLToPath(new URL("../../test/fixtures/reveal/demo", import.meta.url));
+
+describe("kadal-deck import reveal", () => {
+  test("a reveal.js page becomes a deck folder, its assets and CSS with it, then is checked", async () => {
+    const src = join(work, "reveal-talk");
+    cpSync(revealDemo, src, { recursive: true });
+    const r = await cli(["import", "reveal", "reveal-talk", "--json"]);
+    expect(r.code).toBe(EXIT.ok);
+    const json = JSON.parse(r.stdout) as {
+      ok: boolean;
+      out: string;
+      slides: number;
+      check: { diagnostics: Array<{ severity: string; message: string }> };
+    };
+    expect(json.ok).toBe(true);
+    expect(json.out).toBe(join(work, "reveal-talk-kadal"));
+    expect(json.slides).toBe(23);
+    expect(json.check.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    const out = json.out;
+    for (const f of [
+      "deck.mdx",
+      "public/assets/wave.svg",
+      "src/reveal.css",
+      "src/reveal/custom.css",
+      "IMPORT-REPORT.md",
+      "vite.config.ts",
+    ])
+      expect(existsSync(join(out, f))).toBe(true);
+    const styles = readFileSync(join(out, "src", "styles.css"), "utf8");
+    expect(styles).toContain('@import "./reveal.css";');
+    expect(styles).toContain('@import "./reveal/custom.css";');
+    const mdx = readFileSync(join(out, "deck.mdx"), "utf8");
+    expect(mdx).toContain("backgroundImage: /assets/wave.svg");
+    expect(mdx).toContain("\n----\n");
+    expect(readFileSync(join(out, "IMPORT-REPORT.md"), "utf8")).toContain(
+      "by `kadal-deck import reveal`",
+    );
+    expect(readFileSync(join(out, "index.html"), "utf8")).toContain('<html lang="en">');
+  });
+
+  test("a folder of several pages asks which one", async () => {
+    const src = join(work, "two-pages");
+    mkdirSync(src, { recursive: true });
+    writeFileSync(join(src, "a.html"), "<section></section>");
+    writeFileSync(join(src, "b.html"), "<section></section>");
+    const r = await cli(["import", "reveal", "two-pages"]);
+    expect(r.code).toBe(EXIT.usage);
+    expect(r.stderr).toContain("has several pages");
   });
 });

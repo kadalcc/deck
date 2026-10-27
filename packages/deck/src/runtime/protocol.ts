@@ -1,5 +1,6 @@
 import type { CommandInfo, CommandResult } from "../core/commands.ts";
 import type { CompiledConflict, Diagnostic } from "./compile.ts";
+import type { EditMark } from "./marks.ts";
 
 /**
  * The preview bridge: what an editor page and the shell in its iframe (`?preview`) say to each
@@ -45,7 +46,16 @@ export type ToPreview =
    * answer every `edited` by sending `source` again, changed or not (an element whose edit no
    * source answers within 5 s is put back as it was).
    */
-  | { kadal: 1; type: "edit"; on: boolean }
+  | {
+      kadal: 1;
+      type: "edit";
+      on: boolean;
+      /**
+       * The editor spells `edited.marks` (0.10): Cmd/Ctrl+B, I and K then make the selection bold,
+       * italic or a link while a text is edited. Leave it out and the shortcuts stay off.
+       */
+      marks?: boolean;
+    }
   /**
    * The play view's own chrome on or off (only when `ready.features` has "chrome"; on by default,
    * and kept across recompiles). Off hides what the shell draws over the slides for a viewer —
@@ -69,7 +79,8 @@ export type FromPreview =
        * What this shell can do beyond the messages every shell answers: "edit" = editing in
        * place (`edit`, `edited`, `located`; 0.6.1), "chrome" = the `chrome` message (0.6.2),
        * "frame" = the `layout.frame` command: where placed elements' x/y start on the slide
-       * shown, in stage pixels (0.6.3). Absent from shells before 0.6.1.
+       * shown, in stage pixels (0.6.3), "marks" = `edit.marks` and `edited.marks` (0.10). Absent
+       * from shells before 0.6.1.
        */
       features?: string[];
     }
@@ -106,6 +117,9 @@ export type FromPreview =
    * `text.slice(from, to)` as it was then — check it still is before applying, since the text may
    * have changed since. `after` is plain text as typed (one line, except in a paragraph, where
    * line breaks are spelled as the file spells them); escaping Markdown in it is the editor's call.
+   * `marks` (only when the editor armed `edit` with `marks: true`, and the person used Cmd/Ctrl+B,
+   * I or K) are bold, italic and link ranges over `after`: `markdownWithMarks(after, marks,
+   * escape)` from `@kadal/deck/runtime` spells them, escaping the plain text between them.
    */
   | {
       kadal: 1;
@@ -115,6 +129,7 @@ export type FromPreview =
       to: number;
       before: string;
       after: string;
+      marks?: EditMark[];
     }
   /**
    * A click while editing in place: where the clicked thing is in the source (1-based line and

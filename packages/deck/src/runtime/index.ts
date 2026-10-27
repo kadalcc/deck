@@ -10,6 +10,7 @@ export {
   type Diagnostic,
   compileDeck,
 } from "./compile.ts";
+export { type EditMark, type EditMarkKind, cleanHref, markdownWithMarks } from "./marks.ts";
 export {
   type FromPreview,
   type OutlineEntry,

@@ -233,7 +233,12 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       // Only the editor's preview tags elements with their source positions (runtime/edit-map.ts).
       const compiled = await compileDeck(text, { files, editable: preview, ...kitCompile(kit) });
       if (!alive) return;
-      setState({ phase: "ready", compiled, key: ++key, startAt: preview ? startOf(at) : undefined });
+      setState({
+        phase: "ready",
+        compiled,
+        key: ++key,
+        startAt: preview ? startOf(at) : undefined,
+      });
       post({
         kadal: 1,
         type: "compiled",
@@ -314,7 +319,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
         setChrome(m.on);
       } else if (m.type === "edit") {
         if (m.on) picking = false;
-        edit.arm(m.on);
+        edit.arm(m.on, { marks: m.marks === true });
       } else if (m.type === "command") {
         const rt = runtime();
         if (!rt) {
@@ -371,7 +376,7 @@ export function DeckShell({ deck, base, preview, kit }: DeckShellProps) {
       kadal: 1,
       type: "ready",
       version: VERSION,
-      features: ["edit", "chrome", "frame"],
+      features: ["edit", "chrome", "frame", "marks"],
       ...(kit
         ? {
             kit: {

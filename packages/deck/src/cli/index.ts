@@ -5,6 +5,7 @@
  *   kadal-deck new --theme <name> [dir]   a theme package, ready to publish (--addon: an addon)
  *   kadal-deck theme eject [--dir theme]  copy the deck's theme into the deck, to change it
  *   kadal-deck import slidev <slides.md>  a Kadal deck from a Slidev one, with a report of the rest
+ *   kadal-deck import reveal <index.html> the same from a reveal.js page
  *   kadal-deck dev [vite flags]           the deck with live reload (vite); --tunnel, --remote [pwd]
  *   kadal-deck build [a.mdx b.mdx…]       dist/ for any static host (vite build); --without-notes,
  *                                         --base, --out, several decks into folders (cli/build.ts)
@@ -71,6 +72,8 @@ export const HELP = `kadal-deck <command> [options]
               deck and point the headmatter at it   (-C <deck> for a deck elsewhere)
   import      import slidev <slides.md | folder>  convert a Slidev deck into a new Kadal deck folder,
               with IMPORT-REPORT.md for what did not carry over, then check it
+              import reveal <index.html | folder>  the same from a reveal.js deck: sections (and
+              vertical stacks), fragments, backgrounds, notes, code and data-markdown sections
               --out <dir> (default <folder>-kadal)  --force (write into a folder that is not empty)
               --install [--pm npm|pnpm|yarn|bun]  install its packages afterwards
   dev         run the deck locally with live reload (Vite flags pass through)

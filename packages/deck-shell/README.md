@@ -30,6 +30,13 @@ it includes) beside it, under any path:
   table cell be retyped, reported as `edited` with the file's `from`–`to` offsets, `before` and
   `after`. The shell never changes the deck: apply the edit and post `source` again. Shells that
   can do this say `features: ["edit"]` in `ready`.
+- Rich text while editing in place: arm with `{type:"edit", on:true, marks:true}` and Cmd/Ctrl+B
+  and I make the selection bold and italic, Cmd/Ctrl+K asks for an address in a field under the
+  element (Enter links, Esc cancels) and makes it a link; the same shortcut on a mark takes it off,
+  and Cmd/Ctrl+Z takes the last one back. `edited.after` stays the plain text; `edited.marks` lists
+  the ranges, and `markdownWithMarks(after, marks, escape)` from `@kadal/deck/runtime` spells them
+  (`**bold**`, `_italic_`, `[text](url)`) around your escaped text. Without `marks: true` the
+  shortcuts stay off. Shells that take it say `"marks"` in `ready.features` (0.10).
 - `{type:"chrome", on:false}` hides the deck's own chrome in the preview (the arrows pill, progress
   bar, slide number, theme button) for an editor whose stage has its own; the watermark and ads
   stay. On by default; shells that take it say `"chrome"` in `ready.features`.

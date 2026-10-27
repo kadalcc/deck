@@ -768,6 +768,14 @@ export const CLI: CliCommand[] = [
     json: true,
   },
   {
+    name: "import reveal",
+    usage:
+      "kadal-deck import reveal <index.html | folder> [--out dir] [--force] [--install] [--pm npm|pnpm|yarn|bun] [--json]",
+    summary:
+      'Convert a reveal.js deck into a new Kadal deck folder (made as `new` makes one): each `<section>` a slide and a section of sections a vertical stack (`----`); plain HTML as Markdown, the rest as JSX; `class="fragment"` (its style and `data-fragment-index`) as `<Click effect at>`, a list of fragments as `<Clicks>`; `data-background-color`, `-image`, `-video`, `-gradient` and `-iframe` (with size, position, opacity, loop, muted) as background frontmatter; `<aside class="notes">` as `<Notes>`; `data-transition`, `data-auto-animate`, `data-autoslide`, `data-state` and `id` as the keys of the same names; code blocks with their language and `data-line-numbers` steps; `data-markdown` sections (inline or a file, split on their separators, `<!-- .slide: -->` and `<!-- .element: -->` read) as their Markdown; Reveal.initialize\'s literal options as headmatter. Local images and media go into public/, the page\'s own CSS into src/reveal.css; IMPORT-REPORT.md lists what did not carry over, then it runs `check`. No script in the page is run. The converter is `convertReveal` in @kadal/deck/import.',
+    json: true,
+  },
+  {
     name: "dev",
     usage: "kadal-deck dev [--https] [--tunnel] [--remote [password]] [vite flags]",
     summary:
