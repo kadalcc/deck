@@ -117,21 +117,27 @@ is a fragment becomes a `<Clicks>` list. `data-background-color`, `-image`, `-vi
 and `-iframe`, with their size, position, opacity, loop and muted, become background frontmatter
 (a colour or gradient sets the slide's `colorScheme` from its brightness, as reveal's
 `has-dark-background` does, so the slide reads whichever scheme the deck is shown in);
-`data-transition`, `data-auto-animate` (Kadal's own `autoAnimate`, matching by text or `data-id`),
+`data-transition`, `data-auto-animate` (Kadal's own `autoAnimate`, matching by text or `data-id`,
+with the slide's own `-duration`, `-easing` and `-unmatched`),
 `data-autoslide`, `data-state`, `data-visibility` and `id` keep their keys. `<aside
 class="notes">` and `data-notes` become `<Notes>`. Code blocks keep their language, and
 `data-line-numbers="1|2-3"` becomes the fence's `{1|2-3}{lines:true}`. `data-markdown` sections
 (inline or a file) pass through as Markdown, split on their separators, with `<!-- .slide: -->`
-read as frontmatter, `<!-- .element: class="fragment" -->` as a `<Click>`, `Note:` as notes and
+read as frontmatter, `<!-- .element: … -->` as every attribute it sets, on the element before it
+(the line's heading, paragraph or image, or the link or bold it ends with; `class="fragment"` a
+`<Click>`), `Note:` as notes and
 ```` ```js [1|3] ```` as Kadal's steps. `\( … \)` maths becomes `$ … $`. `Reveal.initialize`'s
-literal options become headmatter, with reveal's default `margin: 0.04`, and its `keyboard` map in
+literal options become headmatter, with reveal's default `margin: 0.04` and `center: true`, and its `keyboard` map in
 Kadal's key and action names (`{ 13: 'toggleOverview' }` → `{ Enter: overview }`; functions are
 reported); inline lengths are
 scaled by the factor reveal fits its slide to Kadal's 1920×1080 with (×1.543 for 960×700). The
 theme becomes `theme: reveal` (`@kadal/theme-reveal`, shipped with the engine): reveal's twelve
 themes as `themeConfig.variant`, the one the page linked, in its own scheme; a slide size other
 than 960×700 goes to `themeConfig.width` / `height`. Local images and media are
-copied into `public/`, the page's own CSS into `src/reveal.css`. Scripts and `on*` handlers are
+copied into `public/`, the page's own CSS into `src/reveal.css`. reveal's layout helpers become
+components (`r-stretch` a `<Stretch>`, `r-fit-text` a `<FitText>`, a bare `r-stack` a `<Stack>`;
+`r-frame`, `r-hstack`, `r-vstack` stay classes the engine styles), and `data-src` stays `data-src`,
+loaded when the slide comes near. Scripts and `on*` handlers are
 reported, never run. `IMPORT-REPORT.md` lists the rest, slide by slide. The converter is
 `convertReveal` in `@kadal/deck/import`.
 

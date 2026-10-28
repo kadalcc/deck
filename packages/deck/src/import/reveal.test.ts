@@ -330,14 +330,22 @@ describe("fragments", () => {
     expect([...body.matchAll(/at=\{(\d)\}/g)].map((m) => m[1])).toEqual(["2", "3", "1", "1"]);
   });
 
-  test("a list of fragments is a <Clicks> list; mixed ones are a <Click> per item", () => {
+  test('a list of fragments is a <Clicks> list; mixed ones a <Click as="li"> per item', () => {
     expect(
       one('<section><ul><li class="fragment">a</li><li class="fragment">b</li></ul></section>')
         .body,
     ).toBe("<Clicks>\n\n- a\n- b\n\n</Clicks>");
     expect(one('<section><ol><li>a</li><li class="fragment grow">b</li></ol></section>').body).toBe(
-      '1. a\n2. <Click as="span" effect="grow">b</Click>',
+      // reveal hides the whole item, bullet and all
+      '<ol>\n<li>a</li>\n<Click as="li" effect="grow">b</Click>\n</ol>',
     );
+    // an .element comment after a link in an item is the link's, as in reveal's markdown plugin
+    const md = convertReveal(
+      page(
+        '<section data-markdown><textarea data-template>- A [link](https://x.test) <!-- .element: class="fragment" --></textarea></section>',
+      ),
+    ).mdx;
+    expect(md).toContain('- A <Click as="span">[link](https://x.test)</Click>');
   });
 
   test("an unknown fragment style stays as a class, with a report line", () => {
@@ -379,12 +387,89 @@ describe("content", () => {
     );
   });
 
+  test("reveal's layout helpers: r-stretch, r-fit-text and r-stack become components", () => {
+    const { body } = one(
+      '<section><h2 class="r-fit-text">BIG</h2><img class="r-stretch" src="https://x.test/a.png"><div class="r-stack"><img class="fragment" src="https://x.test/1.png"><img class="fragment" src="https://x.test/2.png"></div><img class="r-frame" src="https://x.test/f.png"><div class="r-hstack"><p>a</p><p>b</p></div></section>',
+    );
+    expect(body).toContain("<h2><FitText max={864} min={37}>BIG</FitText></h2>");
+    expect(body).toContain('<Stretch><img src="https://x.test/a.png" /></Stretch>');
+    expect(body).toMatch(
+      /<Stack>[\s\S]*<Click[\s\S]*1\.png[\s\S]*<Click[\s\S]*2\.png[\s\S]*<\/Stack>/,
+    );
+    // r-frame and the flex stacks stay classes, which the engine styles as reveal does
+    expect(body).toContain('<img className="r-frame" src="https://x.test/f.png" />');
+    expect(body).toContain('<div className="r-hstack">');
+    // a span is only its words
+    expect(one('<section><p><span class="r-fit-text">x</span></p></section>').body).toBe(
+      "<FitText max={864} min={37}>x</FitText>",
+    );
+  });
+
+  test(".element comments keep every attribute, on the element they follow", () => {
+    const md = (text: string) =>
+      convertReveal(
+        page(`<section data-markdown><textarea data-template>${text}</textarea></section>`),
+      ).mdx;
+    const out = md(
+      [
+        '## Title <!-- .element: class="big" data-id="t" style="color: red; margin-top: 20px" -->',
+        "",
+        "Some words",
+        '<!-- .element: id="lead" class="r-fit-text" -->',
+        "",
+        '![a cat](cat.png) <!-- .element: data-id="cat" class="r-frame" -->',
+        "",
+        '- one <!-- .element: style="color: blue" -->',
+        '- two <!-- .element: class="fragment fade-up" data-id="two" -->',
+      ].join("\n"),
+    );
+    expect(out).toContain(
+      '<h2 className="big" data-id="t" style={{"color":"red","marginTop":"30.86px"}}>Title</h2>',
+    );
+    expect(out).toContain('<p className="r-fit-text" id="lead">Some words</p>');
+    expect(out).toContain('<img src="/cat.png" alt="a cat" className="r-frame" data-id="cat" />');
+    expect(out).toContain('- <span style={{"color":"blue"}}>one</span>');
+    expect(out).toContain(
+      '- <Click as="span" effect="fade-up"><span data-id="two">two</span></Click>',
+    );
+    expect(out).not.toContain("is not carried over");
+  });
+
+  test("a slide's own auto-animate timing and data-src are kept", () => {
+    const { fm, body } = one(
+      '<section data-auto-animate data-auto-animate-duration="2" data-auto-animate-easing="ease-out" data-auto-animate-unmatched="false"><img data-src="https://x.test/late.png"><video><source data-src="https://x.test/v.mp4"></video></section>',
+    );
+    expect(fm).toMatchObject({
+      autoAnimate: true,
+      autoAnimateDuration: 2,
+      autoAnimateEasing: "ease-out",
+      autoAnimateUnmatched: false,
+    });
+    expect(body).toContain('<img data-src="https://x.test/late.png" />');
+    expect(body).toContain('<source data-src="https://x.test/v.mp4" />');
+  });
+
+  test("reveal centres slides unless the page says not to", () => {
+    const at = (init: string) =>
+      slides(
+        convertReveal(
+          page(
+            "<section><h1>Hi</h1></section>",
+            "",
+            `<script>Reveal.initialize({ ${init} });</script>`,
+          ),
+        ).mdx,
+      )[0]!.fm.center;
+    expect(at("hash: true")).toBe(true);
+    expect(at("center: false")).toBe(false);
+  });
+
   test("elements with attributes stay JSX, spelt for React", () => {
     const { body } = one(
       '<section><h2 data-id="t" class="x">A</h2><div style="width: 100px; color: red"><p>p</p></div><img src="https://x.test/a.png" width="200"></section>',
     );
     expect(body).toBe(
-      '<h2 data-id="t" className="x">A</h2>\n\n<div style={{"width":"154.3px","color":"red"}}>\n\np\n\n</div>\n\n<img src="https://x.test/a.png" width="200" />',
+      '<h2 data-id="t" className="x">A</h2>\n\n<div style={{"width":"154.3px","color":"red"}}>\n\np\n\n</div>\n\n<img src="https://x.test/a.png" width="309" />',
     );
   });
 
@@ -490,5 +575,52 @@ describe("golden: a reveal.js demo deck", () => {
     expect(report).toContain("by `kadal-deck import reveal`");
     expect(report).toContain("reveal.js `black` → Kadal `reveal`, variant `black` (dark)");
     expect(report).toContain("The onclick handler on <button> is dropped");
+  });
+});
+
+describe("golden: a reveal.js deck with a theme, layout helpers and .element attributes", () => {
+  const root = fileURLToPath(new URL("../../test/fixtures/reveal/themed", import.meta.url));
+  test("converts to the reveal theme's beige, its components and attributes, and compiles", async () => {
+    const r = convertReveal(readFileSync(join(root, "index.html"), "utf8"), {
+      readFile: (p) => {
+        try {
+          return readFileSync(join(root, p), "utf8");
+        } catch {
+          return null;
+        }
+      },
+      exists: (p) => existsSync(join(root, p)),
+    });
+    expect(r.mdx).toMatchSnapshot();
+    const s = slides(r.mdx);
+    expect(s[0]!.fm).toMatchObject({
+      theme: "reveal",
+      themeConfig: { variant: "beige" },
+      colorScheme: "light",
+      center: true,
+      margin: 0.04,
+      keyboard: { Enter: "next", KeyO: "overview" },
+      // the dark first slide keeps light words in a light deck
+      class: "has-dark-background",
+    });
+    expect(s[1]!.body).toContain("<FitText");
+    expect(s[2]!.body).toContain("<Stretch>");
+    expect(s[3]!.body).toContain("<Stack>");
+    expect(s[4]!.body).toContain('className="r-frame"');
+    expect(s[5]!.body).toContain('data-id="title"');
+    expect(s[7]!.fm).toMatchObject({ autoAnimateDuration: 1.5, autoAnimateEasing: "ease-out" });
+    expect(s[8]!.body).toContain('data-src="/assets/circle.svg"');
+    expect(r.info.assets.map((a) => a.from).sort()).toEqual([
+      "assets/circle.svg",
+      "assets/shapes.svg",
+      "assets/square.svg",
+      "assets/triangle.svg",
+    ]);
+    expect(r.report.filter((x) => x.severity !== "info").map((x) => x.what)).toEqual([
+      expect.stringContaining("The page's own CSS is carried into"),
+    ]);
+    const compiled = await compileDeck(r.mdx, { files: r.files, packages: false });
+    expect(compiled.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(compiled.missing).toEqual([]);
   });
 });
