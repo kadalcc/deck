@@ -215,7 +215,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `keyboardCondition` | `"focused" \| KeyboardConditionFunction \| null` | `null` | reveal.js compatible: when the deck takes keys. null (default): always; "focused": only while the deck has focus (a deck embedded in a page). deck.config.ts may pass a function of the KeyboardEvent instead, true letting the key through. Values: `focused` |
 | `focusBodyOnPageVisibilityChange` | `boolean` | `true` | reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true. |
 | `overview` | `boolean` | `true` | The overview grid (O / Esc). |
-| `touch` | `boolean` | `true` | Swipe navigation. |
+| `touch` | `boolean` | `true` | Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes. |
 | `loop` | `boolean` | `false` | Wrap from the last slide to the first. |
 | `rtl` | `boolean` | `false` | Right-to-left. |
 | `navigationMode` | `NavigationMode` | `"default"` | "default", "linear" (arrows walk every slide) or "grid" (columns stay aligned). Values: `grid` `default` `linear` |
@@ -242,7 +242,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `defaultTiming` | `number \| null` | `null` | Seconds per slide for the pacing timer, or null. |
 | `totalTime` | `number \| null` | `null` | Total seconds for the pacing timer, or null. |
 | `mouseWheel` | `boolean` | `false` | Scroll-wheel navigation. |
-| `previewLinks` | `boolean` | `false` | Open links in an overlay. |
+| `previewLinks` | `boolean` | `false` | Open every outside link in the lightbox. A link with `data-preview-link="false"` (or `data-no-preview`) opens as a link. |
 | `transition` | `Transition` | `"slide"` | Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`). Values: `slide` `fade` `none` `zoom` `convex` `concave` `view-transition` |
 | `transitionSpeed` | `TransitionSpeed` | `"default"` | default · fast · slow. Values: `default` `fast` `slow` |
 | `backgroundTransition` | `Transition` | `"fade"` | Transition for backgrounds. Values: `slide` `fade` `none` `zoom` `convex` `concave` `view-transition` |

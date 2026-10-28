@@ -991,7 +991,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   focusBodyOnPageVisibilityChange:
     "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true.",
   overview: "The overview grid (O / Esc).",
-  touch: "Swipe navigation.",
+  touch:
+    "Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes.",
   loop: "Wrap from the last slide to the first.",
   rtl: "Right-to-left.",
   navigationMode: '"default", "linear" (arrows walk every slide) or "grid" (columns stay aligned).',
@@ -1021,7 +1022,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   autoSlideMethod:
     'reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML.',
   mouseWheel: "Scroll-wheel navigation.",
-  previewLinks: "Open links in an overlay.",
+  previewLinks:
+    'Open every outside link in the lightbox. A link with `data-preview-link="false"` (or `data-no-preview`) opens as a link.',
   transition:
     'Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`).',
   transitionSpeed: "default · fast · slow.",
