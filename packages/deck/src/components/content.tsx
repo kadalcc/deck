@@ -473,6 +473,35 @@ export function Stretch({ children, className }: { children?: ReactNode; classNa
   return <div className={["deck-stretch", className].filter(Boolean).join(" ")}>{children}</div>;
 }
 
+type StackProps = {
+  children?: ReactNode;
+  className?: string;
+  /** CSS gap between the children. */
+  gap?: string;
+  /** Cross-axis alignment (`align-items`): center by default. */
+  align?: string;
+  /** Main-axis distribution (`justify-content`): center by default. */
+  justify?: string;
+};
+
+function flexStack(kind: "hstack" | "vstack") {
+  return function FlexStack({ children, className, gap, align, justify }: StackProps) {
+    return (
+      <div
+        className={[`deck-${kind}`, className].filter(Boolean).join(" ")}
+        style={{ gap, alignItems: align, justifyContent: justify }}
+      >
+        {children}
+      </div>
+    );
+  };
+}
+
+/** reveal.js's `r-hstack`: children in a row, centred both ways. */
+export const HStack = flexStack("hstack");
+/** reveal.js's `r-vstack`: children in a column, centred both ways. */
+export const VStack = flexStack("vstack");
+
 /** Columns: `<Cols cols="2fr 1fr">` or `<Cols n={3}>`, each child a column (or use `<Col>`). */
 export function Cols({
   cols,

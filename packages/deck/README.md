@@ -181,7 +181,7 @@ Markdown, with these on top:
 
 | What | How |
 | --- | --- |
-| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` |
+| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"`. reveal.js HTML pasted into a slide steps too: `<p class="fragment fade-up" data-fragment-index="2">` compiles to a `<Click as="p">`, ordered as reveal orders fragments |
 | Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ```` |
 | Magic move | ````` ````md magic-move ````` holding one fence per step; an inner fence's highlight steps (```` ```ts {*\|2\|4-5} ````) are clicks too, before the next morph |
 | Code marks | `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`, `[!code error]` / `warning`, `[!code word:x]` at a line's end (Shiki's notation transformers); add your own with `deck({ shiki: { transformers } })` |
@@ -199,6 +199,7 @@ Markdown, with these on top:
 | Auto-animate | `autoAnimate: true` on consecutive slides; matching `data-id`s move |
 | Motion | `<Motion initial enter clicks={{ "click-1": {…} }}>` |
 | Bits | `Cols/Col`, `Grid`, `Callout`, `Badge`, `Kbd`, `Counter`, `Typewriter`, `Encrypted`, `Mark`, `Confetti`, `Timer`, `Qr`, `Toc`, `Image preview`, `Youtube`, `Tweet`, `BlueSky`, `Iframe`, `FitText`, `Arrow`, `Transform`, `Absolute`, `FlipBoard` |
+| Layout helpers | `<Stack>`, `<Stretch>`, `<Frame>`, `<HStack>` / `<VStack>` (a centred flex row / column; `gap`, `align`, `justify`), `<FitText>`, `<Center>`; reveal.js's classes work as plain HTML too — `r-stack`, `r-stretch`, `r-frame`, `r-hstack`, `r-vstack` (with `items-*` / `justify-*`), and `r-fit-text`, whose text the compiler hands to `<FitText>` |
 | Icons | `<Icon name="rocket" />` (Lucide, bundled) or any Iconify icon: `<Icon name="mdi:account" />`, and Slidev's tag form `<mdi-account class="text-3xl" />`, `<logos-vue />` (also UnoCSS's `<div class="i-carbon-logo-github" />`). `kadal-deck dev`/`build` bundle the drawings from the deck's own `@iconify-json/<set>` (or `@iconify/json`), so a built deck needs no network; the hosted shell, or a set not installed, fetches from the Iconify API once and keeps them; offline, a dashed box. `kadal-deck check` names a misspelt icon and the set to install |
 | Marks | `<Mark type="circle" at={2} color="#e11d48">` — rough-notation's underline, box, circle, highlight, strike-through, crossed-off and bracket (`brackets="left right"`), with `strokeWidth`, `padding`, `iterations`, `multiline`, `duration`, `delay`, `opacity`; drawn stroke by stroke on the click, the same wobble on every screen and in the PDF |
 | Placed by hand | `<Drag pos="x,y,w,h,rotation">` or `<Drag pos="name">` with `dragPos: { name: "…" }` in the slide's frontmatter (`_` height: automatic); `<DragArrow pos="x,y,dx,dy" />`; Slidev's `v-drag`, `<v-drag>` and `<v-drag-arrow>` compile to them. In `kadal-deck dev` double-click to move, resize (Shift: keep the shape), turn and nudge (arrow keys); saved into deck.mdx through `/__kadal/drag`, nothing else in the file touched |
