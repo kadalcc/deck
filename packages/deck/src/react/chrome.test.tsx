@@ -49,3 +49,11 @@ describe("the play view's chrome", () => {
     expect(html).toContain("deck-chrome-area");
   });
 });
+
+describe("the pause curtain", () => {
+  // It is always in the page, drawn at opacity 0 until B pauses the deck.
+  test("is hidden from assistive technology while the deck is not paused", () => {
+    const curtain = /<div class="deck-pause-curtain"[^>]*>/.exec(render())?.[0] ?? "";
+    expect(curtain).toContain('aria-hidden="true"');
+  });
+});

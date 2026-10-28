@@ -273,6 +273,9 @@ export function PauseCurtain() {
       data-on={paused || undefined}
       onClick={() => actions.togglePause(false)}
       role="presentation"
+      // Drawn at opacity 0 while the deck runs, so its words stay in the page: a screen reader
+      // (and anything reading the page's text) heard "Paused" on a deck that was not.
+      aria-hidden={!paused || undefined}
     >
       <span>Paused — press any key</span>
     </div>
