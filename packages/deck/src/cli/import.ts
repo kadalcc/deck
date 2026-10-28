@@ -45,6 +45,44 @@ import type { Io } from "./index.ts";
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+/** What the check finds before `npm install` that the install is the answer to. */
+const AFTER_INSTALL = /^(theme|addon|icon-set)-missing$/;
+
+/**
+ * The summary's first line. A slide is clean when neither the converter nor the check (`problems`:
+ * its errors and warnings) reported anything on it; what belongs to no slide is counted for the
+ * whole deck, so "100%" is never followed by a problem the line did not count.
+ */
+export function tallySlides(
+  slides: number,
+  report: ReadonlyArray<{ severity: string; slide: number | null }>,
+  problems: ReadonlyArray<{ slide?: number }>,
+): { clean: number; wholeDeck: number; line: string } {
+  const flagged = new Set<number>();
+  let wholeDeck = 0;
+  for (const r of report)
+    if (r.severity !== "info") {
+      if (r.slide) flagged.add(r.slide);
+      else wholeDeck++;
+    }
+  // The check counts slides from 0, the import report from 1.
+  for (const d of problems) {
+    if (d.slide !== undefined) flagged.add(d.slide + 1);
+    else wholeDeck++;
+  }
+  const clean = slides - [...flagged].filter((n) => n >= 1 && n <= slides).length;
+  // One slide in 200 with a problem is 99%, not 100%.
+  const pct = clean === slides ? 100 : Math.min(99, Math.round((clean / slides) * 100));
+  const deck = wholeDeck
+    ? `; ${wholeDeck} problem${wholeDeck > 1 ? "s" : ""} for the whole deck (below)`
+    : "";
+  return {
+    clean,
+    wholeDeck,
+    line: `${slides} slides, ${clean} (${pct}%) with nothing to report${deck}.`,
+  };
+}
+
 export const IMPORT_FLAGS = {
   out: { kind: "string" as const, short: "o" },
   force: { kind: "boolean" as const },
@@ -255,9 +293,7 @@ export const config: DeckConfigInput = {
   const check = await checkProject(project, { compile: true });
   // Before `npm install` the theme package cannot resolve: that is the next step, not a problem.
   const installed = existsSync(join(out, "node_modules"));
-  const pending = installed
-    ? []
-    : check.diagnostics.filter((d) => (d.code ?? "").endsWith("-missing"));
+  const pending = installed ? [] : check.diagnostics.filter((d) => AFTER_INSTALL.test(d.code));
   const diagnostics = check.diagnostics.filter((d) => !pending.includes(d));
   const errors = diagnostics.filter((d) => d.severity === "error");
   const warnings = diagnostics.filter((d) => d.severity === "warning");
@@ -266,9 +302,7 @@ export const config: DeckConfigInput = {
     return r && !r.startsWith("../..") ? r : p;
   };
   const count = (s: string) => result.report.filter((r) => r.severity === s).length;
-  const pct = result.info.slides
-    ? Math.round((result.info.cleanSlides / result.info.slides) * 100)
-    : 100;
+  const tally = tallySlides(result.info.slides, result.report, [...errors, ...warnings]);
 
   if (json)
     emit({
@@ -276,7 +310,8 @@ export const config: DeckConfigInput = {
       out,
       source: join(root, entry),
       slides: result.info.slides,
-      cleanSlides: result.info.cleanSlides,
+      cleanSlides: tally.clean,
+      wholeDeck: tally.wholeDeck,
       theme: result.info.theme,
       report: result.report,
       check: {
@@ -287,9 +322,7 @@ export const config: DeckConfigInput = {
     });
   else {
     say(`\nImported ${shown(join(root, entry))} into ${shown(out)}.`);
-    say(
-      `  ${result.info.slides} slides, ${result.info.cleanSlides} (${pct}%) with nothing to report.`,
-    );
+    say(`  ${tally.line}`);
     say(
       `  theme: ${result.info.theme.slidev} → ${result.info.theme.kadal}${result.info.theme.package ? ` (${result.info.theme.package})` : ""}`,
     );
@@ -481,9 +514,7 @@ export const config: DeckConfigInput = {
   const project = openProject(out);
   const check = await checkProject(project, { compile: true });
   const installed = existsSync(join(out, "node_modules"));
-  const pending = installed
-    ? []
-    : check.diagnostics.filter((d) => (d.code ?? "").endsWith("-missing"));
+  const pending = installed ? [] : check.diagnostics.filter((d) => AFTER_INSTALL.test(d.code));
   const diagnostics = check.diagnostics.filter((d) => !pending.includes(d));
   const errors = diagnostics.filter((d) => d.severity === "error");
   const warnings = diagnostics.filter((d) => d.severity === "warning");
@@ -492,16 +523,15 @@ export const config: DeckConfigInput = {
     return r && !r.startsWith("../..") ? r : p;
   };
   const count = (s: string) => result.report.filter((r) => r.severity === s).length;
-  const pct = result.info.slides
-    ? Math.round((result.info.cleanSlides / result.info.slides) * 100)
-    : 100;
+  const tally = tallySlides(result.info.slides, result.report, [...errors, ...warnings]);
   if (json)
     emit({
       ok: errors.length === 0,
       out,
       source: join(root, entry),
       slides: result.info.slides,
-      cleanSlides: result.info.cleanSlides,
+      cleanSlides: tally.clean,
+      wholeDeck: tally.wholeDeck,
       theme: result.info.theme,
       assets: result.info.assets,
       report: result.report,
@@ -513,11 +543,9 @@ export const config: DeckConfigInput = {
     });
   else {
     say(`\nImported ${shown(join(root, entry))} into ${shown(out)}.`);
+    say(`  ${tally.line}`);
     say(
-      `  ${result.info.slides} slides, ${result.info.cleanSlides} (${pct}%) with nothing to report.`,
-    );
-    say(
-      `  theme: reveal.js ${result.info.theme.reveal ?? "(none)"} → ${result.info.theme.kadal} (${result.info.theme.colorScheme ?? "light"})${result.info.assets.length ? `; ${result.info.assets.length} file${result.info.assets.length > 1 ? "s" : ""} copied into public/` : ""}`,
+      `  theme: reveal.js ${result.info.theme.reveal ?? "(none)"} → ${result.info.theme.kadal} ${result.info.theme.variant} (${result.info.theme.colorScheme})${result.info.assets.length ? `; ${result.info.assets.length} file${result.info.assets.length > 1 ? "s" : ""} copied into public/` : ""}`,
     );
     say(
       `  report: ${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes — IMPORT-REPORT.md`,

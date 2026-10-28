@@ -3,7 +3,63 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
+import type { FlagSpecs } from "./args.ts";
 import { NoDeckError } from "./project.ts";
+
+/**
+ * Vite's own flags that `dev` and `build` accept and hand on as written (Vite 8's `vite --help`
+ * and `vite build --help`). Knowing them lets a mistyped one be a usage error in our words rather
+ * than Vite's stack trace. Vite also takes each in kebab case (`--out-dir`).
+ */
+const VITE_COMMON: FlagSpecs = {
+  config: { kind: "string", short: "c" },
+  base: { kind: "string" },
+  logLevel: { kind: "string", short: "l" },
+  clearScreen: { kind: "boolean" },
+  configLoader: { kind: "string" },
+  profile: { kind: "optional-string" },
+  debug: { kind: "optional-string", short: "d" },
+  filter: { kind: "string", short: "f" },
+  mode: { kind: "string", short: "m" },
+};
+export const VITE_DEV_FLAGS = viteFlags({
+  ...VITE_COMMON,
+  host: { kind: "optional-string" },
+  port: { kind: "number" },
+  open: { kind: "optional-string" },
+  cors: { kind: "boolean" },
+  strictPort: { kind: "boolean" },
+  force: { kind: "boolean" },
+  experimentalBundle: { kind: "boolean" },
+  // Vite dropped it; the deck's plugin makes the certificate (vite/https.ts).
+  https: { kind: "boolean" },
+});
+export const VITE_BUILD_FLAGS = viteFlags({
+  ...VITE_COMMON,
+  target: { kind: "string" },
+  outDir: { kind: "string" },
+  assetsDir: { kind: "string" },
+  assetsInlineLimit: { kind: "number" },
+  ssr: { kind: "optional-string" },
+  sourcemap: { kind: "optional-string" },
+  minify: { kind: "optional-string" },
+  manifest: { kind: "optional-string" },
+  ssrManifest: { kind: "optional-string" },
+  emptyOutDir: { kind: "boolean" },
+  watch: { kind: "boolean", short: "w" },
+  app: { kind: "boolean" },
+});
+
+function viteFlags(specs: FlagSpecs): FlagSpecs {
+  const out: FlagSpecs = {};
+  for (const [name, spec] of Object.entries(specs)) {
+    out[name] = { ...spec, forward: true };
+    const kebab = name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+    // One short alias per flag: the camel-case spelling keeps it.
+    if (kebab !== name) out[kebab] = { kind: spec.kind, forward: true };
+  }
+  return out;
+}
 
 /** A prerequisite is missing (Vite, Playwright, Chromium): exit code 4, with what to run. */
 export class MissingDependencyError extends Error {}

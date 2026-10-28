@@ -57,8 +57,10 @@ describe("sections", () => {
     const head = slides(r.mdx)[0]!.fm;
     expect(head).toMatchObject({
       title: "T",
-      theme: "minimal",
+      theme: "reveal",
+      themeConfig: { variant: "night", width: 1280 },
       colorScheme: "dark",
+      margin: 0.04,
       hash: true,
       transition: "convex",
       slideNumber: "c/t",
@@ -67,6 +69,109 @@ describe("sections", () => {
     expect(r.info.canvas.scale).toBe(1.5);
     expect(what(r)).toContain("`keyboard` is not a plain value");
     expect(what(r)).not.toContain("plugins");
+  });
+
+  test("reveal's theme becomes the reveal theme's variant of the same name, in its scheme", () => {
+    const theme = (head: string) => {
+      const r = convertReveal(page("<section><h1>Hi</h1></section>", head));
+      return { fm: slides(r.mdx)[0]!.fm, info: r.info.theme, report: what(r) };
+    };
+    const link = (name: string) => `<link rel="stylesheet" href="dist/theme/${name}.css">`;
+    for (const [name, scheme] of [
+      ["black", "dark"],
+      ["white", "light"],
+      ["league", "dark"],
+      ["beige", "light"],
+      ["night", "dark"],
+      ["serif", "light"],
+      ["simple", "light"],
+      ["solarized", "light"],
+      ["moon", "dark"],
+      ["dracula", "dark"],
+      ["sky", "light"],
+      ["blood", "dark"],
+    ])
+      expect(theme(link(name!)).fm).toMatchObject({
+        theme: "reveal",
+        themeConfig: { variant: name },
+        colorScheme: scheme,
+      });
+    const contrast = theme(link("white-contrast"));
+    expect(contrast.fm).toMatchObject({ themeConfig: { variant: "white" }, colorScheme: "light" });
+    expect(contrast.report).toContain("its extra contrast is not carried over");
+    // reveal.css alone is black on white
+    expect(theme("").fm).toMatchObject({ themeConfig: { variant: "white" }, colorScheme: "light" });
+    const own = theme(link("corporate"));
+    expect(own.fm).toMatchObject({ theme: "reveal", themeConfig: { variant: "black" } });
+    expect(own.report).toContain(
+      'warning: The reveal.js theme "corporate" is not one of reveal\'s own',
+    );
+    expect(theme(link("moon")).info).toEqual({
+      reveal: "moon",
+      kadal: "reveal",
+      variant: "moon",
+      colorScheme: "dark",
+    });
+  });
+
+  test("a first slide on a dark background keeps light text in either scheme (reveal's class)", () => {
+    // regression: the headmatter's colorScheme is the first slide's too, so the slide's own flip
+    // to dark was dropped (or never written, the deck being dark already) and its words went
+    // black on navy as soon as the deck was light
+    const r = convertReveal(
+      page(
+        '<section data-background-color="#0f172a"><h1>Title</h1></section><section data-background-color="#0f172a"><h2>Two</h2></section>',
+        '<link rel="stylesheet" href="dist/theme/white.css">',
+      ),
+    );
+    const [first, second] = slides(r.mdx);
+    expect(first!.fm).toMatchObject({ colorScheme: "light", class: "has-dark-background" });
+    expect(second!.fm).toMatchObject({ colorScheme: "dark" });
+    expect(what(r)).not.toContain("colorScheme");
+    // a dark deck's light first slide: the other way round
+    const dark = convertReveal(
+      page(
+        '<section data-background-color="#ffffff" class="title"><h1>Hi</h1></section>',
+        '<link rel="stylesheet" href="dist/theme/black.css">',
+      ),
+    );
+    expect(slides(dark.mdx)[0]!.fm).toMatchObject({
+      colorScheme: "dark",
+      class: "title has-light-background",
+    });
+    // and a dark deck's dark first slide: it stays light-on-dark when the viewer (or `contrast`,
+    // or `export --scheme light`) turns the deck light; so does every dark slide after it
+    const same = convertReveal(
+      page(
+        '<section data-background-color="#0f172a"><h1>Hi</h1></section><section data-background-color="#0f172a"><h2>Two</h2></section>',
+        '<link rel="stylesheet" href="dist/theme/black.css">',
+      ),
+    );
+    const [a, b] = slides(same.mdx);
+    expect(a!.fm).toMatchObject({ colorScheme: "dark", class: "has-dark-background" });
+    expect(b!.fm).toMatchObject({ colorScheme: "dark" });
+  });
+
+  test("reveal's slide size goes to themeConfig, its default margin to the headmatter", () => {
+    const at = (init: string) =>
+      convertReveal(
+        page(
+          "<section><h1>Hi</h1></section>",
+          "",
+          `<script>Reveal.initialize({ ${init} });</script>`,
+        ),
+      );
+    const sized = at("width: 1280, height: 720, margin: 0.1");
+    expect(slides(sized.mdx)[0]!.fm).toMatchObject({
+      themeConfig: { variant: "white", width: 1280, height: 720 },
+      margin: 0.1,
+    });
+    // reveal scales its slide to fit, by the tighter of the two ratios; inline lengths follow
+    expect(sized.info.canvas.scale).toBe(1.5);
+    const plain = at("hash: true");
+    expect(slides(plain.mdx)[0]!.fm.themeConfig).toEqual({ variant: "white" });
+    expect(slides(plain.mdx)[0]!.fm.margin).toBe(0.04);
+    expect(plain.info.canvas.scale).toBe(1.543);
   });
 
   test("reveal's newer options carry over by name", () => {
@@ -128,9 +233,14 @@ describe("backgrounds and slide attributes", () => {
       backgroundVideoLoop: false,
       backgroundVideoMuted: true,
     });
-    expect(s[4]!.fm).toEqual({ backgroundGradient: "radial-gradient(#283b95, #17b2c3)" });
+    // a gradient's scheme is its stops' mean
+    expect(s[4]!.fm).toEqual({
+      backgroundGradient: "radial-gradient(#283b95, #17b2c3)",
+      colorScheme: "dark",
+    });
     expect(s[5]!.fm).toEqual({ backgroundIframe: "https://x.test", backgroundInteractive: true });
-    expect(s[6]!.fm).toEqual({ backgroundColor: "#ffffff" });
+    // a light colour is the light scheme's, whichever scheme the deck is shown in
+    expect(s[6]!.fm).toEqual({ backgroundColor: "#ffffff", colorScheme: "light" });
     expect(s[7]!.fm).toEqual({ backgroundImage: "https://x.test/b.png" });
   });
 
@@ -252,7 +362,7 @@ describe("content", () => {
       '<section><h2 data-id="t" class="x">A</h2><div style="width: 100px; color: red"><p>p</p></div><img src="https://x.test/a.png" width="200"></section>',
     );
     expect(body).toBe(
-      '<h2 data-id="t" className="x">A</h2>\n\n<div style={{"width":"200px","color":"red"}}>\n\np\n\n</div>\n\n<img src="https://x.test/a.png" width="200" />',
+      '<h2 data-id="t" className="x">A</h2>\n\n<div style={{"width":"154.3px","color":"red"}}>\n\np\n\n</div>\n\n<img src="https://x.test/a.png" width="200" />',
     );
   });
 
@@ -356,7 +466,7 @@ describe("golden: a reveal.js demo deck", () => {
     expect(compiled.missing).toEqual([]);
     const report = formatImportReport(r, { source: "demo/index.html", titles: r.info.titles });
     expect(report).toContain("by `kadal-deck import reveal`");
-    expect(report).toContain("reveal.js `black` → Kadal `minimal` (dark)");
+    expect(report).toContain("reveal.js `black` → Kadal `reveal`, variant `black` (dark)");
     expect(report).toContain("The onclick handler on <button> is dropped");
   });
 });

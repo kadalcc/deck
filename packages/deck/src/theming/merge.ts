@@ -216,6 +216,18 @@ export function slideDefaultLayers(
   ];
 }
 
+/**
+ * The Shiki pair a deck highlights with when neither it nor its theme names one. GitHub's
+ * high-contrast pair, not its default one: `github-light`'s orange and red (#e36209, #d73a49) are
+ * 2.9–4.4:1 on the built-in themes' code panels and below 3:1 on a stepped line's band, so the
+ * starter failed its own `kadal-deck contrast`. Every token of these two clears 4.5:1 on every
+ * built-in panel and band (theming/code-contrast.test.ts).
+ */
+export const DEFAULT_SHIKI = {
+  light: "github-light-high-contrast",
+  dark: "github-dark-high-contrast",
+};
+
 /** The Shiki themes a deck highlights with: explicit options, else the theme's, else GitHub's. */
 export function shikiThemes(
   explicit: { light?: string; dark?: string } | undefined,
@@ -223,8 +235,8 @@ export function shikiThemes(
 ): { light: string; dark: string } {
   const fromTheme = (theme?.meta as ThemeMeta | undefined)?.shiki;
   return {
-    light: explicit?.light ?? fromTheme?.light ?? "github-light",
-    dark: explicit?.dark ?? fromTheme?.dark ?? "github-dark",
+    light: explicit?.light ?? fromTheme?.light ?? DEFAULT_SHIKI.light,
+    dark: explicit?.dark ?? fromTheme?.dark ?? DEFAULT_SHIKI.dark,
   };
 }
 

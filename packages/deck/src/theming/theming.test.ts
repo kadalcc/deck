@@ -121,7 +121,7 @@ describe("the contract's names", () => {
     expect(meta("#123").swatch).toBeUndefined();
   });
   test("the menu adds the first-party themes a deck did not name, in their order", () => {
-    expect(FIRST_PARTY_THEMES).toHaveLength(16);
+    expect(FIRST_PARTY_THEMES).toHaveLength(17);
     expect(implicitThemes(["seriph", "minimal"])).toEqual(
       FIRST_PARTY_THEMES.filter((t) => t !== "seriph" && t !== "minimal"),
     );
@@ -418,8 +418,14 @@ describe("merging", () => {
     const theme = {
       meta: { name: "t", colorScheme: "both" as const, shiki: { light: "min-light" } },
     };
-    expect(shikiThemes(undefined, theme)).toEqual({ light: "min-light", dark: "github-dark" });
-    expect(shikiThemes({ light: "nord" }, theme)).toEqual({ light: "nord", dark: "github-dark" });
+    expect(shikiThemes(undefined, theme)).toEqual({
+      light: "min-light",
+      dark: "github-dark-high-contrast",
+    });
+    expect(shikiThemes({ light: "nord" }, theme)).toEqual({
+      light: "nord",
+      dark: "github-dark-high-contrast",
+    });
   });
 });
 

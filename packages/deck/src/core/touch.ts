@@ -34,3 +34,28 @@ export function createSwipeTracker(threshold = 40, maxDuration = 800): SwipeTrac
     },
   };
 }
+
+/**
+ * What a finished swipe does: a swipe to the left turns forward, as a page does, and to the right
+ * back — mirrored under `rtl`, where the deck reads the other way (reveal.js's touch controller).
+ * A vertical swipe moves in the stack, whatever the direction of the text.
+ */
+export function swipeAction(dir: Swipe, rtl = false): "next" | "prev" | "up" | "down" {
+  if (dir === "up") return "down";
+  if (dir === "down") return "up";
+  const forward = rtl ? "right" : "left";
+  return dir === forward ? "next" : "prev";
+}
+
+/**
+ * Where a touch keeps its own gestures instead of turning the page: an element marked
+ * `data-prevent-swipe` (reveal.js), or one inside it, and the controls of a playing video or audio,
+ * whose timeline is scrubbed with a horizontal drag.
+ */
+export const PREVENT_SWIPE = "[data-prevent-swipe], video[controls], audio[controls]";
+
+/** Whether a touch that starts on `target` is the page's to turn. */
+export function swipeAllowed(target: unknown): boolean {
+  const el = target as { closest?: (selector: string) => unknown } | null;
+  return !el?.closest?.(PREVENT_SWIPE);
+}
