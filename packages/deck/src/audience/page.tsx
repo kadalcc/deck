@@ -24,9 +24,12 @@ import { closeTerm } from "../react/terms.ts";
 import { ThemeMenu } from "../react/ThemeMenu.tsx";
 import { loadSlide, SlideFrame } from "../react/SlideFrame.tsx";
 import {
+  askRefusal,
   claimAsked,
   cleanQuestion,
+  createAskTracker,
   createLimiter,
+  QUESTION_LIMIT,
   REACTION_LIMIT,
   type RoomPhase,
   roomPhase,
@@ -123,6 +126,22 @@ export function AudiencePage() {
   const [welcome, setWelcome] = useState(() => readItem(`deck.joined.${deck.config.slug}`) !== "1");
   const collapse = useCallback(() => setExpanded(false), []);
   const pending = useRef<string[]>([]);
+  // Each question sent waits to hear whether the room took it (audience/logic.ts).
+  const asks = useMemo(
+    () =>
+      createAskTracker({
+        onSettled: (r) => {
+          if (r.ok) return toast.show("Question sent. Others can upvote it now.");
+          // Not taken: it will never come back to be claimed, and the words go back in the box.
+          const i = pending.current.indexOf(r.text);
+          if (i >= 0) pending.current.splice(i, 1);
+          setQuestion((q) => (q.trim() ? q : r.text));
+          toast.show(r.message);
+        },
+      }),
+    [toast.show],
+  );
+  useEffect(() => () => asks.dispose(), [asks]);
 
   useEffect(() => {
     writeItem("deck.name", name);
@@ -134,13 +153,14 @@ export function AudiencePage() {
   useEffect(() => {
     if (!live) return;
     return live.client.on((m) => {
+      if (m.type === "qa:ack") asks.ack(m.ref, m);
       if (m.type === "react") {
         const id = Date.now() + Math.random();
         setFlash((f) => [...f.slice(-14), { id, emoji: m.emoji, x: Math.random() }]);
         setTimeout(() => setFlash((f) => f.filter((x) => x.id !== id)), 1800);
       }
     });
-  }, [live]);
+  }, [live, asks]);
 
   // How the room looks from here, and how it has looked: a room that was live and lost its
   // presenter has ended, one that never had one is still waiting.
@@ -206,8 +226,10 @@ export function AudiencePage() {
   useEffect(() => {
     if (!pending.current.length) return;
     const mine = claimAsked(askedSet, room.questions, pending.current);
-    if (mine.length) setAsked((a) => [...a, ...mine]);
-  }, [room.questions, askedSet]);
+    if (!mine.length) return;
+    setAsked((a) => [...a, ...mine]);
+    for (const q of room.questions) if (mine.includes(q.id)) asks.arrived(q.text);
+  }, [room.questions, askedSet, asks]);
 
   // A poll or quiz opening while the viewer is elsewhere: say so, with the way there.
   const seenOpen = useRef<Set<string> | null>(null);
@@ -226,9 +248,16 @@ export function AudiencePage() {
       toast.show(fresh.startsWith("q:") ? "A quiz just started" : "A poll just opened", {
         label: "Vote",
         run: () => setTab("polls"),
+        tab: "polls",
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only a change in what is open
   }, [openKey]);
+  // "A poll just opened · Vote" is done with once the viewer is on Polls, however they got there:
+  // left up, it sat over the poll's last option on a phone.
+  const { current: shown, hide: hideToast } = toast;
+  useEffect(() => {
+    if (shown?.action?.tab === tab) hideToast();
+  }, [tab, shown, hideToast]);
 
   const limiter = useMemo(() => createLimiter(REACTION_LIMIT.n, REACTION_LIMIT.per), []);
   const lastLimited = useRef(0);
@@ -244,13 +273,18 @@ export function AudiencePage() {
     if (navigator.vibrate) navigator.vibrate(10);
     return true;
   };
+  const askLimiter = useMemo(() => createLimiter(QUESTION_LIMIT.n, QUESTION_LIMIT.per), []);
   const ask = () => {
     const text = cleanQuestion(question);
     if (text.length < 2 || !live) return;
-    live.client.send({ type: "qa:ask", text, slide: slideKey });
+    // The room would drop it: say so now, and keep the words in the box.
+    if (!askLimiter.take()) return toast.show(askRefusal({ reason: "rate" }));
+    const ref = `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    live.client.send({ type: "qa:ask", text, slide: slideKey, ref });
     pending.current.push(text);
     setQuestion("");
-    toast.show("Question sent. Others can upvote it now.");
+    asks.sent(ref, text, online);
+    if (!online) toast.show("You're offline. Your question goes out when the room is back.");
   };
   const vote = (id: string) => {
     if (voted.has(id) || !live) return;
@@ -919,9 +953,16 @@ function ReactionButton({
   );
 }
 
+interface ToastAction {
+  label: string;
+  run: () => void;
+  /** The tab the action leads to: reaching it any other way dismisses the toast too. */
+  tab?: AudienceTab;
+}
+
 interface ToastState {
-  current: { id: number; text: string; action?: { label: string; run: () => void } } | null;
-  show: (text: string, action?: { label: string; run: () => void }) => void;
+  current: { id: number; text: string; action?: ToastAction } | null;
+  show: (text: string, action?: ToastAction) => void;
   hide: () => void;
 }
 
@@ -929,7 +970,7 @@ function useToast(): ToastState {
   const [current, setCurrent] = useState<ToastState["current"]>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hide = useCallback(() => setCurrent(null), []);
-  const show = useCallback((text: string, action?: { label: string; run: () => void }) => {
+  const show = useCallback((text: string, action?: ToastAction) => {
     if (timer.current) clearTimeout(timer.current);
     setCurrent({ id: Date.now(), text, action });
     timer.current = setTimeout(() => setCurrent(null), action ? 6000 : 2600);

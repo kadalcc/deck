@@ -155,7 +155,7 @@ export function sectionMarkdown(catalog: Catalog, section: CatalogSection, level
         "",
         "Theme and addon packages: `theme: seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then the package `seriph`; `theme: ./theme` is a folder beside deck.mdx; `addons: [qr]` the same with addon-. The Vite plugin imports their CSS and modules; their layouts, components and layers merge in under the deck's own; `themeConfig` keys become `--theme-<kebab>` CSS variables. `kadal-deck info themes` lists the ones installed, `kadal-deck new --theme <name>` makes one, `kadal-deck theme eject` copies one into the deck. The contract: THEMES.md in @kadal/deck.",
         "",
-        "First-party theme packages (`theme: <name>` with nothing to install: @kadal/deck ships them, and every deck's theme menu offers all sixteen, the deck's own `theme` and `themes` first; the prebuilt shell has them all):",
+        "First-party theme packages (`theme: <name>` with nothing to install: @kadal/deck ships them, and every deck's theme menu offers all seventeen, the deck's own `theme` and `themes` first; the prebuilt shell has them all):",
         "",
       );
       for (const t of THEME_PACKAGES) {

@@ -365,7 +365,13 @@ export type ClientMessage =
   | { type: "draw:undo"; slide: string }
   | { type: "draw:clear"; slide: string }
   | { type: "react"; emoji: string }
-  | { type: "qa:ask"; text: string; slide: string }
+  | {
+      type: "qa:ask";
+      text: string;
+      slide: string;
+      /** The page's own id for this ask: a room that knows it answers with `qa:ack`. */
+      ref?: string;
+    }
   | { type: "qa:vote"; id: string }
   | { type: "qa:answered"; id: string; answered: boolean }
   | { type: "qa:delete"; id: string }
@@ -406,6 +412,19 @@ export type ServerMessage =
   | { type: "draw:clear"; slide: string }
   | { type: "confetti" }
   | { type: "error"; message: string }
+  /**
+   * To the asker only, for a `qa:ask` that carried a `ref`: taken (`id` is the question's), or not
+   * — `rate` (one question per 5 s; `retryIn` ms until the next is taken) or `invalid`. A room
+   * that predates it sends nothing (audience/logic.ts `createAskTracker` copes with both).
+   */
+  | {
+      type: "qa:ack";
+      ref: string;
+      ok: boolean;
+      id?: string;
+      reason?: "rate" | "invalid";
+      retryIn?: number;
+    }
   | {
       type: "command";
       id: string;

@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,7 +13,7 @@ import {
 
 import { createClickRegistry } from "../core/clicks.ts";
 import type { MagicMoveData, SlideMeta, SlideOptions } from "../core/model.ts";
-import { key as navKey, setTotal } from "../core/navigation.ts";
+import { key as navKey, reportSlide } from "../core/navigation.ts";
 import { SlideContext, type SlideContextValue, useDeck } from "./context.ts";
 import { useUi } from "./hooks.ts";
 import { LayerSlot, layerProps, layersShown } from "./Layers.tsx";
@@ -22,6 +23,17 @@ import { isPremiumName } from "../core/premium.ts";
 import { MDXProvider } from "./mdx.tsx";
 import { Watermark } from "./Watermark.tsx";
 import { CreditsLink } from "../credits/Credits.tsx";
+import {
+  formatEmbeds,
+  loadLazyMedia,
+  restartGifs,
+  shouldPreload,
+  startFrame,
+  startFrames,
+  stopFrames,
+  unloadFrame,
+  wantsAutoplay,
+} from "./embedded-media.ts";
 
 /**
  * One mounted slide: loads its module lazily, gives it a click registry, wraps it in its layout,
@@ -191,7 +203,7 @@ function hostOf(src: string) {
   }
 }
 
-function startFrame(frame: HTMLIFrameElement, src: string) {
+function startFrameLoad(frame: HTMLIFrameElement, src: string) {
   const host = hostOf(src);
   loadingHosts.add(host);
   const free = () => {
@@ -214,7 +226,7 @@ function startFrameWhenHostIsFree(
   waited = 0,
 ) {
   if (!loadingHosts.has(hostOf(src)) || waited >= 9_000) {
-    startFrame(frame, src);
+    startFrameLoad(frame, src);
     return;
   }
   timers.push(setTimeout(() => startFrameWhenHostIsFree(frame, src, timers, waited + 600), 600));
@@ -229,7 +241,7 @@ export function SlideFrame({
   h,
   v,
   active,
-  click,
+  click: clickProp,
   preview = false,
   frames = "lazy",
   prefetch = false,
@@ -251,6 +263,17 @@ export function SlideFrame({
     () => createClickRegistry(options.clicksStart),
     [options.clicksStart, meta.index],
   );
+  // reveal.js's `fragments: false`: no steps to take and every one shown. The slide is drawn at
+  // its last step and tells the nav it has none, so a press goes straight to the next slide.
+  const stepsOff = !deck.config.fragments;
+  const [lastStep, setLastStep] = useState(0);
+  useLayoutEffect(() => {
+    if (!stepsOff) return;
+    const read = () => setLastStep(options.clicks ?? registry.total());
+    read();
+    return registry.onChange(read);
+  }, [stepsOff, registry, options.clicks]);
+  const click = stepsOff ? lastStep : clickProp;
   const root = useRef<HTMLElement>(null);
   // The rails `<Stepper place>` draws on. Set from callback refs during the first commit, so the
   // re-render that portals into them lands before the browser paints.
@@ -289,76 +312,110 @@ export function SlideFrame({
     };
   }, [meta, deck.mode]);
 
-  // Report the click total (the registry's, or the frontmatter override) to the nav store.
+  const { columns, config } = deck;
+  // Report the click total (the registry's, or the frontmatter override) to the nav store, and
+  // whether a part still loading holds it open (a declared `clicks:` is final already).
   useEffect(() => {
     if (!reportTotal) return;
     const report = (total: number) => {
-      const t = options.clicks ?? total;
-      deck.nav.update((s) => setTotal(s, h, v, t));
+      const r = {
+        total: stepsOff ? 0 : (options.clicks ?? total),
+        held: !stepsOff && options.clicks == null && registry.pending(),
+      };
+      deck.nav.update((s) => reportSlide(s, h, v, r, columns, config));
     };
     report(registry.total());
     return registry.onChange(report);
-  }, [registry, deck.nav, h, v, options.clicks, reportTotal]);
+  }, [registry, deck.nav, columns, config, h, v, options.clicks, reportTotal, stepsOff]);
 
-  // Media: autoplay on show, pause on hide; lazy sources (data-src) when mounted near the view.
+  // Media, as reveal.js handles it (react/embedded-media.ts): lazy sources (data-src) once the
+  // slide is mounted, which is within viewDistance; on show, autoplay and `slide:start` to its
+  // frames; on leaving, pause, `slide:stop`, and unload the lazy frames.
+  const shown = useRef(false);
   useEffect(() => {
     const el = root.current;
     if (!el) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    for (const node of el.querySelectorAll<HTMLElement>("[data-src]")) {
-      const isIframe = node.tagName === "IFRAME";
-      const ahead = prefetch && !preview;
-      if (isIframe && !active && !ahead && frames !== "load" && node.dataset.preload === undefined)
-        continue;
-      const src = node.dataset.src;
-      if (!src || node.getAttribute("src") === src) continue;
-      // An iframe starts loading once the slide transition has played, so a heavy page (a live
-      // map) does not stall the animation of the slide it is arriving on. The next slide's
-      // loads a moment later still, behind the current one's.
-      if (!isIframe) {
-        node.setAttribute("src", src);
-        continue;
-      }
-      const frame = node as HTMLIFrameElement;
-      // A slide arriving: once its transition has played, so a heavy page does not stall it.
-      if (active && !preview) timers.push(setTimeout(() => startFrame(frame, src), 750));
-      // The slide ahead: when this host has gone quiet again.
-      else if (!active && ahead)
-        timers.push(setTimeout(() => startFrameWhenHostIsFree(frame, src, timers), 1500));
+    const { autoPlayMedia, preloadIframes } = deck.config;
+    // Before anything loads, so a YouTube or Vimeo frame takes play and pause from here.
+    formatEmbeds(el);
+    loadLazyMedia(el);
+    for (const frame of el.querySelectorAll<HTMLIFrameElement>("iframe[data-src]")) {
+      const src = frame.dataset.src;
+      if (!src || frame.getAttribute("src") === src) continue;
+      // The slide a press lands on next loads ahead — unless the deck said frames load only
+      // when shown (`preloadIframes: false`).
+      const ahead = prefetch && !preview && preloadIframes !== false;
+      // A slide arriving: once its transition has played, so a heavy page (a live map) does not
+      // stall the animation of the slide it is arriving on.
+      if (active && !preview) timers.push(setTimeout(() => startFrameLoad(frame, src), 750));
       // A mirror told it can carry live pages, staggered so a room of them does not arrive at once.
-      // Spelled out rather than left to fall through: the audience's mirror is `active` AND a
-      // preview, and an implicit last case would have had every one of them load at once.
+      // Before the preview case: the audience's mirror is `active` AND a preview.
       else if (frames === "load")
-        timers.push(setTimeout(() => startFrame(frame, src), 300 + Math.random() * 2200));
+        timers.push(setTimeout(() => startFrameLoad(frame, src), 300 + Math.random() * 2200));
       // Every other preview — the overview, print, the presenter's next box, a phone — keeps
       // its poster.
+      else if (preview) continue;
+      // The slide ahead, or a frame that preloads (`data-preload`, `preloadIframes: true`), on a
+      // slide mounted hidden: when this host has gone quiet again, behind the current slide's.
+      else if (ahead || shouldPreload(preloadIframes, frame))
+        timers.push(setTimeout(() => startFrameWhenHostIsFree(frame, src, timers), 1500));
     }
-    if (preview) return () => timers.forEach(clearTimeout);
-    const media = el.querySelectorAll<HTMLMediaElement>("video, audio");
+    // Who hears `slide:start` / `slide:stop`: the stage's slides, and a mirror carrying live pages.
+    const messages = !preview || frames === "load";
+    // A player autoplays only on the main screen: the presenter's copy of the slide would play
+    // the same video a second time, with sound.
+    const playersPlay = !preview && deck.mode === "play";
+    const autoplay = (f: HTMLIFrameElement) => playersPlay && wantsAutoplay(autoPlayMedia, f);
+    const cleanup = () => timers.forEach(clearTimeout);
+    if (!messages) return cleanup;
     if (active) {
-      for (const m of media) {
-        // A click-driven <Video> plays and pauses itself (components/Video.tsx).
-        if (m.dataset.clicks !== undefined) continue;
-        const wants =
-          deck.config.autoPlayMedia === true ||
-          (deck.config.autoPlayMedia !== false && m.dataset.autoplay !== undefined);
-        if (wants) void m.play().catch(() => {});
+      shown.current = true;
+      if (!preview) {
+        for (const m of el.querySelectorAll<HTMLMediaElement>("video, audio")) {
+          // A click-driven <Video> plays and pauses itself (components/Video.tsx).
+          if (m.dataset.clicks !== undefined) continue;
+          if (wantsAutoplay(autoPlayMedia, m)) void m.play().catch(() => {});
+        }
+        // From frame one: a GIF's frames are shared by every element showing it, so a slide seen
+        // again picked up mid-loop. (A run while shown is the slide's content arriving.)
+        restartGifs(el);
       }
-    } else {
-      for (const m of media) {
+      // The frames already loaded hear it now; the rest when they finish loading (lazy ones a
+      // moment from now, a Reload later), for as long as the slide is shown.
+      startFrames(el, autoplay);
+      const onLoad = (e: Event) => {
+        const t = e.target as HTMLElement | null;
+        if (t?.tagName === "IFRAME" && t.getAttribute("src"))
+          startFrame(t as HTMLIFrameElement, autoplay(t as HTMLIFrameElement));
+      };
+      el.addEventListener("load", onLoad, true);
+      return () => {
+        cleanup();
+        el.removeEventListener("load", onLoad, true);
+      };
+    }
+    if (!preview)
+      for (const m of el.querySelectorAll<HTMLMediaElement>("video, audio")) {
         if (m.dataset.ignore !== undefined || m.dataset.clicks !== undefined) continue;
         m.pause();
         if (m.dataset.autoplay !== undefined) m.currentTime = 0;
       }
-      // Unload lazy iframes when hidden, so nothing keeps playing in the background — except on
-      // the slide that comes next, which is loading ahead on purpose.
-      if (!prefetch)
-        for (const f of el.querySelectorAll<HTMLIFrameElement>("iframe[data-src]")) {
-          if (f.dataset.preload === undefined && f.getAttribute("src")) f.removeAttribute("src");
-        }
+    // Only a slide that was shown is told it stopped; a neighbour mounting hidden was never on.
+    if (shown.current) {
+      shown.current = false;
+      stopFrames(el);
     }
-    return () => timers.forEach(clearTimeout);
-  }, [active, preview, frames, prefetch, Component, deck.config.autoPlayMedia]);
+    // Unload lazy frames when hidden, so nothing keeps playing in the background — except on the
+    // slide that comes next (loading ahead on purpose), a frame that preloads, and one marked
+    // `data-ignore` (left alone, as in reveal).
+    if (!preview)
+      for (const f of el.querySelectorAll<HTMLIFrameElement>("iframe[data-src]")) {
+        if (prefetch || shouldPreload(preloadIframes, f) || f.hasAttribute("data-ignore")) continue;
+        unloadFrame(f);
+      }
+    return cleanup;
+  }, [active, preview, frames, prefetch, Component, deck.config, deck.mode]);
 
   // Auto-fit: a slide whose content is taller than the canvas is scaled down to fit, measured
   // after it renders and again when a click reveals more, fonts arrive or images load. Every

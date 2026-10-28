@@ -831,7 +831,12 @@ export default { headmatter, slides, glossary, styles, codeThemes, relay, kokoro
         return compileMdx(s.notes ?? "", `${s.source.file}:${s.source.line} (notes)`, null, true);
 
       // magic: precompute keyed tokens for each step, plus that step's own line highlights.
-      const blocks = magicMoveData(s.magic, await getHighlighter(), shikiThemeOption(code));
+      const blocks = magicMoveData(
+        s.magic,
+        await getHighlighter(),
+        shikiThemeOption(code),
+        m.headmatter.lineNumbers === true,
+      );
       return `export default ${JSON.stringify(blocks)};`;
     },
   };

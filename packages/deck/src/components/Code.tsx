@@ -1,7 +1,7 @@
 import { type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ShikiMagicMovePrecompiled } from "shiki-magic-move/react";
 
-import { deserialiseSteps, type LineSet } from "../compiler/code-meta.ts";
+import { deserialiseSteps, type LineSet, linesOn } from "../compiler/code-meta.ts";
 import { useDeck, useSlide } from "../react/context.ts";
 import { useClick } from "../react/hooks.ts";
 import { CodeGroupContext } from "./CodeGroup.tsx";
@@ -64,6 +64,7 @@ function PlainCode(props: CodeProps) {
     ...rest
   } = props;
   const inGroup = useContext(CodeGroupContext);
+  const deck = useDeck();
   const steps = useMemo<LineSet[] | null>(
     () => (stepsAttr ? deserialiseSteps(stepsAttr) : null),
     [stepsAttr],
@@ -109,6 +110,8 @@ function PlainCode(props: CodeProps) {
     }
   };
 
+  // The fence's own `{lines: …}`, else the deck's `lineNumbers`.
+  const numbered = linesOn(linesAttr, deck.config.lineNumbers);
   const start = Number(startAttr ?? 1);
   const showTitle = !!title && !inGroup;
   return (
@@ -122,7 +125,7 @@ function PlainCode(props: CodeProps) {
       <pre
         ref={pre}
         {...rest}
-        className={["deck-code", "shiki", linesAttr === "true" ? "has-lines" : "", className]
+        className={["deck-code", "shiki", numbered ? "has-lines" : "", className]
           .filter(Boolean)
           .join(" ")}
         style={{
@@ -173,7 +176,9 @@ export function MagicMove({ block }: { block: number }) {
   const duration =
     own > 0 ? own : deck.config.magicMoveDuration > 0 ? deck.config.magicMoveDuration : 800;
   // `{lines: true}` on the outer fence numbers every step; an inner fence can ask for itself.
-  const lineNumbers = data?.options.lines === "true" || !!data?.steps[step]?.lines;
+  // …and a fence that says nothing takes the deck's `lineNumbers`.
+  const lineNumbers =
+    linesOn(data?.options.lines, deck.config.lineNumbers) || !!data?.steps[step]?.lines;
   // A stable object: the renderer re-syncs its tokens whenever `options` is a new one.
   const options = useMemo(() => ({ duration, lineNumbers }), [duration, lineNumbers]);
   // After the renderer has drawn the step (its effect runs before this one, being a child's).

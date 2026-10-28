@@ -29,9 +29,12 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     props: {
       at: 'When: omitted = one after the previous step; "+N" relative ("+0" shares the previous step); a number is absolute (0 = always shown); [from, to] shows it from `from` until `to`.',
       hide: "Start visible and hide at the step instead.",
-      effect: "A reveal effect (see clickEffects) or any CSS class the theme defines.",
+      effect:
+        "A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes.",
       className: "Extra classes.",
       style: "Inline style (JSX object).",
+      autoSlide:
+        "Milliseconds auto-slide stays on this step before the next, over the slide's `autoSlide`.",
       children: "What is revealed.",
     },
   },
@@ -181,6 +184,27 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     summary:
       "Children on top of each other in one spot — combine with clicks to swap images in place.",
     example: `<Stack>\n<Click at={[1, 2]}>![](/v1.png)</Click>\n<Click at={2}>![](/v2.png)</Click>\n</Stack>`,
+  },
+  HStack: {
+    category: "layout",
+    summary:
+      "Children in a row, centred both ways (reveal.js's `r-hstack`); images inside shrink to fit.",
+    example: `<HStack gap="2rem">\n  <img src="/a.png" />\n  <img src="/b.png" />\n</HStack>`,
+    props: {
+      gap: "CSS gap.",
+      align: "align-items (center by default).",
+      justify: "justify-content (center by default).",
+    },
+  },
+  VStack: {
+    category: "layout",
+    summary: "Children in a column, centred both ways (reveal.js's `r-vstack`).",
+    example: `<VStack gap="1rem">\n\n## Title\n\n![](/chart.png)\n\n</VStack>`,
+    props: {
+      gap: "CSS gap.",
+      align: "align-items (center by default).",
+      justify: "justify-content (center by default).",
+    },
   },
   Stretch: {
     category: "layout",

@@ -1643,6 +1643,11 @@
 }
 
 /* ── the toast: one line above the tabs ───────────────────────────────────── */
+/* While one shows, the panel's end scrolls clear of it as well as the tabs: the last card (a
+   poll's last option) sat under the toast on a phone. Two lines of toast and its gap fit. */
+.deck-audience:has(.deck-audience-toast) .deck-audience-panel {
+  padding-bottom: calc(24px + 96px);
+}
 .deck-audience-toast-slot {
   position: fixed;
   z-index: 60;

@@ -523,7 +523,12 @@ export async function compileDeck(
       let magic: ReturnType<typeof magicMoveData> | null = null;
       if (s.magic.length) {
         try {
-          magic = magicMoveData(s.magic, hl, shikiThemeOption(themes));
+          magic = magicMoveData(
+            s.magic,
+            hl,
+            shikiThemeOption(themes),
+            prepared.headmatter.lineNumbers === true,
+          );
         } catch (err) {
           push({
             message: `magic move: ${err instanceof Error ? err.message : String(err)}`,

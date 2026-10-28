@@ -28,6 +28,80 @@ export function createLimiter(n: number, per: number, now: () => number = Date.n
   };
 }
 
+/** The room takes one question per viewer per 5 s (the Worker's LIMITS) and drops the rest. */
+export const QUESTION_LIMIT = { n: 1, per: 5000 } as const;
+/** How long a question sent on an open socket waits to hear back before it counts as lost. */
+export const ASK_TIMEOUT = 8000;
+
+/** What the room said about one ask (`qa:ack`), or the page's own limit standing in for it. */
+export interface AskAck {
+  ok: boolean;
+  reason?: "rate" | "invalid";
+  retryIn?: number;
+}
+
+/** The line a refused question gets, in place of "Question sent". */
+export function askRefusal(ack: Pick<AskAck, "reason" | "retryIn">): string {
+  if (ack.reason === "invalid") return "That question is too short to send.";
+  const s = ack.retryIn ? Math.max(1, Math.ceil(ack.retryIn / 1000)) : 0;
+  return s
+    ? `Too fast. Try again in ${s} second${s === 1 ? "" : "s"}.`
+    : "Too fast. Try again in a few seconds.";
+}
+
+export type AskResult = { ok: true; text: string } | { ok: false; text: string; message: string };
+
+/**
+ * The questions this page has sent and not yet heard about. The room used to drop one asked
+ * within its rate limit without a word while the page said "Question sent". Each ask now settles
+ * once: taken when the room acknowledges it (`qa:ack`) or, from a room that sends no ack, when
+ * a question with its text comes back in the room's list; refused when the room says so; lost
+ * when an ask on an open socket hears nothing within `timeout`. One queued while offline waits for
+ * the room without a deadline.
+ */
+export function createAskTracker(o: {
+  onSettled: (result: AskResult) => void;
+  timeout?: number;
+  setTimer?: (fn: () => void, ms: number) => unknown;
+  clearTimer?: (timer: unknown) => void;
+}) {
+  const setTimer = o.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
+  const clearTimer = o.clearTimer ?? ((t) => clearTimeout(t as ReturnType<typeof setTimeout>));
+  const waiting = new Map<string, { text: string; timer: unknown }>();
+  const settle = (ref: string, result: (text: string) => AskResult) => {
+    const w = waiting.get(ref);
+    if (!w) return;
+    waiting.delete(ref);
+    if (w.timer !== null) clearTimer(w.timer);
+    o.onSettled(result(w.text));
+  };
+  return {
+    sent(ref: string, text: string, online: boolean) {
+      const lost = () =>
+        settle(ref, (t) => ({
+          ok: false,
+          text: t,
+          message: "Your question didn't reach the room. Try again in a few seconds.",
+        }));
+      waiting.set(ref, { text, timer: online ? setTimer(lost, o.timeout ?? ASK_TIMEOUT) : null });
+    },
+    /** The room's list now holds a question with this text (claimed as this viewer's). */
+    arrived(text: string) {
+      for (const [ref, w] of waiting)
+        if (w.text === text) return settle(ref, (t) => ({ ok: true, text: t }));
+    },
+    ack(ref: string, ack: AskAck) {
+      settle(ref, (text) =>
+        ack.ok ? { ok: true, text } : { ok: false, text, message: askRefusal(ack) },
+      );
+    },
+    dispose() {
+      for (const w of waiting.values()) if (w.timer !== null) clearTimer(w.timer);
+      waiting.clear();
+    },
+  };
+}
+
 /** Open first, then most votes, then oldest: the order the presenter sees them. */
 export function sortQuestions<Q extends Pick<Question, "answered" | "votes" | "at">>(qs: Q[]): Q[] {
   return [...qs].sort(

@@ -6,6 +6,8 @@
  *   ```ts [app.ts]                     a title bar with the file name
  *   ```ts {*}{maxHeight:'200px'}       `*` and `all` both mean every line, `none` means no highlight
  *   ```ts data-line-numbers="3-5|8"    reveal.js's attribute form
+ *   ```ts [1-2|3]  ```ts [712: 1-2]    reveal.js's Markdown form: steps, then a first line number
+ *                                      (a bracket of digits only; a title has a letter in it)
  *   ```ts twoslash                     type hovers and errors, computed at build time
  *   ```ts {monaco}                     an editor on the slide; also {monaco-diff}, {monaco-run} and
  *                                      {monaco-write}, with options in a second pair of braces:
@@ -29,6 +31,8 @@ export interface CodeMeta {
   steps: LineSet[] | null;
   /** Show line numbers. */
   lines: boolean;
+  /** Steps or an offset were written reveal.js's way, in brackets: the linter suggests braces. */
+  revealBrackets?: boolean;
   /** First line number shown. */
   startLine: number;
   title: string | null;
@@ -271,13 +275,15 @@ export function parseCodeMeta(meta: string | null | undefined): CodeMeta {
   if (!meta) return out;
   const { braces, titles, attrs, words } = scanMeta(meta.trim());
 
-  // reveal.js's attribute form.
+  // reveal.js's attribute form. reveal counts highlighted lines from the top of the block
+  // (`data-ln-start-from="10"` with "1" lights the line numbered 10); Kadal's steps name the line
+  // numbers shown, so they move with the offset.
   if ("data-line-numbers" in attrs) {
     out.lines = true;
-    const spec = attrs["data-line-numbers"];
-    if (typeof spec === "string" && spec) out.steps = spec.split("|").map((s) => parseLineSet(s));
     const start = attrs["data-ln-start-from"];
     if (typeof start === "string" && /^\d+$/.test(start)) out.startLine = Number(start);
+    const spec = attrs["data-line-numbers"];
+    if (typeof spec === "string" && spec) out.steps = revealSteps(spec, out.startLine);
   }
   // Set by a `<<<` import (compiler/snippets.ts), never written by hand.
   const snippet = attrs["kadal-snippet"];
@@ -289,6 +295,16 @@ export function parseCodeMeta(meta: string | null | undefined): CodeMeta {
         : { path: snippet.slice(0, hash), region: snippet.slice(hash + 1) || null };
   }
 
+  // reveal.js's Markdown form, ```js [1-2|3] or [712: 1-2|3]: steps (and an offset), not a title.
+  const revealTitle = titles.findIndex((t) => /\d/.test(t) && REVEAL_BRACKET.test(t));
+  if (revealTitle >= 0) {
+    const m = REVEAL_BRACKET.exec(titles[revealTitle]!)!;
+    out.lines = true;
+    out.revealBrackets = true;
+    if (m[1]) out.startLine = Number(m[1]);
+    if (m[2]!.trim()) out.steps = revealSteps(m[2]!, out.startLine);
+    titles.splice(revealTitle, 1);
+  }
   if (titles.length) out.title = titles[0]!.trim() || null;
 
   let sawSteps = false;
@@ -321,6 +337,27 @@ export function parseCodeMeta(meta: string | null | undefined): CodeMeta {
     if (!["data-line-numbers", "data-ln-start-from", "kadal-snippet"].includes(key))
       out.words.push(key);
   return out;
+}
+
+/**
+ * Whether a block numbers its lines: its own `{lines: …}` (a `data-lines` of "true" or "false"),
+ * else the deck's `lineNumbers`.
+ */
+export function linesOn(own: string | undefined, deckWide: boolean): boolean {
+  if (own === "true" || own === "1") return true;
+  if (own === "false" || own === "0") return false;
+  return deckWide;
+}
+
+/** `[1-2|3]`, `[712: 1-2|3]`, `[712:]`: only digits, ranges, commas and bars after an offset. */
+const REVEAL_BRACKET = /^\s*(?:(\d+)\s*:)?\s*([\d,\s|-]*)$/;
+
+/** reveal's steps, counted from the top of the block, as the line numbers shown from `start`. */
+function revealSteps(spec: string, start: number): LineSet[] {
+  return spec.split("|").map((part) => {
+    const set = parseLineSet(part);
+    return set && start !== 1 ? new Set([...set].map((n) => n + start - 1)) : set;
+  });
 }
 
 /** Serialise steps for a `data-steps` attribute: `2,3|5|` (empty = all). */
