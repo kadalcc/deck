@@ -101,6 +101,13 @@
   --reveal-p-shadow: none;
 }
 
+/* reveal's highlight plugin is monokai in both schemes, so the panel stays dark when a viewer
+   toggles the scheme, and its Shiki colours stay the dark ones (as theme-neon's do). */
+.theme-reveal[data-color-scheme] .shiki,
+.theme-reveal[data-color-scheme] .shiki span {
+  color: var(--shiki-dark, inherit);
+}
+
 /* white: reveal.js's white.css (light); the dark scheme is its counterpart */
 .theme-reveal[data-reveal-variant="white"],
 .theme-reveal[data-reveal-variant="white"] .theme-reveal {
