@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Icon } from "../components/bling.tsx";
@@ -122,10 +122,29 @@ export function RemoteHost() {
     link.showing(open);
     return () => link.showing(false);
   }, [link, open]);
-  useEffect(() => link?.onPaired(() => deck.actions.toast("Phone remote connected")), [link, deck]);
-
   // Run what the phones send, and answer.
   const laserByRemote = useRef(false);
+  /** Switch off a laser a phone left on, here and (without a room) on the play windows. */
+  const dropRemoteLaser = useCallback(() => {
+    if (!laserByRemote.current) return;
+    laserByRemote.current = false;
+    void deck.commands.run("present.laserOff", {}, "remote");
+    if (link?.kind === "dev") {
+      const bus = remoteBus(deck);
+      bus.post({ id: "present.laserOff", params: {} });
+      bus.close();
+    }
+  }, [deck, link]);
+  // A phone that pairs starts with no laser: the one before it (or this one, before a reconnect
+  // the relay never saw as a drop) may have left one on whose off never arrived.
+  useEffect(
+    () =>
+      link?.onPaired(() => {
+        dropRemoteLaser();
+        deck.actions.toast("Phone remote connected");
+      }),
+    [link, deck, dropRemoteLaser],
+  );
   useEffect(() => {
     if (!link) return;
     const bus = link.kind === "dev" ? remoteBus(deck) : null;
@@ -155,16 +174,8 @@ export function RemoteHost() {
   useEffect(() => {
     const before = lastCount.current;
     lastCount.current = remotes;
-    if (remotes === 0 && before > 0 && laserByRemote.current) {
-      laserByRemote.current = false;
-      void deck.commands.run("present.laserOff", {}, "remote");
-      if (link?.kind === "dev") {
-        const bus = remoteBus(deck);
-        bus.post({ id: "present.laserOff", params: {} });
-        bus.close();
-      }
-    }
-  }, [remotes, deck, link]);
+    if (remotes === 0 && before > 0) dropRemoteLaser();
+  }, [remotes, dropRemoteLaser]);
 
   // Tell the phones what changed, at most ten times a second, and only what did change.
   useEffect(() => {

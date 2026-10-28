@@ -80,6 +80,65 @@ export interface HostLink {
   close(): void;
 }
 
+/**
+ * The laser's OFF, which must arrive. A move is `fire`d (stale a moment later, so dropped while
+ * offline), and so was the off: one lost to a socket blip at the lift (iOS suspends a page's
+ * sockets for Control Center or a screen recording) left the dot on the presenter's slide and the
+ * projector until the phone went away for good, since nothing else ever said "off". Now the off is
+ * a `run`, owed until the presenting window answers it: tried again a second later while the link
+ * stays open (twice), and each time it opens again. A new touch (`aiming`) cancels the debt: it ends
+ * with an off of its own, and an old one arriving late would switch the new laser off under the
+ * finger.
+ */
+export function laserOff(
+  link: Pick<RemoteLink, "run" | "status">,
+  retryMs = 1000,
+): {
+  off(): void;
+  aiming(): void;
+  dispose(): void;
+} {
+  let owed = false;
+  let attempt = 0;
+  let retries = 0;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const stopTimer = () => {
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
+  };
+  const send = () => {
+    stopTimer();
+    owed = true;
+    const mine = ++attempt;
+    void link.run("present.laserOff").then((a) => {
+      if (mine !== attempt) return;
+      if (a.ok) owed = false;
+      else if (link.status.get() === "open" && retries < 2) {
+        retries++;
+        timer = setTimeout(send, retryMs);
+      }
+    });
+  };
+  const unsubscribe = link.status.subscribe((s, prev) => {
+    if (owed && s === "open" && prev !== "open") send();
+  });
+  return {
+    off() {
+      retries = 0;
+      send();
+    },
+    aiming() {
+      stopTimer();
+      owed = false;
+      attempt++;
+    },
+    dispose() {
+      stopTimer();
+      unsubscribe();
+    },
+  };
+}
+
 const TIMEOUT = 4000;
 
 /** The phone's pending commands, by seq. */

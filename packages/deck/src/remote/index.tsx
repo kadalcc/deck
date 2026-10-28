@@ -24,7 +24,7 @@ import {
   orientationToPoint,
   readOrientation,
 } from "./air.ts";
-import { devRemote, hasLease, type RemoteLink, roomRemote } from "./link.ts";
+import { devRemote, hasLease, laserOff, type RemoteLink, roomRemote } from "./link.ts";
 import { pageRelay } from "./socket.ts";
 
 export { RemoteHost, remoteState } from "./host.tsx";
@@ -630,6 +630,8 @@ function MiniSlide({
     () => createCoalescer<{ x: number; y: number }>((p) => link.fire("present.laserAt", p)),
     [link],
   );
+  const off = useMemo(() => laserOff(link), [link]);
+  useEffect(() => off.dispose, [off]);
   const pen = useMemo(
     () =>
       createCoalescer<{ x: number; y: number }>((p) =>
@@ -667,6 +669,7 @@ function MiniSlide({
     touch.current = { ...p, moved: false, swipe };
     buzz(settings.haptics, 6);
     if (mode === "point") {
+      off.aiming();
       if (settings.point === "spotlight") link.fire("present.spotlight", { on: true });
       laser.push(p);
       laser.flush();
@@ -708,7 +711,7 @@ function MiniSlide({
     const dir = t.swipe.end(e.clientX, e.clientY, e.timeStamp);
     if (mode === "point") {
       laser.cancel();
-      link.fire("present.laserOff");
+      off.off();
       setDot(null);
       if (dir === "left") run("nav.next");
       else if (dir === "right") run("nav.prev");
@@ -839,6 +842,8 @@ function AirButton({
   const secure = typeof window !== "undefined" && window.isSecureContext;
   const supported = typeof window !== "undefined" && "DeviceOrientationEvent" in window;
   const session = useRef<null | (() => void)>(null);
+  const laserDone = useMemo(() => laserOff(link), [link]);
+  useEffect(() => laserDone.dispose, [laserDone]);
   const [access, setAccess] = useMotionAccess();
   const gate = motionGate();
 
@@ -877,6 +882,7 @@ function AirButton({
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     if (session.current) return;
     pressed.current = true;
+    laserDone.aiming();
     buzz(settings.haptics, 10);
     const fx = createOneEuro();
     const fy = createOneEuro();
@@ -941,7 +947,7 @@ function AirButton({
         /* already */
       }
       out.cancel();
-      link.fire("present.laserOff");
+      laserDone.off();
     };
     setHolding(true);
   };
