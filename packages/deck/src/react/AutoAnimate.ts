@@ -1,4 +1,9 @@
-import { AUTO_ANIMATE_STYLES, type DeckConfig, type SlideOptions } from "../core/model.ts";
+import {
+  AUTO_ANIMATE_STYLES,
+  type AutoAnimateMatcher,
+  type DeckConfig,
+  type SlideOptions,
+} from "../core/model.ts";
 
 /**
  * Auto-Animate: reveal.js's idea, implemented with the Web Animations API. Before a slide leaves
@@ -7,8 +12,14 @@ import { AUTO_ANIMATE_STYLES, type DeckConfig, type SlideOptions } from "../core
  * plus the CSS properties in `autoAnimateStyles` (reveal's twelve by default). Unmatched elements
  * fade in.
  *
- * Matching: an explicit `data-id` first; otherwise the same tag with the same text, in order.
+ * Matching: an explicit `data-id` first; otherwise the same tag with the same text, in order. A
+ * deck.config.ts `autoAnimateMatcher(fromSlide, toSlide)` replaces that with its own pairs.
  * Per-element tuning: `data-auto-animate-delay`, `-duration`, `-easing`.
+ *
+ * reveal.js's state attributes, for CSS hooks: both slides get `data-auto-animate="pending"` as
+ * the morph is set up, the arriving one `"running"` once it starts; each element taking part gets
+ * `data-auto-animate-target` (a number for a matched one, `unmatched` for one fading in). They
+ * are cleared at the next slide change, as reveal clears them.
  */
 export interface Snapshot {
   key: string;
@@ -160,40 +171,104 @@ export function autoAnimateTiming(
   };
 }
 
-export function animateFrom(
-  prev: Map<string, Snapshot>,
-  root: Element,
+/**
+ * What was read off the leaving slide: snapshots by key (the built-in matching), or by the
+ * arriving element each one pairs with (an `autoAnimateMatcher`'s pairs).
+ */
+export type AutoAnimatePlan =
+  | { kind: "keys"; snaps: Map<string, Snapshot> }
+  | { kind: "pairs"; snaps: Map<Element, Snapshot> };
+
+function snapOf(el: Element, key: string, styles: readonly string[]): Snapshot {
+  return {
+    key,
+    rect: el.getBoundingClientRect(),
+    styles: readStyles(getComputedStyle(el), styles),
+  };
+}
+
+/**
+ * Read the leaving slide before it goes, with the arriving one already in the page, and mark both
+ * `data-auto-animate="pending"`. A matcher, when given, pairs their elements; otherwise matching
+ * waits for `runAutoAnimate`.
+ */
+export function prepareAutoAnimate(
+  fromSlide: HTMLElement,
+  toSlide: HTMLElement | null,
+  opts: { styles?: readonly string[]; matcher?: AutoAnimateMatcher | null },
+): AutoAnimatePlan {
+  const styles = opts.styles ?? AUTO_ANIMATE_STYLES;
+  fromSlide.dataset.autoAnimate = "pending";
+  if (toSlide) toSlide.dataset.autoAnimate = "pending";
+  if (typeof opts.matcher === "function" && toSlide) {
+    const snaps = new Map<Element, Snapshot>();
+    for (const pair of opts.matcher(fromSlide, toSlide) ?? []) {
+      if (pair?.from && pair.to) snaps.set(pair.to, snapOf(pair.from, "", styles));
+    }
+    return { kind: "pairs", snaps };
+  }
+  return { kind: "keys", snaps: snapshot(fromSlide, styles) };
+}
+
+/** Clear what an earlier auto-animate left on the slides and their elements. */
+export function resetAutoAnimate(root: ParentNode): void {
+  for (const el of root.querySelectorAll<HTMLElement>(
+    '[data-auto-animate]:not([data-auto-animate=""])',
+  ))
+    el.dataset.autoAnimate = "";
+  for (const el of root.querySelectorAll<HTMLElement>("[data-auto-animate-target]"))
+    delete el.dataset.autoAnimateTarget;
+}
+
+/** Morph the arriving slide from the plan, and mark it `data-auto-animate="running"`. */
+export function runAutoAnimate(
+  plan: AutoAnimatePlan,
+  toSlide: HTMLElement,
   opts: AutoAnimateOptions,
 ): Animation[] {
   const styles = opts.styles ?? AUTO_ANIMATE_STYLES;
   const animations: Animation[] = [];
-  const counts = new Map<string, number>();
-  for (const el of candidates(root)) {
-    const key = keyOf(el, counts);
-    const from = prev.get(key);
+  let target = 0;
+  const timing = (el: Element) => {
     const html = el as HTMLElement;
-    const delay = Number(html.dataset.autoAnimateDelay ?? 0) * 1000;
-    const duration = Number(html.dataset.autoAnimateDuration ?? opts.duration) * 1000;
-    const easing = html.dataset.autoAnimateEasing ?? opts.easing;
-    if (!from) {
-      if (opts.unmatched) {
-        animations.push(
-          el.animate([{ opacity: 0 }, { opacity: 1 }], {
-            duration,
-            delay,
-            easing,
-            fill: "backwards",
-          }),
-        );
-      }
-      continue;
-    }
+    return {
+      delay: Number(html.dataset.autoAnimateDelay ?? 0) * 1000,
+      duration: Number(html.dataset.autoAnimateDuration ?? opts.duration) * 1000,
+      easing: html.dataset.autoAnimateEasing ?? opts.easing,
+      fill: "backwards" as const,
+    };
+  };
+  const morph = (el: Element, from: Snapshot) => {
+    (el as HTMLElement).dataset.autoAnimateTarget = String(target++);
     const frames = morphFrames(
       from,
       { rect: el.getBoundingClientRect(), styles: readStyles(getComputedStyle(el), styles) },
       opts.scale,
     );
-    animations.push(el.animate(frames, { duration, delay, easing, fill: "backwards" }));
+    animations.push(el.animate(frames, timing(el)));
+  };
+  const fadeIn = (el: Element) => {
+    if (!opts.unmatched) return;
+    (el as HTMLElement).dataset.autoAnimateTarget = "unmatched";
+    animations.push(el.animate([{ opacity: 0 }, { opacity: 1 }], timing(el)));
+  };
+
+  if (plan.kind === "pairs") {
+    for (const [el, from] of plan.snaps) if (toSlide.contains(el)) morph(el, from);
+    // Elements inside a matched one move with it.
+    for (const el of candidates(toSlide)) {
+      if (plan.snaps.has(el)) continue;
+      if ([...plan.snaps.keys()].some((m) => m.contains(el))) continue;
+      fadeIn(el);
+    }
+  } else {
+    const counts = new Map<string, number>();
+    for (const el of candidates(toSlide)) {
+      const from = plan.snaps.get(keyOf(el, counts));
+      if (from) morph(el, from);
+      else fadeIn(el);
+    }
   }
+  toSlide.dataset.autoAnimate = "running";
   return animations;
 }

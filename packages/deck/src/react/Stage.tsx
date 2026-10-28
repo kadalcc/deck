@@ -4,11 +4,12 @@ import { splitTransition } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
 import { isKnownTransition, transitionAnimation } from "../core/transitions.ts";
 import {
-  animateFrom,
+  type AutoAnimatePlan,
   autoAnimateTiming,
   canAutoAnimate,
-  snapshot,
-  type Snapshot,
+  prepareAutoAnimate,
+  resetAutoAnimate,
+  runAutoAnimate,
 } from "./AutoAnimate.ts";
 import { transitionMs } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
@@ -85,7 +86,7 @@ export function Stage() {
   } | null>(null);
   const lastPos = useRef({ h, v });
   const lastClick = useRef(click);
-  const autoSnap = useRef<Map<string, Snapshot> | null>(null);
+  const autoSnap = useRef<AutoAnimatePlan | null>(null);
   const lastOptions = useRef(deck.options.get(navKey(h, v)) ?? null);
 
   const current = deck.options.get(navKey(h, v)) ?? null;
@@ -119,7 +120,17 @@ export function Stage() {
       { h, v, options: current },
       deck.config.autoAnimate,
     );
-    autoSnap.current = canAuto && prevEl ? snapshot(prevEl, deck.config.autoAnimateStyles) : null;
+    if (stageRef.current) resetAutoAnimate(stageRef.current);
+    const nextEl = stageRef.current?.querySelector<HTMLElement>(
+      `.deck-slide[data-h="${h}"][data-v="${v}"]`,
+    );
+    autoSnap.current =
+      canAuto && prevEl
+        ? prepareAutoAnimate(prevEl, nextEl ?? null, {
+            styles: deck.config.autoAnimateStyles,
+            matcher: deck.config.autoAnimateMatcher,
+          })
+        : null;
     setLeaving({ h: prev.h, v: prev.v, seq, click: leavingClick });
     lastPos.current = { h, v };
     lastOptions.current = current;
@@ -166,7 +177,7 @@ export function Stage() {
     );
     if (!el) return;
     const frame = requestAnimationFrame(() => {
-      animateFrom(snap, el, {
+      runAutoAnimate(snap, el, {
         ...autoAnimateTiming(current, deck.config),
         styles: deck.config.autoAnimateStyles,
         scale: layout.scale,
