@@ -108,6 +108,11 @@ describe("model", () => {
     const ratio = resolveConfig({ aspectRatio: 4 / 3, canvasWidth: 1600 });
     expect(ratio.height).toBe(1200);
   });
+
+  test("center is off unless a deck asks for reveal's vertical centring", () => {
+    expect(resolveConfig().center).toBe(false);
+    expect(resolveConfig({ center: true }).center).toBe(true);
+  });
 });
 
 describe("navigation", () => {

@@ -38,6 +38,8 @@ export interface PageFacts {
   v: number;
   click: number;
   notes: boolean;
+  /** How many PDF pages it prints on: more than 1 for a slide `pdfMaxPagesPerSlide` let spill. */
+  pages?: number;
 }
 
 export interface PrintFacts {
@@ -75,6 +77,7 @@ export async function printFacts(page: Page): Promise<PrintFacts> {
         v: Number(p.dataset.v ?? 0),
         click: Number(p.dataset.click ?? s?.dataset.click ?? 0),
         notes: p.classList.contains("deck-print-notes-page"),
+        pages: Number(p.dataset.pages ?? 1),
       };
     });
     const flat = deck ? deck.columns.flatMap((c) => c.slides) : [];

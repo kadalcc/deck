@@ -238,7 +238,7 @@ watched).
 
 ## 6. First-party themes, and Slidev's
 
-Name one (`theme: <name>`): @kadal/deck ships all thirteen packages, and every deck's theme menu
+Name one (`theme: <name>`): @kadal/deck ships all fourteen packages, and every deck's theme menu
 offers them; `npm i @kadal/theme-<name>` gives a deck a copy of its own. The prebuilt shell has
 them all. Five are ports of Slidev's official themes, with the same layouts, layout names,
 frontmatter, slots, components, `themeConfig` keys, colour schemes and Shiki themes, so a Slidev
@@ -261,6 +261,17 @@ theme. Sizes are Slidev's exactly: each port measures in a "Slidev rem" worked o
 a deck that changes the base size scales the whole theme. The catalog lists them as
 `THEME_PACKAGES` (`kadal-deck info themes`); the ported code is MIT, with the notice in each
 package's LICENSE and in THIRD_PARTY_NOTICES.md.
+
+**reveal.js's themes** are one package, `@kadal/theme-reveal` (`theme: reveal`), with reveal's
+twelve looks as `themeConfig.variant`: `black` (the default), `white`, `league`, `beige`, `night`,
+`serif`, `simple`, `solarized`, `moon`, `dracula`, `sky`, `blood`. Each draws its own scheme as
+reveal does and a counterpart for the other, and sizes everything in reveal pixels of its 960 × 700
+slide (`themeConfig.width` / `height` for a deck of another size). `kadal-deck import reveal`
+writes `theme: reveal` with the variant the page linked. A selector cannot read a themeConfig
+value, so the package's `global-bottom` layer copies the variant onto the deck root as
+`data-reveal-variant`, and the stylesheet keys each variant on it (the same pattern serves any
+theme with variants). reveal.js is MIT; the notice is in the package's LICENSE and in
+THIRD_PARTY_NOTICES.md.
 
 For the first-party themes (`packages/theme-*`), `bun tools/theme-lint.ts packages/theme-<name>`
 checks the contract statically (each package's `bun test` runs it), and
