@@ -270,7 +270,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `zoom` | `boolean` | `true` | Alt+click zooms into a point; Esc zooms back out. |
 | `wakeLock` | `boolean` | `true` | Keep the screen awake while presenting. |
 | `selectable` | `boolean` | `true` | Text can be selected. |
-| `lineNumbers` | `boolean` | `false` | Line numbers on every code block. |
+| `lineNumbers` | `boolean` | `false` | Line numbers on every code block (and magic move) that does not set its own `{lines: …}`; `{lines:false}` opts one out. |
 | `autoFit` | `boolean` | `true` | Scale a slide whose content overflows so it fits (measured after render). |
 | `magicMoveDuration` | `number` | `800` | Milliseconds per magic-move morph. |
 | `monacoTypes` | `"none" \| "local" \| "auto" \| "cdn"` | `"auto"` | Where `{monaco}` editors get the types of the packages they import (monaco/types.ts): "auto" (the deck's installed ones in a build, else the CDN), "local", "cdn" or "none". Values: `none` `local` `auto` `cdn` |
