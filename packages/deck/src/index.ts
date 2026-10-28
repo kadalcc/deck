@@ -117,6 +117,7 @@ export {
   type Column,
   type Transition,
 } from "./core/model.ts";
+export type { DeckEvent, DeckEventListener, DeckEvents } from "./core/events.ts";
 export {
   DEFAULT_GLOSSARY,
   buildMatcher,

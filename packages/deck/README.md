@@ -142,6 +142,19 @@ as reveal's `data-state` does (`<name>` and `state-<name>`, and an event of that
 `respondToHashChanges: false` writes the hash but does not follow it; and
 `focusBodyOnPageVisibilityChange` takes focus back from an embedded page when the tab returns.
 
+**Events and postMessage.** reveal's events reach scripts that are not React: `__deck.events.on(
+"slidechanged", (e) => …)` (or `useDeck().events`) hears `ready`, `slidechanged`,
+`slidetransitionend`, `fragmentshown`, `fragmenthidden`, `overviewshown`, `overviewhidden`,
+`paused`, `resumed`, `autoslidepaused`, `autoslideresumed`, `resize` and each slide `state`, with
+reveal's fields (`indexh`, `indexv`, `indexf`, `currentSlide` …); `on("*")` hears them all, and each
+also fires as a `deck:<name>` event on the deck's root element. A page that frames the deck drives
+it as it would reveal: `frame.postMessage(JSON.stringify({ method: "slide", args: [2] }), "*")`,
+answered with `{ namespace: "reveal", eventName: "callback", method, result, state }` (the moves,
+`toggleOverview`, `togglePause`, `toggleAutoSlide`, `getState`/`setState`, `getIndices`,
+`getTotalSlides`, `getProgress`, `availableRoutes` …); Kadal's own `{ kadal: 1, type: "command",
+seq, id, params }` runs any command. `postMessageEvents: true` sends every event to the framing page
+as `{ namespace: "reveal", eventName, state }`; `postMessage: false` stops the calls.
+
 ## For AI agents and tools
 
 - `kadal-deck mcp` — 24 tools to read the reference, scaffold, outline, edit single slides (only
