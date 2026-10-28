@@ -43,6 +43,10 @@ export function plannedLength(
 /**
  * Seconds the talk should have taken by the time it reaches this slide: the deck's `totalTime`
  * spread evenly, or the slides' `timing` (default `defaultTiming`) added up. Null without either.
+ *
+ * A `timing:` on some slides and no `defaultTiming` is a plan too, as `plannedLength` has always
+ * read it: a slide without one plans no time. This used to need `defaultTiming`, so a deck timed
+ * slide by slide had a timer and a progress bar measured against its plan but never a pace badge.
  */
 export function expectedElapsed(
   deck: Pick<DeckRuntime, "columns" | "options" | "config">,
@@ -53,13 +57,13 @@ export function expectedElapsed(
   // `totalTime` (reveal.js) or `duration` (Slidev): the length spread evenly over the slides.
   const length = deck.config.totalTime ?? deck.config.duration;
   if (length) return (length / total) * flat;
-  if (!deck.config.defaultTiming) return null;
+  if (plannedLength(deck) === null) return null;
   let sum = 0;
   let i = 0;
   for (const c of deck.columns)
     for (let v = 0; v < c.slides.length; v++) {
       if (i >= flat) break;
-      sum += deck.options.get(navKey(c.h, v))?.timing ?? deck.config.defaultTiming;
+      sum += deck.options.get(navKey(c.h, v))?.timing ?? deck.config.defaultTiming ?? 0;
       i++;
     }
   return sum;
