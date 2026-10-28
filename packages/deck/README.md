@@ -134,7 +134,9 @@ What the runtime answers as reveal.js does: an element with `navigate-left`, `-r
 `data-preview-link`, `-image` and `-video` open the lightbox, and with `previewLinks: true` every
 outside link does unless it says `data-preview-link="false"`; a touch that starts inside
 `data-prevent-swipe` (or on a video's or audio's controls) keeps its gesture, and under `rtl` the
-horizontal swipes are mirrored.
+horizontal swipes are mirrored. Auto-slide follows reveal's rules: `autoSlide: false` is off outright, a step
+with `data-autoslide` waits that long over the slide's own interval, `autoSlideMethod` names the
+step (`right` skips the stacks), and a key the deck answers stops it as a press does.
 
 ## For AI agents and tools
 
