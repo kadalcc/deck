@@ -1,5 +1,6 @@
 import YAML from "yaml";
 
+import { actionFromConfig, keyFromConfig } from "../core/shortcuts.ts";
 import { mdxComment, styleObject } from "./markup.ts";
 import { createReport, type ImportReportItem, type Reporter, sortReport } from "./report.ts";
 import { type El, VOID_ELEMENTS, parseOpenTag, scanSlide } from "./tags.ts";
@@ -418,7 +419,10 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     for (const [k, v] of Object.entries(config.values)) {
       if (k === "width" && typeof v === "number") width = v;
       else if (k === "height" && typeof v === "number") height = v;
-      else if (SAME_OPTIONS.has(k)) head[k] = v;
+      else if (k === "keyboard" && v && typeof v === "object") {
+        const map = keyboardOption(v as Record<string, unknown>, deckReport);
+        if (Object.keys(map).length) head.keyboard = map;
+      } else if (SAME_OPTIONS.has(k)) head[k] = v;
       else if (!QUIET_OPTIONS.has(k))
         deckReport({
           severity: "info",
@@ -1656,6 +1660,42 @@ export function luminance(color: string): number | null {
 }
 
 /**
+ * reveal.js's `keyboard: { 13: 'next', 79: 'toggleOverview', 32: null }` in Kadal's names
+ * (`{ Enter: next, KeyO: overview, Space: null }`): the runtime reads reveal's form as well
+ * (core/shortcuts.ts), but the headmatter is for reading. What it cannot carry is reported.
+ */
+function keyboardOption(map: Record<string, unknown>, report: Reporter): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [raw, value] of Object.entries(map)) {
+    const key = keyFromConfig(raw);
+    if (!key) {
+      report({
+        severity: "warning",
+        what: `The keyboard map's key ${raw} is not a key Kadal knows (keyCodes of letters, digits, arrows, editing, function and punctuation keys are); its binding is dropped.`,
+      });
+      continue;
+    }
+    if (value === null || value === false) out[key] = null;
+    else if (value === NOT_PLAIN)
+      report({
+        severity: "warning",
+        what: `The keyboard map's function on ${key} is not carried over: nothing in the page is run.`,
+        suggestion: `Bind it in deck.config.ts: \`keyboard: { ${key}: (event) => { … } }\`.`,
+      });
+    else if (typeof value === "string" && actionFromConfig(value)) {
+      const does = actionFromConfig(value)!;
+      out[key] = "action" in does ? does.action : does.command;
+    } else
+      report({
+        severity: "warning",
+        what: `The keyboard map binds ${key} to ${JSON.stringify(value)}, which Kadal has no action for; the key keeps its default.`,
+        suggestion: "Pick an action from `kadal-deck info keys`, or a command id.",
+      });
+  }
+  return out;
+}
+
+/**
  * The literal options of `Reveal.initialize({ … })` (or `new Reveal({ … })`): booleans, numbers
  * and strings, by key. Anything else (plugins, functions) is named in `skipped`. The page's
  * script is read as text; nothing is evaluated.
@@ -1742,7 +1782,58 @@ export function revealConfig(html: string): {
     else if (/^-?\d+(\.\d+)?$/.test(value)) values[key] = Number(value);
     else if (/^(['"])[^'"]*\1$/.test(value)) values[key] = value.slice(1, -1);
     else if (value === "null") values[key] = null;
-    else skipped.push(key);
+    else if (key === "keyboard" && value.startsWith("{")) {
+      const map = flatObject(value);
+      if (map) values[key] = map;
+      else skipped.push(key);
+    } else skipped.push(key);
   }
   return { found: true, values, skipped };
+}
+
+/** What a flat object literal's entry holds when it is not a plain value (a function). */
+export const NOT_PLAIN = Symbol("not plain");
+
+/**
+ * `{ 13: 'next', "32": null, 27: () => {} }` as entries: keys (numbers, names, quoted), values
+ * that are strings, numbers, booleans or null, anything else as NOT_PLAIN. Null when the text is
+ * not one object of such entries (a nested object, a spread).
+ */
+export function flatObject(text: string): Record<string, unknown> | null {
+  const body = text.trim().replace(/^\{/, "").replace(/\}$/, "");
+  const parts: string[] = [];
+  let depth = 0;
+  let q: string | null = null;
+  let from = 0;
+  for (let j = 0; j < body.length; j++) {
+    const ch = body[j]!;
+    if (q) {
+      if (ch === "\\") j++;
+      else if (ch === q) q = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") q = ch;
+    else if ("{[(".includes(ch)) depth++;
+    else if ("}])".includes(ch)) depth--;
+    else if (ch === "," && depth === 0) {
+      parts.push(body.slice(from, j));
+      from = j + 1;
+    }
+  }
+  parts.push(body.slice(from));
+  const out: Record<string, unknown> = {};
+  for (const part of parts) {
+    const p = part.trim();
+    if (!p) continue;
+    const kv = /^(?:(\d+)|['"]([^'"]+)['"]|([A-Za-z_$][\w$]*))\s*:\s*([\s\S]+)$/.exec(p);
+    if (!kv) return null;
+    const key = kv[1] ?? kv[2] ?? kv[3]!;
+    const v = kv[4]!.trim();
+    if (v === "true" || v === "false") out[key] = v === "true";
+    else if (v === "null") out[key] = null;
+    else if (/^-?\d+(\.\d+)?$/.test(v)) out[key] = Number(v);
+    else if (/^(['"])[^'"]*\1$/.test(v)) out[key] = v.slice(1, -1);
+    else out[key] = NOT_PLAIN;
+  }
+  return out;
 }

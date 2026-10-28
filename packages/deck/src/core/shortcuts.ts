@@ -23,6 +23,8 @@ import { comboOf, KEY_BINDINGS, type KeyAction, type KeyBinding } from "./keyboa
  *
  *   # headmatter / deck.config.ts: rebind or unbind single keys
  *   keyboard: { KeyQ: overview, KeyD: null }
+ *   # reveal.js's form reads too: keyCodes, its method names, functions (deck.config.ts)
+ *   keyboard: { 13: next, 79: toggleOverview, 32: null }
  *
  * Keys are `KeyboardEvent.code` names (the physical key, so a layout change does not move them)
  * with `Ctrl+`, `Shift+`, `Alt+`, `Meta+` in that order: "Space", "KeyQ", "Shift+ArrowRight",
@@ -142,19 +144,123 @@ export function defaultShortcuts(bindings: readonly KeyBinding[] = KEY_BINDINGS)
   }));
 }
 
-/** `keyboard: { KeyQ: "overview", KeyD: null }` as shortcuts; anything else gives none. */
+/**
+ * reveal.js's numeric `keyCode`s (its `keyboard: { 13: "next" }` keys) as `KeyboardEvent.code`
+ * names, for the keys a slide deck binds: letters, digits, the arrows, the editing and function
+ * keys, punctuation on a US layout. A code names the physical key, as `keyCode` did.
+ */
+const KEY_CODES: Record<number, string> = {
+  8: "Backspace",
+  9: "Tab",
+  13: "Enter",
+  27: "Escape",
+  32: "Space",
+  33: "PageUp",
+  34: "PageDown",
+  35: "End",
+  36: "Home",
+  37: "ArrowLeft",
+  38: "ArrowUp",
+  39: "ArrowRight",
+  40: "ArrowDown",
+  45: "Insert",
+  46: "Delete",
+  186: "Semicolon",
+  187: "Equal",
+  188: "Comma",
+  189: "Minus",
+  190: "Period",
+  191: "Slash",
+  192: "Backquote",
+  219: "BracketLeft",
+  220: "Backslash",
+  221: "BracketRight",
+  222: "Quote",
+};
+for (let n = 0; n <= 9; n++) {
+  KEY_CODES[48 + n] = `Digit${n}`;
+  KEY_CODES[96 + n] = `Numpad${n}`;
+}
+for (let n = 0; n < 26; n++) KEY_CODES[65 + n] = `Key${String.fromCharCode(65 + n)}`;
+for (let n = 1; n <= 12; n++) KEY_CODES[111 + n] = `F${n}`;
+
+/** A `keyboard` map's key as a combo: "KeyQ" as it is, reveal's 13 (or "13") as "Enter". */
+export function keyFromConfig(key: string): string | null {
+  if (!/^\d+$/.test(key)) return key || null;
+  return KEY_CODES[Number(key)] ?? null;
+}
+
+/**
+ * reveal.js's API method names, as its `keyboard` map names them, and the action that does the
+ * same here. `slide` (it needs a slide number) and anything else reveal-only have none.
+ */
+const REVEAL_METHODS: Record<string, KeyAction> = {
+  next: "next",
+  prev: "prev",
+  left: "left",
+  right: "right",
+  up: "up",
+  down: "down",
+  navigateNext: "next",
+  navigatePrev: "prev",
+  navigateLeft: "left",
+  navigateRight: "right",
+  navigateUp: "up",
+  navigateDown: "down",
+  nextFragment: "next",
+  prevFragment: "prev",
+  toggleOverview: "overview",
+  togglePause: "pause",
+  toggleHelp: "help",
+  toggleAutoSlide: "autoSlide",
+  toggleJumpToSlide: "jump",
+};
+
+const ACTIONS = new Set<string>(KEY_BINDINGS.map((b) => b.action));
+
+/**
+ * A `keyboard` map's value as what it runs: a Kadal action (`overview`), one of reveal.js's method
+ * names (`toggleOverview`), or a command id (`view.overview`, anything with a dot). Null when it
+ * names none of them.
+ */
+export function actionFromConfig(
+  value: string,
+): { action: KeyAction } | { command: string } | null {
+  if (ACTIONS.has(value)) return { action: value as KeyAction };
+  if (Object.hasOwn(REVEAL_METHODS, value)) return { action: REVEAL_METHODS[value]! };
+  if (/^[\w-]+(\.[\w-]+)+$/.test(value)) return { command: value };
+  return null;
+}
+
+/**
+ * The `keyboard` config map as shortcuts. Kadal's form, `{ KeyQ: "overview", KeyD: null }`, and
+ * reveal.js's, `{ 13: "next", 32: null, 79: "toggleOverview", 27: () => {} }` (keyCodes, its
+ * method names, a function from deck.config.ts). `null` or `false` takes the key away. A key or a
+ * name it cannot read is skipped (and `kadal-deck import reveal` reports it).
+ */
 export function keyboardMap(value: unknown): Shortcut[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   const out: Shortcut[] = [];
-  for (const [key, action] of Object.entries(value as Record<string, unknown>)) {
+  for (const [raw, action] of Object.entries(value as Record<string, unknown>)) {
+    const key = keyFromConfig(raw);
+    if (!key) continue;
     if (action === null || action === false)
       out.push({ keys: [key], action: null, description: "" });
-    else if (typeof action === "string")
+    else if (typeof action === "function")
       out.push({
         keys: [key],
-        action: action as KeyAction,
-        description: KEY_BINDINGS.find((b) => b.action === action)?.description ?? action,
+        run: (event) => (action as (e: KeyboardEvent) => void)(event),
+        description: action.name ? `${action.name}()` : "A function of the deck's",
       });
+    else if (typeof action === "string") {
+      const does = actionFromConfig(action);
+      if (!does) continue;
+      const description =
+        "action" in does
+          ? (KEY_BINDINGS.find((b) => b.action === does.action)?.description ?? action)
+          : does.command;
+      out.push({ keys: [key], ...does, description });
+    }
   }
   return out;
 }

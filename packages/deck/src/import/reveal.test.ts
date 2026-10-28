@@ -67,7 +67,7 @@ describe("sections", () => {
     });
     expect(head.width).toBeUndefined();
     expect(r.info.canvas.scale).toBe(1.5);
-    expect(what(r)).toContain("`keyboard` is not a plain value");
+    expect(head.keyboard).toEqual({ Enter: "next" });
     expect(what(r)).not.toContain("plugins");
   });
 
@@ -172,6 +172,28 @@ describe("sections", () => {
     expect(slides(plain.mdx)[0]!.fm.themeConfig).toEqual({ variant: "white" });
     expect(slides(plain.mdx)[0]!.fm.margin).toBe(0.04);
     expect(plain.info.canvas.scale).toBe(1.543);
+  });
+
+  test("reveal's keyboard map arrives in Kadal's key and action names", () => {
+    const r = convertReveal(
+      page(
+        "<section><h1>Hi</h1></section>",
+        "",
+        `<script>Reveal.initialize({ keyboard: { 13: 'next', "32": null, 79: 'toggleOverview', 66: "togglePause", 27: () => { alert(1) }, 86: 'slide', 999: 'next', 74: 'view.overview' } });</script>`,
+      ),
+    );
+    expect(slides(r.mdx)[0]!.fm.keyboard).toEqual({
+      Enter: "next",
+      Space: null,
+      KeyO: "overview",
+      KeyB: "pause",
+      KeyJ: "view.overview",
+    });
+    const report = what(r);
+    expect(report).toContain("The keyboard map's function on Escape is not carried over");
+    expect(report).toContain('binds KeyV to "slide", which Kadal has no action for');
+    expect(report).toContain("The keyboard map's key 999 is not a key Kadal knows");
+    expect(report).not.toContain("`keyboard` is not a plain value");
   });
 
   test("reveal's newer options carry over by name", () => {

@@ -147,7 +147,7 @@ function deckFrontmatter(): FrontmatterKey[] {
       };
     if (f.name === "keyboard")
       type = {
-        text: "boolean | Record<string, KeyAction | null>",
+        text: "boolean | Record<string, KeyAction | string | null>",
         variants: [{ type: "boolean" }, { type: "object" }],
       };
     return {
