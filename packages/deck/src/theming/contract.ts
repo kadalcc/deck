@@ -254,8 +254,8 @@ export const BUILTIN_THEMES: Record<string, ThemeMeta> = {
 };
 
 /**
- * The sixteen first-party themes, in the order the theme menu lists the ones a deck did not name:
- * the three built in, then the thirteen `@kadal/theme-*` packages. Every deck offers all of them.
+ * The seventeen first-party themes, in the order the theme menu lists the ones a deck did not name:
+ * the three built in, then the fourteen `@kadal/theme-*` packages. Every deck offers all of them.
  * @kadal/deck ships a copy of each package (dist/themes/<name>, made at build by
  * tools/bundle-themes.mjs), so a deck that installed nothing but the engine has them too; an
  * installed `@kadal/theme-<name>` wins over the copy. theme-packages.test.ts keeps this list and
@@ -278,6 +278,7 @@ export const FIRST_PARTY_THEMES: readonly string[] = [
   "crisp",
   "bricks",
   "shibainu",
+  "reveal",
 ];
 
 /** The first-party theme a spec names (`ocean`, `@kadal/theme-ocean`), or null. */

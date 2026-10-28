@@ -121,7 +121,7 @@ describe("the contract's names", () => {
     expect(meta("#123").swatch).toBeUndefined();
   });
   test("the menu adds the first-party themes a deck did not name, in their order", () => {
-    expect(FIRST_PARTY_THEMES).toHaveLength(16);
+    expect(FIRST_PARTY_THEMES).toHaveLength(17);
     expect(implicitThemes(["seriph", "minimal"])).toEqual(
       FIRST_PARTY_THEMES.filter((t) => t !== "seriph" && t !== "minimal"),
     );

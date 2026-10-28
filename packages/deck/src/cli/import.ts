@@ -545,7 +545,7 @@ export const config: DeckConfigInput = {
     say(`\nImported ${shown(join(root, entry))} into ${shown(out)}.`);
     say(`  ${tally.line}`);
     say(
-      `  theme: reveal.js ${result.info.theme.reveal ?? "(none)"} → ${result.info.theme.kadal} (${result.info.theme.colorScheme ?? "light"})${result.info.assets.length ? `; ${result.info.assets.length} file${result.info.assets.length > 1 ? "s" : ""} copied into public/` : ""}`,
+      `  theme: reveal.js ${result.info.theme.reveal ?? "(none)"} → ${result.info.theme.kadal} ${result.info.theme.variant} (${result.info.theme.colorScheme})${result.info.assets.length ? `; ${result.info.assets.length} file${result.info.assets.length > 1 ? "s" : ""} copied into public/` : ""}`,
     );
     say(
       `  report: ${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes — IMPORT-REPORT.md`,

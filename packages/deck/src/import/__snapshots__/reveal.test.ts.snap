@@ -4,14 +4,18 @@ exports[`golden: a reveal.js demo deck converts, compiles in the runtime compile
 "---
 backgroundColor: "#0f172a"
 transition: slide
+class: has-dark-background
 title: reveal.js – The HTML Presentation Framework
-theme: minimal
+theme: reveal
 colorScheme: dark
+themeConfig:
+  variant: black
 hash: true
 controls: true
 progress: true
 center: true
 slideNumber: c/t
+margin: 0.04
 ---
 
 # reveal.js
@@ -42,6 +46,7 @@ Use the _Space_ key to navigate through all slides.
 
 ----
 backgroundGradient: "linear-gradient(to bottom, #283b95, #17b2c3)"
+colorScheme: dark
 ---
 
 ## Basement Level 1
@@ -146,7 +151,7 @@ Matching elements animate between slides.
 autoAnimate: true
 ---
 
-<h2 data-id="code-title" style={{"marginTop":"200px","color":"red"}}>Auto-Animate</h2>
+<h2 data-id="code-title" style={{"marginTop":"154.3px","color":"red"}}>Auto-Animate</h2>
 
 Matching elements animate between slides.
 
@@ -215,6 +220,7 @@ deck.slides.forEach((slide) => {
 
 ---
 backgroundColor: "#ff6347"
+colorScheme: light
 ---
 
 ## Inline slide one
@@ -234,12 +240,18 @@ With a vertical one beneath.
 <div className="callout-box">Raw HTML in Markdown</div>
 
 ---
+backgroundColor: "#000000"
 backgroundVideo: https://static.slid.es/site/homepage/v1/homepage-video-editor.mp4
 backgroundVideoLoop: true
 backgroundVideoMuted: true
+colorScheme: dark
 ---
 
+<div style={{"backgroundColor":"rgba(0, 0, 0, 0.9)","color":"#fff","padding":"30.86px"}}>
+
 ## Video Backgrounds
+
+</div>
 
 ---
 
@@ -263,7 +275,7 @@ backgroundIframe: https://hakim.se
 backgroundInteractive: true
 ---
 
-<div style={{"position":"absolute","width":"40%","right":"0","background":"rgba(0,0,0,0.9)","padding":"40px","fontSize":"40px"}}>
+<div className="has-dark-background" style={{"position":"absolute","width":"40%","right":"0","background":"rgba(0,0,0,0.9)","padding":"30.86px","fontSize":"30.86px","color":"#fff"}}>
 
 ## Iframe Backgrounds
 
