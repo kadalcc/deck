@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { clickFloor, key as navKey } from "../core/navigation.ts";
+import {
+  clickFloor,
+  key as navKey,
+  slideNumberShown,
+  slideNumberText,
+} from "../core/navigation.ts";
 import { type PrintOptions, parseRange, readPrintOptions } from "../core/print-options.ts";
 import { PrintDrawings } from "../draw/PrintDrawings.tsx";
 import { fileDrawings } from "../draw/source.ts";
@@ -110,6 +115,12 @@ export function PrintView({
     separate,
   );
   const number = new Map(flat.map((s) => [navKey(s.h, s.v), s.n]));
+  // reveal.js numbers the printed pages with `showSlideNumber: all` or `print`, in the deck's own
+  // format; `kadal-deck export` prints this view, so its PDFs are numbered the same way.
+  const numbered = slideNumberShown(deck.config, "print");
+  // `pdfMaxPagesPerSlide`: how many pages a slide too tall for one may run onto (by page key).
+  const box = useRef<HTMLDivElement>(null);
+  const spill = useSpill(box, deck.config.pdfMaxPagesPerSlide, pages.length);
   // The deck's web fonts (`fonts`), loaded: an export taken before them is in the fallback face.
   const fontsReady = useFontsReady();
 
@@ -130,10 +141,11 @@ export function PrintView({
     setReady(false);
     const t = setTimeout(() => setReady(true), 400);
     return () => clearTimeout(t);
-  }, [settled, pages.length, premiumSettled]);
+  }, [settled, pages.length, premiumSettled, spill]);
 
   return (
     <div
+      ref={box}
       className={["deck-print-pages", omitBackground ? "is-transparent" : ""]
         .filter(Boolean)
         .join(" ")}
@@ -143,15 +155,18 @@ export function PrintView({
       {pages.map((p) => {
         const meta = deck.columns[p.h]!.slides[p.v]!;
         const options = deck.options.get(navKey(p.h, p.v))!;
+        const runs = spill.get(p.key) ?? 1;
         return (
           <div
             key={p.key}
-            className="deck-print-page"
+            className={runs > 1 ? "deck-print-page is-spilled" : "deck-print-page"}
             data-slide={number.get(navKey(p.h, p.v))}
             data-h={p.h}
             data-v={p.v}
             data-click={p.click}
-            style={{ width: deck.config.width, height: deck.config.height }}
+            data-key={p.key}
+            data-pages={runs > 1 ? runs : undefined}
+            style={{ width: deck.config.width, height: deck.config.height * runs }}
           >
             <BackgroundLayer
               bg={options.background}
@@ -175,6 +190,11 @@ export function PrintView({
               className={separate ? "is-print" : "is-print is-print-all"}
             />
             <PrintDrawings h={p.h} v={p.v} click={p.click} allSteps={!separate} />
+            {numbered ? (
+              <div className="deck-slide-number deck-print-slide-number">
+                {slideNumberText(deck.config.slideNumber, p, deck.columns)}
+              </div>
+            ) : null}
             {showNotes === true && meta.hasNotes ? <PrintNotes meta={meta} /> : null}
           </div>
         );
@@ -198,6 +218,70 @@ export function PrintView({
         : null}
     </div>
   );
+}
+
+/**
+ * reveal.js's `pdfMaxPagesPerSlide`: a slide whose content is taller than a page gets up to that
+ * many pages, its print page growing by whole page heights so the browser breaks it across them;
+ * past the limit `autoFit` shrinks what is left, as it does to every slide at the default of 1.
+ *
+ * Measured from the slide's layout after it renders, and again whenever `autoFit` changes it: a
+ * fitted layout (`is-fitted`, `--deck-fit: k`) is `1/k` of its box tall, which is the height its
+ * content wants; an unfitted one overflows by its `scrollHeight`. A slide only ever grows, so a
+ * page that refits after growing cannot shrink it back and forth.
+ */
+function useSpill(
+  box: React.RefObject<HTMLDivElement | null>,
+  maxPages: number,
+  count: number,
+): Map<string, number> {
+  const max = Math.max(1, Math.floor(maxPages) || 1);
+  const [spill, setSpill] = useState<Map<string, number>>(() => new Map());
+  useEffect(() => {
+    const root = box.current;
+    if (max <= 1 || !root) return;
+    let raf = 0;
+    const measure = () => {
+      let grown: Map<string, number> | null = null;
+      for (const page of root.querySelectorAll<HTMLElement>(".deck-print-page[data-key]")) {
+        const key = page.dataset.key!;
+        const now = Number(page.dataset.pages ?? 1);
+        const want = Math.min(max, spillOf(page, now));
+        if (want > now && want > (grown?.get(key) ?? 0)) (grown ??= new Map()).set(key, want);
+      }
+      if (grown) setSpill((was) => new Map([...was, ...grown!]));
+    };
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    };
+    schedule();
+    // autoFit marks a layout it shrank with a class and a custom property; a slide arriving or a
+    // step being drawn changes the tree.
+    const mo = new MutationObserver(schedule);
+    mo.observe(root, { subtree: true, childList: true, attributeFilter: ["class", "style"] });
+    return () => {
+      cancelAnimationFrame(raf);
+      mo.disconnect();
+    };
+  }, [box, max, count]);
+  return spill;
+}
+
+/** How many page heights a print page's slide needs, measured at its current `pages`. */
+export function spillOf(page: HTMLElement, pages: number): number {
+  const layout = page.querySelector<HTMLElement>(".deck-slide .deck-layout");
+  if (!layout || pages < 1) return pages;
+  const unit = page.clientHeight / pages;
+  if (!unit) return pages;
+  const k = layout.classList.contains("is-fitted")
+    ? Number(layout.style.getPropertyValue("--deck-fit")) || 1
+    : 1;
+  // The layout's box on the page, and the height its content wants at full size.
+  const have = layout.clientHeight * k;
+  const need = k < 1 ? layout.clientHeight : layout.scrollHeight;
+  const around = page.clientHeight - have;
+  return Math.max(pages, Math.ceil((need + around) / unit - 0.02));
 }
 
 export interface PrintPage {

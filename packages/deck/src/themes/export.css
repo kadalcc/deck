@@ -475,3 +475,19 @@ html.deck-print-transparent .deck-root,
     display: none !important;
   }
 }
+
+/* ── print view: the slide number (react/PrintView.tsx) ─────────────────────
+   `showSlideNumber: all | print` numbers every printed page, in the play view's look
+   (`.deck-slide-number`), above the slide and its drawings. */
+.deck-print-page .deck-print-slide-number {
+  z-index: 25;
+  pointer-events: none;
+}
+
+/* ── print view: a slide on several pages (`pdfMaxPagesPerSlide`, react/PrintView.tsx) ───────
+   Its page is a whole number of page heights tall and the browser breaks it at each one;
+   `clip` rather than `hidden`, so the box is not a scroll container and can be broken. */
+.deck-print-page.is-spilled {
+  overflow: clip;
+  break-inside: auto;
+}

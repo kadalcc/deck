@@ -1308,3 +1308,17 @@ button.deck-remote-timer:disabled {
     stroke-dashoffset: 0;
   }
 }
+
+/* ── the presenter's slide number (presenter/index.tsx `PresenterSlideNumber`) ──
+   `showSlideNumber: speaker` (or `all`): the deck's own number, beside the talk's title. */
+.deck-presenter-slide-number {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-muted);
+  font: 13px var(--deck-mono-font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

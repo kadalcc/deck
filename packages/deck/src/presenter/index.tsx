@@ -121,6 +121,7 @@ export function PresenterPage() {
         <strong className="deck-presenter-title" title={deck.config.title}>
           {deck.config.title}
         </strong>
+        {N.slideNumberShown(deck.config, "speaker") ? <PresenterSlideNumber /> : null}
         <PresenterTimer />
         <LayoutSwitch layout={layout} setLayout={setLayout} />
         <span className="deck-presenter-spacer" />
@@ -165,6 +166,22 @@ export function PresenterPage() {
       <Toast />
       <HintLayer />
     </div>
+  );
+}
+
+/**
+ * The slide number in the deck's own format (`slideNumber`), in the header: reveal.js's
+ * `showSlideNumber: "speaker"` (and `"all"`, which numbers every view) shows it in the speaker
+ * view.
+ */
+function PresenterSlideNumber() {
+  const deck = useDeck();
+  const at = useNav((s) => ({ h: s.h, v: s.v, click: s.click }));
+  const text = N.slideNumberText(deck.config.slideNumber, at, deck.columns);
+  return (
+    <span className="deck-presenter-slide-number" aria-label={`Slide ${text}`}>
+      {text}
+    </span>
   );
 }
 
