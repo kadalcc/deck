@@ -156,7 +156,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `clicksStart` | `number` |  | The step the slide opens at. |
 | `preload` | `boolean` | `true` | Load the slide's module ahead of time (default true). |
 | `timing` | `number` |  | Seconds planned for this slide (the presenter's pacing timer). |
-| `state` | `string \| string[]` |  | Adds state-<name> classes while the slide shows (CSS hooks). |
+| `state` | `string \| string[]` |  | reveal.js's data-state: while the slide shows, `state-<name>` on the slide and both `<name>` and `state-<name>` on the deck root, so CSS for the whole page can follow it; each name it turns on fires an event of that name on the root, and `deck:state` says what changed. Names split on spaces. |
 | `colorScheme` | `"light" \| "dark"` |  | Force light or dark tokens on this slide (dark background under a light theme). Values: `light` `dark` |
 | `zoom` | `number` |  | Scale the slide's content (0.8 fits more). |
 | `background` | `string \| object` |  | A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill \| tint }. |
@@ -213,13 +213,13 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `respondToHashChanges` | `boolean` | `true` | reveal.js compatible: a change to the URL hash (a link, the address bar) moves the deck. Default true. |
 | `keyboard` | `boolean \| Record<string, KeyAction \| null>` | `true` | Keyboard navigation on. |
 | `keyboardCondition` | `"focused" \| KeyboardConditionFunction \| null` | `null` | reveal.js compatible: when the deck takes keys. null (default): always, or "focused" for an embedded deck; "focused": only while the deck has focus (a press inside it, or tabbing into it; the deck then carries `.focused`). deck.config.ts may pass a function of the KeyboardEvent instead; returning false keeps the key from the deck. Values: `focused` |
-| `focusBodyOnPageVisibilityChange` | `boolean` | `true` | reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true. |
+| `focusBodyOnPageVisibilityChange` | `boolean` | `true` | reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame or a control so the keys reach the deck (a text field keeps its caret; an embedded deck leaves its page's focus alone). Default true. |
 | `overview` | `boolean` | `true` | The overview grid (O / Esc). |
 | `touch` | `boolean` | `true` | Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes. |
 | `loop` | `boolean` | `false` | Wrap from the last slide to the first. |
 | `rtl` | `boolean` | `false` | Right-to-left. |
 | `navigationMode` | `NavigationMode` | `"default"` | "default", "linear" (arrows walk every slide) or "grid" (columns stay aligned). Values: `grid` `default` `linear` |
-| `shuffle` | `boolean` | `false` | Shuffle the slides on load. |
+| `shuffle` | `boolean` | `false` | Shuffle the slides on load, the columns and each vertical stack, as reveal.js does: a new order every load of the play view, handed to its presenter view and share window so they show the same deck. Print and export keep the authored order. |
 | `fragments` | `boolean` | `true` | Clicks/fragments on; off shows every step at once. |
 | `fragmentInURL` | `boolean` | `true` | Include the click step in the hash. |
 | `embedded` | `boolean` | `false` | reveal.js compatible: the deck lives inside part of another page (also `?embedded`). It sizes itself from its own element (and follows it as it resizes), takes keys only while focused (a press inside it; `keyboardCondition` overrides), listens for swipes and clicks on itself alone, goes fullscreen as itself, and leaves the page's hash, title, head and colour scheme alone unless `hash` is set outright. Several embedded decks can share a page. |

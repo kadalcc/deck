@@ -136,7 +136,11 @@ outside link does unless it says `data-preview-link="false"`; a touch that start
 `data-prevent-swipe` (or on a video's or audio's controls) keeps its gesture, and under `rtl` the
 horizontal swipes are mirrored. Auto-slide follows reveal's rules: `autoSlide: false` is off outright, a step
 with `data-autoslide` waits that long over the slide's own interval, `autoSlideMethod` names the
-step (`right` skips the stacks), and a key the deck answers stops it as a press does.
+step (`right` skips the stacks), and a key the deck answers stops it as a press does. A slide's `state` goes on the deck root
+as reveal's `data-state` does (`<name>` and `state-<name>`, and an event of that name);
+`shuffle: true` deals the slides anew on each load and hands the order to the presenter view;
+`respondToHashChanges: false` writes the hash but does not follow it; and
+`focusBodyOnPageVisibilityChange` takes focus back from an embedded page when the tab returns.
 
 ## For AI agents and tools
 
