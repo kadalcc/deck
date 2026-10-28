@@ -150,6 +150,14 @@ outside link does unless it says `data-preview-link="false"`; a touch that start
 `data-prevent-swipe` (or on a video's or audio's controls) keeps its gesture, and under `rtl` the
 horizontal swipes are mirrored.
 
+Media behaves as it does in reveal.js. `data-src` on an `<img>`, `<video>`, `<audio>` or `<source>`
+loads once the slide is within `viewDistance`; an `<iframe data-src>` loads when its slide is shown
+(with `data-preload`, or `preloadIframes: true`, within `viewDistance`; `preloadIframes: false`
+only when shown) and unloads when it is left. Every frame on a slide or behind it hears
+`slide:start` and `slide:stop` by `postMessage`. A YouTube or Vimeo `<iframe>` gets its player API
+switched on (`enablejsapi=1`, `api=1`), plays with `data-autoplay` (or `autoPlayMedia: true`) and
+pauses when its slide is left; `data-ignore` leaves a frame or a video alone.
+
 ## For AI agents and tools
 
 - `kadal-deck mcp` — 24 tools to read the reference, scaffold, outline, edit single slides (only

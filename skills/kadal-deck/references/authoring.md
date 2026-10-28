@@ -148,7 +148,9 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
 - `background: /photo.jpg` (or a video `.mp4`) fills the slide; `layout: image-right` + `image:` splits it.
 - `<Iframe src="https://…" />` / `layout: iframe` embed pages; they load only near their slide and
   print as a poster (`kadal-deck export --posters` captures them, and those for `<Youtube>` and
-  `<Tweet>` too).
+  `<Tweet>` too). An embedded page hears `slide:start` / `slide:stop` (`postMessage`) as its slide
+  is shown and left, as in reveal.js; a raw YouTube/Vimeo `<iframe data-autoplay>` plays and pauses.
+- `data-src` on `<img>`, `<video>`, `<audio>`, `<source>` loads lazily (within `viewDistance`).
 
 ## Stickers, emoji, GIFs and memes
 

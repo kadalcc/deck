@@ -1020,7 +1020,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   help: "The ? keyboard help.",
   pause: "B / . blacks the screen out.",
   showNotes: 'Print notes with the slides: true (in a box) or "separate-page".',
-  autoPlayMedia: "Autoplay media on every slide (null = per element).",
+  autoPlayMedia:
+    "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background.",
   preloadIframes:
     "reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows.",
   autoAnimate: "Allow auto-animate between slides that set `autoAnimate`.",
@@ -1294,7 +1295,12 @@ export const SLIDE_KEYS = [
     type: B(),
     description: "Mute the background video (default true).",
   },
-  { name: "backgroundIframe", type: S(), description: "A page (iframe URL) behind the slide." },
+  {
+    name: "backgroundIframe",
+    type: S(),
+    description:
+      "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`).",
+  },
   { name: "backgroundInteractive", type: B(), description: "Let the background page take input." },
   {
     name: "image",
