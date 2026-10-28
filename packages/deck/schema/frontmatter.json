@@ -998,12 +998,12 @@
         },
         "autoSlideStoppable": {
           "type": "boolean",
-          "description": "Any input stops auto-slide, and the play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
+          "description": "Input stops auto-slide: a press on the deck, or any key the deck answers (A, which turns it back on, excepted). The play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
           "default": true
         },
         "autoSlideMethod": {
           "type": "string",
-          "description": "reveal.js compatible: the step auto-slide takes, by name. \"next\" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML.",
+          "description": "reveal.js compatible: the step auto-slide takes, by name. \"next\" (default) walks every click step and slide, down a vertical stack before going right; \"right\" (or reveal's \"Reveal.navigateRight\") skips the stacks; also \"nextSlide\", \"down\", \"prev\", \"left\", \"up\", \"first\", \"last\", or any command id. reveal takes a function here; a name works in YAML.",
           "default": "next"
         },
         "defaultTiming": {

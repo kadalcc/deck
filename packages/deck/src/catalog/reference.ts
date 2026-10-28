@@ -1035,9 +1035,9 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   autoAnimateMatcher:
     "reveal.js compatible, deck.config.ts only: a function (from, to) of the two slides' elements returning the pairs to morph ([{ from, to }]), in place of matching by text and data-id. null (default): the built-in matching.",
   autoSlideStoppable:
-    "Any input stops auto-slide, and the play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
+    "Input stops auto-slide: a press on the deck, or any key the deck answers (A, which turns it back on, excepted). The play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
   autoSlideMethod:
-    'reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML.',
+    'reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right; "right" (or reveal\'s "Reveal.navigateRight") skips the stacks; also "nextSlide", "down", "prev", "left", "up", "first", "last", or any command id. reveal takes a function here; a name works in YAML.',
   mouseWheel: "Scroll-wheel navigation.",
   previewLinks:
     'Open every outside link in the lightbox. A link with `data-preview-link="false"` (or `data-no-preview`) opens as a link.',

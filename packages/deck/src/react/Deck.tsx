@@ -18,6 +18,7 @@ import { flushSync } from "react-dom";
 import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
 import { isEmbedded, keyAllowed, keyboardConditionOf, usesHash } from "../core/embedding.ts";
+import { autoSlideMethod, stepAutoSlide, stepAutoSlideSelector } from "../core/auto-slide.ts";
 import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
 import { createPanelRegistry } from "../core/panels.ts";
 import { isEditable, type KeyAction } from "../core/keyboard.ts";
@@ -597,6 +598,16 @@ export function DeckRuntimeView({
         else void el.requestFullscreen?.();
       },
       toggleAutoSlide: () => {
+        // `autoSlide: false` is off for good (reveal.js): `A` says so rather than pretending.
+        if (config.autoSlide === false) {
+          const message = "Auto-slide is off in this deck";
+          ui.update((s) => ({ ...s, toast: message }));
+          setTimeout(
+            () => ui.update((s) => (s.toast === message ? { ...s, toast: null } : s)),
+            1800,
+          );
+          return;
+        }
         nav.update((s) => ({ ...s, autoSliding: !s.autoSliding }));
         // Nothing else on screen says auto-slide changed until a slide moves by itself.
         const message = nav.get().autoSliding ? "Auto-slide on" : "Auto-slide paused";
@@ -1492,44 +1503,87 @@ function useDeckEffects(
 
   // Auto-slide. It runs on any play window but a projector (which follows instead): on by itself
   // when the deck or any slide sets an interval, and on `A` otherwise — see `autoSlideDelay`.
+  // `autoSlide: false` turns it off outright, slides' own intervals and `A` included (reveal.js).
   useEffect(() => {
-    if (mode !== "play" || deck.projector) return;
-    const deckMs = config.autoSlide || 0;
+    if (mode !== "play" || deck.projector || config.autoSlide === false) return;
+    const deckMs = config.autoSlide;
     const configured = deckMs > 0 || [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0);
     if (configured) nav.update((s) => ({ ...s, autoSliding: true }));
+    // The step it takes: `autoSlideMethod`, a move by name or a command (core/auto-slide.ts).
+    const method = autoSlideMethod(config.autoSlideMethod);
+    const step = () => {
+      if ("move" in method) actions[method.move]();
+      else void deck.commands.run(method.command, {}, "api");
+    };
     let timer: ReturnType<typeof setTimeout> | null = null;
     const schedule = () => {
       if (timer) clearTimeout(timer);
+      timer = null;
       const s = nav.get();
       if (!s.autoSliding || s.paused || s.overview) return;
-      const opts = deck.options.get(`${s.h},${s.v}`);
-      const ms = N.autoSlideDelay(opts?.autoSlide ?? null, deckMs, configured);
-      if (ms === null) return;
+      // The step on show may carry its own interval (`data-autoslide`, reveal's per-fragment
+      // one); it is read from the slide once React has drawn the move, a task later.
       timer = setTimeout(() => {
-        const before = nav.get();
-        // The deck advancing itself is not the viewer choosing to leave the presenter.
-        deck.sync.source = "auto";
-        try {
-          actions.next();
-          if (nav.get() === before && config.loop) actions.first();
-        } finally {
-          deck.sync.source = null;
-        }
-        schedule();
-      }, ms);
+        const root = rootRef.current;
+        const own = root?.querySelector(stepAutoSlideSelector(s.click));
+        const stepMs = stepAutoSlide(own?.getAttribute("data-autoslide"));
+        const opts = deck.options.get(`${s.h},${s.v}`);
+        const ms = N.autoSlideDelay(stepMs ?? opts?.autoSlide ?? null, deckMs, configured);
+        if (ms === null) return;
+        timer = setTimeout(() => {
+          const before = nav.get();
+          // The deck advancing itself is not the viewer choosing to leave the presenter.
+          deck.sync.source = "auto";
+          try {
+            step();
+            if (nav.get() === before && config.loop) actions.first();
+          } finally {
+            deck.sync.source = null;
+          }
+          schedule();
+        }, ms);
+      }, 0);
     };
     schedule();
     const unsub = nav.subscribe(() => schedule());
+    // autoSlideStoppable: the viewer taking over — a press, or a key the deck answers — stops it.
+    // `A` is left alone: it is the key that turns it back on.
     const stop = () =>
       config.autoSlideStoppable &&
       nav.update((s) => (s.autoSliding ? { ...s, autoSliding: false } : s));
-    window.addEventListener("pointerdown", stop);
+    const condition = keyboardConditionOf(config, embedded);
+    const onKey = (e: KeyboardEvent) => {
+      if (!config.autoSlideStoppable || !config.keyboard || isEditable(e)) return;
+      const root = rootRef.current;
+      const focused = focus.on || (!!root && root.contains(document.activeElement));
+      if (!keyAllowed(condition, e, focused)) return;
+      const hit = deck.shortcuts.match(e, mode);
+      if (!hit || hit.action === "autoSlide" || hit.command === KEY_COMMANDS.autoSlide) return;
+      stop();
+    };
+    const pressOn: HTMLElement | Window = (embedded && rootRef.current) || window;
+    pressOn.addEventListener("pointerdown", stop);
+    window.addEventListener("keydown", onKey, true);
     return () => {
       unsub();
       if (timer) clearTimeout(timer);
-      window.removeEventListener("pointerdown", stop);
+      pressOn.removeEventListener("pointerdown", stop);
+      window.removeEventListener("keydown", onKey, true);
     };
-  }, [config, nav, actions, mode, deck.options, deck.projector]);
+  }, [
+    config,
+    nav,
+    actions,
+    mode,
+    deck.options,
+    deck.projector,
+    deck.commands,
+    deck.shortcuts,
+    deck.sync,
+    embedded,
+    focus,
+    rootRef,
+  ]);
 
   // Cross-window sync: the presenter window and the play window mirror each other (core/windows.ts).
   // A phone remote shows the presenter's slide; it is nobody's window to follow.
