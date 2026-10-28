@@ -98,6 +98,11 @@ function panels(theme: string, css: string, colorScheme: "light" | "dark" | "bot
   const rules: Array<["light" | "dark", Map<string, string>]> = [[baseScheme, base]];
   if (light) rules.push(["light", light]);
   if (dark) rules.push(["dark", dark]);
+  // A theme whose code panel keeps one look in both schemes pins that Shiki side for every
+  // `.shiki` it draws (theme-neon, theme-reveal); its panels are read against that side.
+  const pinned = new RegExp(
+    `\\.theme-${theme}\\[data-color-scheme\\] \\.shiki[^{]*\\{[^}]*color:\\s*var\\(--shiki-(light|dark)`,
+  ).exec(css)?.[1] as "light" | "dark" | undefined;
   return rules.map(([scheme, decl]) => {
     const scopes = [decl, base];
     const bg = colour(decl.get("--deck-code-bg") ?? base.get("--deck-code-bg") ?? "", scopes);
@@ -110,7 +115,7 @@ function panels(theme: string, css: string, colorScheme: "light" | "dark" | "bot
     return {
       theme,
       scheme,
-      side: colorScheme === "both" ? scheme : colorScheme,
+      side: pinned ?? (colorScheme === "both" ? scheme : colorScheme),
       bg: bgRgb,
       band: active ? blend(active, bgRgb) : bgRgb,
     };
