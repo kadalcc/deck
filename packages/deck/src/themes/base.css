@@ -442,6 +442,11 @@ body {
 .deck-layout-default {
   justify-content: flex-start;
 }
+/* `center: true` (reveal.js's default, which `kadal-deck import reveal` writes): the default
+   layout's content in the middle, SAFE as the centred layouts below are. */
+.deck-root.is-centered .deck-layout-default {
+  justify-content: safe center;
+}
 .deck-layout-center,
 .deck-layout-cover,
 .deck-layout-intro,
@@ -891,6 +896,12 @@ body {
 }
 .deck-click.effect-blur.is-shown {
   filter: none;
+}
+/* `custom` (reveal.js's `.fragment.custom`): no default fade, so the deck's own CSS on
+   `.visible` / `.is-shown` alone decides how the step looks. */
+.deck-click.effect-custom.is-hidden {
+  opacity: unset;
+  pointer-events: unset;
 }
 /* In the overview, and in print with one page per slide (`pdfSeparateFragments: false`),
    everything is shown: a thumbnail of a slide is of the whole slide. Print with a page per step

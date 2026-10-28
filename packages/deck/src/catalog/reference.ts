@@ -476,6 +476,8 @@ export const CLICK_EFFECT_META: Record<string, string> = {
   "highlight-current-green": "Green only during its own step.",
   "highlight-current-blue": "Blue only during its own step.",
   blur: "Start blurred, come into focus.",
+  custom:
+    "No built-in look: your CSS on `.effect-custom.visible` (or reveal's `.fragment.custom.visible`) decides. A `custom` class does the same.",
 };
 
 export const CLICK_AT: NamedInfo[] = [
@@ -1007,7 +1009,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   rtl: "Right-to-left.",
   navigationMode: '"default", "linear" (arrows walk every slide) or "grid" (columns stay aligned).',
   shuffle: "Shuffle the slides on load.",
-  fragments: "Clicks/fragments on; off shows every step at once.",
+  fragments:
+    "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
   fragmentInURL: "Include the click step in the hash.",
   embedded: "The deck lives inside another page.",
   postMessage:
@@ -1017,7 +1020,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   help: "The ? keyboard help.",
   pause: "B / . blacks the screen out.",
   showNotes: 'Print notes with the slides: true (in a box) or "separate-page".',
-  autoPlayMedia: "Autoplay media on every slide (null = per element).",
+  autoPlayMedia:
+    "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background.",
   preloadIframes:
     "reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows.",
   autoAnimate: "Allow auto-animate between slides that set `autoAnimate`.",
@@ -1028,7 +1032,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
     "reveal.js compatible: the CSS properties auto-animate morphs between matched elements. Default reveal's list: opacity, color, background-color, padding, font-size, line-height, letter-spacing, border-width, border-color, border-radius, outline, outline-offset.",
   autoAnimateMatcher:
     "reveal.js compatible, deck.config.ts only: a function (from, to) of the two slides' elements returning the pairs to morph ([{ from, to }]), in place of matching by text and data-id. null (default): the built-in matching.",
-  autoSlideStoppable: "Any input stops auto-slide.",
+  autoSlideStoppable:
+    "Any input stops auto-slide, and the play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
   autoSlideMethod:
     'reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML.',
   mouseWheel: "Scroll-wheel navigation.",
@@ -1060,7 +1065,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   colorScheme: '"auto" (follow the system), "light" or "dark".',
   pdfSeparateFragments: "A page per click step in print/PDF.",
   pdfMaxPagesPerSlide: "Pages a tall slide may spill onto.",
-  jumpToSlide: "`:12` / g jumps.",
+  jumpToSlide:
+    "`:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id.",
   search: "/ searches the deck.",
   zoom: "Alt+click zooms into a point; Esc zooms back out.",
   wakeLock: "Keep the screen awake while presenting.",
@@ -1179,7 +1185,8 @@ export const SLIDE_KEYS = [
   {
     name: "visibility",
     type: E("hidden", "uncounted"),
-    description: '"hidden" leaves it out; "uncounted" shows it without a number.',
+    description:
+      '"hidden" leaves it out; "uncounted" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js\'s data-visibility).',
   },
   { name: "hideInToc", type: B(), description: "Keep the slide out of <Toc>." },
   {
@@ -1292,7 +1299,12 @@ export const SLIDE_KEYS = [
     type: B(),
     description: "Mute the background video (default true).",
   },
-  { name: "backgroundIframe", type: S(), description: "A page (iframe URL) behind the slide." },
+  {
+    name: "backgroundIframe",
+    type: S(),
+    description:
+      "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`).",
+  },
   { name: "backgroundInteractive", type: B(), description: "Let the background page take input." },
   {
     name: "image",

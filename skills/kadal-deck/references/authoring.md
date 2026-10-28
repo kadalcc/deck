@@ -135,7 +135,7 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
   `monacoTypes: auto|local|cdn|none`, `monacoPackages: { zod: ^3.23 }` pins versions. In
   {monaco-run}, `import { z } from "zod"` loads from esm.sh at that version
   (`monacoRunImports: false` to forbid, or another CDN).
-- Maths: `$inline$` and `$$display$$` (KaTeX at build time). `$$ {1|3|all}` on the opening line
+- Maths: `$inline$` and `$$display$$` (KaTeX at build time); reveal.js's `\(inline\)` and `\[display\]` work too (`\\(` writes a literal `\(`). `$$ {1|3|all}` on the opening line
   lights those lines of an `aligned`/`array` one step per click (`{at: 2}`, `{finally: 'all'}`
   in a second group). `katex: { macros: { "\\RR": "\\mathbb{R}" } }` in the headmatter.
 - Diagrams: a ```` ```mermaid {scale: 0.8, theme: 'neutral'} ```` fence or
@@ -150,7 +150,9 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
 - `background: /photo.jpg` (or a video `.mp4`) fills the slide; `layout: image-right` + `image:` splits it.
 - `<Iframe src="https://…" />` / `layout: iframe` embed pages; they load only near their slide and
   print as a poster (`kadal-deck export --posters` captures them, and those for `<Youtube>` and
-  `<Tweet>` too).
+  `<Tweet>` too). An embedded page hears `slide:start` / `slide:stop` (`postMessage`) as its slide
+  is shown and left, as in reveal.js; a raw YouTube/Vimeo `<iframe data-autoplay>` plays and pauses.
+- `data-src` on `<img>`, `<video>`, `<audio>`, `<source>` loads lazily (within `viewDistance`).
 
 ## Stickers, emoji, GIFs and memes
 

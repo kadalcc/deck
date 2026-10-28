@@ -210,6 +210,10 @@ export class RoomClient {
         }));
       } else if (m.type === "term:off") {
         this.state.update((s) => (s.term ? { ...s, term: null } : s));
+      } else if (m.type === "react") {
+        // `n` is the room's running total for that emoji: the counts read it at once, not only
+        // when the room's throttled tally patch comes round (a room may send none at all).
+        this.state.update((s) => ({ ...s, reactions: { ...s.reactions, [m.emoji]: m.n } }));
       } else if (m.type === "pointer") {
         this.state.update((s) => ({ ...s, pointer: { x: m.x, y: m.y } }));
       } else if (m.type === "pointer:off") {

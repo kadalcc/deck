@@ -78,7 +78,7 @@
             "hidden",
             "uncounted"
           ],
-          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility)."
         },
         "hideInToc": {
           "type": "boolean",
@@ -251,7 +251,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -381,7 +381,7 @@
             "hidden",
             "uncounted"
           ],
-          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility)."
         },
         "hideInToc": {
           "type": "boolean",
@@ -586,7 +586,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -755,8 +755,8 @@
         },
         "center": {
           "type": "boolean",
-          "description": "Vertically centre each slide's content.",
-          "default": true
+          "description": "Vertically centre the content of slides on the default layout, as reveal.js does. False by default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other layouts place their content themselves.",
+          "default": false
         },
         "controls": {
           "anyOf": [
@@ -918,7 +918,7 @@
         },
         "fragments": {
           "type": "boolean",
-          "description": "Clicks/fragments on; off shows every step at once.",
+          "description": "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
           "default": true
         },
         "fragmentInURL": {
@@ -975,7 +975,7 @@
               "type": "null"
             }
           ],
-          "description": "Autoplay media on every slide (null = per element)."
+          "description": "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background."
         },
         "preloadIframes": {
           "anyOf": [
@@ -998,7 +998,7 @@
         },
         "autoSlideStoppable": {
           "type": "boolean",
-          "description": "Any input stops auto-slide.",
+          "description": "Any input stops auto-slide, and the play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
           "default": true
         },
         "autoSlideMethod": {
@@ -1173,7 +1173,7 @@
         },
         "jumpToSlide": {
           "type": "boolean",
-          "description": "`:12` / g jumps.",
+          "description": "`:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id.",
           "default": true
         },
         "search": {

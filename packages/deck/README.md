@@ -127,7 +127,9 @@ read as frontmatter, `<!-- .element: … -->` as every attribute it sets, on the
 (the line's heading, paragraph or image, or the link or bold it ends with; `class="fragment"` a
 `<Click>`), `Note:` as notes and
 ```` ```js [1|3] ```` as Kadal's steps. `\( … \)` maths becomes `$ … $`. `Reveal.initialize`'s
-literal options become headmatter, with reveal's default `margin: 0.04` and `center: true`, and its `keyboard` map in
+literal options become headmatter, with reveal's default `margin: 0.04` and `center: true` (Kadal's
+own default is `center: false`: slides start at the top; `true` centres the default layout's content
+vertically, as reveal does), and its `keyboard` map in
 Kadal's key and action names (`{ 13: 'toggleOverview' }` → `{ Enter: overview }`; functions are
 reported); inline lengths are
 scaled by the factor reveal fits its slide to Kadal's 1920×1080 with (×1.543 for 960×700). The
@@ -147,6 +149,14 @@ What the runtime answers as reveal.js does: an element with `navigate-left`, `-r
 outside link does unless it says `data-preview-link="false"`; a touch that starts inside
 `data-prevent-swipe` (or on a video's or audio's controls) keeps its gesture, and under `rtl` the
 horizontal swipes are mirrored.
+
+Media behaves as it does in reveal.js. `data-src` on an `<img>`, `<video>`, `<audio>` or `<source>`
+loads once the slide is within `viewDistance`; an `<iframe data-src>` loads when its slide is shown
+(with `data-preload`, or `preloadIframes: true`, within `viewDistance`; `preloadIframes: false`
+only when shown) and unloads when it is left. Every frame on a slide or behind it hears
+`slide:start` and `slide:stop` by `postMessage`. A YouTube or Vimeo `<iframe>` gets its player API
+switched on (`enablejsapi=1`, `api=1`), plays with `data-autoplay` (or `autoPlayMedia: true`) and
+pauses when its slide is left; `data-ignore` leaves a frame or a video alone.
 
 ## For AI agents and tools
 
@@ -200,7 +210,7 @@ Markdown, with these on top:
 
 | What | How |
 | --- | --- |
-| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"`. reveal.js HTML pasted into a slide steps too: `<p class="fragment fade-up" data-fragment-index="2">` compiles to a `<Click as="p">`, ordered as reveal orders fragments |
+| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` (or a name of your own; `custom` has no default fade), `autoSlide={2000}` for that step; steps wear reveal's `fragment` / `visible` / `current-fragment` classes too; `fragments: false` shows every step at once. reveal.js HTML pasted into a slide steps too: `<p class="fragment fade-up" data-fragment-index="2">` compiles to a `<Click as="p">`, ordered as reveal orders fragments |
 | Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ````; `lineNumbers: true` in the headmatter numbers every block that does not say `{lines:false}`; reveal.js's ```` ```js [1-2\|3] ```` and ```` [712: 1-2] ```` (steps counted from the block's first line, then a line-number offset) work too |
 | Magic move | ````` ````md magic-move ````` holding one fence per step; an inner fence's highlight steps (```` ```ts {*\|2\|4-5} ````) are clicks too, before the next morph |
 | Code marks | `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`, `[!code error]` / `warning`, `[!code word:x]` at a line's end (Shiki's notation transformers); add your own with `deck({ shiki: { transformers } })` |
@@ -208,7 +218,7 @@ Markdown, with these on top:
 | Snippets | `<<< @/snippets/x.ts#region {2\|4} [x.ts]` — a file (or one `#region` of it, any comment style) as a fence; `@` is the deck folder; watched in dev |
 | TwoSlash | ```` ```ts twoslash ```` — type hovers (also on Tab), compiler errors, `// ^?`, rendered at build time (needs `typescript`) |
 | Monaco | ```` ```ts {monaco} ```` an editor; `{monaco-diff}` (original `~~~` modified); `{monaco-run}` runs JS/TS (Web Worker) and Python (Pyodide) with the output below, `{autorun:false,showOutputAt:'+1',outputHeight:'200px'}`; `{monaco-write}` saves edits back to the file in `kadal-deck dev`. Lazy: never in the main bundle. More runners: `registerCodeRunner(lang, fn)` or `setup/code-runners.ts`. Imported packages get real types — the deck's installed declarations bundled into the build, anything else from jsDelivr, cached (`monacoTypes: auto · local · cdn · none`, `monacoPackages` pins versions, `monacoTypesIgnore`) — and a `{monaco-run}` bare import loads from esm.sh at the same version (`monacoRunImports`) |
-| Math | `$inline$`, `$$ display $$`, `<Tex tex="…" />`; `$$ {1\|3\|all}` lights lines one click at a time; `katex: { macros }` in the headmatter |
+| Math | `$inline$`, `$$ display $$` (or LaTeX's `\(inline\)` and `\[display\]`, as reveal.js reads them), `<Tex tex="…" />`; `$$ {1\|3\|all}` lights lines one click at a time; `katex: { macros }` in the headmatter |
 | Diagrams | ```` ```mermaid {scale: 0.8} ```` or `<Mermaid>{`flowchart LR …`}</Mermaid>` (`mermaid:` headmatter for all); ```` ```plantuml ```` (on `plantUmlServer`); hand-drawn: `<Sketch scene={…} steps={[…]} />`, `<Sketch src="x.excalidraw" />`, `<Sketch>{`flowchart …`}</Sketch>` |
 | Notes | `<Notes>… [click] …</Notes>`, or Slidev's `<!-- … -->` at the end of the slide — the presenter view splits them at `[click]`; `notesAutoRuby: { 日本語: ni hon go }` annotates words |
 | Slidev syntax | ```` ```yaml ```` first in a slide = its frontmatter; `defaults:` headmatter for every slide; `src: ./more.mdx#2-5`; `<style>` scoped to its slide (`<style global>` for the deck); other HTML comments are dropped |
@@ -239,7 +249,9 @@ compiler (`compileDeck` in `@kadal/deck/runtime`) takes the same options.
 
 ## Keys
 
-`?` shows the sheet. Vim first: `j`/`k` next and previous step through everything, `h`/`l` previous and next column (steps first, then the column — reveal.js's arrows do the same), `gg`/`G` first and last, `/` search, `:12` jump, `f` **focus** — every link, button, glossary term, image preview and embedded page on the slide gets a home-row label; type it to use it (Vimium's f). Also Space/N, `↓`/`↑` for the vertical stack, `O` overview, `T` theme menu, `⇧F` fullscreen, `B` blackout, `D` dark/light, `C` draw, `X` laser, `S` presenter view (`⇧T` its teleprompter), `Alt`+click to zoom to a point, `Esc`.
+`?` shows the sheet. Vim first: `j`/`k` next and previous step through everything, `h`/`l` previous and next column (steps first, then the column — reveal.js's arrows do the same), `gg`/`G` first and last, `/` search, `:12` jump (or `:6/2`, column 6 row 2), `f` **focus** — every link, button, glossary term, image preview and embedded page on the slide gets a home-row label; type it to use it (Vimium's f). Also Space/N, `↓`/`↑` for the vertical stack, `O` overview, `T` theme menu, `⇧F` fullscreen, `B` blackout, `D` dark/light, `C` draw, `X` laser, `S` presenter view (`⇧T` its teleprompter), `Alt`+click to zoom to a point, `Esc`.
+
+**Screen readers.** The play view keeps a polite live region, as reveal.js does: on every slide change it reads "Slide 3 of 12." and the slide's words, and on a click step forward the words that step brought in (hidden clicks are `aria-hidden`, so a slide is read as it stands). **Auto-slide** (`autoSlide`, or `A` on any deck) gets reveal.js's control in the bottom-left corner row: pause or play, in a ring that fills as the slide's interval runs out; `autoSlideStoppable: false` leaves it out.
 
 `,` opens the **display settings** — brightness, contrast, saturation, sepia, hue and invert for the slides (not the controls), kept per deck in the browser and shared live by its windows, so the presenter can tune the projector from the presenter view. **Right-click** a slide (or `Shift F10`) for the **context menu**: back and next, the overview, the presenter view, the notes, full screen, dark, pen, laser, display settings, export; `contextMenu: false | "dev" | "build"` in the headmatter turns it off or limits it, Shift + right-click is always the browser's own.
 

@@ -16,7 +16,13 @@ import { useClick } from "../react/hooks.ts";
  * a step and shows its children from that step on (or hides them, with `hide`). `effect` names the
  * reveal.js fragment styles — fade-in (default), fade-up/down/left/right, fade-out, grow, shrink,
  * strike, highlight-red/green/blue, highlight-current-*, semi-fade-out, current-visible,
- * fade-in-then-out, fade-in-then-semi-out, blur — and any custom class the theme defines.
+ * fade-in-then-out, fade-in-then-semi-out, blur — or any name of your own: it becomes the class
+ * `effect-<name>` and keeps the default fade. `custom` (the effect, or a `custom` class, as
+ * reveal.js writes it) drops the default fade, so your CSS alone decides how it looks.
+ *
+ * The state classes come in both spellings: `is-shown` / `visible` once its step is reached,
+ * `is-current` / `current-fragment` on that step, and every one is also a `fragment`, so CSS
+ * written for reveal.js (`.fragment.blur.visible`) works as it is.
  */
 export type ClickEffect =
   | "fade-in"
@@ -39,6 +45,7 @@ export type ClickEffect =
   | "highlight-current-green"
   | "highlight-current-blue"
   | "blur"
+  | "custom"
   | (string & {});
 
 export interface ClickProps {
@@ -49,8 +56,34 @@ export interface ClickProps {
   as?: ElementType;
   className?: string;
   style?: React.CSSProperties;
+  /**
+   * Milliseconds auto-slide waits on this step before the next, over the slide's `autoSlide`
+   * (reveal.js's `data-autoslide` on a fragment).
+   */
+  autoSlide?: number;
   children?: ReactNode;
   [key: string]: unknown;
+}
+
+/** The classes a step wears: its effect, then its state in Kadal's and reveal.js's names. */
+export function stepClasses(
+  effect: string,
+  state: { shown: boolean; current: boolean; past: boolean },
+  className?: string,
+): string {
+  const custom = effect === "custom" || /(^|\s)custom(\s|$)/.test(className ?? "");
+  return [
+    "deck-click",
+    "fragment",
+    `effect-${custom ? "custom" : effect}`,
+    custom && effect !== "custom" && effect !== "fade-in" ? `effect-${effect}` : "",
+    state.shown ? "is-shown visible" : "is-hidden",
+    state.current ? "is-current current-fragment" : "",
+    state.past ? "is-past" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 /**
@@ -66,6 +99,7 @@ export function Click({
   as,
   className,
   style,
+  autoSlide,
   children,
   ...rest
 }: ClickProps) {
@@ -75,18 +109,10 @@ export function Click({
   return (
     <Tag
       {...rest}
-      className={[
-        "deck-click",
-        `effect-${effect}`,
-        shown ? "is-shown" : "is-hidden",
-        current ? "is-current" : "",
-        past ? "is-past" : "",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={stepClasses(effect, { shown, current, past }, className)}
       style={style}
       data-click-at={range.start}
+      data-autoslide={typeof autoSlide === "number" ? autoSlide : undefined}
       aria-hidden={shown ? undefined : true}
     >
       {/* nothing at all for a childless one: `<Click as="img">` is a void element */}
@@ -199,15 +225,7 @@ function ClickLi({
   return (
     <li
       {...rest}
-      className={[
-        "deck-click",
-        `effect-${scope.effect}`,
-        shown ? "is-shown" : "is-hidden",
-        current ? "is-current" : "",
-        click > range.start ? "is-past" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={stepClasses(scope.effect, { shown, current, past: click > range.start })}
       data-click-at={range.start}
     >
       {children}

@@ -310,8 +310,9 @@ Shows together with the previous click instead of taking a step of its own.
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `hide` | `boolean` |  | Start visible and hide at the step instead. |
-| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects) or any CSS class the theme defines. |
+| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes. |
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
+| `autoSlide` | `number` |  | Milliseconds auto-slide waits on this step before the next, over the slide's `autoSlide` (reveal.js's `data-autoslide` on a fragment). |
 | `children` | `ReactNode` |  | What is revealed. |
 
 #### `<Case>`
@@ -344,8 +345,9 @@ One click step: shows its children from its step on, or hides them with `hide`.
 | --- | --- | --- | --- |
 | `at` | `ClickAt` |  | When: omitted = one after the previous step; "+N" relative ("+0" shares the previous step); a number is absolute (0 = always shown); [from, to] shows it from `from` until `to`. |
 | `hide` | `boolean` |  | Start visible and hide at the step instead. |
-| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects) or any CSS class the theme defines. |
+| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes. |
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
+| `autoSlide` | `number` |  | Milliseconds auto-slide waits on this step before the next, over the slide's `autoSlide` (reveal.js's `data-autoslide` on a fragment). |
 | `children` | `ReactNode` |  | What is revealed. |
 
 #### `<ClickCount>`
@@ -1620,6 +1622,7 @@ First-party theme packages (`theme: <name>` with nothing to install: @kadal/deck
 - `highlight-current-green` — Green only during its own step.
 - `highlight-current-blue` — Blue only during its own step.
 - `blur` — Start blurred, come into focus.
+- `custom` — No built-in look: your CSS on `.effect-custom.visible` (or reveal's `.fragment.custom.visible`) decides. A `custom` class does the same.
 
 ## Click timing (`at`)
 
@@ -1788,7 +1791,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `minScale` | `number` | `0.2` | Smallest scale the stage may shrink to. |
 | `maxScale` | `number` | `2` | Largest scale the stage may grow to. |
 | `disableLayout` | `boolean` | `false` | reveal.js compatible: no scaling or centring; the slides fill the page at its own size and you style them responsively (bring your own layout). Default false. |
-| `center` | `boolean` | `true` | Vertically centre each slide's content. |
+| `center` | `boolean` | `false` | Vertically centre the content of slides on the default layout, as reveal.js does. False by default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other layouts place their content themselves. |
 | `controls` | `boolean \| "speaker"` | `true` | Show the navigation arrows; "speaker" shows them only in the presenter view. Values: `speaker` |
 | `controlsLayout` | `"bottom-right" \| "edges"` | `"bottom-right"` | Where the arrows sit. Values: `bottom-right` `edges` |
 | `controlsTutorial` | `boolean` | `true` | Hint at vertical slides the first time. |
@@ -1809,7 +1812,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `rtl` | `boolean` | `false` | Right-to-left. |
 | `navigationMode` | `NavigationMode` | `"default"` | "default", "linear" (arrows walk every slide) or "grid" (columns stay aligned). Values: `grid` `default` `linear` |
 | `shuffle` | `boolean` | `false` | Shuffle the slides on load. |
-| `fragments` | `boolean` | `true` | Clicks/fragments on; off shows every step at once. |
+| `fragments` | `boolean` | `true` | Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide. |
 | `fragmentInURL` | `boolean` | `true` | Include the click step in the hash. |
 | `embedded` | `boolean` | `false` | The deck lives inside another page. |
 | `postMessage` | `boolean` | `true` | reveal.js compatible: a page that frames the deck can drive it with reveal's postMessage calls (`{ method, args }`). Default true. |
@@ -1817,7 +1820,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `help` | `boolean` | `true` | The ? keyboard help. |
 | `pause` | `boolean` | `true` | B / . blacks the screen out. |
 | `showNotes` | `boolean \| "separate-page"` | `false` | Print notes with the slides: true (in a box) or "separate-page". Values: `separate-page` |
-| `autoPlayMedia` | `boolean \| null` | `null` | Autoplay media on every slide (null = per element). |
+| `autoPlayMedia` | `boolean \| null` | `null` | Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background. |
 | `preloadIframes` | `boolean \| null` | `null` | reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows. |
 | `autoAnimate` | `boolean` | `true` | Allow auto-animate between slides that set `autoAnimate`. |
 | `autoAnimateEasing` | `string` | `"ease"` | CSS easing for auto-animate. |
@@ -1826,7 +1829,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `autoAnimateStyles` | `string[]` | `["opacity","color","background-color","padding","font-size","line-height","letter-spacing","border-width","border-color","border-radius","outline","outline-offset"]` | reveal.js compatible: the CSS properties auto-animate morphs between matched elements. Default reveal's list: opacity, color, background-color, padding, font-size, line-height, letter-spacing, border-width, border-color, border-radius, outline, outline-offset. |
 | `autoAnimateMatcher` | `AutoAnimateMatcher \| null` | `null` | reveal.js compatible, deck.config.ts only: a function (from, to) of the two slides' elements returning the pairs to morph ([{ from, to }]), in place of matching by text and data-id. null (default): the built-in matching. |
 | `autoSlide` | `number \| false` | `0` | Milliseconds between automatic steps; 0: only the slides that set their own, false: none, not even those. Values: `false` |
-| `autoSlideStoppable` | `boolean` | `true` | Any input stops auto-slide. |
+| `autoSlideStoppable` | `boolean` | `true` | Any input stops auto-slide, and the play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither. |
 | `autoSlideMethod` | `string` | `"next"` | reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML. |
 | `defaultTiming` | `number \| null` | `null` | Seconds per slide for the pacing timer, or null. |
 | `totalTime` | `number \| null` | `null` | Total seconds for the pacing timer, or null. |
@@ -1853,7 +1856,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `colorScheme` | `ColorScheme` | `"auto"` | "auto" (follow the system), "light" or "dark". Values: `light` `dark` `auto` |
 | `pdfSeparateFragments` | `boolean` | `true` | A page per click step in print/PDF. |
 | `pdfMaxPagesPerSlide` | `number` | `1` | Pages a tall slide may spill onto. |
-| `jumpToSlide` | `boolean` | `true` | `:12` / g jumps. |
+| `jumpToSlide` | `boolean` | `true` | `:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id. |
 | `search` | `boolean` | `true` | / searches the deck. |
 | `zoom` | `boolean` | `true` | Alt+click zooms into a point; Esc zooms back out. |
 | `wakeLock` | `boolean` | `true` | Keep the screen awake while presenting. |
@@ -1918,7 +1921,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `level` | `number` |  | Heading level for the table of contents (default: the first heading's depth). |
 | `hide` | `boolean` |  | Leave the slide out of the talk (still in the file). |
 | `disabled` | `boolean` |  | Same as hide. |
-| `visibility` | `"hidden" \| "uncounted"` |  | "hidden" leaves it out; "uncounted" shows it without a number. Values: `hidden` `uncounted` |
+| `visibility` | `"hidden" \| "uncounted"` |  | "hidden" leaves it out; "uncounted" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility). Values: `hidden` `uncounted` |
 | `hideInToc` | `boolean` |  | Keep the slide out of <Toc>. |
 | `transition` | `string` |  | This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half. Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
 | `transitionSpeed` | `"default" \| "fast" \| "slow"` |  | This slide's transition speed. Values: `default` `fast` `slow` |
@@ -1949,7 +1952,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `backgroundVideo` | `string` |  | A video URL behind the slide. |
 | `backgroundVideoLoop` | `boolean` |  | Loop the background video (the default); false plays it once. |
 | `backgroundVideoMuted` | `boolean` |  | Mute the background video (default true). |
-| `backgroundIframe` | `string` |  | A page (iframe URL) behind the slide. |
+| `backgroundIframe` | `string` |  | A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`). |
 | `backgroundInteractive` | `boolean` |  | Let the background page take input. |
 | `image` | `string` |  | The image for the image, image-left and image-right layouts. |
 | `url` | `string` |  | The page for the iframe, iframe-left and iframe-right layouts. |
