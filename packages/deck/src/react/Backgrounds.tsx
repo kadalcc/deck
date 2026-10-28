@@ -15,7 +15,16 @@ import { useDeck } from "./context.ts";
 import { removedBackgroundHint } from "../core/removed.ts";
 import { PremiumBackground, isPremiumBackground, useAuthoring } from "./premium.tsx";
 import { useLayout, useNav, useUi } from "./hooks.ts";
-import { startFrame, stopFrames, wantsAutoplay, withPlayerApi } from "./embedded-media.ts";
+import {
+  gifFit,
+  isGif,
+  startFrame,
+  stopFrames,
+  videoSources,
+  wantsAutoplay,
+  withPlayerApi,
+} from "./embedded-media.ts";
+import { Parallax } from "./Parallax.tsx";
 
 /**
  * Backgrounds sit behind the stage and cover exactly its box — a colour, a gradient, an image, a
@@ -103,6 +112,9 @@ function OnStage({ children }: { children: ReactNode }) {
 
 const NO_NAV = createStore({ click: 0 });
 
+/** Numbers each showing of a CSS-drawn GIF background across layers, so no two share an address. */
+let gifShowings = 0;
+
 export function BackgroundLayer({
   bg,
   active,
@@ -168,6 +180,23 @@ function BackgroundContent({
   const frame = useRef<HTMLIFrameElement>(null);
   const iframeSrc = bg.iframe ? withPlayerApi(bg.iframe) : null;
 
+  // An animated GIF starts again from frame one each time its slide is shown, as in reveal. A
+  // GIF's frames are shared by every element showing it, so a new layer picked up mid-loop; and
+  // reveal's way of restarting a CSS background (unset it and set it again) does nothing in
+  // Chromium (measured). An `<img>` does restart when its `src` is set again, so a GIF background
+  // that an `<img>` can draw (no tiling, a size object-fit can say) is drawn as one; any other is
+  // a CSS background asked for under a new address each showing, which restarts it at the cost
+  // of fetching it again.
+  const gif = isGif(bg.image) ? gifFit(bg.size, bg.repeat) : null;
+  const gifImg = useRef<HTMLImageElement>(null);
+  const [showing, setShowing] = useState(0);
+  useLayoutEffect(() => {
+    if (!active) return;
+    const img = gifImg.current;
+    if (img) img.setAttribute("src", img.getAttribute("src") ?? "");
+    else if (isGif(bg.image)) setShowing(++gifShowings);
+  }, [active, bg.image]);
+
   // A background frame hears `slide:start` (a player: play) when shown and once it has loaded,
   // and `slide:stop` (a player: pause) when its slide is left. reveal autoplays a background
   // unless `autoPlayMedia: false`.
@@ -196,8 +225,12 @@ function BackgroundContent({
   if (bg.color) style.backgroundColor = bg.color;
   if (bg.tint) style.backgroundImage = tintWash(bg.tint);
   if (bg.gradient) style.backgroundImage = bg.gradient;
-  if (bg.image) {
-    style.backgroundImage = `url("${bg.image}")`;
+  if (bg.image && !gif) {
+    const restart = isGif(bg.image) && showing > 0 && !bg.image.startsWith("data:");
+    const url = restart
+      ? `${bg.image}${bg.image.includes("?") ? "&" : "?"}deck-showing=${showing}`
+      : bg.image;
+    style.backgroundImage = `url("${url}")`;
     style.backgroundSize = bg.size;
     style.backgroundPosition = bg.position;
     style.backgroundRepeat = bg.repeat;
@@ -219,14 +252,24 @@ function BackgroundContent({
       data-color-scheme={bg.scheme ?? undefined}
     >
       <div className="deck-background-fill" style={{ ...style, opacity: bg.opacity }} />
+      {gif && bg.image ? (
+        <img
+          ref={gifImg}
+          className="deck-background-fill deck-background-gif"
+          src={bg.image}
+          alt=""
+          aria-hidden
+          style={{ objectFit: gif, objectPosition: bg.position, opacity: bg.opacity }}
+        />
+      ) : null}
       {bg.video ? (
-        <video
-          className="deck-background-video"
-          src={bg.video}
-          autoPlay={active}
+        <BackgroundVideo
+          key={bg.video}
+          spec={bg.video}
+          active={active}
+          autoplay={deck.config?.autoPlayMedia !== false}
           loop={bg.videoLoop}
           muted={bg.videoMuted}
-          playsInline
           style={{ objectFit: bg.size === "contain" ? "contain" : "cover", opacity: bg.opacity }}
         />
       ) : null}
@@ -264,6 +307,51 @@ function BackgroundContent({
         <UnknownBackground name={bg.component} />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * A background video: one source or reveal's comma-separated list, each a `<source>` with its
+ * type. It plays (from the start, if it had stopped) when its slide is shown and pauses when the
+ * slide is left; a still copy (print, a thumbnail) never plays.
+ */
+function BackgroundVideo({
+  spec,
+  active,
+  autoplay,
+  loop,
+  muted,
+  style,
+}: {
+  spec: string;
+  active: boolean;
+  autoplay: boolean;
+  loop: boolean;
+  muted: boolean;
+  style: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    if (active && autoplay) {
+      if (video.paused || video.ended) video.currentTime = 0;
+      void video.play().catch(() => {});
+    } else video.pause();
+  }, [active, autoplay]);
+  return (
+    <video
+      ref={ref}
+      className="deck-background-video"
+      loop={loop}
+      muted={muted}
+      playsInline
+      style={style}
+    >
+      {videoSources(spec).map((s) => (
+        <source key={s.src} src={s.src} type={s.type} />
+      ))}
+    </video>
   );
 }
 
@@ -336,6 +424,7 @@ export function Backgrounds() {
       data-direction={arrival.current.direction}
       data-speed={speed}
     >
+      <Parallax />
       {layers.map((l) => (
         <BackgroundLayer
           key={l.key}

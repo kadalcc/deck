@@ -156,7 +156,10 @@ loads once the slide is within `viewDistance`; an `<iframe data-src>` loads when
 only when shown) and unloads when it is left. Every frame on a slide or behind it hears
 `slide:start` and `slide:stop` by `postMessage`. A YouTube or Vimeo `<iframe>` gets its player API
 switched on (`enablejsapi=1`, `api=1`), plays with `data-autoplay` (or `autoPlayMedia: true`) and
-pauses when its slide is left; `data-ignore` leaves a frame or a video alone.
+pauses when its slide is left; `data-ignore` leaves a frame or a video alone. A background video
+takes a comma-separated list of sources and pauses when its slide is left, a GIF starts again
+from frame one each time its slide is shown, and `parallaxBackgroundImage` (with `-Size`,
+`-Horizontal`, `-Vertical`) draws reveal's parallax background.
 
 ## For AI agents and tools
 
