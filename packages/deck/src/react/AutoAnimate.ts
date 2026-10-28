@@ -23,7 +23,7 @@ import {
  */
 export interface Snapshot {
   key: string;
-  rect: DOMRect;
+  rect: Pick<DOMRect, "left" | "top" | "width" | "height">;
   /** The computed value of each animated property, by its CSS name. */
   styles: Record<string, string>;
 }
@@ -75,24 +75,37 @@ function readStyles(cs: CSSStyleDeclaration, styles: readonly string[]): Record<
   return out;
 }
 
+type Box = Pick<DOMRect, "left" | "top" | "width" | "height">;
+
+/** An element's box, measured from `origin`'s corner when given, else from the viewport's. */
+function boxFrom(el: Element, origin: Element | null): Box {
+  const r = el.getBoundingClientRect();
+  const o = origin?.getBoundingClientRect() ?? { left: 0, top: 0 };
+  return { left: r.left - o.left, top: r.top - o.top, width: r.width, height: r.height };
+}
+
+function snapOf(
+  el: Element,
+  key: string,
+  styles: readonly string[],
+  origin: Element | null = null,
+): Snapshot {
+  return { key, rect: boxFrom(el, origin), styles: readStyles(getComputedStyle(el), styles) };
+}
+
 export function snapshot(
   root: Element,
   styles: readonly string[] = AUTO_ANIMATE_STYLES,
+  origin: Element | null = null,
 ): Map<string, Snapshot> {
   const out = new Map<string, Snapshot>();
   const counts = new Map<string, number>();
   for (const el of candidates(root)) {
     const key = keyOf(el, counts);
-    out.set(key, {
-      key,
-      rect: el.getBoundingClientRect(),
-      styles: readStyles(getComputedStyle(el), styles),
-    });
+    out.set(key, snapOf(el, key, styles, origin));
   }
   return out;
 }
-
-type Box = Pick<DOMRect, "left" | "top" | "width" | "height">;
 
 /**
  * The two keyframes of one matched element: where it was (a FLIP transform from its new box, and
@@ -134,6 +147,8 @@ export interface AutoAnimateOptions {
   scale: number;
   /** The CSS properties to morph (`autoAnimateStyles`). */
   styles?: readonly string[];
+  /** Measure from the slide's own corner, as the plan was (`prepareAutoAnimate`'s `inPlace`). */
+  inPlace?: boolean;
 }
 
 /** A slide and where it sits in reading order: the one further on owns `autoAnimateRestart`. */
@@ -179,14 +194,6 @@ export type AutoAnimatePlan =
   | { kind: "keys"; snaps: Map<string, Snapshot> }
   | { kind: "pairs"; snaps: Map<Element, Snapshot> };
 
-function snapOf(el: Element, key: string, styles: readonly string[]): Snapshot {
-  return {
-    key,
-    rect: el.getBoundingClientRect(),
-    styles: readStyles(getComputedStyle(el), styles),
-  };
-}
-
 /**
  * Read the leaving slide before it goes, with the arriving one already in the page, and mark both
  * `data-auto-animate="pending"`. A matcher, when given, pairs their elements; otherwise matching
@@ -195,19 +202,28 @@ function snapOf(el: Element, key: string, styles: readonly string[]): Snapshot {
 export function prepareAutoAnimate(
   fromSlide: HTMLElement,
   toSlide: HTMLElement | null,
-  opts: { styles?: readonly string[]; matcher?: AutoAnimateMatcher | null },
+  opts: {
+    styles?: readonly string[];
+    matcher?: AutoAnimateMatcher | null;
+    /**
+     * Measure each slide's elements from the slide's own corner. The scroll view's slides sit one
+     * under the other on the page, and a morph there happens in place rather than across them.
+     */
+    inPlace?: boolean;
+  },
 ): AutoAnimatePlan {
   const styles = opts.styles ?? AUTO_ANIMATE_STYLES;
+  const origin = opts.inPlace ? fromSlide : null;
   fromSlide.dataset.autoAnimate = "pending";
   if (toSlide) toSlide.dataset.autoAnimate = "pending";
   if (typeof opts.matcher === "function" && toSlide) {
     const snaps = new Map<Element, Snapshot>();
     for (const pair of opts.matcher(fromSlide, toSlide) ?? []) {
-      if (pair?.from && pair.to) snaps.set(pair.to, snapOf(pair.from, "", styles));
+      if (pair?.from && pair.to) snaps.set(pair.to, snapOf(pair.from, "", styles, origin));
     }
     return { kind: "pairs", snaps };
   }
-  return { kind: "keys", snaps: snapshot(fromSlide, styles) };
+  return { kind: "keys", snaps: snapshot(fromSlide, styles, origin) };
 }
 
 /** Clear what an earlier auto-animate left on the slides and their elements. */
@@ -242,7 +258,10 @@ export function runAutoAnimate(
     (el as HTMLElement).dataset.autoAnimateTarget = String(target++);
     const frames = morphFrames(
       from,
-      { rect: el.getBoundingClientRect(), styles: readStyles(getComputedStyle(el), styles) },
+      {
+        rect: boxFrom(el, opts.inPlace ? toSlide : null),
+        styles: readStyles(getComputedStyle(el), styles),
+      },
       opts.scale,
     );
     animations.push(el.animate(frames, timing(el)));
