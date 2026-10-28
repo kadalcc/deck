@@ -1064,7 +1064,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   colorScheme: '"auto" (follow the system), "light" or "dark".',
   pdfSeparateFragments: "A page per click step in print/PDF.",
   pdfMaxPagesPerSlide: "Pages a tall slide may spill onto.",
-  jumpToSlide: "`:12` / g jumps.",
+  jumpToSlide:
+    "`:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id.",
   search: "/ searches the deck.",
   zoom: "Alt+click zooms into a point; Esc zooms back out.",
   wakeLock: "Keep the screen awake while presenting.",
@@ -1182,7 +1183,8 @@ export const SLIDE_KEYS = [
   {
     name: "visibility",
     type: E("hidden", "uncounted"),
-    description: '"hidden" leaves it out; "uncounted" shows it without a number.',
+    description:
+      '"hidden" leaves it out; "uncounted" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js\'s data-visibility).',
   },
   { name: "hideInToc", type: B(), description: "Keep the slide out of <Toc>." },
   {

@@ -593,6 +593,7 @@ function FollowControl() {
  */
 export function slideLabel(deck: DeckRuntime, h: number, v: number): string {
   const sn = deck.config.slideNumber;
-  const format = sn === true || typeof sn === "function" ? "h.v" : sn || "c";
-  return N.formatSlideNumber(format === "c/t" ? "c" : format, { h, v, click: 0 }, deck.columns);
+  if (typeof sn === "function") return N.slideNumberText(sn, { h, v }, deck.columns)!;
+  const format = sn === true ? "h.v" : sn || "c";
+  return N.formatSlideNumber(format === "c/t" ? "c" : format, { h, v }, deck.columns);
 }

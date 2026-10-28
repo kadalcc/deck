@@ -78,7 +78,7 @@
             "hidden",
             "uncounted"
           ],
-          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility)."
         },
         "hideInToc": {
           "type": "boolean",
@@ -381,7 +381,7 @@
             "hidden",
             "uncounted"
           ],
-          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility)."
         },
         "hideInToc": {
           "type": "boolean",
@@ -1173,7 +1173,7 @@
         },
         "jumpToSlide": {
           "type": "boolean",
-          "description": "`:12` / g jumps.",
+          "description": "`:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id.",
           "default": true
         },
         "search": {
