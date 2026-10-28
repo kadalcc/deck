@@ -18,6 +18,7 @@ export {
   FitText,
   Frame,
   Grid,
+  HStack,
   Iframe,
   Image,
   Kbd,
@@ -35,6 +36,7 @@ export {
   Transform,
   Tweet,
   Typewriter,
+  VStack,
   Youtube,
 } from "./content.tsx";
 export { Mark } from "./Mark.tsx";

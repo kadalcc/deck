@@ -13,7 +13,7 @@ the cover, and a centred cover over a dimmed background picture. Light and dark.
   <img src="https://deck.kadal.cc/themes/seriph-dark-2.webp" alt="Seriph: a content slide, dark" width="49%">
 </p>
 
-[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-seriph)
+[All 17 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-seriph)
 
 @kadal/deck ships this theme, so `theme: seriph` works with nothing else installed. Install the
 package only to give the deck a copy of its own, at a version you pick:

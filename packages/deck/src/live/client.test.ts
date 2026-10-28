@@ -138,4 +138,40 @@ describe("the room client", () => {
     expect(FakeSocket.all.length).toBe(1);
     viewer.close();
   });
+  test("a held room opens no socket and retries nothing until it is released", async () => {
+    FakeSocket.all = [];
+    const client = new RoomClient({ api: "/api", room: "talk", role: "presenter", viewer: "v1" });
+    // The presenter view holds the room before it connects (child effects run first).
+    client.hold(true);
+    client.connect();
+    client.reconnect(); // a ticket arriving elsewhere: still held
+    await new Promise((r) => setTimeout(r, 50));
+    expect(FakeSocket.all.length).toBe(0);
+    expect(client.status.get()).toBe("idle");
+    // Released (the passcode was given): one socket, at once.
+    client.hold(false);
+    await Promise.resolve();
+    expect(FakeSocket.all.length).toBe(1);
+    // The host refuses it; the retry that follows is cancelled by holding again.
+    FakeSocket.all[0]!.closed();
+    client.hold(true);
+    await new Promise((r) => setTimeout(r, 700));
+    expect(FakeSocket.all.length).toBe(1);
+    // An open socket is dropped by a hold, and its late close schedules nothing.
+    client.hold(false);
+    await Promise.resolve();
+    const live = FakeSocket.all.at(-1)!;
+    live.open();
+    expect(client.status.get()).toBe("open");
+    client.hold(true);
+    live.closed();
+    await new Promise((r) => setTimeout(r, 700));
+    expect(FakeSocket.all.length).toBe(2);
+    expect(client.status.get()).toBe("idle");
+    // A closed client is not reopened by a release.
+    client.close();
+    client.hold(false);
+    await Promise.resolve();
+    expect(FakeSocket.all.length).toBe(2);
+  });
 });

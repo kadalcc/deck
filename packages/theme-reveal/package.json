@@ -1,0 +1,96 @@
+{
+  "name": "@kadal/theme-reveal",
+  "version": "0.10.1",
+  "description": "Reveal: reveal.js's twelve themes for Kadal Deck (black, white, league, beige, night, serif, simple, solarized, moon, dracula, sky, blood) as one theme with themeConfig.variant, each in light and dark.",
+  "keywords": [
+    "kadal-deck",
+    "kadal-theme",
+    "presentation",
+    "reveal.js",
+    "revealjs-port",
+    "slides",
+    "theme"
+  ],
+  "homepage": "https://deck.kadal.cc/themes/",
+  "bugs": {
+    "url": "https://github.com/kadalcc/deck/issues"
+  },
+  "license": "MIT",
+  "author": "Kadal <hello@kadal.cc> (https://kadal.cc)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadalcc/deck.git",
+    "directory": "packages/theme-reveal"
+  },
+  "files": [
+    "style.css",
+    "index.tsx",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "dev": "kadal-deck dev -C preview",
+    "build": "kadal-deck build -C preview",
+    "check": "kadal-deck check -C preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@kadal/deck": "workspace:*",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "peerDependencies": {
+    "@kadal/deck": "^0.10.1",
+    "react": "^19.2.0"
+  },
+  "kadal": {
+    "theme": {
+      "name": "reveal",
+      "title": "Reveal",
+      "description": "reveal.js's twelve themes: themeConfig.variant black (the default), white, league, beige, night, serif, simple, solarized, moon, dracula, sky or blood.",
+      "colorScheme": "both",
+      "swatch": [
+        "#2a76dd",
+        "#42affa"
+      ],
+      "themeConfig": {
+        "variant": "black"
+      },
+      "config": {
+        "fonts": [
+          "Source Sans Pro:ital,wght@0,400;0,600;1,400;1,600",
+          "Lato:ital,wght@0,400;0,700;1,400;1,700",
+          "League Gothic",
+          "Montserrat:wght@700",
+          "Open Sans:ital,wght@0,400;0,700;1,400;1,700",
+          "News Cycle:wght@400;700",
+          "Quicksand:wght@400;700",
+          "Ubuntu:ital,wght@0,300;0,700;1,300;1,700",
+          "Fira Code"
+        ]
+      },
+      "shiki": {
+        "light": "monokai",
+        "dark": "monokai"
+      },
+      "defaults": {},
+      "layouts": [],
+      "components": []
+    }
+  }
+}

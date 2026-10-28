@@ -21,7 +21,8 @@
  * remote" dialog shows. Then: Next moves the presenter and the play window, a touch on the phone's
  * slide puts the laser on the same spot of both (and goes off at the lift even when that off is lost
  * on the wire), blackout goes on and off, the pen draws a stroke
- * both show, the air pointer follows simulated deviceorientation events, zoom zooms the play
+ * both show (and, with --room, a projector in another browser shows it too: there the room alone
+ * carries the ink, which the window bus between the presenter view and the play window hides), the air pointer follows simulated deviceorientation events, zoom zooms the play
  * window. Then one phone at a time: the code on the QR changes once used, a second phone (an
  * "iPhone", whose motion sensors open only from a tap, as WebKit's do) takes over and the first is
  * told, the iPhone allows motion with a tap and points, a reload keeps it paired (its lease), and
@@ -206,6 +207,12 @@ const presenter = await desk.newPage();
 watch(presenter, "presenter");
 const play = await desk.newPage();
 watch(play, "play");
+// With a room: a projector on another machine, as a second screen at a venue is. Its own browser
+// context shares no window bus with the presenter view, so only the room can bring it the ink.
+const farCtx = roomApi ? await browser.newContext({ viewport: { width: 1280, height: 720 } }) : null;
+if (farCtx) await hostWord(farCtx);
+const far = farCtx ? await farCtx.newPage() : null;
+if (far) watch(far, "projector");
 const phone = await phoneCtx.newPage();
 // An iPhone, as far as the motion sensors go: WebKit's requestPermission() prompts only from a tap
 // (a click or touchend); from the press that starts a hold (touchstart/pointerdown) it refuses
@@ -276,6 +283,10 @@ let pairUrl = null;
 
 await step("presenter view and play window load", async () => {
   await play.goto(base, { waitUntil: "networkidle" });
+  if (far) {
+    await far.goto(`${base}?projector`, { waitUntil: "networkidle" });
+    await far.waitForSelector(".deck-slide.is-present");
+  }
   await presenter.goto(`${base}presenter`, { waitUntil: "networkidle" });
   await presenter.waitForSelector(".deck-presenter-tools");
   expect(await play.evaluate(() => !!window.__deck), "the play window has no runtime");
@@ -466,6 +477,7 @@ await step("the pen draws a stroke and a shape both screens show", async () => {
   const count = (page, sel) => page.locator(sel).count();
   const pBefore = await count(presenter, ".deck-presenter-canvas svg.deck-drawing path");
   const dBefore = await count(play, "svg.deck-drawing path");
+  const fBefore = far ? await count(far, "svg.deck-drawing path") : 0;
   await phone.locator("[data-mode='pen']").tap();
   const pad = await boxOf(phone, ".deck-remote-pad");
   const pts = Array.from({ length: 12 }, (_, i) => [pad.x + pad.width * (0.2 + i * 0.05), pad.y + pad.height * (0.5 + Math.sin(i / 2) * 0.15)]);
@@ -479,6 +491,10 @@ await step("the pen draws a stroke and a shape both screens show", async () => {
   expect(drawn, "no stroke on the presenter");
   const mirrored = await until(async () => (await count(play, "svg.deck-drawing path")) > dBefore);
   expect(mirrored, "no stroke on the play window");
+  if (far) {
+    const across = await until(async () => (await count(far, "svg.deck-drawing path")) > fBefore);
+    expect(across, "no stroke on the projector in another browser (through the room)");
+  }
   const span = await presenter.evaluate(() => {
     const strokes = [...document.querySelectorAll(".deck-presenter-canvas svg.deck-drawing > g")];
     return strokes.at(-1).getBBox().width;
@@ -489,6 +505,7 @@ await step("the pen draws a stroke and a shape both screens show", async () => {
   await phone.getByRole("radio", { name: "Arrow" }).tap();
   await phone.screenshot({ path: join(out, "remote-pen.png") });
   const before = await count(play, "svg.deck-drawing g[data-stroke]");
+  const farBefore = far ? await count(far, "svg.deck-drawing g[data-stroke]") : 0;
   await finger("touchStart", [[pad.x + pad.width * 0.2, pad.y + pad.height * 0.7]]);
   for (let i = 1; i <= 6; i++) {
     await finger("touchMove", [[pad.x + pad.width * (0.2 + i * 0.08), pad.y + pad.height * (0.7 - i * 0.06)]]);
@@ -497,6 +514,10 @@ await step("the pen draws a stroke and a shape both screens show", async () => {
   await finger("touchEnd", []);
   const arrow = await until(async () => (await count(play, "svg.deck-drawing g[data-stroke]")) > before);
   expect(arrow, "no arrow on the play window");
+  if (far) {
+    const across = await until(async () => (await count(far, "svg.deck-drawing g[data-stroke]")) > farBefore);
+    expect(across, "no arrow on the projector in another browser (through the room)");
+  }
   const straight = await presenter.evaluate(() => {
     const d = [...document.querySelectorAll(".deck-presenter-canvas svg.deck-drawing > g path")].at(-1)?.getAttribute("d") ?? "";
     return !d.includes("Q") && (d.match(/L/g) ?? []).length >= 3;

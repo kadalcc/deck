@@ -1127,25 +1127,91 @@ pre.deck-code.has-lines .line::before {
 }
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
-.deck-stack {
+/* Each helper answers to reveal.js's class too (`r-stack`, `r-stretch`, `r-frame`, `r-hstack`,
+   `r-vstack`, `r-fit-text`), so a slide pasted from a reveal deck keeps its layout as plain HTML. */
+.deck-stack,
+.r-stack {
   display: grid;
   place-items: center;
 }
-.deck-stack > * {
+:is(.deck-stack, .r-stack) > * {
   grid-area: 1 / 1;
 }
 .deck-layout > .deck-stretch,
-.deck-stretch {
+.deck-stretch,
+.r-stretch {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
-.deck-stretch > :is(img, video, iframe) {
+.deck-stretch > :is(img, video, iframe),
+:is(img, video, iframe, canvas, svg).r-stretch {
   flex: 1;
   min-height: 0;
   object-fit: contain;
   width: 100%;
+}
+/* reveal sizes a stretched element with script; here the slide's flex column does it, and a block
+   of code scrolls inside the height it is given. */
+:is(img, video, iframe, canvas, svg).r-stretch {
+  display: block;
+  max-width: none;
+}
+pre.r-stretch {
+  display: block;
+  overflow: auto;
+}
+pre.r-stretch code {
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+}
+/* A row or a column of things, centred both ways (`<HStack>` / `<VStack>`). Media inside shrink to
+   fit instead of pushing the stack wider than the slide. */
+.deck-hstack,
+.deck-vstack,
+.r-hstack,
+.r-vstack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.deck-hstack,
+.r-hstack {
+  flex-direction: row;
+}
+.deck-vstack,
+.r-vstack {
+  flex-direction: column;
+}
+:is(.deck-hstack, .deck-vstack, .r-hstack, .r-vstack) > :is(img, video) {
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+}
+/* reveal's alignment modifiers, scoped to its stacks so a utility CSS framework's classes of the
+   same name keep their own meaning everywhere else. */
+:is(.r-hstack, .r-vstack).items-stretch {
+  align-items: stretch;
+}
+:is(.r-hstack, .r-vstack).items-start {
+  align-items: flex-start;
+}
+:is(.r-hstack, .r-vstack).items-end {
+  align-items: flex-end;
+}
+:is(.r-hstack, .r-vstack).justify-between {
+  justify-content: space-between;
+}
+:is(.r-hstack, .r-vstack).justify-around {
+  justify-content: space-around;
+}
+:is(.r-hstack, .r-vstack).justify-start {
+  justify-content: flex-start;
+}
+:is(.r-hstack, .r-vstack).justify-end {
+  justify-content: flex-end;
 }
 .deck-cols,
 .deck-grid {
@@ -1184,7 +1250,8 @@ pre.deck-code.has-lines .line::before {
   text-align: center;
   height: 100%;
 }
-.deck-frame {
+.deck-frame,
+.r-frame {
   border: 4px solid var(--deck-border);
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
   border-radius: var(--deck-radius);
@@ -1198,6 +1265,17 @@ pre.deck-code.has-lines .line::before {
 .deck-fit-text {
   width: 100%;
   line-height: 1;
+}
+/* `r-fit-text` before (or without) the compiler's fit: one line, large. The compiler wraps the
+   element's text in <FitText> (compiler/remark-reveal.ts), which then sets the size that fits. */
+.r-fit-text {
+  display: block;
+  white-space: nowrap;
+  line-height: 1;
+  text-align: center;
+}
+.r-fit-text:not(:has(> .deck-fit-text)) {
+  font-size: 2.5em;
 }
 .deck-kbd {
   font: 0.75em var(--deck-mono-font);

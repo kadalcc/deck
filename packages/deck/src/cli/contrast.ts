@@ -55,7 +55,14 @@ export interface ContrastOptions {
   /** A script run before the deck's own (see `PrintViewRequest.init`). */
   init?: string;
   say?: (line: string) => void;
+  /**
+   * How long a page's picture may take, try by try (default 30 s, then 120 s). A page that never
+   * comes is reported as not measured, and the run goes on to the next.
+   */
+  pictureTimeouts?: number[];
 }
+
+const PICTURE_TIMEOUTS = [30_000, 120_000];
 
 export const CONTRAST_DEFAULTS = { min: 4.5, minLarge: 3, percentile: 10 } as const;
 
@@ -86,6 +93,15 @@ export interface ContrastFinding {
   texts: string[];
 }
 
+/** A page the check could not picture in time: neither passed nor failed. */
+export interface ContrastUnmeasured {
+  scheme: Scheme;
+  slide: number;
+  id: string | null;
+  step: number;
+  reason: string;
+}
+
 export interface ContrastSchemeSummary {
   asked: Scheme;
   /** What the deck drew: a deck with a fixed `colorScheme` draws it whatever is asked. */
@@ -102,6 +118,8 @@ export interface ContrastReport {
   thresholds: { normal: number; large: number; percentile: number };
   schemes: ContrastSchemeSummary[];
   findings: ContrastFinding[];
+  /** Pages with text that could not be pictured: `ok` is false while any is left. */
+  unmeasured: ContrastUnmeasured[];
   /** Pictures written by `out`. */
   files: string[];
   errors: string[];
@@ -332,7 +350,7 @@ const TEXT_FREE = `
 [data-kd-contrast-clip] { background-image: none !important; background-color: transparent !important; }
 `;
 
-async function picture(page: PageLike, index: number): Promise<Buffer> {
+async function picture(page: PageLike, index: number, timeout: number): Promise<Buffer> {
   // Scrolled and clipped by hand: Playwright's element shot waits for the element to hold still,
   // and a page with an animated background never does.
   const box = await page.evaluate(async (i: number) => {
@@ -344,7 +362,32 @@ async function picture(page: PageLike, index: number): Promise<Buffer> {
     return { x: r.left, y: r.top, width: r.width, height: r.height };
   }, index);
   if (!box) throw new Error(`print page ${index} is gone`);
-  return page.screenshot({ type: "png", animations: "disabled", clip: box });
+  return page.screenshot({ type: "png", animations: "disabled", clip: box, timeout });
+}
+
+/**
+ * A page's picture, tried again with longer to wait when a busy machine is slow to paint it (the
+ * screenshot's own timeout); null when every try timed out. Any other error is thrown. `from`
+ * is the try to start at, and is left at the one that worked: a page's second picture starts
+ * with the wait its first needed.
+ */
+async function pictureInTime(
+  page: PageLike,
+  index: number,
+  timeouts: number[],
+  from: { at: number },
+  slow: (waited: number, next: number) => void,
+): Promise<Buffer | null> {
+  for (; from.at < timeouts.length; from.at++) {
+    const timeout = timeouts[from.at]!;
+    try {
+      return await picture(page, index, timeout);
+    } catch (e) {
+      if ((e as Error)?.name !== "TimeoutError") throw e;
+      if (from.at + 1 < timeouts.length) slow(timeout, timeouts[from.at + 1]!);
+    }
+  }
+  return null;
 }
 
 const round = (x: number, d = 2) => Math.round(x * 10 ** d) / 10 ** d;
@@ -355,7 +398,12 @@ async function checkScheme(
   asked: Scheme,
   o: ContrastOptions,
   files: string[],
-): Promise<{ summary: ContrastSchemeSummary; findings: ContrastFinding[]; errors: string[] }> {
+): Promise<{
+  summary: ContrastSchemeSummary;
+  findings: ContrastFinding[];
+  unmeasured: ContrastUnmeasured[];
+  errors: string[];
+}> {
   return renderer.withPrintView(
     {
       scheme: asked,
@@ -390,14 +438,41 @@ async function checkScheme(
           { on, css: TEXT_FREE },
         );
       const count = (why: string) => (facts.skipped[why] = (facts.skipped[why] ?? 0) + 1);
+      const timeouts = o.pictureTimeouts ?? PICTURE_TIMEOUTS;
+      const unmeasured: ContrastUnmeasured[] = [];
       for (const p of facts.pages) {
         const runs = byPage.get(p.page);
         if (!runs?.length) continue;
+        const from = { at: 0 };
+        const shoot = () =>
+          pictureInTime(page, p.page, timeouts, from, (waited, next) =>
+            o.say?.(
+              `slow   slide ${p.slide}${p.click ? ` step ${p.click}` : ""}: no picture in ${waited / 1000} s, trying again with ${next / 1000} s`,
+            ),
+          );
         // The page as it is, then the same page with every glyph transparent.
-        const ink = decodePng(await picture(page, p.page));
-        await textFree(true);
-        const bare = decodePng(await picture(page, p.page));
-        await textFree(false);
+        const inkShot = await shoot();
+        let bareShot: Buffer | null = null;
+        if (inkShot) {
+          await textFree(true);
+          try {
+            bareShot = await shoot();
+          } finally {
+            await textFree(false);
+          }
+        }
+        if (!inkShot || !bareShot) {
+          unmeasured.push({
+            scheme: drawn,
+            slide: p.slide,
+            id: p.id,
+            step: p.click,
+            reason: `no picture in ${timeouts.reduce((a, b) => a + b, 0) / 1000} s`,
+          });
+          continue;
+        }
+        const ink = decodePng(inkShot);
+        const bare = decodePng(bareShot);
         const k = bare.width / (p.width || 1920);
         for (const run of runs) {
           const fg = parseColor(run.color);
@@ -493,10 +568,11 @@ async function checkScheme(
             },
             { pi, marks },
           );
-          const shot = await picture(page, pi);
+          const shot = await pictureInTime(page, pi, timeouts, { at: 0 }, () => {});
           await page.evaluate(() => {
             for (const l of document.querySelectorAll(".kd-contrast-marks")) l.remove();
           });
+          if (!shot) continue;
           const f = raw.find((x) => x.page === pi)!;
           const file = join(
             o.out,
@@ -537,6 +613,7 @@ async function checkScheme(
           skipped: facts.skipped,
         },
         findings,
+        unmeasured,
         errors,
       };
     },
@@ -549,6 +626,7 @@ export async function checkContrast(
 ): Promise<ContrastReport> {
   const schemes: ContrastSchemeSummary[] = [];
   const findings: ContrastFinding[] = [];
+  const unmeasured: ContrastUnmeasured[] = [];
   const errors: string[] = [];
   const files: string[] = [];
   for (const asked of o.schemes) {
@@ -562,6 +640,7 @@ export async function checkContrast(
     }
     schemes.push(r.summary);
     findings.push(...r.findings);
+    unmeasured.push(...r.unmeasured);
   }
   findings.sort(
     (a, b) =>
@@ -571,10 +650,12 @@ export async function checkContrast(
       a.ratio - b.ratio,
   );
   return {
-    ok: findings.every((f) => f.level !== "fail"),
+    // A page that was not measured is not known to pass.
+    ok: findings.every((f) => f.level !== "fail") && unmeasured.length === 0,
     thresholds: { normal: o.min, large: o.minLarge, percentile: o.percentile },
     schemes,
     findings,
+    unmeasured,
     files,
     errors: [...new Set(errors)].slice(0, 20),
   };
@@ -603,15 +684,25 @@ export function formatContrast(r: ContrastReport): string {
       .map(([k, v]) => `${v} ${k}`)
       .join(", ");
     if (skipped) lines.push(`  not measured: ${skipped}`);
+    for (const u of r.unmeasured.filter((x) => x.scheme === s.drawn))
+      lines.push(
+        `  not measured: slide ${u.slide}${u.id ? ` (${u.id})` : ""}${u.step ? ` step ${u.step}` : ""}, ${u.reason}`,
+      );
   }
   for (const e of r.errors) lines.push(`error  ${e}`);
   for (const f of r.files) lines.push(`png    ${f}`);
   const failing = r.findings.filter((f) => f.level === "fail");
   const fails = failing.reduce((n, f) => n + f.count, 0);
+  const left = r.unmeasured.length;
+  const unknown = left
+    ? ` ${left} page(s) could not be pictured in time and were not measured: run again on a quieter machine, or just those slides with --range.`
+    : "";
   lines.push(
     fails
-      ? `\n${fails} text(s) in ${failing.length} finding(s) below ${r.thresholds.normal}:1 (large text ${r.thresholds.large}:1). Darken or lighten the text, put a scrim behind it, or make it larger; purely decorative text can say data-contrast="ignore".`
-      : `\nEvery text reads: at least ${r.thresholds.normal}:1 (large text ${r.thresholds.large}:1).`,
+      ? `\n${fails} text(s) in ${failing.length} finding(s) below ${r.thresholds.normal}:1 (large text ${r.thresholds.large}:1). Darken or lighten the text, put a scrim behind it, or make it larger; purely decorative text can say data-contrast="ignore".${unknown}`
+      : left
+        ? `\nNo text measured below ${r.thresholds.normal}:1 (large text ${r.thresholds.large}:1), but not every page was measured.${unknown}`
+        : `\nEvery text reads: at least ${r.thresholds.normal}:1 (large text ${r.thresholds.large}:1).`,
   );
   return lines.join("\n").replace(/^\n/, "");
 }
