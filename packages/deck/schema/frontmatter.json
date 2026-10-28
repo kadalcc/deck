@@ -827,7 +827,7 @@
             "print",
             "speaker"
           ],
-          "description": "Where slide numbers show.",
+          "description": "Where slide numbers show: \"all\" (default) the deck, every printed page (and `kadal-deck export` PDF) and the presenter view; \"print\" only the printed pages; \"speaker\" only the presenter view.",
           "default": "all"
         },
         "hash": {
@@ -1168,7 +1168,7 @@
         },
         "pdfMaxPagesPerSlide": {
           "type": "number",
-          "description": "Pages a tall slide may spill onto.",
+          "description": "reveal.js compatible: how many printed/PDF pages a slide taller than one may run onto (default 1: one page each, autoFit shrinking what overflows). Its print page grows by whole page heights and breaks across them; past the limit autoFit shrinks the rest.",
           "default": 1
         },
         "jumpToSlide": {

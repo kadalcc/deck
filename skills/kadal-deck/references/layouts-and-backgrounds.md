@@ -207,7 +207,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `controlsBackArrows` | `"visible" \| "faded" \| "hidden"` | `"faded"` | How the back arrows look. Values: `visible` `faded` `hidden` |
 | `progress` | `boolean` | `true` | The progress bar along the bottom. |
 | `slideNumber` | `boolean \| SlideNumberFormat \| SlideNumberFunction` | `false` | Show slide numbers: true, or a format — "h.v", "h/v", "c" (current), "c/t" (current/total). reveal.js compatible: deck.config.ts may pass a function of the slide ({ h, v, click, index, total, id }) returning one string or three ([h, ".", v]). Values: `c` `c/t` `h.v` `h/v` |
-| `showSlideNumber` | `"all" \| "print" \| "speaker"` | `"all"` | Where slide numbers show. Values: `all` `print` `speaker` |
+| `showSlideNumber` | `"all" \| "print" \| "speaker"` | `"all"` | Where slide numbers show: "all" (default) the deck, every printed page (and `kadal-deck export` PDF) and the presenter view; "print" only the printed pages; "speaker" only the presenter view. Values: `all` `print` `speaker` |
 | `hash` | `boolean` | `true` | Keep the URL hash in step with the slide. |
 | `hashOneBasedIndex` | `boolean` | `false` | 1-based slide numbers in the hash. |
 | `history` | `boolean` | `false` | Push a history entry per slide (Back walks the slides). |
@@ -264,7 +264,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `themes` | `string[]` | `["minimal","rla","stack"]` | The themes the deck ships besides `theme`, first in its theme menu and in this order: built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines. The menu then offers every first-party theme not listed (seventeen in all), each loaded only when picked; a list orders the menu, it does not narrow it. |
 | `colorScheme` | `ColorScheme` | `"auto"` | "auto" (follow the system), "light" or "dark". Values: `light` `dark` `auto` |
 | `pdfSeparateFragments` | `boolean` | `true` | A page per click step in print/PDF. |
-| `pdfMaxPagesPerSlide` | `number` | `1` | Pages a tall slide may spill onto. |
+| `pdfMaxPagesPerSlide` | `number` | `1` | reveal.js compatible: how many printed/PDF pages a slide taller than one may run onto (default 1: one page each, autoFit shrinking what overflows). Its print page grows by whole page heights and breaks across them; past the limit autoFit shrinks the rest. |
 | `jumpToSlide` | `boolean` | `true` | `:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id. |
 | `search` | `boolean` | `true` | / searches the deck. |
 | `zoom` | `boolean` | `true` | Alt+click zooms into a point; Esc zooms back out. |

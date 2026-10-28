@@ -6,7 +6,7 @@ import { resolveConfig, resolveSlideOptions } from "../core/model.ts";
 import { initialNav } from "../core/navigation.ts";
 import { createStore } from "../core/store.ts";
 import { DeckContext, type DeckRuntime } from "./context.ts";
-import { PrintView, printPages } from "./PrintView.tsx";
+import { PrintView, printPages, spillOf } from "./PrintView.tsx";
 
 describe("printPages", () => {
   const slides = [
@@ -65,12 +65,11 @@ describe("the print view reads the totals already reported", () => {
     loadNotes: null,
     loadMagic: null,
   });
-  const config = resolveConfig({});
   const columns = [
     { h: 0, slides: [slide(0)] },
     { h: 1, slides: [slide(1)] },
   ];
-  const deck = (totals: Record<string, number>) =>
+  const deck = (totals: Record<string, number>, config = resolveConfig({})) =>
     ({
       manifest: { dev: false, headmatter: {}, slides: [] },
       config,
@@ -98,5 +97,56 @@ describe("the print view reads the totals already reported", () => {
       ),
     );
     expect(steps(html)).toEqual(["0@0", "0@1", "0@2", "1@0", "1@1"]);
+  });
+
+  // reveal.js numbers the printed pages with showSlideNumber "all" or "print" (R095).
+  const numbers = (input: Record<string, unknown>) =>
+    [
+      ...renderToStaticMarkup(
+        createElement(
+          DeckContext.Provider,
+          { value: deck({ "0,0": 1, "1,0": 0 }, resolveConfig(input)) },
+          createElement(PrintView, { options: { clicks: true } }),
+        ),
+      ).matchAll(/<div class="deck-slide-number deck-print-slide-number">([^<]*)<\/div>/g),
+    ].map((m) => m[1]);
+
+  test("every page carries the slide number with showSlideNumber all or print", () => {
+    expect(numbers({ slideNumber: "c/t" })).toEqual(["1 / 2", "1 / 2", "2 / 2"]);
+    expect(numbers({ slideNumber: "c", showSlideNumber: "print" })).toEqual(["1", "1", "2"]);
+  });
+
+  test("no number without slideNumber, or when it is the speaker view's only", () => {
+    expect(numbers({})).toEqual([]);
+    expect(numbers({ slideNumber: true, showSlideNumber: "speaker" })).toEqual([]);
+  });
+});
+
+describe("pdfMaxPagesPerSlide: how many pages a slide spills onto", () => {
+  // A print page and its slide's layout, as far as the measurement reads them (bun has no DOM).
+  const page = (pageHeight: number, layout: { client: number; scroll?: number; fit?: number }) =>
+    ({
+      clientHeight: pageHeight,
+      querySelector: () => ({
+        clientHeight: layout.client,
+        scrollHeight: layout.scroll ?? layout.client,
+        classList: { contains: (c: string) => c === "is-fitted" && layout.fit !== undefined },
+        style: { getPropertyValue: () => String(layout.fit ?? "") },
+      }),
+    }) as unknown as HTMLElement;
+
+  test("a slide that fits stays on one page", () => {
+    expect(spillOf(page(1080, { client: 960 }), 1)).toBe(1);
+  });
+  test("content that overflows by half a page needs two", () => {
+    // 120px of padding around a 960px layout whose content is 1500px tall.
+    expect(spillOf(page(1080, { client: 960, scroll: 1500 }), 1)).toBe(2);
+  });
+  test("a layout autoFit shrank to half wants twice its box", () => {
+    expect(spillOf(page(1080, { client: 1920, fit: 0.5 }), 1)).toBe(2);
+    expect(spillOf(page(1080, { client: 960 / 0.3, fit: 0.3 }), 1)).toBe(4);
+  });
+  test("measured again once grown, it keeps its pages rather than shrink back", () => {
+    expect(spillOf(page(2160, { client: 2040 }), 2)).toBe(2);
   });
 });

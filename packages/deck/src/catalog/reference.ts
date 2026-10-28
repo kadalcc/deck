@@ -990,7 +990,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   progress: "The progress bar along the bottom.",
   slideNumber:
     'Show slide numbers: true, or a format — "h.v", "h/v", "c" (current), "c/t" (current/total). reveal.js compatible: deck.config.ts may pass a function of the slide ({ h, v, click, index, total, id }) returning one string or three ([h, ".", v]).',
-  showSlideNumber: "Where slide numbers show.",
+  showSlideNumber:
+    'Where slide numbers show: "all" (default) the deck, every printed page (and `kadal-deck export` PDF) and the presenter view; "print" only the printed pages; "speaker" only the presenter view.',
   hash: "Keep the URL hash in step with the slide.",
   hashOneBasedIndex: "1-based slide numbers in the hash.",
   history: "Push a history entry per slide (Back walks the slides).",
@@ -1064,7 +1065,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
     "The theme: a built-in (minimal, rla, stack, none), a package (`seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then a package of that name), a folder (`./theme`), or a class your own CSS defines (.theme-<name>). The Vite plugin imports a package's CSS and module for you; `kadal-deck theme eject` copies it into the deck.",
   colorScheme: '"auto" (follow the system), "light" or "dark".',
   pdfSeparateFragments: "A page per click step in print/PDF.",
-  pdfMaxPagesPerSlide: "Pages a tall slide may spill onto.",
+  pdfMaxPagesPerSlide:
+    "reveal.js compatible: how many printed/PDF pages a slide taller than one may run onto (default 1: one page each, autoFit shrinking what overflows). Its print page grows by whole page heights and breaks across them; past the limit autoFit shrinks the rest.",
   jumpToSlide:
     "`:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id.",
   search: "/ searches the deck.",
