@@ -1007,7 +1007,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   pause: "B / . blacks the screen out.",
   showNotes: 'Print notes with the slides: true (in a box) or "separate-page".',
   autoPlayMedia:
-    "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background.",
+    "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none (background videos included); null (default) plays those marked `data-autoplay`, and backgrounds.",
   preloadIframes:
     "reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows.",
   autoAnimate: "Allow auto-animate between slides that set `autoAnimate`.",
@@ -1030,7 +1030,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   parallaxBackgroundImage:
     "reveal.js compatible: one large image behind every slide that shifts a little with each slide (a path in public/ or a URL). Empty (default): none.",
   parallaxBackgroundSize:
-    "reveal.js compatible: the parallax image's CSS background-size, e.g. \"2100px 900px\". Empty (default): the image's own size.",
+    "reveal.js compatible: the parallax image's CSS background-size, e.g. \"2100px 900px\" (the steps are worked out from a size in pixels). Empty (default): the image's own size.",
   parallaxBackgroundHorizontal:
     "reveal.js compatible: pixels the parallax image moves per horizontal slide. null (default): worked out from the image and slide count.",
   parallaxBackgroundVertical:
@@ -1260,7 +1260,12 @@ export const SLIDE_KEYS = [
   },
   { name: "backgroundColor", type: S(), description: "A flat background colour." },
   { name: "backgroundGradient", type: S(), description: "A CSS gradient behind the slide." },
-  { name: "backgroundImage", type: S(), description: "An image URL behind the slide." },
+  {
+    name: "backgroundImage",
+    type: S(),
+    description:
+      "An image URL behind the slide. An animated GIF starts again from its first frame each time the slide is shown.",
+  },
   {
     name: "backgroundSize",
     type: S(),
@@ -1269,7 +1274,12 @@ export const SLIDE_KEYS = [
   { name: "backgroundPosition", type: S(), description: "CSS background-position." },
   { name: "backgroundRepeat", type: S(), description: "CSS background-repeat." },
   { name: "backgroundOpacity", type: N(), description: "0–1." },
-  { name: "backgroundVideo", type: S(), description: "A video URL behind the slide." },
+  {
+    name: "backgroundVideo",
+    type: S(),
+    description:
+      "A video URL behind the slide, or reveal.js's comma-separated list of sources, best first (`/loop.webm, /loop.mp4`). It plays from the start when the slide is shown (unless `autoPlayMedia: false`) and pauses when the slide is left.",
+  },
   {
     name: "backgroundVideoLoop",
     type: B(),

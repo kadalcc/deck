@@ -1777,7 +1777,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `help` | `boolean` | `true` | The ? keyboard help. |
 | `pause` | `boolean` | `true` | B / . blacks the screen out. |
 | `showNotes` | `boolean \| "separate-page"` | `false` | Print notes with the slides: true (in a box) or "separate-page". Values: `separate-page` |
-| `autoPlayMedia` | `boolean \| null` | `null` | Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background. |
+| `autoPlayMedia` | `boolean \| null` | `null` | Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none (background videos included); null (default) plays those marked `data-autoplay`, and backgrounds. |
 | `preloadIframes` | `boolean \| null` | `null` | reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows. |
 | `autoAnimate` | `boolean` | `true` | Allow auto-animate between slides that set `autoAnimate`. |
 | `autoAnimateEasing` | `string` | `"ease"` | CSS easing for auto-animate. |
@@ -1796,7 +1796,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `transitionSpeed` | `TransitionSpeed` | `"default"` | default · fast · slow. Values: `default` `fast` `slow` |
 | `backgroundTransition` | `Transition` | `"fade"` | Transition for backgrounds. Values: `slide` `fade` `none` `zoom` `convex` `concave` `view-transition` |
 | `parallaxBackgroundImage` | `string` | `""` | reveal.js compatible: one large image behind every slide that shifts a little with each slide (a path in public/ or a URL). Empty (default): none. |
-| `parallaxBackgroundSize` | `string` | `""` | reveal.js compatible: the parallax image's CSS background-size, e.g. "2100px 900px". Empty (default): the image's own size. |
+| `parallaxBackgroundSize` | `string` | `""` | reveal.js compatible: the parallax image's CSS background-size, e.g. "2100px 900px" (the steps are worked out from a size in pixels). Empty (default): the image's own size. |
 | `parallaxBackgroundHorizontal` | `number \| null` | `null` | reveal.js compatible: pixels the parallax image moves per horizontal slide. null (default): worked out from the image and slide count. |
 | `parallaxBackgroundVertical` | `number \| null` | `null` | reveal.js compatible: pixels the parallax image moves per vertical slide. null (default): worked out from the image and slide count. |
 | `viewDistance` | `number` | `3` | Slides kept mounted on either side. |
@@ -1901,12 +1901,12 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `background` | `string \| object` |  | A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill \| tint }. |
 | `backgroundColor` | `string` |  | A flat background colour. |
 | `backgroundGradient` | `string` |  | A CSS gradient behind the slide. |
-| `backgroundImage` | `string` |  | An image URL behind the slide. |
+| `backgroundImage` | `string` |  | An image URL behind the slide. An animated GIF starts again from its first frame each time the slide is shown. |
 | `backgroundSize` | `string` |  | CSS background-size for the image (also the image layouts). |
 | `backgroundPosition` | `string` |  | CSS background-position. |
 | `backgroundRepeat` | `string` |  | CSS background-repeat. |
 | `backgroundOpacity` | `number` |  | 0–1. |
-| `backgroundVideo` | `string` |  | A video URL behind the slide. |
+| `backgroundVideo` | `string` |  | A video URL behind the slide, or reveal.js's comma-separated list of sources, best first (`/loop.webm, /loop.mp4`). It plays from the start when the slide is shown (unless `autoPlayMedia: false`) and pauses when the slide is left. |
 | `backgroundVideoLoop` | `boolean` |  | Loop the background video (the default); false plays it once. |
 | `backgroundVideoMuted` | `boolean` |  | Mute the background video (default true). |
 | `backgroundIframe` | `string` |  | A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`). |
