@@ -129,6 +129,13 @@ copied into `public/`, the page's own CSS into `src/reveal.css`. Scripts and `on
 reported, never run. `IMPORT-REPORT.md` lists the rest, slide by slide. The converter is
 `convertReveal` in `@kadal/deck/import`.
 
+What the runtime answers as reveal.js does: an element with `navigate-left`, `-right`, `-up`,
+`-down`, `-prev` or `-next` moves the deck and carries `enabled` while that way leads somewhere;
+`data-preview-link`, `-image` and `-video` open the lightbox, and with `previewLinks: true` every
+outside link does unless it says `data-preview-link="false"`; a touch that starts inside
+`data-prevent-swipe` (or on a video's or audio's controls) keeps its gesture, and under `rtl` the
+horizontal swipes are mirrored.
+
 ## For AI agents and tools
 
 - `kadal-deck mcp` — 24 tools to read the reference, scaffold, outline, edit single slides (only

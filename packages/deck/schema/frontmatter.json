@@ -888,7 +888,7 @@
         },
         "touch": {
           "type": "boolean",
-          "description": "Swipe navigation.",
+          "description": "Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes.",
           "default": true
         },
         "loop": {
@@ -1035,7 +1035,7 @@
         },
         "previewLinks": {
           "type": "boolean",
-          "description": "Open links in an overlay.",
+          "description": "Open every outside link in the lightbox. A link with `data-preview-link=\"false\"` (or `data-no-preview`) opens as a link.",
           "default": false
         },
         "parallaxBackgroundImage": {
