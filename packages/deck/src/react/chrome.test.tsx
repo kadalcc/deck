@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { DeckManifest } from "../core/model.ts";
+import { jumpTarget } from "./chrome.tsx";
 import { DeckRuntimeView } from "./Deck.tsx";
 
 const manifest: DeckManifest = {
@@ -55,5 +56,15 @@ describe("the pause curtain", () => {
   test("is hidden from assistive technology while the deck is not paused", () => {
     const curtain = /<div class="deck-pause-curtain"[^>]*>/.exec(render())?.[0] ?? "";
     expect(curtain).toContain('aria-hidden="true"');
+  });
+});
+
+describe("jump-to", () => {
+  test("a number, a column and row in either of reveal.js's spellings, or an id", () => {
+    expect(jumpTarget(" 12 ")).toEqual({ flat: 11 });
+    expect(jumpTarget("6/2")).toEqual({ h: 5, v: 1 });
+    expect(jumpTarget("6.2")).toEqual({ h: 5, v: 1 });
+    expect(jumpTarget("intro")).toEqual({ id: "intro" });
+    expect(jumpTarget("   ")).toBeNull();
   });
 });

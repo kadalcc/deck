@@ -1,7 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { keyLabel } from "../core/shortcuts.ts";
-import { availableRoutes, formatSlideNumber, progressOf } from "../core/navigation.ts";
+import {
+  availableRoutes,
+  countedSlides,
+  isCounted,
+  progressOf,
+  slideNumberShown as shownIn,
+  slideNumberText,
+} from "../core/navigation.ts";
 import { useDeck } from "./context.ts";
 import { HintLayer } from "./Hints.tsx";
 import { NavControlsLayer } from "./Layers.tsx";
@@ -56,13 +63,9 @@ export function Chrome() {
   );
 }
 
-/** Whether the slide number is drawn in this view at all (`slideNumber`, `showSlideNumber`). */
+/** Whether the play view draws the slide number (`slideNumber`, `showSlideNumber: all`). */
 function slideNumberShown(deck: ReturnType<typeof useDeck>): boolean {
-  return (
-    !!deck.config.slideNumber &&
-    (deck.config.showSlideNumber === "all" ||
-      (deck.config.showSlideNumber === "print" && deck.mode === "print"))
-  );
+  return shownIn(deck.config, "play");
 }
 
 /**
@@ -199,26 +202,20 @@ export function Progress() {
   const deck = useDeck();
   const nav = useNav((s) => ({ h: s.h, v: s.v }));
   const actions = useActions();
-  const p = progressOf(
-    {
-      ...nav,
-      click: 0,
-      direction: "none",
-      overview: false,
-      paused: false,
-      autoSliding: false,
-      totals: {},
-      presenter: null,
-      follow: true,
-      seq: 0,
-    },
-    deck.columns,
-  );
+  const p = progressOf(nav, deck.columns);
+  // The bar spans the counted slides, so a click lands on the counted slide under the pointer.
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const frac = (e.clientX - rect.left) / rect.width;
-    const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
-    actions.gotoFlat(Math.round(frac * (total - 1)));
+    const want = Math.round(frac * Math.max(0, countedSlides(deck.columns) - 1));
+    let flat = 0;
+    let seen = 0;
+    for (const c of deck.columns)
+      for (const s of c.slides) {
+        if (isCounted(s) && seen++ === want) return actions.gotoFlat(flat);
+        flat++;
+      }
+    actions.gotoFlat(Math.round(frac * Math.max(0, flat - 1)));
   };
   return (
     <div
@@ -237,11 +234,8 @@ export function Progress() {
 export function SlideNumber({ inPill = false }: { inPill?: boolean }) {
   const deck = useDeck();
   const nav = useNav((s) => ({ h: s.h, v: s.v, click: s.click }));
-  // A deck.config.ts function is drawn as h.v for now.
-  const sn = deck.config.slideNumber;
-  const format = sn === true || typeof sn === "function" ? "h.v" : sn;
-  if (!format) return null;
-  const text = formatSlideNumber(format, nav, deck.columns, true);
+  const text = slideNumberText(deck.config.slideNumber, nav, deck.columns);
+  if (text === null) return null;
   if (inPill)
     return (
       <button
@@ -330,6 +324,22 @@ export function HelpSheet() {
   );
 }
 
+/**
+ * What jump-to's field asks for: a number is the slide in reading order; two numbers are column
+ * and row, 1-based — reveal.js's `6/2` (its hash form) or `6.2` (its h.v number); anything else
+ * is a slide id. 0-based out, for the actions.
+ */
+export function jumpTarget(
+  input: string,
+): { flat: number } | { h: number; v: number } | { id: string } | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return { flat: Number(raw) - 1 };
+  const hv = /^(\d+)[./](\d+)$/.exec(raw);
+  if (hv) return { h: Number(hv[1]) - 1, v: Number(hv[2]) - 1 };
+  return { id: raw };
+}
+
 export function JumpTo() {
   const open = useUi((s) => s.jump);
   const actions = useActions();
@@ -347,12 +357,10 @@ export function JumpTo() {
   if (!open) return null;
   const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
   const submit = () => {
-    const raw = value.trim();
-    if (/^\d+$/.test(raw)) actions.gotoFlat(Number(raw) - 1);
-    else if (/^\d+\.\d+$/.test(raw)) {
-      const [h, v] = raw.split(".").map((n) => Number(n) - 1);
-      actions.goto(h!, v!);
-    } else if (raw) actions.gotoId(raw);
+    const to = jumpTarget(value);
+    if (to && "flat" in to) actions.gotoFlat(to.flat);
+    else if (to && "id" in to) actions.gotoId(to.id);
+    else if (to) actions.goto(to.h, to.v);
     actions.toggleJump(false);
   };
   return (

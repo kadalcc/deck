@@ -20,6 +20,9 @@ export interface Position {
   click: number;
 }
 
+/** Where a slide is: its column and row, and optionally the step (the slide-number helpers). */
+type At = Pick<Position, "h" | "v"> & { click?: number };
+
 export interface NavState extends Position {
   direction: Direction;
   overview: boolean;
@@ -241,45 +244,121 @@ export function setTotal(state: NavState, h: number, v: number, total: number): 
   return { ...state, totals, click };
 }
 
-/** 0 at the first slide, 1 at the last. */
-export function progressOf(state: NavState, columns: Column[]): number {
-  const total = columns.reduce((n, c) => n + c.slides.length, 0);
-  if (total <= 1) return 1;
-  let flat = 0;
-  for (let i = 0; i < state.h; i++) flat += columns[i]!.slides.length;
-  flat += state.v;
-  return flat / (total - 1);
+/**
+ * Whether a slide counts towards the slide number, the total and the progress bar. reveal.js's
+ * `data-visibility="uncounted"` (frontmatter `visibility: uncounted`) leaves it out: an appendix
+ * or a backup slide after the end that the audience should not see as "slide 31 of 34".
+ */
+export function isCounted(slide: { frontmatter: Record<string, unknown> } | undefined): boolean {
+  return slide?.frontmatter.visibility !== "uncounted";
 }
 
-/** Format the slide number the way reveal.js does. */
+/** How many slides count (reveal.js's `getTotalSlides`): the visible ones, less the uncounted. */
+export function countedSlides(columns: Column[]): number {
+  let n = 0;
+  for (const c of columns) for (const s of c.slides) if (isCounted(s)) n++;
+  return n;
+}
+
+/** The counted slides before this one in reading order (reveal.js's `getSlidePastCount`). */
+export function pastCount(columns: Column[], h: number, v: number): number {
+  let n = 0;
+  for (let i = 0; i < columns.length && i <= h; i++) {
+    const slides = columns[i]!.slides;
+    const end = i < h ? slides.length : Math.min(v, slides.length);
+    for (let j = 0; j < end; j++) if (isCounted(slides[j])) n++;
+  }
+  return n;
+}
+
+/** 0 at the first slide, 1 at the last counted one (and on any uncounted slide after it). */
+export function progressOf(state: At, columns: Column[]): number {
+  const total = countedSlides(columns);
+  if (total <= 1) return 1;
+  return Math.min(pastCount(columns, state.h, state.v) / (total - 1), 1);
+}
+
+/**
+ * Format the slide number the way reveal.js does. Uncounted slides are left out of `c` and `c/t`;
+ * an uncounted slide itself shows the number of the counted slide before it, and in `h.v` and
+ * `h/v` its column without the 1 added — both reveal.js's `horizontalOffset` rule.
+ */
 export function formatSlideNumber(
   format: true | "h.v" | "h/v" | "c" | "c/t",
-  state: Position,
+  state: At,
   columns: Column[],
   oneBased = true,
 ): string {
-  const offset = oneBased ? 1 : 0;
-  const flat = (() => {
-    let n = 0;
-    for (let i = 0; i < state.h; i++) n += columns[i]!.slides.length;
-    return n + state.v + offset;
-  })();
-  const total = columns.reduce((n, c) => n + c.slides.length, 0);
+  const counted = isCounted(columns[state.h]?.slides[state.v]);
+  const offset = oneBased && counted ? 1 : 0;
+  const flat = pastCount(columns, state.h, state.v) + offset;
   const hasVertical = columns.some((c) => c.slides.length > 1);
+  const v = state.v + (oneBased ? 1 : 0);
   switch (format) {
     case "c":
       return String(flat);
     case "c/t":
-      return `${flat} / ${total}`;
+      return `${flat} / ${countedSlides(columns)}`;
     case "h/v":
-      return hasVertical && state.v > 0
-        ? `${state.h + offset} / ${state.v + offset}`
-        : String(state.h + offset);
+      return hasVertical && state.v > 0 ? `${state.h + offset} / ${v}` : String(state.h + offset);
     default:
-      return hasVertical && state.v > 0
-        ? `${state.h + offset}.${state.v + offset}`
-        : String(state.h + offset);
+      return hasVertical && state.v > 0 ? `${state.h + offset}.${v}` : String(state.h + offset);
   }
+}
+
+/** The `slideNumber` option as deck.config.ts may give it: a format or a function. */
+type SlideNumberOption = DeckConfig["slideNumber"];
+
+const warned = new WeakSet<object>();
+
+/**
+ * The slide number this deck draws for a slide, or null when it draws none (`slideNumber: false`).
+ * `true` is reveal.js's default, `h.v`. A function (deck.config.ts) is called with the slide's
+ * position and returns one string, or reveal.js's three (`[h, ".", v]`), drawn joined; one that
+ * throws or returns nothing falls back to `h.v` so a typo never blanks the counter.
+ */
+export function slideNumberText(
+  option: SlideNumberOption,
+  at: At,
+  columns: Column[],
+): string | null {
+  if (!option) return null;
+  if (typeof option !== "function")
+    return formatSlideNumber(option === true ? "h.v" : option, at, columns);
+  try {
+    const slide = columns[at.h]?.slides[at.v];
+    let index = 0;
+    for (let i = 0; i < at.h; i++) index += columns[i]!.slides.length;
+    const out = option({
+      h: at.h,
+      v: at.v,
+      click: at.click ?? 0,
+      index: index + at.v,
+      total: columns.reduce((n, c) => n + c.slides.length, 0),
+      id: slide?.id ?? null,
+    });
+    const text = Array.isArray(out) ? out.map(String).join("") : out == null ? "" : String(out);
+    if (text) return text;
+  } catch (err) {
+    if (!warned.has(option)) {
+      warned.add(option);
+      console.warn("[deck] the slideNumber function threw; drawing h.v instead", err);
+    }
+  }
+  return formatSlideNumber("h.v", at, columns);
+}
+
+/**
+ * Whether the slide number is drawn in a view (`slideNumber`, `showSlideNumber`), reveal.js's
+ * rule: `all` everywhere — the deck, its printed pages and the speaker view; `print` only on the
+ * printed pages (and so in `kadal-deck export`'s PDF); `speaker` only in the speaker view.
+ */
+export function slideNumberShown(
+  config: Pick<DeckConfig, "slideNumber" | "showSlideNumber">,
+  view: "play" | "print" | "speaker",
+): boolean {
+  if (!config.slideNumber) return false;
+  return config.showSlideNumber === "all" || config.showSlideNumber === view;
 }
 
 /** The interval `A` uses on a deck that configures none, so the key always does something. */

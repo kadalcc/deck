@@ -1813,7 +1813,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `colorScheme` | `ColorScheme` | `"auto"` | "auto" (follow the system), "light" or "dark". Values: `light` `dark` `auto` |
 | `pdfSeparateFragments` | `boolean` | `true` | A page per click step in print/PDF. |
 | `pdfMaxPagesPerSlide` | `number` | `1` | Pages a tall slide may spill onto. |
-| `jumpToSlide` | `boolean` | `true` | `:12` / g jumps. |
+| `jumpToSlide` | `boolean` | `true` | `:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id. |
 | `search` | `boolean` | `true` | / searches the deck. |
 | `zoom` | `boolean` | `true` | Alt+click zooms into a point; Esc zooms back out. |
 | `wakeLock` | `boolean` | `true` | Keep the screen awake while presenting. |
@@ -1878,7 +1878,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `level` | `number` |  | Heading level for the table of contents (default: the first heading's depth). |
 | `hide` | `boolean` |  | Leave the slide out of the talk (still in the file). |
 | `disabled` | `boolean` |  | Same as hide. |
-| `visibility` | `"hidden" \| "uncounted"` |  | "hidden" leaves it out; "uncounted" shows it without a number. Values: `hidden` `uncounted` |
+| `visibility` | `"hidden" \| "uncounted"` |  | "hidden" leaves it out; "uncounted" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility). Values: `hidden` `uncounted` |
 | `hideInToc` | `boolean` |  | Keep the slide out of <Toc>. |
 | `transition` | `string` |  | This slide's transition (see transitions): a built-in, or a name from the headmatter's `transitions` / `registerTransition` / your CSS. `zoom-in fade-out` names each half. Values: e.g. `none` `fade` `slide` `convex` `concave` `zoom` `view-transition` |
 | `transitionSpeed` | `"default" \| "fast" \| "slow"` |  | This slide's transition speed. Values: `default` `fast` `slow` |
