@@ -381,7 +381,7 @@ export function ScheduleLine() {
   const tone = paceTone(pace);
   const words =
     pace === null
-      ? "No plan to pace against: set duration, totalTime or defaultTiming."
+      ? "No plan to pace against: set duration, totalTime, defaultTiming or a slide's timing."
       : tone === "is-behind"
         ? `${formatPace(pace)} behind the plan for this slide`
         : tone === "is-ahead"
