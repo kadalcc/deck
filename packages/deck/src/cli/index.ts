@@ -406,7 +406,12 @@ async function run(
         positionals,
       } = parseArgs(
         rest,
-        { dir: GLOBAL.dir!, tunnel: { kind: "boolean" }, remote: { kind: "optional-string" } },
+        {
+          dir: GLOBAL.dir!,
+          json: GLOBAL.json!,
+          tunnel: { kind: "boolean" },
+          remote: { kind: "optional-string" },
+        },
         { passthrough: true },
       );
       const dir = resolve(cwd, str(flags.dir) ?? ".");
@@ -428,6 +433,7 @@ async function run(
         extra.push(...r.args);
       }
       await runVite(dir, [...positionals, ...passed, ...extra]);
+      if (json) emit({ ok: true });
       return EXIT.ok;
     }
     case "build": {
@@ -440,6 +446,7 @@ async function run(
         rest,
         {
           dir: GLOBAL.dir!,
+          json: GLOBAL.json!,
           download: { kind: "boolean" },
           port: { kind: "number" },
           out: { kind: "string" },
@@ -459,7 +466,7 @@ async function run(
       const { planBuild, runBuild } = await import("./build.ts");
       const plan = planBuild(positionals, vite, str(flags.out));
       const port = num(flags.port);
-      await runBuild({
+      const records = await runBuild({
         dir,
         plan,
         say,
@@ -476,6 +483,7 @@ async function run(
             });
         },
       });
+      if (json) emit({ ok: true, builds: records });
       return EXIT.ok;
     }
     case undefined:
