@@ -1,5 +1,6 @@
 import YAML from "yaml";
 
+import { actionFromConfig, keyFromConfig } from "../core/shortcuts.ts";
 import { mdxComment, styleObject } from "./markup.ts";
 import { createReport, type ImportReportItem, type Reporter, sortReport } from "./report.ts";
 import { type El, VOID_ELEMENTS, parseOpenTag, scanSlide } from "./tags.ts";
@@ -26,7 +27,10 @@ import { type El, VOID_ELEMENTS, parseOpenTag, scanSlide } from "./tags.ts";
  *                                                      ```js {1|2-3}{lines:true}
  *   data-markdown (inline or an external file)         its Markdown, split on the section's
  *                                                      separators, with `<!-- .slide: -->` and
- *                                                      `<!-- .element: -->` read
+ *                                                      `<!-- .element: -->` read (every attribute,
+ *                                                      on the element before the comment)
+ *   class="r-stretch" / "r-fit-text" / "r-stack"       <Stretch> / <FitText> / <Stack>
+ *   data-src                                           kept: the engine loads it near the slide
  *   Reveal.initialize({ … })                           its literal options, as headmatter
  *
  * Kadal took reveal.js's names for its options, so most keys carry over as they are. Nothing in
@@ -418,7 +422,10 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     for (const [k, v] of Object.entries(config.values)) {
       if (k === "width" && typeof v === "number") width = v;
       else if (k === "height" && typeof v === "number") height = v;
-      else if (SAME_OPTIONS.has(k)) head[k] = v;
+      else if (k === "keyboard" && v && typeof v === "object") {
+        const map = keyboardOption(v as Record<string, unknown>, deckReport);
+        if (Object.keys(map).length) head.keyboard = map;
+      } else if (SAME_OPTIONS.has(k)) head[k] = v;
       else if (!QUIET_OPTIONS.has(k))
         deckReport({
           severity: "info",
@@ -437,6 +444,8 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
   if (height !== 700) themeConfig.height = height;
   // reveal leaves 4% of the window around the slide by default; Kadal's default is none
   if (!("margin" in head)) head.margin = 0.04;
+  // and centres every slide vertically unless told not to (Kadal's default layout is top-aligned)
+  if (!("center" in head)) head.center = true;
   // the factor reveal scales its slide by to fit Kadal's stage, which inline lengths take too
   const scale = Math.round(Math.min(KADAL_WIDTH / width, KADAL_HEIGHT / height) * 1000) / 1000;
   if (width !== KADAL_WIDTH || height !== KADAL_HEIGHT)
@@ -658,19 +667,20 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     if (aaId) fm.autoAnimateId = aaId;
     if (has("data-auto-animate-restart")) fm.autoAnimateRestart = true;
     known.add("data-auto-animate-restart");
-    for (const k of [
-      "data-auto-animate-easing",
-      "data-auto-animate-duration",
-      "data-auto-animate-unmatched",
-      "data-auto-animate-delay",
-    ])
-      if (has(k)) {
-        known.add(k);
-        rep({
-          severity: "info",
-          what: `${k} is deck-wide in Kadal (autoAnimate${k.slice("data-auto-animate-".length).replace(/^./, (c) => c.toUpperCase())} in the headmatter); this slide's value is dropped.`,
-        });
-      }
+    // this slide's own auto-animate timing, over the deck's (R062)
+    const easing = take("data-auto-animate-easing");
+    if (easing) fm.autoAnimateEasing = easing;
+    const duration = take("data-auto-animate-duration");
+    if (duration && Number.isFinite(Number(duration))) fm.autoAnimateDuration = Number(duration);
+    const unmatched = take("data-auto-animate-unmatched");
+    if (unmatched !== undefined) fm.autoAnimateUnmatched = unmatched !== "false";
+    if (has("data-auto-animate-delay")) {
+      known.add("data-auto-animate-delay");
+      rep({
+        severity: "info",
+        what: "data-auto-animate-delay on a slide is not carried over; on an element it is (reveal.js reads it there).",
+      });
+    }
     const autoslide = take("data-autoslide");
     if (autoslide && Number.isFinite(Number(autoslide))) fm.autoSlide = Number(autoslide);
     const state = take("data-state");
@@ -804,7 +814,7 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
   }
 
   /** The element's attributes as JSX, without the ones its conversion has used up. */
-  function jsxAttrs(el: El, ctx: Ctx, drop: string[] = []): string {
+  function jsxAttrs(el: El, ctx: Ctx, drop: string[] = [], taken: string[] = []): string {
     const out: string[] = [];
     // A box the author painted (rgba(0,0,0,0.9) over an iframe) without a text colour took the
     // theme's, which reveal's one theme made legible; Kadal draws every deck in both schemes, so
@@ -839,7 +849,9 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
         continue;
       }
       if (n === "class" && typeof value === "string") {
-        const cls = value.split(/\s+/).filter((c) => c && c !== "fragment" && !EFFECTS.has(c));
+        const cls = value
+          .split(/\s+/)
+          .filter((c) => c && c !== "fragment" && !EFFECTS.has(c) && !taken.includes(c));
         if (boxClass) cls.push(boxClass);
         if (cls.length) out.push(`className="${cls.join(" ")}"`);
         continue;
@@ -847,10 +859,21 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
       if (n === "data-fragment-index") continue;
       let name = JSX_ATTR[n] ?? a.name;
       let v = value;
-      if (n === "data-src" && attrOf(el, "src") === undefined) name = "src";
-      if (n === "data-autoplay") name = "autoPlay";
+      // a picture's size in reveal px is a size on reveal's slide: scaled with it, as styles are
       if (
-        (name === "src" || name === "poster" || (n === "href" && el.name.toLowerCase() !== "a")) &&
+        (n === "width" || n === "height") &&
+        typeof v === "string" &&
+        /^\d+(\.\d+)?$/.test(v.trim()) &&
+        /^(img|video|iframe|canvas|embed|object)$/.test(el.name.toLowerCase())
+      )
+        v = String(Math.round(Number(v) * scale));
+      if (n === "data-autoplay") name = "autoPlay";
+      // data-src stays data-src: the engine loads it when the slide comes near, as reveal.js does
+      if (
+        (name === "src" ||
+          name === "data-src" ||
+          name === "poster" ||
+          (n === "href" && el.name.toLowerCase() !== "a")) &&
         typeof v === "string"
       )
         v = asset(v, ctx.rep);
@@ -866,7 +889,7 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     const name = el.name.toLowerCase();
     const allowed: Record<string, string[]> = {
       a: ["href", "title", "target", "rel"],
-      img: ["src", "alt", "title", "data-src"],
+      img: ["src", "alt", "title"],
       ol: ["start"],
       code: [],
     };
@@ -957,7 +980,37 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
   /** The element kept as JSX, its children converted. */
   function jsx(el: El, ctx: Ctx, drop: string[] = []): string {
     const name = el.name.toLowerCase();
-    const attrs = jsxAttrs(el, ctx, drop);
+    // reveal's layout helpers that are components here (R057): r-stretch wraps the element in
+    // <Stretch>, r-fit-text puts its words in <FitText>, a bare r-stack is a <Stack>. r-frame,
+    // r-hstack and r-vstack stay classes: the engine styles them as reveal does (base.css), and
+    // r-frame belongs on the image itself, not on a box around it.
+    const cls = classesOf(el);
+    if (cls.includes("r-stretch"))
+      return `<Stretch>${jsxElement(el, ctx, drop, ["r-stretch"])}</Stretch>`;
+    if (cls.includes("r-fit-text")) {
+      const fit = `<FitText max={${Math.round(height * 0.8 * scale)}} min={${Math.round(24 * scale)}}>${inline(childNodes(el), ctx).trim()}</FitText>`;
+      // a span is only its words; a heading or a paragraph keeps its element and its look
+      if (INLINE.has(name)) return fit;
+      const attrs = jsxAttrs(el, ctx, drop, ["r-fit-text"]);
+      return `<${name}${attrs}>${fit}</${name}>`;
+    }
+    const plainStack =
+      cls.includes("r-stack") &&
+      name === "div" &&
+      el.attrs.every((a) => a.name.toLowerCase() === "class");
+    if (plainStack) {
+      const rest = cls.filter((c) => c !== "r-stack");
+      const inner = jsxElement(el, ctx, drop, ["r-stack"]);
+      // the children, between the div's own tags
+      const body = inner.slice(inner.indexOf(">") + 1, inner.lastIndexOf("</div>"));
+      return `<Stack${rest.length ? ` className="${rest.join(" ")}"` : ""}>${body}</Stack>`;
+    }
+    return jsxElement(el, ctx, drop);
+  }
+
+  function jsxElement(el: El, ctx: Ctx, drop: string[] = [], taken: string[] = []): string {
+    const name = el.name.toLowerCase();
+    const attrs = jsxAttrs(el, ctx, drop, taken);
     const isVoid = VOID_ELEMENTS.has(name) || el.selfClosing;
     if (isVoid) return `<${name}${attrs} />`;
     if (name === "svg" || name === "math") {
@@ -1025,6 +1078,27 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
       items.length > 1 &&
       !ctx.steps &&
       fr.every((f) => f && !f.other.length && f.effect === fr[0]!.effect);
+    // Items that are fragments one by one (their own order, their own effect): reveal hides the
+    // whole item, bullet and all, so each is a <Click as="li"> in a JSX list rather than a step
+    // inside a Markdown item, which left its bullet on show. Only for items of words; an item
+    // holding a block or a nested list keeps the Markdown form.
+    if (
+      !clicks &&
+      fr.some(Boolean) &&
+      items.every((li) => plain(li) || fr[items.indexOf(li)]) &&
+      items.every((li) => !childNodes(li).some(isBlock))
+    ) {
+      const start = ordered && n !== 1 ? ` start={${n}}` : "";
+      const rows = items.map((li, i) => {
+        const words = inline(childNodes(li), ctx).trim();
+        const f = fr[i];
+        return f
+          ? `<Click as="li"${f.props.length ? ` ${f.props.join(" ")}` : ""}>${words}</Click>`
+          : `<li>${words}</li>`;
+      });
+      const tag = ordered ? "ol" : "ul";
+      return `<${tag}${start}>\n${rows.join("\n")}\n</${tag}>`;
+    }
     const lines: string[] = [];
     for (const li of items) {
       const marker = ordered ? `${n++}.` : "-";
@@ -1189,7 +1263,7 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
         const t = str(el, "title");
         md = `[${kids()}](${/[\s()]/.test(href) ? `<${href}>` : href}${t ? ` "${t.replace(/"/g, '\\"')}"` : ""})`;
       } else if (name === "img" && isPlain) {
-        const src = asset(str(el, "src") ?? str(el, "data-src") ?? "", ctx.rep);
+        const src = asset(str(el, "src") ?? "", ctx.rep);
         md = `![${escapeMd(str(el, "alt") ?? "")}](${/[\s()]/.test(src) ? `<${src}>` : src})`;
       } else if (
         name === "span" &&
@@ -1285,6 +1359,13 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     });
   }
 
+  /** One attribute as HTML; mdxSafe below respells it for JSX (and names a local file). */
+  function htmlAttr(name: string, value: string | true): string {
+    return value === true
+      ? name
+      : `${name}="${value.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`;
+  }
+
   /** Reveal-flavoured Markdown → Kadal's: `.slide`/`.element` comments read, code meta respelt. */
   function convertMarkdown(md: string, rep: Reporter): { body: string; fm: Frontmatter } {
     let fm: Frontmatter = {};
@@ -1362,27 +1443,62 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
       const effect = cls.find((c) => EFFECTS.has(c));
       const other = cls.filter((c) => c !== "fragment" && !EFFECTS.has(c));
       const rest = m.attrs.filter((a) => !["class", "data-fragment-index"].includes(a.name));
-      if (rest.length)
-        rep({
-          severity: "warning",
-          what: `An .element comment's ${rest.map((a) => a.name).join(", ")} is not carried over.`,
-        });
       const lineText = lines[m.line]!;
       const prefix = /^(\s*(?:#{1,6}[ \t]+|[-*+][ \t]+|\d+[.)][ \t]+|>[ \t]*)?)/.exec(
         lineText,
       )![1]!;
       const content = lineText.slice(prefix.length).trimEnd();
       if (!content) continue;
+      // The comment's attributes (R007): a heading, a paragraph or a lone image becomes that
+      // element in JSX carrying them, as reveal.js sets them on the element; a list item or a
+      // quoted line wraps its words in a span that does.
+      const own = [
+        ...(other.length && !isFrag ? [`class="${other.join(" ")}"`] : []),
+        ...rest.map((a) => htmlAttr(a.name, a.value)),
+      ];
+      const attrs = own.length ? ` ${own.join(" ")}` : "";
+      const image = /^!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?\s*\)$/.exec(content);
+      // reveal sets the attributes on the element just before the comment in its parent: a
+      // link, an image, a bold or a code span the line ends with; the line's own element when
+      // it ends in words.
+      const tail = image
+        ? null
+        : /(?:!?\[[^\]]*\]\([^)]*\)|\*\*[^*]+\*\*|__[^_]+__|`[^`]+`|(?<![*\w])\*[^*]+\*|(?<![_\w])_[^_]+_)$/.exec(
+            content,
+          );
+      if (tail) {
+        const head = content.slice(0, tail.index);
+        const t = tail[0];
+        if (isFrag) {
+          const props = [
+            ...(stepAt.has(m.line) ? [`at={${stepAt.get(m.line)}}`] : []),
+            ...(effect && effect !== "fade-in" ? [`effect="${effect}"`] : []),
+            ...(other.length ? [`className="${other.join(" ")}"`] : []),
+          ];
+          const words = rest.length ? `<span${attrs}>${t}</span>` : t;
+          lines[m.line] =
+            `${prefix}${head}<Click as="span"${props.length ? ` ${props.join(" ")}` : ""}>${words}</Click>`;
+        } else if (attrs) lines[m.line] = `${prefix}${head}<span${attrs}>${t}</span>`;
+        continue;
+      }
+      const heading = /^(#{1,6})[ \t]+$/.exec(prefix);
       if (isFrag) {
         const props = [
           ...(stepAt.has(m.line) ? [`at={${stepAt.get(m.line)}}`] : []),
           ...(effect && effect !== "fade-in" ? [`effect="${effect}"`] : []),
           ...(other.length ? [`className="${other.join(" ")}"`] : []),
         ];
+        const words = rest.length ? `<span${attrs}>${content}</span>` : content;
         lines[m.line] =
-          `${prefix}<Click as="span"${props.length ? ` ${props.join(" ")}` : ""}>${content}</Click>`;
-      } else if (other.length)
-        lines[m.line] = `${prefix}<span className="${other.join(" ")}">${content}</span>`;
+          `${prefix}<Click as="span"${props.length ? ` ${props.join(" ")}` : ""}>${words}</Click>`;
+      } else if (!attrs) continue;
+      else if (heading)
+        lines[m.line] = `<h${heading[1]!.length}${attrs}>${content}</h${heading[1]!.length}>`;
+      else if (!prefix.trim() && image) {
+        const alt = image[1] ? ` ${htmlAttr("alt", image[1])}` : "";
+        lines[m.line] = `<img ${htmlAttr("src", image[2]!)}${alt}${attrs} />`;
+      } else if (!prefix.trim()) lines[m.line] = `<p${attrs}>${content}</p>`;
+      else lines[m.line] = `${prefix}<span${attrs}>${content}</span>`;
     }
     text = lines.join("\n");
     return { body: mdxSafe(dedent(text).trim(), rep), fm };
@@ -1415,7 +1531,8 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
               const v = decodeEntities(a.value);
               if (n === "style") return `style={${JSON.stringify(styleObject(v, scale))}}`;
               const name = JSX_ATTR[n] ?? a.name;
-              const value = name === "src" || name === "poster" ? asset(v, rep) : v;
+              const value =
+                name === "src" || name === "data-src" || name === "poster" ? asset(v, rep) : v;
               return /["\\{}\n]/.test(value)
                 ? `${name}={${JSON.stringify(value)}}`
                 : `${name}="${value}"`;
@@ -1656,6 +1773,42 @@ export function luminance(color: string): number | null {
 }
 
 /**
+ * reveal.js's `keyboard: { 13: 'next', 79: 'toggleOverview', 32: null }` in Kadal's names
+ * (`{ Enter: next, KeyO: overview, Space: null }`): the runtime reads reveal's form as well
+ * (core/shortcuts.ts), but the headmatter is for reading. What it cannot carry is reported.
+ */
+function keyboardOption(map: Record<string, unknown>, report: Reporter): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [raw, value] of Object.entries(map)) {
+    const key = keyFromConfig(raw);
+    if (!key) {
+      report({
+        severity: "warning",
+        what: `The keyboard map's key ${raw} is not a key Kadal knows (keyCodes of letters, digits, arrows, editing, function and punctuation keys are); its binding is dropped.`,
+      });
+      continue;
+    }
+    if (value === null || value === false) out[key] = null;
+    else if (value === NOT_PLAIN)
+      report({
+        severity: "warning",
+        what: `The keyboard map's function on ${key} is not carried over: nothing in the page is run.`,
+        suggestion: `Bind it in deck.config.ts: \`keyboard: { ${key}: (event) => { … } }\`.`,
+      });
+    else if (typeof value === "string" && actionFromConfig(value)) {
+      const does = actionFromConfig(value)!;
+      out[key] = "action" in does ? does.action : does.command;
+    } else
+      report({
+        severity: "warning",
+        what: `The keyboard map binds ${key} to ${JSON.stringify(value)}, which Kadal has no action for; the key keeps its default.`,
+        suggestion: "Pick an action from `kadal-deck info keys`, or a command id.",
+      });
+  }
+  return out;
+}
+
+/**
  * The literal options of `Reveal.initialize({ … })` (or `new Reveal({ … })`): booleans, numbers
  * and strings, by key. Anything else (plugins, functions) is named in `skipped`. The page's
  * script is read as text; nothing is evaluated.
@@ -1742,7 +1895,58 @@ export function revealConfig(html: string): {
     else if (/^-?\d+(\.\d+)?$/.test(value)) values[key] = Number(value);
     else if (/^(['"])[^'"]*\1$/.test(value)) values[key] = value.slice(1, -1);
     else if (value === "null") values[key] = null;
-    else skipped.push(key);
+    else if (key === "keyboard" && value.startsWith("{")) {
+      const map = flatObject(value);
+      if (map) values[key] = map;
+      else skipped.push(key);
+    } else skipped.push(key);
   }
   return { found: true, values, skipped };
+}
+
+/** What a flat object literal's entry holds when it is not a plain value (a function). */
+export const NOT_PLAIN = Symbol("not plain");
+
+/**
+ * `{ 13: 'next', "32": null, 27: () => {} }` as entries: keys (numbers, names, quoted), values
+ * that are strings, numbers, booleans or null, anything else as NOT_PLAIN. Null when the text is
+ * not one object of such entries (a nested object, a spread).
+ */
+export function flatObject(text: string): Record<string, unknown> | null {
+  const body = text.trim().replace(/^\{/, "").replace(/\}$/, "");
+  const parts: string[] = [];
+  let depth = 0;
+  let q: string | null = null;
+  let from = 0;
+  for (let j = 0; j < body.length; j++) {
+    const ch = body[j]!;
+    if (q) {
+      if (ch === "\\") j++;
+      else if (ch === q) q = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") q = ch;
+    else if ("{[(".includes(ch)) depth++;
+    else if ("}])".includes(ch)) depth--;
+    else if (ch === "," && depth === 0) {
+      parts.push(body.slice(from, j));
+      from = j + 1;
+    }
+  }
+  parts.push(body.slice(from));
+  const out: Record<string, unknown> = {};
+  for (const part of parts) {
+    const p = part.trim();
+    if (!p) continue;
+    const kv = /^(?:(\d+)|['"]([^'"]+)['"]|([A-Za-z_$][\w$]*))\s*:\s*([\s\S]+)$/.exec(p);
+    if (!kv) return null;
+    const key = kv[1] ?? kv[2] ?? kv[3]!;
+    const v = kv[4]!.trim();
+    if (v === "true" || v === "false") out[key] = v === "true";
+    else if (v === "null") out[key] = null;
+    else if (/^-?\d+(\.\d+)?$/.test(v)) out[key] = Number(v);
+    else if (/^(['"])[^'"]*\1$/.test(v)) out[key] = v.slice(1, -1);
+    else out[key] = NOT_PLAIN;
+  }
+  return out;
 }
