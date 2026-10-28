@@ -755,8 +755,8 @@
         },
         "center": {
           "type": "boolean",
-          "description": "Vertically centre each slide's content.",
-          "default": true
+          "description": "Vertically centre the content of slides on the default layout, as reveal.js does. False by default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other layouts place their content themselves.",
+          "default": false
         },
         "controls": {
           "anyOf": [

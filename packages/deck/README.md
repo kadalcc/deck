@@ -127,7 +127,9 @@ read as frontmatter, `<!-- .element: … -->` as every attribute it sets, on the
 (the line's heading, paragraph or image, or the link or bold it ends with; `class="fragment"` a
 `<Click>`), `Note:` as notes and
 ```` ```js [1|3] ```` as Kadal's steps. `\( … \)` maths becomes `$ … $`. `Reveal.initialize`'s
-literal options become headmatter, with reveal's default `margin: 0.04` and `center: true`, and its `keyboard` map in
+literal options become headmatter, with reveal's default `margin: 0.04` and `center: true` (Kadal's
+own default is `center: false`: slides start at the top; `true` centres the default layout's content
+vertically, as reveal does), and its `keyboard` map in
 Kadal's key and action names (`{ 13: 'toggleOverview' }` → `{ Enter: overview }`; functions are
 reported); inline lengths are
 scaled by the factor reveal fits its slide to Kadal's 1920×1080 with (×1.543 for 960×700). The

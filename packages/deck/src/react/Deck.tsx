@@ -913,6 +913,8 @@ function DeckRoot({
         paused ? "is-paused" : "",
         deck.config.selectable ? "" : "no-select",
         deck.config.rtl ? "rtl" : "",
+        // `center: true`: the default layout's content sits in the middle (themes/base.css).
+        deck.config.center ? "is-centered" : "",
       ]
         .filter(Boolean)
         .join(" ")}

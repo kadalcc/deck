@@ -200,7 +200,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `minScale` | `number` | `0.2` | Smallest scale the stage may shrink to. |
 | `maxScale` | `number` | `2` | Largest scale the stage may grow to. |
 | `disableLayout` | `boolean` | `false` | reveal.js compatible: no scaling or centring; the slides fill the page at its own size and you style them responsively (bring your own layout). Default false. |
-| `center` | `boolean` | `true` | Vertically centre each slide's content. |
+| `center` | `boolean` | `false` | Vertically centre the content of slides on the default layout, as reveal.js does. False by default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other layouts place their content themselves. |
 | `controls` | `boolean \| "speaker"` | `true` | Show the navigation arrows; "speaker" shows them only in the presenter view. Values: `speaker` |
 | `controlsLayout` | `"bottom-right" \| "edges"` | `"bottom-right"` | Where the arrows sit. Values: `bottom-right` `edges` |
 | `controlsTutorial` | `boolean` | `true` | Hint at vertical slides the first time. |
