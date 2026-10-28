@@ -45,6 +45,14 @@
   --deck-controls-color: var(--shibainu-pale);
 }
 
+/* One scheme: the code panel stays dark when a viewer toggles the scheme, so its Shiki colours
+   stay the dark ones (as theme-neon's do). Picked from the menu over another deck, the deck's own
+   dark colours, not the other side's, are the ones drawn on this panel. */
+.theme-shibainu[data-color-scheme] .shiki,
+.theme-shibainu[data-color-scheme] .shiki span {
+  color: var(--shiki-dark, inherit);
+}
+
 /* ── the page ─────────────────────────────────────────────────────────── */
 .theme-shibainu .deck-slide {
   padding: calc(var(--shibainu-rem) * 2.5) calc(var(--shibainu-rem) * 3.5);

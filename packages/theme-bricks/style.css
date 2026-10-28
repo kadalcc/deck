@@ -44,6 +44,14 @@
   --deck-controls-color: var(--deck-fg);
 }
 
+/* One scheme: the code panel stays light when a viewer toggles the scheme, so its Shiki colours
+   stay the light ones (as theme-neon's do). Picked from the menu over another deck, the deck's own
+   light colours, not the other side's, are the ones drawn on this panel. */
+.theme-bricks[data-color-scheme] .shiki,
+.theme-bricks[data-color-scheme] .shiki span {
+  color: var(--shiki-light, inherit);
+}
+
 /* ── the page ─────────────────────────────────────────────────────────── */
 .theme-bricks .deck-slide {
   padding: calc(var(--bricks-rem) * 2.5) calc(var(--bricks-rem) * 3.5);
