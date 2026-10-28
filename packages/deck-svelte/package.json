@@ -1,6 +1,6 @@
 {
   "name": "@kadal/deck-svelte",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "The Svelte renderer for Kadal Deck (@kadal/deck): Svelte 5 components as islands on a slide.",
   "keywords": [
     "kadal-deck",
@@ -66,7 +66,7 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.10.1",
+    "@kadal/deck": "^0.11.0",
     "svelte": "^5.0.0"
   }
 }

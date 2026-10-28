@@ -1,6 +1,6 @@
 {
   "name": "@kadal/theme-reveal",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Reveal: reveal.js's twelve themes for Kadal Deck (black, white, league, beige, night, serif, simple, solarized, moon, dracula, sky, blood) as one theme with themeConfig.variant, each in light and dark.",
   "keywords": [
     "kadal-deck",
@@ -55,7 +55,7 @@
     "vite": "^8.0.16"
   },
   "peerDependencies": {
-    "@kadal/deck": "^0.10.1",
+    "@kadal/deck": "^0.11.0",
     "react": "^19.2.0"
   },
   "kadal": {

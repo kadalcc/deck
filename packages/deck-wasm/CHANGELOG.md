@@ -1,5 +1,56 @@
 # @kadal/deck-wasm
 
+## 0.11.0
+
+### Patch Changes
+
+- Updated dependencies [2bfc840]
+- Updated dependencies [c80b6e9]
+- Updated dependencies [4b1c4a9]
+- Updated dependencies [47abf8c]
+- Updated dependencies [0a91cd7]
+- Updated dependencies [cbb8e02]
+- Updated dependencies [1345856]
+- Updated dependencies [b006d0a]
+- Updated dependencies [bee0a2b]
+- Updated dependencies [1d09dcd]
+- Updated dependencies [c3178e6]
+- Updated dependencies [d6e20d1]
+- Updated dependencies [7d4eb21]
+- Updated dependencies [12a26b8]
+- Updated dependencies [4df054b]
+- Updated dependencies [ea1874d]
+- Updated dependencies [62f9490]
+- Updated dependencies [f0511d2]
+- Updated dependencies [b1d3514]
+- Updated dependencies [ccb1746]
+- Updated dependencies [93eb028]
+- Updated dependencies [d0a267f]
+- Updated dependencies [687e177]
+- Updated dependencies [e1b5781]
+- Updated dependencies [7c4a4cb]
+- Updated dependencies [fbff0ee]
+- Updated dependencies [8761ede]
+- Updated dependencies [331abf9]
+- Updated dependencies [823592a]
+- Updated dependencies [589e950]
+- Updated dependencies [98d5256]
+- Updated dependencies [5c320c9]
+- Updated dependencies [991c745]
+- Updated dependencies [4c4e5a3]
+- Updated dependencies [b83cec8]
+- Updated dependencies [3f9608d]
+- Updated dependencies [66b47ee]
+- Updated dependencies [5f0a022]
+- Updated dependencies [ceb1f44]
+- Updated dependencies [eb58a0e]
+- Updated dependencies [b40515e]
+- Updated dependencies [e0f9a5d]
+- Updated dependencies [31583cc]
+- Updated dependencies [3c8ffc0]
+- Updated dependencies [bbd9547]
+  - @kadal/deck@0.11.0
+
 ## 0.10.1
 
 ### Patch Changes

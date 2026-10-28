@@ -1,5 +1,267 @@
 # @kadal/deck
 
+## 0.11.0
+
+### Minor Changes
+
+- 2bfc840: The play view speaks to screen readers and shows auto-slide. A polite, atomic live region reads "Slide 3 of 12." and the slide's words on every slide change, and on a click step forward the words that step brought in, as reveal.js's status region does. A deck that auto-slides gets reveal.js's control in the bottom-left corner row: pause or play inside a ring that fills as the slide's interval runs out (hidden with `autoSlideStoppable: false`).
+- 4b1c4a9: Auto-animate takes reveal.js's custom matcher and sets its state attributes:
+
+  - **`autoAnimateMatcher(fromSlide, toSlide)`** in deck.config.ts returns the pairs to morph,
+    `[{ from, to }]`, in place of matching by `data-id` and text. As in reveal.js it replaces the
+    built-in matching, and the arriving slide's other elements fade in as unmatched.
+  - **State attributes for CSS.** Both slides get `data-auto-animate="pending"` while the morph is
+    set up, and the arriving one gets `"running"` once it starts. Each element taking part gets
+    `data-auto-animate-target`: a number for a matched one, `unmatched` for one fading in. They are
+    cleared at the next slide change.
+
+- 47abf8c: Auto-animate follows reveal.js more closely:
+
+  - **`autoAnimateRestart`** works. It was read and then ignored, so a slide that set it still
+    morphed from the one before. Now the later of two slides breaks the chain, whichever way the
+    deck is going, and the two get the slide's normal transition.
+  - **Per-slide timing.** `autoAnimateDuration`, `autoAnimateEasing` and `autoAnimateUnmatched` on a
+    slide set the animation into it, over the deck's values.
+  - **`autoAnimateStyles`** picks the CSS that morphs. The default is reveal's twelve properties, so
+    padding, line-height, letter-spacing, borders and outlines now animate too instead of jumping.
+    An element whose box changes size because of these properties (a heading going from h1 to h2)
+    is moved but not also scaled. Scaling it as well had counted the change twice.
+  - A slide with `autoAnimate` that is reached from one that does not auto-animate into it now
+    gets its normal transition. It used to cut.
+  - The arriving slide no longer slides in under its own morph. The stage switched its transition
+    back on a frame after an auto-animate started, so with `transition: slide` the whole slide
+    slid in while its elements moved.
+
+- cbb8e02: `center` works: `center: true` centres the default layout's content vertically, as reveal.js does. Kadal's default is now `center: false`, which is how every deck already looked (the old `true` default was never read). `kadal-deck import reveal` writes `center: true` unless the reveal deck turned it off.
+- 12a26b8: Steps behave more like reveal.js's fragments:
+
+  - **`fragments: false`** works. It was read and then ignored. Now every slide is drawn at its last
+    step, and a press goes straight to the next slide.
+  - **reveal's class names.** A step also wears `fragment`, `visible` (with `is-shown`) and
+    `current-fragment` (with `is-current`), so CSS written for reveal.js, such as
+    `.fragment.blur.visible`, works unchanged.
+  - **Custom effects.** `effect` takes any name and adds the class `effect-<name>` on top of the
+    default fade. `effect="custom"`, or a `custom` class as reveal.js writes it, has no default fade,
+    so your CSS alone decides how the step looks.
+  - **`<Click autoSlide={ms}>`** writes `data-autoslide` on the step, for auto-slide to wait that
+    long on it (reveal.js's `data-autoslide` on a fragment).
+
+- 7c4a4cb: Printed pages and the presenter view carry the slide number the way reveal.js's `showSlideNumber` says: `all` (the default) and `print` number every printed page, so `kadal-deck export` PDFs are numbered, and `speaker` shows the number only in the presenter view's header. `pdfMaxPagesPerSlide` works: a slide taller than a page runs onto up to that many pages, broken where the page ends, and the PDF's bookmarks still point at each slide's first page.
+- 331abf9: Auto-slide as reveal.js has it. `autoSlide: false` turns it off outright, slides' own intervals and
+  `A` included. `autoSlideMethod` picks the step by name ("right" skips vertical stacks; reveal's
+  `Reveal.navigateRight` and any command id work too). With `autoSlideStoppable`, a key the deck
+  answers now stops it as a press does (`A` excepted). A step that carries `data-autoslide` (reveal's
+  per-fragment interval) waits that long before the next step, over the slide's own.
+- 823592a: `lineNumbers: true` in the headmatter numbers every code block, magic moves and Monaco editors included; a block's own `{lines:false}` opts it out. It was declared but did nothing. reveal.js's bracket highlight form, ` ```js [1-2|3] ` and `[712: 1-2|3]`, now reads as highlight steps and a line-number offset instead of a title bar; `kadal-deck check` points at the brace form. Like reveal.js, the steps in the bracket form and in `data-line-numbers` with `data-ln-start-from` count from the block's first line.
+- 589e950: `disableLayout: true`, reveal.js's "bring your own layout": the stage is no longer scaled or
+  centred; it is the window (or an embedded deck's element) at scale 1, and the slides are styled to
+  fit it by their author. It was accepted and did nothing.
+- 98d5256: `embedded` (and `?embedded`) and `keyboardCondition`, as reveal.js has them. An embedded deck fits
+  its own element instead of the window and follows it as it resizes, takes keys only while it has
+  focus (a press inside it, or tabbing in; it then carries `.focused`), listens for swipes and clicks
+  on itself alone, goes fullscreen as itself, and leaves the page's hash, title, head and colour
+  scheme alone unless `hash` is set outright, so several decks can share one page.
+  `keyboardCondition: "focused"`, or a function of the key from deck.config.ts, gates the keys of any
+  deck.
+- 5c320c9: reveal.js's events and postMessage API. `deck.events.on(name, fn)` (and `on("*")`) hears `ready`,
+  `slidechanged`, `slidetransitionend`, `fragmentshown`/`hidden`, `overviewshown`/`hidden`,
+  `paused`/`resumed`, `autoslidepaused`/`resumed`, `resize` and slide states, with reveal's fields;
+  each also fires as a `deck:<name>` event on the deck's root. A page that frames the deck can drive it
+  with reveal's `{ method, args }` messages and gets reveal's callbacks, or run any command with
+  Kadal's `{ kadal: 1, type: "command" }`; `postMessageEvents: true` sends every event to it as
+  reveal's `{ namespace: "reveal", eventName, state }`. `postMessage: false` turns the calls off.
+- 991c745: `kadal-deck import reveal` keeps more of a reveal.js deck:
+
+  - reveal's layout helpers become components: `r-stretch` a `<Stretch>`, `r-fit-text` a
+    `<FitText>` sized as reveal sizes it, a bare `r-stack` a `<Stack>`; `r-frame`, `r-hstack` and
+    `r-vstack` stay classes.
+  - `center: true` is written unless the page turned it off (reveal centres every slide).
+  - `<!-- .element: -->` keeps every attribute (style, data-id, id, classes), set on the element
+    before the comment as reveal's Markdown plugin does: the heading, paragraph or image, or the
+    link, bold or code the line ends with.
+  - `data-src` stays `data-src`, for the engine to load near the slide.
+  - A slide's own `data-auto-animate-duration`, `-easing` and `-unmatched` are kept as its
+    frontmatter.
+  - A list item that is a fragment is a `<Click as="li">`, hidden bullet and all; a picture's
+    `width` and `height` scale with the slide like its styles.
+
+  The reveal theme paints the bars beside the stage in the theme's background and centres a
+  picture that stands on its own, as reveal does.
+
+- 4c4e5a3: The `keyboard` map reads reveal.js's form: numeric keyCodes (`13`, `79`) as the keys they name
+  (`Enter`, `KeyO`), reveal's method names (`toggleOverview`, `togglePause`, `toggleHelp`,
+  `toggleAutoSlide`, `navigateNext`…) as Kadal's actions, a dotted command id, and a function from
+  deck.config.ts. A name it cannot read leaves the key alone instead of binding it to nothing.
+  `kadal-deck import reveal` carries a reveal deck's `keyboard` map over in Kadal's names (it was
+  dropped) and reports the bindings it cannot keep.
+- b83cec8: reveal.js HTML pasted into a slide keeps its meaning. The layout classes `r-stack`, `r-stretch`, `r-frame`, `r-hstack` and `r-vstack` (with reveal's `items-*` / `justify-*` modifiers) work as plain classes, and `r-fit-text` hands its text to `<FitText>`. `class="fragment"` on any HTML element compiles to a `<Click>` of that element, its fragment style the effect and `data-fragment-index` ordered as reveal.js orders fragments. New `<HStack>` and `<VStack>`: a centred flex row or column, with `gap`, `align` and `justify`.
+- 3f9608d: reveal.js's links and swipes. `data-preview-link="false"` opts a link out of the lightbox again:
+  it used to be caught by the lightbox and opened a frame whose address was the word "false". An
+  element with `navigate-left`, `-right`, `-up`, `-down`, `-prev` or `-next` moves the deck and
+  carries `enabled` while that way leads somewhere. A touch that starts inside `data-prevent-swipe`
+  (or on media controls) no longer turns the page, and `rtl` mirrors the horizontal swipes.
+- 66b47ee: Backgrounds behave as they do in reveal.js. A background video takes reveal's comma-separated list
+  of sources (`/loop.webm, /loop.mp4`), each a typed `<source>`, so the browser plays the first it
+  can; it pauses when its slide is left and plays from the start when shown again (and not at all
+  with `autoPlayMedia: false`). An animated GIF background, and a GIF `<img>` on a slide, starts
+  again from its first frame each time its slide is shown. `parallaxBackgroundImage` (with
+  `parallaxBackgroundSize`, `-Horizontal` and `-Vertical`) draws reveal's parallax background: one
+  large image under every slide that moves with each slide, by reveal's own arithmetic.
+- 5f0a022: Embedded media behaves as it does in reveal.js. Every iframe on a slide, and a background iframe,
+  hears `slide:start` and `slide:stop` (`postMessage`) as its slide is shown and left. A raw YouTube
+  or Vimeo `<iframe>` gets its player API switched on, plays with `data-autoplay` (or
+  `autoPlayMedia: true`) and pauses when its slide is left instead of playing on, hidden. `data-src`
+  on `<img>`, `<video>`, `<audio>` and `<source>` loads once the slide is within `viewDistance` (a
+  `<source>` makes its video load again). `preloadIframes` works: `true` loads every frame within
+  `viewDistance` and keeps it loaded, `false` only when its slide is shown (not even the slide
+  ahead), and `null` leaves it to each frame's `data-preload`, which now loads a frame within
+  `viewDistance` rather than only keeping it once loaded. A lazy frame left behind is unloaded
+  through `about:blank`, which actually stops it, and a frame that stays loaded no longer comes back
+  behind its poster.
+- ceb1f44: reveal.js's remaining options are deck options of the same names, so a deck or an imported
+  reveal.js page can set them without an unknown-key warning: `preloadIframes`,
+  `respondToHashChanges`, `keyboardCondition` (`"focused"`, or a function in deck.config.ts),
+  `autoSlide: false`, `autoSlideMethod`, `autoAnimateStyles`, `autoAnimateMatcher` (deck.config.ts),
+  `scrollLayout` (`"compact"`, today's scroll page, or `"full"`, reveal's), the four
+  `parallaxBackground*` keys, `disableLayout`, `postMessage`, `postMessageEvents` and
+  `focusBodyOnPageVisibilityChange`; `slideNumber` takes a function in deck.config.ts. A slide sets
+  its own `autoAnimateEasing`, `autoAnimateDuration` and `autoAnimateUnmatched`. They are in the
+  catalog, the frontmatter schema and REFERENCE.md, and `kadal-deck import reveal` keeps them.
+- eb58a0e: reveal.js's `data-state`, `shuffle`, `respondToHashChanges` and `focusBodyOnPageVisibilityChange`.
+  A slide's `state` now also goes on the deck root, as `<name>` and `state-<name>`, and fires an event
+  of that name there (plus `deck:state`), so CSS and scripts for the whole page can follow it.
+  `shuffle: true` deals the columns and each stack anew on every load of the play view and hands the
+  order to its presenter view and share window; it used to do nothing. `respondToHashChanges: false`
+  keeps a hash change from moving the deck. When the tab becomes visible again, focus left in an
+  embedded page or a control goes back to the page so the keys work (a text field keeps its caret).
+- b40515e: LaTeX's maths delimiters, as reveal.js's KaTeX plugin reads them: `\(a^2\)` inline and `\[ … \]` display, beside the dollars. A `\[ … \]` that is a paragraph of its own is a display block exactly as `$$ … $$` is. Write `\\(` for a literal `\(`; code is never read.
+- e0f9a5d: The scroll view takes reveal.js's `scrollLayout` and runs auto-animate:
+
+  - **`scrollLayout: full`** gives each slide the whole viewport, with the slide letterboxed and
+    centred inside it, as reveal.js does by default. `compact` stays the default: each slide is as
+    wide as the viewport and as tall as its aspect ratio makes it.
+  - **Auto-animate in the scroll view.** When the slide being read becomes one that auto-animates
+    from its neighbour, its elements morph in place from where they were on that slide. The same
+    rules apply as on the stage: `autoAnimateId`, `autoAnimateRestart`, per-slide timing, the
+    matcher and the state attributes.
+
+- 31583cc: Slide numbers count the way reveal.js counts. A slide with `visibility: uncounted` is left out of the slide number, the total and the progress bar (an appendix after the end now reads "5 / 5", not "7 / 7"); `slideNumber` may be a function in deck.config.ts, called with `{ h, v, click, index, total, id }` and returning one string or reveal.js's three; and jump-to takes `6/2` as well as `6.2` for column 6, row 2.
+- 3c8ffc0: `theme: reveal`, a new first-party theme: reveal.js's twelve themes in one, picked with
+  `themeConfig: { variant: moon }` — black (the default), white, league, beige, night, serif,
+  simple, solarized, moon, dracula, sky and blood. Their fonts, colours, heading case, weights and
+  shadows, type sizes and spacing come from reveal's own theme variables (MIT), in reveal's
+  960 × 700 box; every variant draws light and dark, and passes `kadal-deck contrast`.
+
+  `kadal-deck import reveal` now writes `theme: reveal` with the variant the page linked (it wrote
+  `minimal`), reveal's default `margin: 0.04`, its slide size as `themeConfig.width` / `height`,
+  and scales inline lengths by the factor reveal fits its slide with (×1.543 for 960 × 700, was ×2).
+  A slide's colour scheme follows its background colour or gradient in either deck scheme, a box
+  the author painted keeps legible text, and a dark first slide no longer turns black-on-navy when
+  the deck is shown light.
+
+### Patch Changes
+
+- c80b6e9: The audience page tells the truth about questions, and its poll toast no longer covers the poll:
+
+  - **"Question sent" only when the room took it.** The room takes one question per viewer every
+    five seconds and dropped the rest without a word, while the page said "Question sent" anyway.
+    A second question within five seconds now gets "Too fast. Try again in a few seconds." and
+    stays in the box. Each ask carries a `ref`; a room that acknowledges (`qa:ack`) settles it, with
+    the wait when it refuses. From a room that sends no ack, the question coming back in the room's
+    list confirms it, and one that never does is reported as not arrived after eight seconds.
+  - **The new-poll toast.** "A poll just opened · Vote" stayed up after the viewer reached Polls by
+    the tab bar, over the poll's last option on a phone. It now goes once the viewer is on Polls,
+    and while any toast shows, the panel's end scrolls clear of it.
+
+- 0a91cd7: `tools/browser-check.mjs` (the scaffolded deck in a browser, after the smoke test) no longer takes the fixed ports 5399 and 5398: the dev server and the served `dist/` each ask the system for a free port, and `--port <n>` picks the dev server's. A machine with something already on 5399 used to fail the check.
+- 1345856: CI now runs `tools/narration-check.mjs`, and `tools/remote-check.mjs` both through `kadal-deck dev`'s relay and for a static build through `kadal-deck relay`, on every pull request. They're separate jobs and not required checks, so a red one is a reason to look rather than a merge block. They used to run only by hand, which is how the narration check went stale. The narration check's "play advances clicks, then the slide" step records every position in the page instead of polling from outside. At the check's brisk narration rate a click step could be over between two polls, and the step then waited out its timeout.
+- b006d0a: `kadal-deck build --json` and `dev --json` work. Both handed `--json` on to Vite, which stops at an
+  option it does not know (`CACError: Unknown option --json`), so `build --json` always failed. Now
+  `build --json` prints one object on stdout, `{ ok, builds: [{ entry, outDir, base, title }] }`,
+  with Vite's output on stderr, and `dev --json` keeps stdout for `{ ok: true }` when the server stops.
+- bee0a2b: The CLI now names what's missing before it starts any work:
+
+  - **`export` without Playwright** exits 4 with the command to install it (`npm install -D playwright && npx playwright install chromium`), as `contrast` and `screenshot` already did. It used to build the whole deck first and then fail with exit 1 and `Cannot find package 'playwright'`.
+  - **A mistyped `-C` folder** with `build`, `dev` or `export` now says `No deck.mdx in <folder>` (exit 4). It used to say `spawn …/node ENOENT`, which pointed at Node rather than at the folder.
+  - **`new --ci` with a misspelt host** is refused before the scaffold and its install. It used to leave a half-made folder behind, which a second try then called "not empty".
+  - **`new` pointed at a file** says so, instead of a raw `ENOTDIR`.
+  - **`check` given another file** (`check talk.mdx`) is a usage error. It used to lint `deck.mdx` and pass. `check deck.mdx` and `check .` still work.
+
+- 1d09dcd: `kadal-deck build --help` and `kadal-deck dev --help` print Kadal Deck's own help for the command, not Vite's. Every other command's `--help` (and `kadal-deck help <command>`) now prints that command's part of the help rather than all of it.
+
+  A flag that neither Kadal Deck nor Vite knows (`dev --bogus`), a Vite flag with its value missing (`build --outDir`), or a number that isn't one (`dev --port abc`) is now a one-line usage error (exit 2) that names the command's `--help`, before Vite starts. It used to print Vite's `CACError` stack trace. Vite's own flags (`--port`, `--strictPort`, `--open`, `--outDir`, `--sourcemap`, `--mode`, `-c`… in camel or kebab case) still go to Vite as written.
+
+- c3178e6: Stopping `kadal-deck` now stops the Vite it started. A signal sent to the CLI alone (an editor's or
+  a task runner's stop button, a parent process's `kill`) used to end it at once and leave Vite
+  running in the background, holding its port: `dev` handed on SIGTERM and SIGHUP but not SIGINT, and
+  the preview server behind `export`, `contrast` and `screenshot` was stopped only on a normal exit.
+  Ctrl+C in a terminal, which reaches both, was never affected.
+- d6e20d1: A fresh deck passes its own `kadal-deck contrast` in light and dark. Code a deck highlights without
+  naming a Shiki pair now wears GitHub's high-contrast pair (`github-light-high-contrast` /
+  `github-dark-high-contrast`) instead of `github-light` / `github-dark`, whose orange and red
+  measured 2.9–4.4:1 on the code panels and the stepped-line band (the starter's slide 5). Every
+  token of the new pair clears 4.5:1 on every built-in theme's panel and band, which a test now
+  holds. Over such a deck, bricks keeps its light code colours and shibainu its dark ones when the
+  scheme is toggled (their panels do not change), and the code title in classic, seriph and stack is
+  dark enough to read on the panel. A deck or theme that names its own `shiki` pair is unchanged.
+- 7d4eb21: `kadal-deck contrast` no longer fails the whole run when one page's picture takes more than 30 s (a busy machine, a CI runner under load). That page is pictured again with 120 s to wait, and its second picture starts with the wait its first needed. If it still doesn't come, the page is listed as `not measured: slide N, no picture in 150 s`, and the run goes on to the rest of the deck.
+
+  The exit code still means what it did: 0 only when every page was measured and every text reads. A run with a page left unmeasured exits 1, says "No text measured below 4.5:1, but not every page was measured" rather than "Every text reads", and lists those pages in `--json` as `unmeasured`.
+
+- 4df054b: A step pressed while a slide's library (`pro/`) layout is still loading now waits for the layout's own click steps instead of skipping to the next slide. The click registry gains a generic `hold()`: anything on a slide that will take steps it cannot count yet holds the slide's total open (for at most 8 s), and the presses made meanwhile are taken once it lets go. A declared `clicks:` needs no hold.
+- ea1874d: `kadal-deck import slidev` and `import reveal` no longer say "100% with nothing to report" and then list a problem:
+
+  - **The summary counts everything.** A slide is clean only when neither the converter nor the check that follows found a warning or error on it, and problems that belong to no slide (classes with no CSS, a `setup/` file left behind) are counted as "N problems for the whole deck" on the same line. `IMPORT-REPORT.md` says the same. A deck with one slide in 200 flagged shows 99%, not a rounded-up 100%. In `--json`, `cleanSlides` follows the same rule and `wholeDeck` gives the count.
+  - **A missing image is an error, not "a package to install".** Before `npm install`, only missing themes, addons and icon sets were meant to wait for the install; every `*-missing` code did, so an image or snippet that was not there went unreported and the import exited 0.
+
+- 62f9490: `kadal-deck import reveal`: a code block with a line-number offset (`[712: 1-2]`, or `data-ln-start-from`) lights the same lines it did in reveal. reveal counts its steps from the top of the block, Kadal's name the numbers shown, so the importer now moves them by the offset (`{712-713}{lines:true,startLine:712}`) instead of lighting lines 1–2, which the block does not have.
+- f0511d2: Live room reactions:
+
+  - **One tap floats one emoji.** The reaction overlay on the presenter view and the play window
+    floated `min(6, total)` emojis per message, so once six reactions had come in, every tap floated
+    six. Each message now floats the step since the last total the window saw: one, or the gap after
+    missed messages, never more than six.
+  - **The room state keeps the totals.** The live client dropped the running total each `react`
+    message carries, so `state.reactions` (the `<Reactions>` bar's counts) moved only when the room
+    sent a tally, and the room sends those to the presenter alone.
+
+- b1d3514: The screen-reader live region reads a slide even where `getComputedStyle` reports no `display` (a stubbed or partial one), instead of throwing.
+- ccb1746: On the narration timeline, the pointer at a slide's dot names that slide, and a click goes there.
+  Each dot's target is wider than the gap between dots, so a dot's neighbour (drawn on top) took the
+  pointer at the very centre of the dot: on the showcase, 24 dots showed the next slide's tooltip and
+  a click on them seeked one slide too far. The dot nearest the pointer now wins.
+- 93eb028: Enter in the overview goes to the ringed slide again. Enter has no key binding of its own, so the
+  keyboard handler returned on it as an unbound key before it reached the overview's branch, and the
+  overview stayed open. A tile focused with Tab still takes its own Enter.
+- d0a267f: The pace badge ("+2m"), the presenter sidebar's schedule line, the teleprompter's pace and the phone
+  remote's now work for a deck timed slide by slide with `timing:` and no `defaultTiming`. The timer
+  already took its length and progress bar from those timings, but the pace needed `defaultTiming`, so
+  it never showed. A slide without a `timing:` plans no time.
+- 687e177: A screen reader no longer hears "Paused — press any key" on a deck that is running. The blackout
+  curtain is always in the page, drawn at opacity 0 until B pauses the deck, and its words stayed in
+  the accessibility tree (and in anything that reads the page's text). It is `aria-hidden` until the
+  deck is paused.
+- e1b5781: A presenter view opened without its passcode, on a host that needs one, no longer knocks on the room every 15 seconds for as long as it stays open, with a console error each time. Until the passcode is given, the room waits: no socket is opened and nothing is retried. The page now leads with **Presenter passcode required**. Once the passcode is accepted, the room connects at once. A presenter room that keeps failing to open asks the host again whether this window may present (a ticket that ran out), and brings the passcode form back if it may not.
+
+  `RoomClient.hold(on)` is what the presenter view uses for this: while held, the client opens no socket and schedules no retry, and releasing it connects straight away.
+
+- fbff0ee: `kadal-deck relay` suggests an address a phone can reach. Its "point a build at it" line named the
+  last network address, which on a computer running virtual machines or containers (OrbStack,
+  Docker, VMware) is one of their bridges, not the Wi-Fi. It now names the first network address,
+  the one the dev server's QR code uses; every address is still listed above it.
+- 8761ede: The phone remote's laser goes off when the finger lifts (or the air pointer's button is let go), even
+  when that moment's "off" is lost on the wire. It was sent once, without waiting for an answer, so a
+  socket blip at the lift (iOS suspends a page's sockets for Control Center or a screen recording)
+  left the dot on the presenter view and the projector until the phone disconnected for good. The off
+  is now owed until the presenting window answers it: tried again while the link stays open and each
+  time it opens again. A phone that pairs (or takes over from another) also clears a laser the
+  previous one left on.
+- bbd9547: A deck in a frame that may not keep the screen awake no longer asks to. The builder's `?preview`
+  iframe (and any embed without `allow="screen-wake-lock"`) logged "Permissions policy violation:
+  screen-wake-lock is not allowed in this document" on every load, which no `catch` silences. The
+  deck now checks the document's permissions policy first; a top-level window keeps its wake lock.
+- @kadal/prettier-plugin@0.11.0
+
 ## 0.10.1
 
 ### Patch Changes
