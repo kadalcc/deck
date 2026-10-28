@@ -446,16 +446,27 @@ async function startOnBun(o: RelayServerOptions): Promise<RelayServer> {
 }
 
 /** The addresses a deck on this network can use: ws://<this computer>:<port>/. */
-export function relayUrls(host: string, port: number): string[] {
+export function relayUrls(
+  host: string,
+  port: number,
+  interfaces: ReturnType<typeof networkInterfaces> = networkInterfaces(),
+): string[] {
   const local = `ws://localhost:${port}/`;
   if (host !== "0.0.0.0" && host !== "::")
     return [`ws://${host.includes(":") ? `[${host}]` : host}:${port}/`];
   const out = [local];
-  for (const list of Object.values(networkInterfaces()))
+  for (const list of Object.values(interfaces))
     for (const i of list ?? [])
       if (i.family === "IPv4" && !i.internal) out.push(`ws://${i.address}:${port}/`);
   return out;
 }
+
+/**
+ * The one address to point a build at: the first on the network, as the dev server's QR picks
+ * it (the system lists the Wi-Fi or Ethernet first). Not the last, which is where virtual
+ * machines' and containers' bridges sit (OrbStack, Docker, VMware) and a phone cannot reach.
+ */
+export const suggestedRelayUrl = (urls: string[]): string => urls[1] ?? urls[0]!;
 
 /** A tunnel's https address as the relay address a deck names: wss://…/. */
 export const tunnelRelayUrl = (https: string) =>
@@ -513,7 +524,7 @@ export async function relayCommand(o: RelayCommandOptions): Promise<void> {
     });
   };
   if (!o.tunnel) {
-    lines.push(...tell(urls.at(-1)!), "       (Ctrl+C stops)");
+    lines.push(...tell(suggestedRelayUrl(urls)), "       (Ctrl+C stops)");
     o.say(lines.join("\n"));
     ready();
   } else {

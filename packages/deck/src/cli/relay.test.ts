@@ -11,7 +11,9 @@ import {
   MAX_MESSAGE,
   RELAY_BANNER,
   type RelayServer,
+  relayUrls,
   startRelayServer,
+  suggestedRelayUrl,
   tunnelRelayUrl,
 } from "./relay.ts";
 import { main } from "./index.ts";
@@ -242,6 +244,36 @@ describe("kadal-deck relay (the command)", () => {
     } finally {
       child.kill("SIGTERM");
     }
+  });
+
+  test("points a build at the first network address, not a virtual machine's bridge", () => {
+    const nic = (address: string, internal = false) => ({
+      address,
+      netmask: "255.255.255.0",
+      family: "IPv4" as const,
+      mac: "00:00:00:00:00:00",
+      internal,
+      cidr: `${address}/24`,
+    });
+    // macOS with OrbStack: Wi-Fi first, then the bridges the VMs sit behind.
+    const urls = relayUrls("0.0.0.0", 4174, {
+      lo0: [nic("127.0.0.1", true)],
+      en0: [nic("192.168.88.6")],
+      bridge100: [nic("192.168.139.3")],
+      bridge103: [nic("192.168.97.0")],
+    });
+    expect(urls).toEqual([
+      "ws://localhost:4174/",
+      "ws://192.168.88.6:4174/",
+      "ws://192.168.139.3:4174/",
+      "ws://192.168.97.0:4174/",
+    ]);
+    expect(suggestedRelayUrl(urls)).toBe("ws://192.168.88.6:4174/");
+    // No network: this computer; one given host: that one.
+    expect(suggestedRelayUrl(relayUrls("0.0.0.0", 4174, { lo0: [nic("127.0.0.1", true)] }))).toBe(
+      "ws://localhost:4174/",
+    );
+    expect(suggestedRelayUrl(relayUrls("10.0.0.2", 4174))).toBe("ws://10.0.0.2:4174/");
   });
 
   test("refuses an empty password", async () => {
