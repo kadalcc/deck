@@ -987,7 +987,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   respondToHashChanges:
     "reveal.js compatible: a change to the URL hash (a link, the address bar) moves the deck. Default true.",
   keyboardCondition:
-    'reveal.js compatible: when the deck takes keys. null (default): always; "focused": only while the deck has focus (a deck embedded in a page). deck.config.ts may pass a function of the KeyboardEvent instead, true letting the key through.',
+    'reveal.js compatible: when the deck takes keys. null (default): always, or "focused" for an embedded deck; "focused": only while the deck has focus (a press inside it, or tabbing into it; the deck then carries `.focused`). deck.config.ts may pass a function of the KeyboardEvent instead; returning false keeps the key from the deck.',
   focusBodyOnPageVisibilityChange:
     "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true.",
   overview: "The overview grid (O / Esc).",
@@ -999,7 +999,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   shuffle: "Shuffle the slides on load.",
   fragments: "Clicks/fragments on; off shows every step at once.",
   fragmentInURL: "Include the click step in the hash.",
-  embedded: "The deck lives inside another page.",
+  embedded:
+    "reveal.js compatible: the deck lives inside part of another page (also `?embedded`). It sizes itself from its own element (and follows it as it resizes), takes keys only while focused (a press inside it; `keyboardCondition` overrides), listens for swipes and clicks on itself alone, goes fullscreen as itself, and leaves the page's hash, title, head and colour scheme alone unless `hash` is set outright. Several embedded decks can share a page.",
   postMessage:
     "reveal.js compatible: a page that frames the deck can drive it with reveal's postMessage calls (`{ method, args }`). Default true.",
   postMessageEvents:

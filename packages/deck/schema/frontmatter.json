@@ -874,7 +874,7 @@
               "type": "null"
             }
           ],
-          "description": "reveal.js compatible: when the deck takes keys. null (default): always; \"focused\": only while the deck has focus (a deck embedded in a page). deck.config.ts may pass a function of the KeyboardEvent instead, true letting the key through."
+          "description": "reveal.js compatible: when the deck takes keys. null (default): always, or \"focused\" for an embedded deck; \"focused\": only while the deck has focus (a press inside it, or tabbing into it; the deck then carries `.focused`). deck.config.ts may pass a function of the KeyboardEvent instead; returning false keeps the key from the deck."
         },
         "focusBodyOnPageVisibilityChange": {
           "type": "boolean",
@@ -928,7 +928,7 @@
         },
         "embedded": {
           "type": "boolean",
-          "description": "The deck lives inside another page.",
+          "description": "reveal.js compatible: the deck lives inside part of another page (also `?embedded`). It sizes itself from its own element (and follows it as it resizes), takes keys only while focused (a press inside it; `keyboardCondition` overrides), listens for swipes and clicks on itself alone, goes fullscreen as itself, and leaves the page's hash, title, head and colour scheme alone unless `hash` is set outright. Several embedded decks can share a page.",
           "default": false
         },
         "postMessage": {
