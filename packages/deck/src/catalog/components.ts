@@ -29,9 +29,12 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     props: {
       at: 'When: omitted = one after the previous step; "+N" relative ("+0" shares the previous step); a number is absolute (0 = always shown); [from, to] shows it from `from` until `to`.',
       hide: "Start visible and hide at the step instead.",
-      effect: "A reveal effect (see clickEffects) or any CSS class the theme defines.",
+      effect:
+        "A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes.",
       className: "Extra classes.",
       style: "Inline style (JSX object).",
+      autoSlide:
+        "Milliseconds auto-slide stays on this step before the next, over the slide's `autoSlide`.",
       children: "What is revealed.",
     },
   },

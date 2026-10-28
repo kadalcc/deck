@@ -18,13 +18,14 @@ import {
 import { parseGlossary } from "../glossary/parse.ts";
 import { applyCodeGroups } from "./code-groups.ts";
 import type { ShikiThemeOption } from "./code-themes.ts";
-import { parseCodeMeta, serialiseSteps } from "./code-meta.ts";
+import { linesOn, parseCodeMeta, serialiseSteps } from "./code-meta.ts";
 import { type MagicMoveBlock, findMagicMoves } from "./magic-move.ts";
 import { rehypeDeckCode } from "./rehype-code.ts";
 import { rehypeGlossary } from "./rehype-glossary.ts";
 import { remarkDeckFences } from "./remark-fences.ts";
 import { type RemarkIconsOptions, remarkIcons } from "./remark-icons.ts";
 import { remarkDrag } from "./remark-drag.ts";
+import { remarkTexDelimiters } from "./remark-tex-delimiters.ts";
 import { remarkRevealClasses } from "./remark-reveal.ts";
 import { type RemarkComarkOptions, remarkComark } from "./remark-comark.ts";
 import { rehypeComarkSlots } from "./rehype-comark.ts";
@@ -243,6 +244,8 @@ export function mdxPlugins(
     remarkPlugins: [
       remarkGfm,
       remarkMath,
+      // reveal.js's KaTeX delimiters, \( … \) and \[ … \], beside the dollars.
+      remarkTexDelimiters,
       ...(o.comark
         ? [
             [
@@ -292,9 +295,12 @@ export function mdxPlugins(
   };
 }
 
-/** `{lines: true}` on the outer fence numbers every step; an inner fence can ask for itself. */
-const numbered = (block: MagicMoveBlock, own: boolean) =>
-  own || block.options.lines === "true" || block.options.lines === "1";
+/**
+ * `{lines: true}` on the outer fence numbers every step; an inner fence can ask for itself; an
+ * outer fence that says nothing takes the deck's `lineNumbers`.
+ */
+const numbered = (block: MagicMoveBlock, own: boolean, deckLines: boolean) =>
+  own || linesOn(block.options.lines, deckLines);
 
 /**
  * A slide's magic-move steps with their keyed tokens. One token set per step, highlighted with
@@ -306,6 +312,8 @@ export function magicMoveData(
   blocks: MagicMoveBlock[],
   hl: Highlighter,
   themes: ShikiThemeOption,
+  /** The headmatter's `lineNumbers`. */
+  deckLines = false,
 ): MagicMoveData[] {
   return blocks.map((block) => ({
     options: block.options,
@@ -323,7 +331,7 @@ export function magicMoveData(
           hl,
           step.code,
           { lang: lang as never, themes, defaultColor: false } as never,
-          numbered(block, meta.lines),
+          numbered(block, meta.lines, deckLines),
         ),
       };
     }),

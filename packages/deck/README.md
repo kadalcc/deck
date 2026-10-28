@@ -127,7 +127,9 @@ read as frontmatter, `<!-- .element: … -->` as every attribute it sets, on the
 (the line's heading, paragraph or image, or the link or bold it ends with; `class="fragment"` a
 `<Click>`), `Note:` as notes and
 ```` ```js [1|3] ```` as Kadal's steps. `\( … \)` maths becomes `$ … $`. `Reveal.initialize`'s
-literal options become headmatter, with reveal's default `margin: 0.04` and `center: true`, and its `keyboard` map in
+literal options become headmatter, with reveal's default `margin: 0.04` and `center: true` (Kadal's
+own default is `center: false`: slides start at the top; `true` centres the default layout's content
+vertically, as reveal does), and its `keyboard` map in
 Kadal's key and action names (`{ 13: 'toggleOverview' }` → `{ Enter: overview }`; functions are
 reported); inline lengths are
 scaled by the factor reveal fits its slide to Kadal's 1920×1080 with (×1.543 for 960×700). The
@@ -146,7 +148,37 @@ What the runtime answers as reveal.js does: an element with `navigate-left`, `-r
 `data-preview-link`, `-image` and `-video` open the lightbox, and with `previewLinks: true` every
 outside link does unless it says `data-preview-link="false"`; a touch that starts inside
 `data-prevent-swipe` (or on a video's or audio's controls) keeps its gesture, and under `rtl` the
-horizontal swipes are mirrored.
+horizontal swipes are mirrored. Auto-slide follows reveal's rules: `autoSlide: false` is off outright, a step
+with `data-autoslide` waits that long over the slide's own interval, `autoSlideMethod` names the
+step (`right` skips the stacks), and a key the deck answers stops it as a press does. A slide's `state` goes on the deck root
+as reveal's `data-state` does (`<name>` and `state-<name>`, and an event of that name);
+`shuffle: true` deals the slides anew on each load and hands the order to the presenter view;
+`respondToHashChanges: false` writes the hash but does not follow it; and
+`focusBodyOnPageVisibilityChange` takes focus back from an embedded page when the tab returns.
+
+**Events and postMessage.** reveal's events reach scripts that are not React: `__deck.events.on(
+"slidechanged", (e) => …)` (or `useDeck().events`) hears `ready`, `slidechanged`,
+`slidetransitionend`, `fragmentshown`, `fragmenthidden`, `overviewshown`, `overviewhidden`,
+`paused`, `resumed`, `autoslidepaused`, `autoslideresumed`, `resize` and each slide `state`, with
+reveal's fields (`indexh`, `indexv`, `indexf`, `currentSlide` …); `on("*")` hears them all, and each
+also fires as a `deck:<name>` event on the deck's root element. A page that frames the deck drives
+it as it would reveal: `frame.postMessage(JSON.stringify({ method: "slide", args: [2] }), "*")`,
+answered with `{ namespace: "reveal", eventName: "callback", method, result, state }` (the moves,
+`toggleOverview`, `togglePause`, `toggleAutoSlide`, `getState`/`setState`, `getIndices`,
+`getTotalSlides`, `getProgress`, `availableRoutes` …); Kadal's own `{ kadal: 1, type: "command",
+seq, id, params }` runs any command. `postMessageEvents: true` sends every event to the framing page
+as `{ namespace: "reveal", eventName, state }`; `postMessage: false` stops the calls.
+
+Media behaves as it does in reveal.js. `data-src` on an `<img>`, `<video>`, `<audio>` or `<source>`
+loads once the slide is within `viewDistance`; an `<iframe data-src>` loads when its slide is shown
+(with `data-preload`, or `preloadIframes: true`, within `viewDistance`; `preloadIframes: false`
+only when shown) and unloads when it is left. Every frame on a slide or behind it hears
+`slide:start` and `slide:stop` by `postMessage`. A YouTube or Vimeo `<iframe>` gets its player API
+switched on (`enablejsapi=1`, `api=1`), plays with `data-autoplay` (or `autoPlayMedia: true`) and
+pauses when its slide is left; `data-ignore` leaves a frame or a video alone. A background video
+takes a comma-separated list of sources and pauses when its slide is left, a GIF starts again
+from frame one each time its slide is shown, and `parallaxBackgroundImage` (with `-Size`,
+`-Horizontal`, `-Vertical`) draws reveal's parallax background.
 
 ## For AI agents and tools
 
@@ -200,15 +232,15 @@ Markdown, with these on top:
 
 | What | How |
 | --- | --- |
-| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"`. reveal.js HTML pasted into a slide steps too: `<p class="fragment fade-up" data-fragment-index="2">` compiles to a `<Click as="p">`, ordered as reveal orders fragments |
-| Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ```` |
+| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` (or a name of your own; `custom` has no default fade), `autoSlide={2000}` for that step; steps wear reveal's `fragment` / `visible` / `current-fragment` classes too; `fragments: false` shows every step at once. reveal.js HTML pasted into a slide steps too: `<p class="fragment fade-up" data-fragment-index="2">` compiles to a `<Click as="p">`, ordered as reveal orders fragments |
+| Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ````; `lineNumbers: true` in the headmatter numbers every block that does not say `{lines:false}`; reveal.js's ```` ```js [1-2\|3] ```` and ```` [712: 1-2] ```` (steps counted from the block's first line, then a line-number offset) work too |
 | Magic move | ````` ````md magic-move ````` holding one fence per step; an inner fence's highlight steps (```` ```ts {*\|2\|4-5} ````) are clicks too, before the next morph |
 | Code marks | `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`, `[!code error]` / `warning`, `[!code word:x]` at a line's end (Shiki's notation transformers); add your own with `deck({ shiki: { transformers } })` |
 | Code groups | `::code-group` … `::` around titled fences (```` ```sh [npm] ````): tabs with file badges, ←/→ between them; `{clicks:true}`, `{print:'all'}`; or `<CodeGroup>` |
 | Snippets | `<<< @/snippets/x.ts#region {2\|4} [x.ts]` — a file (or one `#region` of it, any comment style) as a fence; `@` is the deck folder; watched in dev |
 | TwoSlash | ```` ```ts twoslash ```` — type hovers (also on Tab), compiler errors, `// ^?`, rendered at build time (needs `typescript`) |
 | Monaco | ```` ```ts {monaco} ```` an editor; `{monaco-diff}` (original `~~~` modified); `{monaco-run}` runs JS/TS (Web Worker) and Python (Pyodide) with the output below, `{autorun:false,showOutputAt:'+1',outputHeight:'200px'}`; `{monaco-write}` saves edits back to the file in `kadal-deck dev`. Lazy: never in the main bundle. More runners: `registerCodeRunner(lang, fn)` or `setup/code-runners.ts`. Imported packages get real types — the deck's installed declarations bundled into the build, anything else from jsDelivr, cached (`monacoTypes: auto · local · cdn · none`, `monacoPackages` pins versions, `monacoTypesIgnore`) — and a `{monaco-run}` bare import loads from esm.sh at the same version (`monacoRunImports`) |
-| Math | `$inline$`, `$$ display $$`, `<Tex tex="…" />`; `$$ {1\|3\|all}` lights lines one click at a time; `katex: { macros }` in the headmatter |
+| Math | `$inline$`, `$$ display $$` (or LaTeX's `\(inline\)` and `\[display\]`, as reveal.js reads them), `<Tex tex="…" />`; `$$ {1\|3\|all}` lights lines one click at a time; `katex: { macros }` in the headmatter |
 | Diagrams | ```` ```mermaid {scale: 0.8} ```` or `<Mermaid>{`flowchart LR …`}</Mermaid>` (`mermaid:` headmatter for all); ```` ```plantuml ```` (on `plantUmlServer`); hand-drawn: `<Sketch scene={…} steps={[…]} />`, `<Sketch src="x.excalidraw" />`, `<Sketch>{`flowchart …`}</Sketch>` |
 | Notes | `<Notes>… [click] …</Notes>`, or Slidev's `<!-- … -->` at the end of the slide — the presenter view splits them at `[click]`; `notesAutoRuby: { 日本語: ni hon go }` annotates words |
 | Slidev syntax | ```` ```yaml ```` first in a slide = its frontmatter; `defaults:` headmatter for every slide; `src: ./more.mdx#2-5`; `<style>` scoped to its slide (`<style global>` for the deck); other HTML comments are dropped |
@@ -239,7 +271,9 @@ compiler (`compileDeck` in `@kadal/deck/runtime`) takes the same options.
 
 ## Keys
 
-`?` shows the sheet. Vim first: `j`/`k` next and previous step through everything, `h`/`l` previous and next column (steps first, then the column — reveal.js's arrows do the same), `gg`/`G` first and last, `/` search, `:12` jump, `f` **focus** — every link, button, glossary term, image preview and embedded page on the slide gets a home-row label; type it to use it (Vimium's f). Also Space/N, `↓`/`↑` for the vertical stack, `O` overview, `T` theme menu, `⇧F` fullscreen, `B` blackout, `D` dark/light, `C` draw, `X` laser, `S` presenter view (`⇧T` its teleprompter), `Alt`+click to zoom to a point, `Esc`.
+`?` shows the sheet. Vim first: `j`/`k` next and previous step through everything, `h`/`l` previous and next column (steps first, then the column — reveal.js's arrows do the same), `gg`/`G` first and last, `/` search, `:12` jump (or `:6/2`, column 6 row 2), `f` **focus** — every link, button, glossary term, image preview and embedded page on the slide gets a home-row label; type it to use it (Vimium's f). Also Space/N, `↓`/`↑` for the vertical stack, `O` overview, `T` theme menu, `⇧F` fullscreen, `B` blackout, `D` dark/light, `C` draw, `X` laser, `S` presenter view (`⇧T` its teleprompter), `Alt`+click to zoom to a point, `Esc`.
+
+**Screen readers.** The play view keeps a polite live region, as reveal.js does: on every slide change it reads "Slide 3 of 12." and the slide's words, and on a click step forward the words that step brought in (hidden clicks are `aria-hidden`, so a slide is read as it stands). **Auto-slide** (`autoSlide`, or `A` on any deck) gets reveal.js's control in the bottom-left corner row: pause or play, in a ring that fills as the slide's interval runs out; `autoSlideStoppable: false` leaves it out.
 
 `,` opens the **display settings** — brightness, contrast, saturation, sepia, hue and invert for the slides (not the controls), kept per deck in the browser and shared live by its windows, so the presenter can tune the projector from the presenter view. **Right-click** a slide (or `Shift F10`) for the **context menu**: back and next, the overview, the presenter view, the notes, full screen, dark, pen, laser, display settings, export; `contextMenu: false | "dev" | "build"` in the headmatter turns it off or limits it, Shift + right-click is always the browser's own.
 
@@ -373,8 +407,9 @@ Embedded pages (`layout: iframe*`, `<Iframe>`) load when their slide shows, unlo
 
 ## Views
 
-- `/<slug>/?print-pdf` — every slide as a page; on screen the pages are zoomed to the window, the browser's print dialog gets them at full size. `&range=1,3-5`, `&clicks=0|1` (a page per click step or not), `&notes=0|1|page`, `&omit-background` and `&scheme=dark` narrow it — the same options every exporter passes.
-- `/<slug>/` — the deck. The stage is authored at 1920 × 1080 and scaled uniformly to every window: edge to edge on a 16:9 screen, centred between bars on any other shape — a phone, a tall window, a projector at 4:3 — never reflowed. `?view=scroll` reads it as a page (`scrollLayout: compact`, the default, makes each slide as wide as the window; `full`, reveal's default, gives each slide the whole window, letterboxed; auto-animate slides morph there too), `?print-pdf` lays it out for print.
+- `/<slug>/?print-pdf` — every slide as a page; on screen the pages are zoomed to the window, the browser's print dialog gets them at full size. `&range=1,3-5`, `&clicks=0|1` (a page per click step or not), `&notes=0|1|page`, `&omit-background` and `&scheme=dark` narrow it — the same options every exporter passes. With `slideNumber` set and `showSlideNumber: all` (the default) or `print`, every page carries the slide number bottom-right, so `kadal-deck export` PDFs are numbered; `speaker` shows it only in the presenter view's header. A slide taller than a page stays on one, shrunk by `autoFit`, unless `pdfMaxPagesPerSlide` allows more: its page then runs onto up to that many (reveal.js's option; a PNG export takes such a slide as one tall image).
+- `/<slug>/` — the deck. The stage is authored at 1920 × 1080 and scaled uniformly to every window: edge to edge on a 16:9 screen, centred between bars on any other shape — a phone, a tall window, a projector at 4:3 — never reflowed. `disableLayout: true` (reveal.js's "bring your own layout") turns that off: no scaling, no centring, the stage is the window (or an embedded deck's element) and the slides are yours to style responsively. `?view=scroll` reads it as a page (`scrollLayout: compact`, the default, makes each slide as wide as the window; `full`, reveal's default, gives each slide the whole window, letterboxed; auto-animate slides morph there too), `?print-pdf` lays it out for print.
+- `/<slug>/?embedded`, or `embedded: true` — a deck inside part of a page, as reveal.js's: give `<Deck>` an element of the size you want and it fits that element (following it as it resizes) instead of the window. It takes keys only while it has focus — a press inside it, or tabbing into it, gives it them and it carries `.focused`; a press elsewhere takes them away (`keyboardCondition` changes that, and works on any deck: `"focused"`, or a function of the key from deck.config.ts) — and listens for swipes and clicks on itself only. It goes fullscreen as itself, and leaves the page's hash, title, head and colour scheme alone unless the deck sets `hash` outright. Several can share one page.
 - `/<slug>/presenter` — current + next, notes with click markers (each one a button to its step; `[click:3]` names the step), a stopwatch or countdown timer (`timer: countdown`, `duration: 30min`) that pauses, resets, fills a progress bar with a tick where this slide should be and goes red in overtime, with pacing (ahead/behind the plan for this slide — also on the phone remote and in the room panel), tools (draw, laser, spotlight, blackout, share notes, share terms, confetti, share window, teleprompter, camera, record, mirror, link), the room panel (QR, presence, pace, questions, polls; collapses to a rail with badges for hands, open questions and open polls, and the current-slide card grows). Passcode-gated on a host. Drawing: each pen is a colour family and a stroke drifts through it as it travels; strokes are scribbles that linger five seconds and unwind along their own path on every screen — the pin keeps them.
 
 **Drawing.** <kbd>C</kbd> (or **Draw**) turns the pen on in the play view and the presenter view; a stylus draws without it, and its eraser end erases. While it is on: <kbd>1</kbd>–<kbd>7</kbd> pick pen, highlighter, line, arrow, rectangle, ellipse and eraser (<kbd>E</kbd> toggles the eraser), <kbd>Shift</kbd> keeps a line or arrow at 45° steps and makes a rectangle a square and an ellipse a circle, <kbd>[</kbd> <kbd>]</kbd> step the width, <kbd>Ctrl</kbd> <kbd>Z</kbd> undoes and <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>Z</kbd> (or <kbd>Ctrl</kbd> <kbd>Y</kbd>) redoes — strokes, shapes, erases and clears alike — <kbd>Shift</kbd> <kbd>C</kbd> clears, <kbd>Esc</kbd> is done. The toolbar also has any colour and the scissors: the eraser takes whole strokes, or with the scissors on cuts only where it passes. Arrowheads grow with the stroke. Everything drawn reaches the deck's other windows in this browser at once (the window bus — no room needed), the room when there is one, and the phone remote's pen, which has the same shapes and eraser. Commands: `draw.toggle`, `draw.tool`, `draw.pen` (`shape`, `erase`), `draw.shape`, `draw.undo`, `draw.redo`, `draw.clear`.

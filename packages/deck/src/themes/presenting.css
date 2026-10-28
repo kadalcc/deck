@@ -1270,3 +1270,55 @@ button.deck-remote-timer:disabled {
     transition: none;
   }
 }
+
+/* ── the auto-slide control (react/chrome.tsx `AutoSlideControl`) ─────────────
+   reveal.js's playback control, in the corner row's pill: play or pause inside a ring that fills
+   as the slide's interval runs out. The ring restarts with the deck's timer (a new `key`). */
+.deck-autoslide {
+  position: relative;
+  width: 34px;
+  padding: 0;
+}
+.deck-autoslide-dial {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  transform: rotate(-90deg);
+  fill: none;
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+.deck-autoslide-track {
+  stroke: color-mix(in oklab, var(--deck-fg) 14%, transparent);
+}
+.deck-autoslide-ring {
+  stroke: var(--deck-accent);
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: deck-autoslide-fill linear forwards;
+}
+.deck-autoslide .deck-icon {
+  width: 12px;
+  height: 12px;
+}
+@keyframes deck-autoslide-fill {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── the presenter's slide number (presenter/index.tsx `PresenterSlideNumber`) ──
+   `showSlideNumber: speaker` (or `all`): the deck's own number, beside the talk's title. */
+.deck-presenter-slide-number {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--deck-border);
+  background: var(--deck-surface);
+  color: var(--deck-muted);
+  font: 13px var(--deck-mono-font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

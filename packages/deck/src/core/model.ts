@@ -299,7 +299,11 @@ export interface DeckConfig {
   minScale: number;
   maxScale: number;
   disableLayout: boolean;
-  /** Vertically centre each slide's content. */
+  /**
+   * Vertically centre the content of slides on the default layout, as reveal.js does. False by
+   * default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other
+   * layouts place their content themselves.
+   */
   center: boolean;
   controls: boolean | "speaker";
   controlsLayout: "bottom-right" | "edges";
@@ -559,7 +563,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   minScale: 0.2,
   maxScale: 2,
   disableLayout: false,
-  center: true,
+  center: false,
   controls: true,
   controlsLayout: "bottom-right",
   controlsTutorial: true,

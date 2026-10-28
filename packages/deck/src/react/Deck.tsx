@@ -17,6 +17,17 @@ import { flushSync } from "react-dom";
 
 import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
+import { isEmbedded, keyAllowed, keyboardConditionOf, usesHash } from "../core/embedding.ts";
+import { autoSlideMethod, stepAutoSlide, stepAutoSlideSelector } from "../core/auto-slide.ts";
+import {
+  createDeckEvents,
+  type DeckEvent,
+  navEvents,
+  stateChange,
+  stateClasses,
+  stateNames,
+} from "../core/events.ts";
+import { applyOrder, orderOf, shuffledOrder, type SlideOrder } from "../core/shuffle.ts";
 import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
 import { createPanelRegistry } from "../core/panels.ts";
 import { isEditable, type KeyAction } from "../core/keyboard.ts";
@@ -75,6 +86,7 @@ import { drawingsOn } from "../draw/source.ts";
 import { ScrollView } from "./ScrollView.tsx";
 import { Stage } from "./Stage.tsx";
 import { useBuiltinCommands } from "./commands.ts";
+import { useHostMessages } from "./host-messages.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 import { ThumbnailHost } from "../export/thumbnail.tsx";
@@ -281,19 +293,10 @@ export function DeckRuntimeView({
       readHostOverride(),
     );
   }, [manifest.headmatter, manifest.packages, configIn, slugFromBase]);
-  const columns = useMemo<Column[]>(
+  const authoredColumns = useMemo<Column[]>(
     () => columnsOf(manifest.slides, config),
     [manifest.slides, config],
   );
-  const options = useMemo(() => {
-    const map = new Map<string, SlideOptions>();
-    columns.forEach((c) =>
-      c.slides.forEach((s, v) =>
-        map.set(`${c.h},${v}`, resolveSlideOptions(s.frontmatter, config, s.index === 0)),
-      ),
-    );
-    return map;
-  }, [columns, config]);
 
   // The deck's own pages (react/routes.tsx): an address one of them names is that page.
   const deckRoutes = useDeckRoutes(base, { deck: manifest.packages?.routes, prop: routesIn });
@@ -307,6 +310,37 @@ export function DeckRuntimeView({
     [],
   );
   const windowId = useMemo(() => Math.random().toString(36).slice(2, 10), []);
+  /*
+   * `shuffle: true` (reveal.js): the play window deals the slides once per load, and hands its
+   * order to the deck's other windows over the bus, so the presenter view and the share window
+   * show the same deck. They never deal their own; print and export keep the authored order.
+   */
+  const dealsOrder = config.shuffle && mode === "play" && !flags.projector;
+  const [order, setOrder] = useState<SlideOrder | null>(() =>
+    dealsOrder ? shuffledOrder(authoredColumns) : null,
+  );
+  const columns = useMemo(
+    () => (order ? applyOrder(authoredColumns, order) : authoredColumns),
+    [authoredColumns, order],
+  );
+  const options = useMemo(() => {
+    const map = new Map<string, SlideOptions>();
+    columns.forEach((c) =>
+      c.slides.forEach((s, v) =>
+        map.set(`${c.h},${v}`, resolveSlideOptions(s.frontmatter, config, s.index === 0)),
+      ),
+    );
+    return map;
+  }, [columns, config]);
+  const shuffle = useMemo<ShuffleSync>(
+    () => ({
+      deals: dealsOrder,
+      wants: config.shuffle && !dealsOrder && mode !== "print" && mode !== "export",
+      adopt: (next) =>
+        setOrder((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next)),
+    }),
+    [dealsOrder, config.shuffle, mode],
+  );
   /**
    * A PROJECTOR: a window that exists to be looked at — a second screen, or the one window you
    * share on a call. It renders the deck exactly as the deck page does; what it gives up is input.
@@ -345,15 +379,31 @@ export function DeckRuntimeView({
   const sync = useMemo<DeckRuntime["sync"]>(() => ({ source: null }), []);
   /** The deck's own element: what an embedded deck measures, and where its links and keys live. */
   const rootRef = useRef<HTMLDivElement>(null);
+  // A deck inside part of a page (core/embedding.ts): `embedded: true` or `?embedded`.
+  const embedded = isEmbedded(config, flags);
+  // An embedded deck still opens where the address says (reveal reads it at start whatever its
+  // `hash`), but only writes it when the deck set `hash` outright.
+  const hashOn = usesHash(config, embedded, setsHash(manifest.headmatter, configIn));
+  // reveal's events (core/events.ts), also as `deck:<name>` CustomEvents on the deck's root.
+  const events = useMemo(
+    () =>
+      createDeckEvents((e) => {
+        const { type, ...detail } = e;
+        rootRef.current?.dispatchEvent(new CustomEvent(`deck:${type}`, { bubbles: true, detail }));
+      }),
+    [],
+  );
+  /** Whether this deck has the page's attention (keyboardCondition "focused"); see DeckRoot. */
+  const focus = useMemo<DeckFocus>(() => ({ on: !embedded }), [embedded]);
 
   // The position the URL asked for, read once: a step (#/h/v/click) cannot be applied until the
   // slide has reported its total, and the first hash write would otherwise erase it.
   const wantedAtLoad = useMemo(
     () =>
-      typeof window !== "undefined"
+      typeof window !== "undefined" && config.hash
         ? parseHash(window.location.hash, columns, config.hashOneBasedIndex)
         : null,
-    [columns, config.hashOneBasedIndex],
+    [columns, config.hashOneBasedIndex, config.hash],
   );
   /**
    * Does this window start in step with the presenter?
@@ -584,11 +634,22 @@ export function DeckRuntimeView({
       toggleJump: (force) => config.jumpToSlide && uiToggle("jump", force),
       toggleSearch: (force) => config.search && uiToggle("search", force),
       toggleFullscreen: () => {
-        const el = document.documentElement;
+        // An embedded deck fills the screen as itself, not the page around it.
+        const el = (embedded && rootRef.current) || document.documentElement;
         if (document.fullscreenElement) void document.exitFullscreen();
         else void el.requestFullscreen?.();
       },
       toggleAutoSlide: () => {
+        // `autoSlide: false` is off for good (reveal.js): `A` says so rather than pretending.
+        if (config.autoSlide === false) {
+          const message = "Auto-slide is off in this deck";
+          ui.update((s) => ({ ...s, toast: message }));
+          setTimeout(
+            () => ui.update((s) => (s.toast === message ? { ...s, toast: null } : s)),
+            1800,
+          );
+          return;
+        }
         nav.update((s) => ({ ...s, autoSliding: !s.autoSliding }));
         // Nothing else on screen says auto-slide changed until a slide moves by itself.
         const message = nav.get().autoSliding ? "Auto-slide on" : "Auto-slide paused";
@@ -715,6 +776,7 @@ export function DeckRuntimeView({
       notesEditor,
       routes: deckRoutes.registry,
       windows,
+      events,
     }),
     [
       manifest,
@@ -742,14 +804,22 @@ export function DeckRuntimeView({
       notesEditor,
       deckRoutes.registry,
       windows,
+      events,
     ],
   );
 
   useBuiltinCommands(runtime);
   usePackageSetup(runtime, merged.modules);
   usePackageRoutes(deckRoutes.registry, merged.modules);
-  useDeckEffects(runtime, flags, wantedAtLoad, related, rootRef);
+  useDeckEffects(runtime, flags, wantedAtLoad, related, rootRef, {
+    embedded,
+    hashOn,
+    focus,
+    shuffle,
+  });
   useTermEffects(runtime);
+  // reveal's postMessage API, for a page that frames the deck (react/host-messages.ts).
+  useHostMessages(runtime, { projector });
   // A share window or teleprompter the viewer closed themselves: the button that opened it stops
   // looking lit.
   useEffect(() => {
@@ -802,7 +872,7 @@ export function DeckRuntimeView({
 
   return (
     <DeckContext.Provider value={runtime}>
-      <DeckRoot root={rootRef}>
+      <DeckRoot root={rootRef} embedded={embedded} focus={focus}>
         {/* Every slide's own <style>, scoped to it (compiler/slide-style.ts): one sheet, every view. */}
         {manifest.styles ? <style data-deck-slide-styles="">{manifest.styles}</style> : null}
         {wrapped}
@@ -871,12 +941,45 @@ function useContextStrict(): DeckRuntime {
 function DeckRoot({
   children,
   root,
+  embedded,
+  focus,
 }: {
   children: ReactNode;
   root: React.RefObject<HTMLDivElement | null>;
+  embedded: boolean;
+  focus: DeckFocus;
 }) {
   const deck = useContextStrict();
   usePresentingRoot(deck, root);
+  /*
+   * reveal.js's focus for an embedded deck (controllers/focus.js): a press inside the deck gives it
+   * the keys, a press anywhere else on the page takes them away, and it shows as `.focused`. Tabbing
+   * into it counts too. A deck that is the whole page always has them.
+   */
+  const [focused, setFocused] = useState(focus.on);
+  useEffect(() => {
+    const el = root.current;
+    if (!embedded || !el) return;
+    const set = (on: boolean) => {
+      focus.on = on;
+      setFocused(on);
+    };
+    set(false);
+    const inside = () => set(true);
+    const outside = (e: Event) => {
+      if (!el.contains(e.target as Node | null)) set(false);
+    };
+    el.addEventListener("pointerdown", inside);
+    el.addEventListener("focusin", inside);
+    document.addEventListener("pointerdown", outside, true);
+    document.addEventListener("focusin", outside, true);
+    return () => {
+      el.removeEventListener("pointerdown", inside);
+      el.removeEventListener("focusin", inside);
+      document.removeEventListener("pointerdown", outside, true);
+      document.removeEventListener("focusin", outside, true);
+    };
+  }, [embedded, focus, root]);
   const [scheme, setScheme] = useState(deck.ui.get().colorScheme);
   const [theme, setTheme] = useState(deck.ui.get().theme);
   const [cursorHidden, setCursorHidden] = useState(false);
@@ -891,6 +994,34 @@ function DeckRoot({
     [deck.ui],
   );
   useEffect(() => deck.nav.subscribe((s) => setPaused(s.paused)), [deck.nav]);
+  /*
+   * The slide on show's `state` (reveal's data-state) on the deck root, as `<name>` and
+   * `state-<name>`, so page-wide CSS can follow the slide; each one it turns on also fires an
+   * event of that name on the root (reveal's), and `deck:state` says what changed.
+   */
+  const at = useStore(deck.nav, (s) => `${s.h},${s.v}`);
+  const states = useMemo(
+    () => (deck.mode === "play" ? stateNames(deck.options.get(at)?.state) : []),
+    [deck.mode, deck.options, at],
+  );
+  const statesKey = states.join(" ");
+  const shownStates = useRef<string[]>([]);
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const { entered, left } = stateChange(shownStates.current, states);
+    shownStates.current = states;
+    for (const name of entered) {
+      el.dispatchEvent(new Event(name, { bubbles: true }));
+      deck.events.emit(name, { state: states });
+    }
+    if (entered.length || left.length)
+      el.dispatchEvent(
+        new CustomEvent("deck:state", { bubbles: true, detail: { state: states, entered, left } }),
+      );
+    // `statesKey` stands for `states`: the same names in a new array change nothing.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [statesKey, root]);
   // The fonts of the theme on show (a theme picked from the menu brings its own), loaded here;
   // `--theme-*` from themeConfig, and the font tokens `fonts` points at its families.
   const fonts = useMemo(
@@ -900,9 +1031,11 @@ function DeckRoot({
   useDeckFonts(fonts);
   const vars = useRootVars(deck.manifest, theme, deck.config.themeConfig, fonts);
   useEffect(() => {
+    // An embedded deck's scheme is its own element's (data-color-scheme below); the page keeps its.
+    if (embedded) return;
     document.documentElement.dataset.colorScheme = scheme;
     document.documentElement.classList.toggle("dark", scheme === "dark");
-  }, [scheme]);
+  }, [scheme, embedded]);
   return (
     <div
       className={[
@@ -914,6 +1047,13 @@ function DeckRoot({
         paused ? "is-paused" : "",
         deck.config.selectable ? "" : "no-select",
         deck.config.rtl ? "rtl" : "",
+        // `center: true`: the default layout's content sits in the middle (themes/base.css).
+        deck.config.center ? "is-centered" : "",
+        embedded ? "is-embedded" : "",
+        embedded && focused ? "focused" : "",
+        // Tailwind's `dark:` reads a `.dark` ancestor; an embedded deck cannot put it on <html>.
+        embedded && scheme === "dark" ? "dark" : "",
+        ...stateClasses(states),
       ]
         .filter(Boolean)
         .join(" ")}
@@ -987,6 +1127,34 @@ function viewport() {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+/** The box the stage fits: the window, or for an embedded deck its own element. */
+function boxOf(root: HTMLElement | null, embedded: boolean) {
+  if (embedded && root) return { width: root.clientWidth || 1, height: root.clientHeight || 1 };
+  return viewport();
+}
+
+/** Whether the deck itself set `hash` (an embedded deck leaves the address alone otherwise). */
+function setsHash(...layers: unknown[]): boolean {
+  return layers.some((l) => !!l && typeof l === "object" && "hash" in l);
+}
+
+/** A shuffled deck's order across its windows (see `dealsOrder`). */
+interface ShuffleSync {
+  /** This window dealt the order: it answers for it. */
+  deals: boolean;
+  /** This window shows a shuffled deck it did not deal: it takes the dealer's order. */
+  wants: boolean;
+  adopt(order: SlideOrder): void;
+}
+
+/** Whether this deck has the keys, for keyboardCondition "focused" (DeckRoot keeps it). */
+interface DeckFocus {
+  on: boolean;
+}
+
+/** Every deck runtime in this document, so decks embedded side by side do not move each other. */
+const decksHere = new Set<string>();
+
 /** Every browser side effect, in one place. */
 function useDeckEffects(
   deck: DeckRuntime,
@@ -994,23 +1162,31 @@ function useDeckEffects(
   wantedAtLoad: ReturnType<typeof parseHash>,
   related: Related,
   rootRef: React.RefObject<HTMLDivElement | null>,
+  {
+    embedded,
+    hashOn,
+    focus,
+    shuffle,
+  }: { embedded: boolean; hashOn: boolean; focus: DeckFocus; shuffle: ShuffleSync },
 ) {
   const { nav, ui, layout, config, columns, actions, base, mode, stageInset } = deck;
 
-  // The title (the fonts are theming/react.tsx's `useDeckFonts`).
+  // The title (the fonts are theming/react.tsx's `useDeckFonts`). An embedded deck is a guest on
+  // its page: the title and the head stay the page's.
   useEffect(() => {
-    document.title = config.title;
-  }, [config.title]);
+    if (!embedded) document.title = config.title;
+  }, [config.title, embedded]);
   // Description, Open Graph, favicon, lang: what index.html has from the build, kept in step.
-  useDocumentHead(config, base);
+  useDocumentHead(config, base, !embedded);
 
   // Layout: scale to the viewport (or the embedding element), less whatever the ad frame keeps.
   // The presenter view lays its own canvas out (presenter/index.tsx sets scale 1 inside a box it
   // fits itself); measuring the window there too scaled the current slide twice, to ~83% of its pane.
   useEffect(() => {
+    const root = rootRef.current;
     const measure = () => {
       if (mode === "presenter") return;
-      const vp = viewport();
+      const vp = boxOf(root, embedded);
       const inset = stageInset.get();
       layout.set(
         computeLayout(
@@ -1023,27 +1199,35 @@ function useDeckEffects(
         ),
       );
     };
-    measure();
-    const offInset = stageInset.subscribe(measure);
-    window.addEventListener("resize", measure);
     const narrow = () => {
       if (mode !== "play" || !config.scrollActivationWidth || flags.view === "slide") return;
-      const on = window.innerWidth < config.scrollActivationWidth;
+      const on = boxOf(root, embedded).width < config.scrollActivationWidth;
       ui.update((s) => (s.scroll === on || flags.view === "scroll" ? s : { ...s, scroll: on }));
     };
-    narrow();
-    window.addEventListener("resize", narrow);
+    const both = () => {
+      measure();
+      narrow();
+    };
+    both();
+    const offInset = stageInset.subscribe(measure);
+    window.addEventListener("resize", both);
+    // An embedded deck follows its own element, which can change size while the window does not
+    // (a sidebar opening, a column reflowing): reveal's layout() on resize.
+    const watch =
+      embedded && root && typeof ResizeObserver !== "undefined" ? new ResizeObserver(both) : null;
+    watch?.observe(root!);
     return () => {
       offInset();
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("resize", narrow);
+      window.removeEventListener("resize", both);
+      watch?.disconnect();
     };
-  }, [layout, config, ui, mode, flags.view, stageInset]);
+  }, [layout, config, ui, mode, flags.view, stageInset, embedded, rootRef]);
 
   // Hash ↔ navigation.
   useEffect(() => {
     if (!config.hash || mode === "print" || mode === "remote") return;
     const write = (s: N.NavState) => {
+      if (!hashOn) return;
       const meta = columns[s.h]?.slides[s.v];
       const id = meta && typeof meta.frontmatter.id === "string" ? meta.frontmatter.id : null;
       const next = formatHash(s, {
@@ -1099,12 +1283,14 @@ function useDeckEffects(
       if ((p.click ?? 0) > known) pending = p;
       nav.update((st) => ({ ...N.goto(st, columns, p), follow: false }));
     };
-    window.addEventListener("hashchange", onHash);
+    // respondToHashChanges: false — the deck writes the hash but a change to it (a link, the
+    // address bar, another script on the page) does not move the deck.
+    if (config.respondToHashChanges) window.addEventListener("hashchange", onHash);
     return () => {
       unsub();
       window.removeEventListener("hashchange", onHash);
     };
-  }, [nav, columns, config, mode, flags.at]);
+  }, [nav, columns, config, mode, flags.at, hashOn]);
 
   // The viewer's follow choice, and when they made it (see `startFollowing`). Only the two views
   // that can follow anything remember it: the presenter's own window has a `follow` of its own
@@ -1138,8 +1324,13 @@ function useDeckEffects(
     )
       return;
     let pendingG = 0;
+    // reveal's keyboardCondition: "focused" (an embedded deck's default) or a function of the key.
+    const condition = keyboardConditionOf(config, embedded);
     const onKey = (e: KeyboardEvent) => {
       if (isEditable(e)) return;
+      const root = rootRef.current;
+      const focused = focus.on || (!!root && root.contains(document.activeElement));
+      if (!keyAllowed(condition, e, focused)) return;
       const u = ui.get();
       const s = nav.get();
       // The binding this key has here (core/shortcuts.ts): the defaults, the deck's own changes.
@@ -1220,7 +1411,19 @@ function useDeckEffects(
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [config, nav, ui, actions, mode, deck.projector, deck.shortcuts, deck.commands]);
+  }, [
+    config,
+    nav,
+    ui,
+    actions,
+    mode,
+    deck.projector,
+    deck.shortcuts,
+    deck.commands,
+    embedded,
+    focus,
+    rootRef,
+  ]);
 
   // Touch swipes, mouse wheel, alt+click zoom, lightbox delegation, idle cursor.
   useEffect(() => {
@@ -1274,7 +1477,9 @@ function useDeckEffects(
       }
       if (config.zoom && e.altKey) {
         const l = layout.get();
-        const p = toStage(l, e.clientX, e.clientY);
+        // The layout is laid out in the deck's own box: an embedded one starts where its element does.
+        const at = embedded ? rootRef.current?.getBoundingClientRect() : null;
+        const p = toStage(l, e.clientX - (at?.left ?? 0), e.clientY - (at?.top ?? 0));
         actions.zoomTo(p.x, p.y);
       }
     };
@@ -1288,21 +1493,26 @@ function useDeckEffects(
         config.hideCursorTime,
       );
     };
-    window.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("click", onClick);
-    window.addEventListener("pointermove", wake);
+    // An embedded deck listens on its own element: a swipe, a wheel or a click elsewhere on the
+    // page (or on another deck) is not its own.
+    const on: HTMLElement | Window = (embedded && rootRef.current) || window;
+    const add = on.addEventListener.bind(on) as typeof window.addEventListener;
+    const remove = on.removeEventListener.bind(on) as typeof window.removeEventListener;
+    add("pointerdown", onDown);
+    add("pointerup", onUp);
+    add("wheel", onWheel, { passive: true });
+    add("click", onClick);
+    add("pointermove", wake);
     wake();
     return () => {
-      window.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("click", onClick);
-      window.removeEventListener("pointermove", wake);
+      remove("pointerdown", onDown);
+      remove("pointerup", onUp);
+      remove("wheel", onWheel);
+      remove("click", onClick);
+      remove("pointermove", wake);
       if (idle) clearTimeout(idle);
     };
-  }, [config, actions, ui, layout, mode]);
+  }, [config, actions, ui, layout, mode, embedded, rootRef]);
 
   // `.navigate-*` links carry `.enabled` while their way leads somewhere, and are `disabled`
   // otherwise, as reveal's controls are. Slides mount after the move that shows them, so the DOM is
@@ -1359,6 +1569,102 @@ function useDeckEffects(
     };
   }, [deck.projector, config.hideInactiveCursor, config.hideCursorTime, ui]);
 
+  // deck.events (core/events.ts), fed from the stores: what a move, the overview, a blackout or
+  // auto-slide changed, and the stage's scale. The slides named in an event are the elements on
+  // show, so the events go out a task after the move, once React has drawn it.
+  useEffect(() => {
+    if (mode !== "play") return;
+    const root = rootRef.current;
+    const slideEl = (role: "present" | "leaving") =>
+      root?.querySelector<HTMLElement>(`.deck-stage .deck-slide.is-${role}`) ?? null;
+    const queue: DeckEvent[] = [];
+    let flush: ReturnType<typeof setTimeout> | null = null;
+    let settle = 0;
+    const transitionEnd = (at: { indexh: unknown; indexv: unknown }) => {
+      // The slide just left stays mounted as `is-leaving` for its transition (react/Stage.tsx).
+      const started = performance.now();
+      const check = () => {
+        settle = 0;
+        if (slideEl("leaving") && performance.now() - started < 5000) {
+          settle = requestAnimationFrame(check);
+          return;
+        }
+        deck.events.emit("slidetransitionend", { ...at, currentSlide: slideEl("present") });
+      };
+      if (settle) cancelAnimationFrame(settle);
+      settle = requestAnimationFrame(check);
+    };
+    const send = () => {
+      flush = null;
+      for (const e of queue.splice(0)) {
+        const { type, ...data } = e;
+        const current = slideEl("present");
+        if (type === "slidechanged") {
+          deck.events.emit(type, {
+            ...data,
+            previousSlide: slideEl("leaving"),
+            currentSlide: current,
+          });
+          transitionEnd(data as { indexh: unknown; indexv: unknown });
+        } else if (type === "fragmentshown" || type === "fragmenthidden") {
+          const fragments = (data.steps as number[]).flatMap((n) => [
+            ...(current?.querySelectorAll<HTMLElement>(`[data-click-at="${n}"]`) ?? []),
+          ]);
+          deck.events.emit(type, { ...data, fragment: fragments[0] ?? null, fragments });
+        } else deck.events.emit(type, { ...data, currentSlide: current });
+      }
+    };
+    const unsubNav = nav.subscribe((next, prev) => {
+      const made = navEvents(prev, next);
+      if (!made.length) return;
+      queue.push(...made);
+      if (!flush) flush = setTimeout(send, 0);
+    });
+    const unsubLayout = layout.subscribe((next, prev) => {
+      if (next.scale === prev.scale) return;
+      deck.events.emit("resize", {
+        scale: next.scale,
+        oldScale: prev.scale,
+        size: { width: next.width, height: next.height },
+      });
+    });
+    // ready: the deck is up, a task after its first paint.
+    const ready = setTimeout(() => {
+      const s = nav.get();
+      deck.events.emit("ready", {
+        indexh: s.h,
+        indexv: s.v,
+        indexf: s.click,
+        currentSlide: slideEl("present"),
+      });
+    }, 0);
+    return () => {
+      unsubNav();
+      unsubLayout();
+      clearTimeout(ready);
+      if (flush) clearTimeout(flush);
+      if (settle) cancelAnimationFrame(settle);
+    };
+  }, [mode, nav, layout, deck.events, rootRef]);
+
+  // focusBodyOnPageVisibilityChange (reveal.js): back on the tab after following a link, focus is
+  // often left in an embedded page or a control, where the deck's keys do not reach; it goes back
+  // to the page. An embedded deck leaves its page's focus alone.
+  useEffect(() => {
+    if (mode !== "play" || embedded || !config.focusBodyOnPageVisibilityChange) return;
+    const onVisible = () => {
+      if (document.hidden) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (!active || active === document.body) return;
+      // Text someone was typing in (the side editor, a form on a slide) keeps its caret.
+      if (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+      if (typeof active.blur === "function") active.blur();
+      document.body.focus();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [mode, embedded, config.focusBodyOnPageVisibilityChange]);
+
   // Fullscreen state, wake lock.
   useEffect(() => {
     const onFs = () => ui.update((s) => ({ ...s, fullscreen: !!document.fullscreenElement }));
@@ -1381,44 +1687,87 @@ function useDeckEffects(
 
   // Auto-slide. It runs on any play window but a projector (which follows instead): on by itself
   // when the deck or any slide sets an interval, and on `A` otherwise — see `autoSlideDelay`.
+  // `autoSlide: false` turns it off outright, slides' own intervals and `A` included (reveal.js).
   useEffect(() => {
-    if (mode !== "play" || deck.projector) return;
-    const deckMs = config.autoSlide || 0;
+    if (mode !== "play" || deck.projector || config.autoSlide === false) return;
+    const deckMs = config.autoSlide;
     const configured = deckMs > 0 || [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0);
     if (configured) nav.update((s) => ({ ...s, autoSliding: true }));
+    // The step it takes: `autoSlideMethod`, a move by name or a command (core/auto-slide.ts).
+    const method = autoSlideMethod(config.autoSlideMethod);
+    const step = () => {
+      if ("move" in method) actions[method.move]();
+      else void deck.commands.run(method.command, {}, "api");
+    };
     let timer: ReturnType<typeof setTimeout> | null = null;
     const schedule = () => {
       if (timer) clearTimeout(timer);
+      timer = null;
       const s = nav.get();
       if (!s.autoSliding || s.paused || s.overview) return;
-      const opts = deck.options.get(`${s.h},${s.v}`);
-      const ms = N.autoSlideDelay(opts?.autoSlide ?? null, deckMs, configured);
-      if (ms === null) return;
+      // The step on show may carry its own interval (`data-autoslide`, reveal's per-fragment
+      // one); it is read from the slide once React has drawn the move, a task later.
       timer = setTimeout(() => {
-        const before = nav.get();
-        // The deck advancing itself is not the viewer choosing to leave the presenter.
-        deck.sync.source = "auto";
-        try {
-          actions.next();
-          if (nav.get() === before && config.loop) actions.first();
-        } finally {
-          deck.sync.source = null;
-        }
-        schedule();
-      }, ms);
+        const root = rootRef.current;
+        const own = root?.querySelector(stepAutoSlideSelector(s.click));
+        const stepMs = stepAutoSlide(own?.getAttribute("data-autoslide"));
+        const opts = deck.options.get(`${s.h},${s.v}`);
+        const ms = N.autoSlideDelay(stepMs ?? opts?.autoSlide ?? null, deckMs, configured);
+        if (ms === null) return;
+        timer = setTimeout(() => {
+          const before = nav.get();
+          // The deck advancing itself is not the viewer choosing to leave the presenter.
+          deck.sync.source = "auto";
+          try {
+            step();
+            if (nav.get() === before && config.loop) actions.first();
+          } finally {
+            deck.sync.source = null;
+          }
+          schedule();
+        }, ms);
+      }, 0);
     };
     schedule();
     const unsub = nav.subscribe(() => schedule());
+    // autoSlideStoppable: the viewer taking over — a press, or a key the deck answers — stops it.
+    // `A` is left alone: it is the key that turns it back on.
     const stop = () =>
       config.autoSlideStoppable &&
       nav.update((s) => (s.autoSliding ? { ...s, autoSliding: false } : s));
-    window.addEventListener("pointerdown", stop);
+    const condition = keyboardConditionOf(config, embedded);
+    const onKey = (e: KeyboardEvent) => {
+      if (!config.autoSlideStoppable || !config.keyboard || isEditable(e)) return;
+      const root = rootRef.current;
+      const focused = focus.on || (!!root && root.contains(document.activeElement));
+      if (!keyAllowed(condition, e, focused)) return;
+      const hit = deck.shortcuts.match(e, mode);
+      if (!hit || hit.action === "autoSlide" || hit.command === KEY_COMMANDS.autoSlide) return;
+      stop();
+    };
+    const pressOn: HTMLElement | Window = (embedded && rootRef.current) || window;
+    pressOn.addEventListener("pointerdown", stop);
+    window.addEventListener("keydown", onKey, true);
     return () => {
       unsub();
       if (timer) clearTimeout(timer);
-      window.removeEventListener("pointerdown", stop);
+      pressOn.removeEventListener("pointerdown", stop);
+      window.removeEventListener("keydown", onKey, true);
     };
-  }, [config, nav, actions, mode, deck.options, deck.projector]);
+  }, [
+    config,
+    nav,
+    actions,
+    mode,
+    deck.options,
+    deck.projector,
+    deck.commands,
+    deck.shortcuts,
+    deck.sync,
+    embedded,
+    focus,
+    rootRef,
+  ]);
 
   // Cross-window sync: the presenter window and the play window mirror each other (core/windows.ts).
   // A phone remote shows the presenter's slide; it is nobody's window to follow.
@@ -1426,8 +1775,12 @@ function useDeckEffects(
     if (typeof window === "undefined" || mode === "print" || mode === "remote") return;
     const bus = createWindowBus<WindowMessage>(config.slug || base);
     related.bus = bus;
+    decksHere.add(deck.windowId);
     for (const child of related.children) bus.adopt(child);
     for (const message of related.pending.splice(0)) bus.post(message);
+    // A shuffled deck: the dealer says its order, a window that just opened asks for it.
+    if (shuffle.deals) bus.post({ type: "order", from: deck.windowId, order: orderOf(columns) });
+    else if (shuffle.wants) bus.post({ type: "order:ask", from: deck.windowId });
     const unsub = nav.subscribe((s, prev) => {
       // Only local moves go out: a position applied from another window or the room stays put.
       // A teleprompter makes none, and says nothing that could move the play window either.
@@ -1446,6 +1799,18 @@ function useDeckEffects(
     });
     const unlisten = bus.subscribe(({ data: m, via }) => {
       if (!m || typeof m !== "object") return;
+      // Another deck on this same page (two embedded side by side, both named after the page's
+      // address) is not another window of this one.
+      const from = (m as { from?: unknown }).from;
+      if (typeof from === "string" && from !== deck.windowId && decksHere.has(from)) return;
+      if (m.type === "order:ask" && shuffle.deals) {
+        bus.post({ type: "order", from: deck.windowId, order: orderOf(columns) });
+        return;
+      }
+      if (m.type === "order") {
+        if (shuffle.wants) shuffle.adopt((m as { order: SlideOrder }).order);
+        return;
+      }
       if (m.type !== "nav") {
         // Not a position: for whoever listens through `deck.windows` (each checks its own).
         for (const l of related.listeners) l(m, via);
@@ -1485,7 +1850,19 @@ function useDeckEffects(
       unsub();
       unlisten();
       bus.close();
+      decksHere.delete(deck.windowId);
       if (related.bus === bus) related.bus = null;
     };
-  }, [nav, columns, config.slug, base, deck.windowId, deck.isPresenter, deck.sync, mode, related]);
+  }, [
+    nav,
+    columns,
+    config.slug,
+    base,
+    deck.windowId,
+    deck.isPresenter,
+    deck.sync,
+    mode,
+    related,
+    shuffle,
+  ]);
 }

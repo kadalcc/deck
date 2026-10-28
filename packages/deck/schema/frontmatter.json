@@ -78,7 +78,7 @@
             "hidden",
             "uncounted"
           ],
-          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility)."
         },
         "hideInToc": {
           "type": "boolean",
@@ -184,7 +184,7 @@
               "type": "array"
             }
           ],
-          "description": "Adds state-<name> classes while the slide shows (CSS hooks)."
+          "description": "reveal.js's data-state: while the slide shows, `state-<name>` on the slide and both `<name>` and `state-<name>` on the deck root, so CSS for the whole page can follow it; each name it turns on fires an event of that name on the root, and `deck:state` says what changed. Names split on spaces."
         },
         "colorScheme": {
           "type": "string",
@@ -219,7 +219,7 @@
         },
         "backgroundImage": {
           "type": "string",
-          "description": "An image URL behind the slide."
+          "description": "An image URL behind the slide. An animated GIF starts again from its first frame each time the slide is shown."
         },
         "backgroundSize": {
           "type": "string",
@@ -239,7 +239,7 @@
         },
         "backgroundVideo": {
           "type": "string",
-          "description": "A video URL behind the slide."
+          "description": "A video URL behind the slide, or reveal.js's comma-separated list of sources, best first (`/loop.webm, /loop.mp4`). It plays from the start when the slide is shown (unless `autoPlayMedia: false`) and pauses when the slide is left."
         },
         "backgroundVideoLoop": {
           "type": "boolean",
@@ -251,7 +251,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -381,7 +381,7 @@
             "hidden",
             "uncounted"
           ],
-          "description": "\"hidden\" leaves it out; \"uncounted\" shows it without a number."
+          "description": "\"hidden\" leaves it out; \"uncounted\" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js's data-visibility)."
         },
         "hideInToc": {
           "type": "boolean",
@@ -516,7 +516,7 @@
               "type": "array"
             }
           ],
-          "description": "Adds state-<name> classes while the slide shows (CSS hooks)."
+          "description": "reveal.js's data-state: while the slide shows, `state-<name>` on the slide and both `<name>` and `state-<name>` on the deck root, so CSS for the whole page can follow it; each name it turns on fires an event of that name on the root, and `deck:state` says what changed. Names split on spaces."
         },
         "colorScheme": {
           "type": "string",
@@ -554,7 +554,7 @@
         },
         "backgroundImage": {
           "type": "string",
-          "description": "An image URL behind the slide."
+          "description": "An image URL behind the slide. An animated GIF starts again from its first frame each time the slide is shown."
         },
         "backgroundSize": {
           "type": "string",
@@ -574,7 +574,7 @@
         },
         "backgroundVideo": {
           "type": "string",
-          "description": "A video URL behind the slide."
+          "description": "A video URL behind the slide, or reveal.js's comma-separated list of sources, best first (`/loop.webm, /loop.mp4`). It plays from the start when the slide is shown (unless `autoPlayMedia: false`) and pauses when the slide is left."
         },
         "backgroundVideoLoop": {
           "type": "boolean",
@@ -586,7 +586,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -755,8 +755,8 @@
         },
         "center": {
           "type": "boolean",
-          "description": "Vertically centre each slide's content.",
-          "default": true
+          "description": "Vertically centre the content of slides on the default layout, as reveal.js does. False by default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other layouts place their content themselves.",
+          "default": false
         },
         "controls": {
           "anyOf": [
@@ -827,7 +827,7 @@
             "print",
             "speaker"
           ],
-          "description": "Where slide numbers show.",
+          "description": "Where slide numbers show: \"all\" (default) the deck, every printed page (and `kadal-deck export` PDF) and the presenter view; \"print\" only the printed pages; \"speaker\" only the presenter view.",
           "default": "all"
         },
         "hash": {
@@ -874,11 +874,11 @@
               "type": "null"
             }
           ],
-          "description": "reveal.js compatible: when the deck takes keys. null (default): always; \"focused\": only while the deck has focus (a deck embedded in a page). deck.config.ts may pass a function of the KeyboardEvent instead, true letting the key through."
+          "description": "reveal.js compatible: when the deck takes keys. null (default): always, or \"focused\" for an embedded deck; \"focused\": only while the deck has focus (a press inside it, or tabbing into it; the deck then carries `.focused`). deck.config.ts may pass a function of the KeyboardEvent instead; returning false keeps the key from the deck."
         },
         "focusBodyOnPageVisibilityChange": {
           "type": "boolean",
-          "description": "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true.",
+          "description": "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame or a control so the keys reach the deck (a text field keeps its caret; an embedded deck leaves its page's focus alone). Default true.",
           "default": true
         },
         "overview": {
@@ -913,12 +913,12 @@
         },
         "shuffle": {
           "type": "boolean",
-          "description": "Shuffle the slides on load.",
+          "description": "Shuffle the slides on load, the columns and each vertical stack, as reveal.js does: a new order every load of the play view, handed to its presenter view and share window so they show the same deck. Print and export keep the authored order.",
           "default": false
         },
         "fragments": {
           "type": "boolean",
-          "description": "Clicks/fragments on; off shows every step at once.",
+          "description": "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
           "default": true
         },
         "fragmentInURL": {
@@ -928,7 +928,7 @@
         },
         "embedded": {
           "type": "boolean",
-          "description": "The deck lives inside another page.",
+          "description": "reveal.js compatible: the deck lives inside part of another page (also `?embedded`). It sizes itself from its own element (and follows it as it resizes), takes keys only while focused (a press inside it; `keyboardCondition` overrides), listens for swipes and clicks on itself alone, goes fullscreen as itself, and leaves the page's hash, title, head and colour scheme alone unless `hash` is set outright. Several embedded decks can share a page.",
           "default": false
         },
         "postMessage": {
@@ -975,7 +975,7 @@
               "type": "null"
             }
           ],
-          "description": "Autoplay media on every slide (null = per element)."
+          "description": "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none (background videos included); null (default) plays those marked `data-autoplay`, and backgrounds."
         },
         "preloadIframes": {
           "anyOf": [
@@ -998,12 +998,12 @@
         },
         "autoSlideStoppable": {
           "type": "boolean",
-          "description": "Any input stops auto-slide.",
+          "description": "Input stops auto-slide: a press on the deck, or any key the deck answers (A, which turns it back on, excepted). The play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
           "default": true
         },
         "autoSlideMethod": {
           "type": "string",
-          "description": "reveal.js compatible: the step auto-slide takes, by name. \"next\" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML.",
+          "description": "reveal.js compatible: the step auto-slide takes, by name. \"next\" (default) walks every click step and slide, down a vertical stack before going right; \"right\" (or reveal's \"Reveal.navigateRight\") skips the stacks; also \"nextSlide\", \"down\", \"prev\", \"left\", \"up\", \"first\", \"last\", or any command id. reveal takes a function here; a name works in YAML.",
           "default": "next"
         },
         "defaultTiming": {
@@ -1045,7 +1045,7 @@
         },
         "parallaxBackgroundSize": {
           "type": "string",
-          "description": "reveal.js compatible: the parallax image's CSS background-size, e.g. \"2100px 900px\". Empty (default): the image's own size.",
+          "description": "reveal.js compatible: the parallax image's CSS background-size, e.g. \"2100px 900px\" (the steps are worked out from a size in pixels). Empty (default): the image's own size.",
           "default": ""
         },
         "parallaxBackgroundHorizontal": {
@@ -1168,12 +1168,12 @@
         },
         "pdfMaxPagesPerSlide": {
           "type": "number",
-          "description": "Pages a tall slide may spill onto.",
+          "description": "reveal.js compatible: how many printed/PDF pages a slide taller than one may run onto (default 1: one page each, autoFit shrinking what overflows). Its print page grows by whole page heights and breaks across them; past the limit autoFit shrinks the rest.",
           "default": 1
         },
         "jumpToSlide": {
           "type": "boolean",
-          "description": "`:12` / g jumps.",
+          "description": "`:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id.",
           "default": true
         },
         "search": {
@@ -1193,7 +1193,7 @@
         },
         "lineNumbers": {
           "type": "boolean",
-          "description": "Line numbers on every code block.",
+          "description": "Line numbers on every code block (and magic move) that does not set its own `{lines: …}`; `{lines:false}` opts one out.",
           "default": false
         },
         "autoFit": {

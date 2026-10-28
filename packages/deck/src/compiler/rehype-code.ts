@@ -184,7 +184,9 @@ function withoutTwoslashNotation(code: string): string {
 function dataAttributes(meta: CodeMeta, lang: string, totalLines: number) {
   const out: Record<string, string> = { "data-lang": lang, "data-total": String(totalLines) };
   if (meta.steps && !meta.monaco) out["data-steps"] = serialiseSteps(meta.steps);
+  // "false" only when the fence says so: a block that says nothing takes the deck's lineNumbers.
   if (meta.lines) out["data-lines"] = "true";
+  else if ("lines" in meta.options) out["data-lines"] = "false";
   if (meta.startLine !== 1) out["data-start"] = String(meta.startLine);
   if (meta.title) out["data-title"] = meta.title;
   if (meta.maxHeight) out["data-max-height"] = meta.maxHeight;
