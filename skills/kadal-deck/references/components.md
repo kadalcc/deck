@@ -170,6 +170,24 @@ A CSS grid of its children.
 | `gap` | `string` | `"1.5rem"` | CSS gap. |
 | `children` | `ReactNode` |  |  |
 
+#### `<HStack>`
+
+Children in a row, centred both ways (reveal.js's `r-hstack`); images inside shrink to fit.
+
+```mdx
+<HStack gap="2rem">
+  <img src="/a.png" />
+  <img src="/b.png" />
+</HStack>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  |  |
+| `gap` | `string` |  | CSS gap between the children. |
+| `align` | `string` |  | Cross-axis alignment (`align-items`): center by default. |
+| `justify` | `string` |  | Main-axis distribution (`justify-content`): center by default. |
+
 #### `<Spacer>`
 
 Vertical space.
@@ -228,6 +246,27 @@ A table that is a little too big
 | `scale` | `number` | `1` |  |
 | `origin` | `string` | `"top left"` |  |
 | `children` | `ReactNode` |  |  |
+
+#### `<VStack>`
+
+Children in a column, centred both ways (reveal.js's `r-vstack`).
+
+```mdx
+<VStack gap="1rem">
+
+## Title
+
+![](/chart.png)
+
+</VStack>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  |  |
+| `gap` | `string` |  | CSS gap between the children. |
+| `align` | `string` |  | Cross-axis alignment (`align-items`): center by default. |
+| `justify` | `string` |  | Main-axis distribution (`justify-content`): center by default. |
 
 ### Steps
 
