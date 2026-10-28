@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Layout helpers</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/beige.css" id="theme">
+    <link rel="stylesheet" href="plugin/highlight/monokai.css">
+    <style>
+      .note { font-style: italic; }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section data-background-color="#1e293b">
+          <h1>Layout helpers</h1>
+          <p>A reveal.js deck in the beige theme, on a dark first slide</p>
+        </section>
+
+        <section>
+          <h2 class="r-fit-text">Fit text</h2>
+        </section>
+
+        <section>
+          <h2>Stretch</h2>
+          <img class="r-stretch" src="assets/shapes.svg" alt="Three shapes">
+          <p>The picture fills the height that is left.</p>
+        </section>
+
+        <section>
+          <h2>Stack</h2>
+          <div class="r-stack">
+            <img class="fragment" src="assets/square.svg" width="450" height="300" alt="A square">
+            <img class="fragment" src="assets/circle.svg" width="300" height="300" alt="A circle">
+            <img class="fragment" src="assets/triangle.svg" width="400" height="400" alt="A triangle">
+          </div>
+        </section>
+
+        <section>
+          <h2>Frame</h2>
+          <img class="r-frame" src="assets/square.svg" width="300" height="200" alt="A framed square">
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            ## Element attributes <!-- .element: style="color: #9a7b2f" data-id="title" -->
+
+            A paragraph with a class <!-- .element: class="note" -->
+
+            - a plain item
+            - a coloured item <!-- .element: style="color: #d0611f" -->
+            - a fragment <!-- .element: class="fragment fade-up" -->
+          </textarea>
+        </section>
+
+        <section data-auto-animate data-auto-animate-duration="1.5">
+          <h2 data-id="aa">Auto-Animate</h2>
+        </section>
+        <section data-auto-animate data-auto-animate-duration="1.5" data-auto-animate-easing="ease-out">
+          <h2 data-id="aa" style="margin-top: 200px; color: #9a7b2f">Auto-Animate</h2>
+        </section>
+
+        <section>
+          <h2>Lazy media</h2>
+          <img data-src="assets/circle.svg" width="200" height="200" alt="A circle loaded late">
+        </section>
+      </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        keyboard: { 13: 'next', 79: 'toggleOverview' },
+        plugins: [RevealMarkdown, RevealHighlight],
+      });
+    </script>
+  </body>
+</html>

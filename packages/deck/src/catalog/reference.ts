@@ -992,7 +992,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   hash: "Keep the URL hash in step with the slide.",
   hashOneBasedIndex: "1-based slide numbers in the hash.",
   history: "Push a history entry per slide (Back walks the slides).",
-  keyboard: "Keyboard navigation on.",
+  keyboard:
+    "Keyboard navigation on (false: off), or a map of single keys over the defaults: `{ KeyQ: overview, KeyD: null }` (KeyboardEvent.code names; a Kadal action, a command id, or null to unbind). reveal.js's form reads too: keyCodes and its method names, `{ 13: next, 79: toggleOverview, 32: null }`, and in deck.config.ts a function.",
   respondToHashChanges:
     "reveal.js compatible: a change to the URL hash (a link, the address bar) moves the deck. Default true.",
   keyboardCondition:

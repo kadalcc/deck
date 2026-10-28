@@ -859,7 +859,7 @@
               "type": "object"
             }
           ],
-          "description": "Keyboard navigation on.",
+          "description": "Keyboard navigation on (false: off), or a map of single keys over the defaults: `{ KeyQ: overview, KeyD: null }` (KeyboardEvent.code names; a Kadal action, a command id, or null to unbind). reveal.js's form reads too: keyCodes and its method names, `{ 13: next, 79: toggleOverview, 32: null }`, and in deck.config.ts a function.",
           "default": true
         },
         "keyboardCondition": {

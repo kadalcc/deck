@@ -101,6 +101,13 @@
   --reveal-p-shadow: none;
 }
 
+/* reveal's highlight plugin is monokai in both schemes, so the panel stays dark when a viewer
+   toggles the scheme, and its Shiki colours stay the dark ones (as theme-neon's do). */
+.theme-reveal[data-color-scheme] .shiki,
+.theme-reveal[data-color-scheme] .shiki span {
+  color: var(--shiki-dark, inherit);
+}
+
 /* white: reveal.js's white.css (light); the dark scheme is its counterpart */
 .theme-reveal[data-reveal-variant="white"],
 .theme-reveal[data-reveal-variant="white"] .theme-reveal {
@@ -688,6 +695,10 @@
 }
 
 /* ── the page: reveal's box, its type and its background ──────────────── */
+/* reveal paints the whole window in the theme's background, so the bars beside the stage do */
+.theme-reveal.deck-root {
+  --deck-bars: var(--r-background-color);
+}
 .theme-reveal .deck-slide {
   --reveal-pad-x: var(--deck-pad);
   --reveal-pad-y: var(--deck-pad);
@@ -783,6 +794,12 @@
   padding: 0;
 }
 .theme-reveal .deck-layout > :is(ol, ul, dl) {
+  align-self: center;
+}
+/* a picture on its own is a line of its own in reveal, centred like one; here it is a flex item */
+.theme-reveal
+  :is(.deck-layout-default, .deck-layout-center, .deck-layout-cover, .deck-layout-section)
+  > :is(img, video, iframe, canvas, svg, picture, object, embed) {
   align-self: center;
 }
 .theme-reveal .deck-slide ol {
