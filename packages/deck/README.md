@@ -129,6 +129,14 @@ copied into `public/`, the page's own CSS into `src/reveal.css`. Scripts and `on
 reported, never run. `IMPORT-REPORT.md` lists the rest, slide by slide. The converter is
 `convertReveal` in `@kadal/deck/import`.
 
+Media behaves as it does in reveal.js. `data-src` on an `<img>`, `<video>`, `<audio>` or `<source>`
+loads once the slide is within `viewDistance`; an `<iframe data-src>` loads when its slide is shown
+(with `data-preload`, or `preloadIframes: true`, within `viewDistance`; `preloadIframes: false`
+only when shown) and unloads when it is left. Every frame on a slide or behind it hears
+`slide:start` and `slide:stop` by `postMessage`. A YouTube or Vimeo `<iframe>` gets its player API
+switched on (`enablejsapi=1`, `api=1`), plays with `data-autoplay` (or `autoPlayMedia: true`) and
+pauses when its slide is left; `data-ignore` leaves a frame or a video alone.
+
 ## For AI agents and tools
 
 - `kadal-deck mcp` — 24 tools to read the reference, scaffold, outline, edit single slides (only

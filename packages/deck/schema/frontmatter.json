@@ -251,7 +251,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -586,7 +586,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -975,7 +975,7 @@
               "type": "null"
             }
           ],
-          "description": "Autoplay media on every slide (null = per element)."
+          "description": "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background."
         },
         "preloadIframes": {
           "anyOf": [
