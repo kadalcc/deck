@@ -10,7 +10,7 @@ import { type HeadInput, headTags } from "../core/head.ts";
  * can have. The title stays react/Deck.tsx's. `ogImage: auto` is a build product, so it is left
  * to the build; theme-color only when the deck names one.
  */
-export function useDocumentHead(config: HeadInput, base: string): void {
+export function useDocumentHead(config: HeadInput, base: string, on = true): void {
   const key = JSON.stringify([
     config.info,
     config.author,
@@ -21,7 +21,8 @@ export function useDocumentHead(config: HeadInput, base: string): void {
     base,
   ]);
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    // An embedded deck is a guest on someone else's page: the head is theirs.
+    if (!on || typeof document === "undefined") return;
     const head = document.head;
     // The build's og:image (an `auto` picture) stands: it is passed back in, so the tags agree.
     const built = head.querySelector<HTMLMetaElement>('meta[property="og:image"]')?.content || null;
@@ -81,5 +82,5 @@ export function useDocumentHead(config: HeadInput, base: string): void {
     };
     // `key` stands for the config's head fields: a new object with the same values changes nothing.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, on]);
 }

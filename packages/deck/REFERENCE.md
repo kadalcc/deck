@@ -1804,7 +1804,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `history` | `boolean` | `false` | Push a history entry per slide (Back walks the slides). |
 | `respondToHashChanges` | `boolean` | `true` | reveal.js compatible: a change to the URL hash (a link, the address bar) moves the deck. Default true. |
 | `keyboard` | `boolean \| Record<string, KeyAction \| string \| null>` | `true` | Keyboard navigation on (false: off), or a map of single keys over the defaults: `{ KeyQ: overview, KeyD: null }` (KeyboardEvent.code names; a Kadal action, a command id, or null to unbind). reveal.js's form reads too: keyCodes and its method names, `{ 13: next, 79: toggleOverview, 32: null }`, and in deck.config.ts a function. |
-| `keyboardCondition` | `"focused" \| KeyboardConditionFunction \| null` | `null` | reveal.js compatible: when the deck takes keys. null (default): always; "focused": only while the deck has focus (a deck embedded in a page). deck.config.ts may pass a function of the KeyboardEvent instead, true letting the key through. Values: `focused` |
+| `keyboardCondition` | `"focused" \| KeyboardConditionFunction \| null` | `null` | reveal.js compatible: when the deck takes keys. null (default): always, or "focused" for an embedded deck; "focused": only while the deck has focus (a press inside it, or tabbing into it; the deck then carries `.focused`). deck.config.ts may pass a function of the KeyboardEvent instead; returning false keeps the key from the deck. Values: `focused` |
 | `focusBodyOnPageVisibilityChange` | `boolean` | `true` | reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true. |
 | `overview` | `boolean` | `true` | The overview grid (O / Esc). |
 | `touch` | `boolean` | `true` | Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes. |
@@ -1814,7 +1814,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `shuffle` | `boolean` | `false` | Shuffle the slides on load. |
 | `fragments` | `boolean` | `true` | Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide. |
 | `fragmentInURL` | `boolean` | `true` | Include the click step in the hash. |
-| `embedded` | `boolean` | `false` | The deck lives inside another page. |
+| `embedded` | `boolean` | `false` | reveal.js compatible: the deck lives inside part of another page (also `?embedded`). It sizes itself from its own element (and follows it as it resizes), takes keys only while focused (a press inside it; `keyboardCondition` overrides), listens for swipes and clicks on itself alone, goes fullscreen as itself, and leaves the page's hash, title, head and colour scheme alone unless `hash` is set outright. Several embedded decks can share a page. |
 | `postMessage` | `boolean` | `true` | reveal.js compatible: a page that frames the deck can drive it with reveal's postMessage calls (`{ method, args }`). Default true. |
 | `postMessageEvents` | `boolean` | `false` | reveal.js compatible: post the deck's events (slide changed, fragment shown …) to the framing page, as reveal's `{ namespace: "reveal", eventName, state }`. Default false. |
 | `help` | `boolean` | `true` | The ? keyboard help. |
