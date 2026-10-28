@@ -2,6 +2,7 @@ import { type ComponentType, createContext, useContext } from "react";
 
 import type { ClickRegistry } from "../core/clicks.ts";
 import type { CommandRegistry } from "../core/commands.ts";
+import type { DeckEvents } from "../core/events.ts";
 import type { PanelRegistry } from "../core/panels.ts";
 import type { Layout } from "../core/layout.ts";
 import type {
@@ -162,6 +163,11 @@ export interface DeckActions {
 export type SyncSource = "channel" | "room" | "auto" | null;
 
 export interface DeckRuntime {
+  /**
+   * reveal.js's events for scripts that are not React (core/events.ts): `deck.events.on(
+   * "slidechanged", fn)`. They also go out as `deck:<name>` events on the deck's root element.
+   */
+  events: DeckEvents;
   manifest: DeckManifest;
   config: DeckConfig;
   columns: Column[];

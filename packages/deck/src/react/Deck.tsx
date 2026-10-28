@@ -19,7 +19,14 @@ import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
 import { isEmbedded, keyAllowed, keyboardConditionOf, usesHash } from "../core/embedding.ts";
 import { autoSlideMethod, stepAutoSlide, stepAutoSlideSelector } from "../core/auto-slide.ts";
-import { stateChange, stateClasses, stateNames } from "../core/events.ts";
+import {
+  createDeckEvents,
+  type DeckEvent,
+  navEvents,
+  stateChange,
+  stateClasses,
+  stateNames,
+} from "../core/events.ts";
 import { applyOrder, orderOf, shuffledOrder, type SlideOrder } from "../core/shuffle.ts";
 import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
 import { createPanelRegistry } from "../core/panels.ts";
@@ -78,6 +85,7 @@ import { drawingsOn } from "../draw/source.ts";
 import { ScrollView } from "./ScrollView.tsx";
 import { Stage } from "./Stage.tsx";
 import { useBuiltinCommands } from "./commands.ts";
+import { useHostMessages } from "./host-messages.ts";
 import { useTermEffects } from "./terms.ts";
 import { ZoomLayer } from "./Zoom.tsx";
 import { ThumbnailHost } from "../export/thumbnail.tsx";
@@ -375,6 +383,15 @@ export function DeckRuntimeView({
   // An embedded deck still opens where the address says (reveal reads it at start whatever its
   // `hash`), but only writes it when the deck set `hash` outright.
   const hashOn = usesHash(config, embedded, setsHash(manifest.headmatter, configIn));
+  // reveal's events (core/events.ts), also as `deck:<name>` CustomEvents on the deck's root.
+  const events = useMemo(
+    () =>
+      createDeckEvents((e) => {
+        const { type, ...detail } = e;
+        rootRef.current?.dispatchEvent(new CustomEvent(`deck:${type}`, { bubbles: true, detail }));
+      }),
+    [],
+  );
   /** Whether this deck has the page's attention (keyboardCondition "focused"); see DeckRoot. */
   const focus = useMemo<DeckFocus>(() => ({ on: !embedded }), [embedded]);
 
@@ -758,6 +775,7 @@ export function DeckRuntimeView({
       notesEditor,
       routes: deckRoutes.registry,
       windows,
+      events,
     }),
     [
       manifest,
@@ -785,6 +803,7 @@ export function DeckRuntimeView({
       notesEditor,
       deckRoutes.registry,
       windows,
+      events,
     ],
   );
 
@@ -798,6 +817,8 @@ export function DeckRuntimeView({
     shuffle,
   });
   useTermEffects(runtime);
+  // reveal's postMessage API, for a page that frames the deck (react/host-messages.ts).
+  useHostMessages(runtime, { projector });
   // A share window or teleprompter the viewer closed themselves: the button that opened it stops
   // looking lit.
   useEffect(() => {
@@ -989,7 +1010,10 @@ function DeckRoot({
     if (!el) return;
     const { entered, left } = stateChange(shownStates.current, states);
     shownStates.current = states;
-    for (const name of entered) el.dispatchEvent(new Event(name, { bubbles: true }));
+    for (const name of entered) {
+      el.dispatchEvent(new Event(name, { bubbles: true }));
+      deck.events.emit(name, { state: states });
+    }
     if (entered.length || left.length)
       el.dispatchEvent(
         new CustomEvent("deck:state", { bubbles: true, detail: { state: states, entered, left } }),
@@ -1543,6 +1567,84 @@ function useDeckEffects(
       if (idle) clearTimeout(idle);
     };
   }, [deck.projector, config.hideInactiveCursor, config.hideCursorTime, ui]);
+
+  // deck.events (core/events.ts), fed from the stores: what a move, the overview, a blackout or
+  // auto-slide changed, and the stage's scale. The slides named in an event are the elements on
+  // show, so the events go out a task after the move, once React has drawn it.
+  useEffect(() => {
+    if (mode !== "play") return;
+    const root = rootRef.current;
+    const slideEl = (role: "present" | "leaving") =>
+      root?.querySelector<HTMLElement>(`.deck-stage .deck-slide.is-${role}`) ?? null;
+    const queue: DeckEvent[] = [];
+    let flush: ReturnType<typeof setTimeout> | null = null;
+    let settle = 0;
+    const transitionEnd = (at: { indexh: unknown; indexv: unknown }) => {
+      // The slide just left stays mounted as `is-leaving` for its transition (react/Stage.tsx).
+      const started = performance.now();
+      const check = () => {
+        settle = 0;
+        if (slideEl("leaving") && performance.now() - started < 5000) {
+          settle = requestAnimationFrame(check);
+          return;
+        }
+        deck.events.emit("slidetransitionend", { ...at, currentSlide: slideEl("present") });
+      };
+      if (settle) cancelAnimationFrame(settle);
+      settle = requestAnimationFrame(check);
+    };
+    const send = () => {
+      flush = null;
+      for (const e of queue.splice(0)) {
+        const { type, ...data } = e;
+        const current = slideEl("present");
+        if (type === "slidechanged") {
+          deck.events.emit(type, {
+            ...data,
+            previousSlide: slideEl("leaving"),
+            currentSlide: current,
+          });
+          transitionEnd(data as { indexh: unknown; indexv: unknown });
+        } else if (type === "fragmentshown" || type === "fragmenthidden") {
+          const fragments = (data.steps as number[]).flatMap((n) => [
+            ...(current?.querySelectorAll<HTMLElement>(`[data-click-at="${n}"]`) ?? []),
+          ]);
+          deck.events.emit(type, { ...data, fragment: fragments[0] ?? null, fragments });
+        } else deck.events.emit(type, { ...data, currentSlide: current });
+      }
+    };
+    const unsubNav = nav.subscribe((next, prev) => {
+      const made = navEvents(prev, next);
+      if (!made.length) return;
+      queue.push(...made);
+      if (!flush) flush = setTimeout(send, 0);
+    });
+    const unsubLayout = layout.subscribe((next, prev) => {
+      if (next.scale === prev.scale) return;
+      deck.events.emit("resize", {
+        scale: next.scale,
+        oldScale: prev.scale,
+        size: { width: next.width, height: next.height },
+      });
+    });
+    // ready: the deck is up, a task after its first paint.
+    const ready = setTimeout(() => {
+      const s = nav.get();
+      deck.events.emit("ready", {
+        indexh: s.h,
+        indexv: s.v,
+        indexf: s.click,
+        currentSlide: slideEl("present"),
+      });
+    }, 0);
+    return () => {
+      unsubNav();
+      unsubLayout();
+      clearTimeout(ready);
+      if (flush) clearTimeout(flush);
+      if (settle) cancelAnimationFrame(settle);
+    };
+  }, [mode, nav, layout, deck.events, rootRef]);
 
   // focusBodyOnPageVisibilityChange (reveal.js): back on the tab after following a link, focus is
   // often left in an embedded page or a control, where the deck's keys do not reach; it goes back
