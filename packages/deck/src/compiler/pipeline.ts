@@ -25,6 +25,7 @@ import { rehypeGlossary } from "./rehype-glossary.ts";
 import { remarkDeckFences } from "./remark-fences.ts";
 import { type RemarkIconsOptions, remarkIcons } from "./remark-icons.ts";
 import { remarkDrag } from "./remark-drag.ts";
+import { remarkTexDelimiters } from "./remark-tex-delimiters.ts";
 import { type RemarkComarkOptions, remarkComark } from "./remark-comark.ts";
 import { rehypeComarkSlots } from "./rehype-comark.ts";
 import { rehypeAutoRuby } from "./rehype-ruby.ts";
@@ -242,6 +243,8 @@ export function mdxPlugins(
     remarkPlugins: [
       remarkGfm,
       remarkMath,
+      // reveal.js's KaTeX delimiters, \( … \) and \[ … \], beside the dollars.
+      remarkTexDelimiters,
       ...(o.comark
         ? [
             [
