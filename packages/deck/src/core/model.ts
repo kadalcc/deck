@@ -375,7 +375,7 @@ export interface DeckConfig {
    * The themes the deck ships besides `theme`, first in its theme menu and in this order:
    * built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or
    * classes main.tsx's CSS defines. The menu then offers every first-party theme not listed
-   * (sixteen in all), each loaded only when picked; a list orders the menu, it does not narrow it.
+   * (seventeen in all), each loaded only when picked; a list orders the menu, it does not narrow it.
    */
   themes: string[];
   colorScheme: ColorScheme;

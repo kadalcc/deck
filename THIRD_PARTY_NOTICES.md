@@ -83,6 +83,18 @@ the `monaco-editor` package) with it.
 The CSS for TwoSlash's popups and the notation marks is written for this engine (it uses the class
 names TwoSlash and Shiki's transformers emit); no stylesheet of theirs is copied.
 
+## reveal.js's themes (`@kadal/theme-reveal`)
+
+`theme: reveal` recreates reveal.js's twelve themes from their Sass variables (`css/theme/*.scss`
+and `css/theme/template/`, reveal.js 6.0.2): the fonts, colours, heading case and weight, shadows,
+sizes and spacing. No reveal.js file is copied; the stylesheet was written for Kadal Deck from
+those values. reveal.js is MIT License, Copyright (C) 2011-2026 Hakim El Hattab, http://hakim.se,
+and reveal.js contributors (serif and simple by Owen Versteeg, blood by Walther, the Dracula
+colours by Zeno Rocha); the package is MIT too and its LICENSE carries the notice. Its fonts
+(Source Sans Pro, Lato, League Gothic, Montserrat, Open Sans, News Cycle, Quicksand, Ubuntu, Fira
+Code; SIL Open Font License 1.1, Ubuntu under the Ubuntu Font Licence) load from Google Fonts at
+run time and are not bundled.
+
 ## Stickers, emoji, GIFs and memes (`<Emoji>`, `<Gif>`, `<Meme>`)
 
 Nothing is bundled. `<Emoji>` loads its images at run time from a host (by default

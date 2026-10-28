@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { compile } from "@mdx-js/mdx";
 import { createHighlighter } from "shiki";
 
+import { DEFAULT_SHIKI } from "../theming/merge.ts";
 import { codeThemeCss, codeThemes, shikiThemeNames, shikiThemeOption } from "./code-themes.ts";
 import { deckGlossary, mdxPlugins } from "./pipeline.ts";
 
@@ -19,9 +20,9 @@ const neon = theme("neon", { light: "synthwave-84", dark: "synthwave-84" });
 describe("code colours that follow the theme menu", () => {
   test("the default menu (all GitHub) needs nothing: no keys, no rules", () => {
     const t = codeThemes(undefined, minimal, [minimal, theme("rla"), theme("stack")]);
-    expect(t).toEqual({ light: "github-light", dark: "github-dark", extra: {}, menu: {} });
+    expect(t).toEqual({ ...DEFAULT_SHIKI, extra: {}, menu: {} });
     expect(codeThemeCss(t)).toBe("");
-    expect(shikiThemeOption(t)).toEqual({ light: "github-light", dark: "github-dark" });
+    expect(shikiThemeOption(t)).toEqual(DEFAULT_SHIKI);
   });
 
   test("each further Shiki theme gets one key, shared by the themes that use it", () => {
@@ -41,9 +42,9 @@ describe("code colours that follow the theme menu", () => {
   });
 
   test("a menu theme that shares a side with the deck's reuses its variable", () => {
-    // The deck on GitHub; a theme on github-light by day and vesper by night.
+    // The deck on GitHub; a theme on the same light side by day and vesper by night.
     const t = codeThemes(undefined, minimal, [
-      theme("swiss", { light: "github-light", dark: "vesper" }),
+      theme("swiss", { light: DEFAULT_SHIKI.light, dark: "vesper" }),
     ]);
     expect(t.extra).toEqual({ k1: "vesper" });
     expect(t.menu.swiss).toEqual({ light: "light", dark: "k1" });
