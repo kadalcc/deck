@@ -52,6 +52,7 @@ import { windowFeatures } from "../core/teleprompter.ts";
 import { isNavMessage, takesNav, type WindowMessage } from "../core/window-messages.ts";
 import { createWindowBus, type Via, type WindowBus } from "../core/windows.ts";
 import { captureTicket, presenterTicket, withTicket } from "../live/ticket.ts";
+import { requestWakeLock } from "../core/wake-lock.ts";
 import { Backgrounds } from "./Backgrounds.tsx";
 import { Chrome } from "./chrome.tsx";
 import {
@@ -1365,16 +1366,8 @@ function useDeckEffects(
     let lock: { release(): Promise<void> } | null = null;
     const acquire = async () => {
       if (!config.wakeLock || mode === "print") return;
-      try {
-        lock =
-          (await (
-            navigator as unknown as {
-              wakeLock?: { request(t: string): Promise<{ release(): Promise<void> }> };
-            }
-          ).wakeLock?.request("screen")) ?? null;
-      } catch {
-        lock = null;
-      }
+      // Not in a frame whose policy forbids it (the builder's `?preview`): see core/wake-lock.ts.
+      lock = await requestWakeLock();
     };
     void acquire();
     const onVis = () => document.visibilityState === "visible" && void acquire();
