@@ -1,14 +1,18 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  type AskResult,
+  askRefusal,
   claimAsked,
   cleanQuestion,
   cleanWord,
+  createAskTracker,
   createLimiter,
   hasVoted,
   letter,
   percents,
   pollOptions,
+  QUESTION_LIMIT,
   quizOutcome,
   ratingAverage,
   REACTION_LIMIT,
@@ -148,5 +152,65 @@ describe("the room's phase", () => {
     expect(roomPhase({ ...base, status: "open", everOpen: true, everPresented: true })).toBe(
       "left",
     );
+  });
+});
+
+describe("a question's fate", () => {
+  const harness = () => {
+    const results: AskResult[] = [];
+    const timers = new Map<number, () => void>();
+    let next = 0;
+    const tracker = createAskTracker({
+      onSettled: (r) => results.push(r),
+      setTimer: (fn) => (timers.set(++next, fn), next),
+      clearTimer: (t) => timers.delete(t as number),
+    });
+    const fire = () => [...timers.values()].forEach((f) => f());
+    return { tracker, results, timers, fire };
+  };
+  test("taken only when the room says so, never just because it was sent", () => {
+    const h = harness();
+    h.tracker.sent("a1", "Why?", true);
+    expect(h.results).toEqual([]);
+    h.tracker.ack("a1", { ok: true });
+    h.tracker.arrived("Why?"); // the same question coming back settles nothing twice
+    expect(h.results).toEqual([{ ok: true, text: "Why?" }]);
+    expect(h.timers.size).toBe(0);
+  });
+  test("dropped under the rate limit: the viewer is told, with the wait", () => {
+    const h = harness();
+    h.tracker.sent("a2", "And how?", true);
+    h.tracker.ack("a2", { ok: false, reason: "rate", retryIn: 3200 });
+    expect(h.results).toEqual([
+      { ok: false, text: "And how?", message: "Too fast. Try again in 4 seconds." },
+    ]);
+  });
+  test("a room with no ack: its list confirms the question, and silence means it was lost", () => {
+    const h = harness();
+    h.tracker.sent("a3", "One", true);
+    h.tracker.sent("a4", "Two", true);
+    h.tracker.arrived("One");
+    h.fire();
+    expect(h.results).toEqual([
+      { ok: true, text: "One" },
+      {
+        ok: false,
+        text: "Two",
+        message: "Your question didn't reach the room. Try again in a few seconds.",
+      },
+    ]);
+  });
+  test("one queued offline has no deadline", () => {
+    const h = harness();
+    h.tracker.sent("a5", "Later", false);
+    expect(h.timers.size).toBe(0);
+    h.tracker.arrived("Later");
+    expect(h.results).toEqual([{ ok: true, text: "Later" }]);
+  });
+  test("the refusal lines", () => {
+    expect(askRefusal({ reason: "rate" })).toBe("Too fast. Try again in a few seconds.");
+    expect(askRefusal({ reason: "rate", retryIn: 400 })).toBe("Too fast. Try again in 1 second.");
+    expect(askRefusal({ reason: "invalid" })).toBe("That question is too short to send.");
+    expect(QUESTION_LIMIT).toEqual({ n: 1, per: 5000 });
   });
 });
