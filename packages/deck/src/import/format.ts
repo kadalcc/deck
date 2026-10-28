@@ -14,13 +14,14 @@ export function formatImportReport(
     return formatRevealReport(result as Pick<RevealImport, "report" | "info">, o);
   const { report, info } = result as Pick<SlidevImport, "report" | "info">;
   const count = (s: ImportReportItem["severity"]) => report.filter((r) => r.severity === s).length;
-  const pct = info.slides ? Math.round((info.cleanSlides / info.slides) * 100) : 100;
+  const pct = percent(info.cleanSlides, info.slides);
+  const deck = wholeDeck(report);
   const lines: string[] = [
     "# Import report",
     "",
     `Converted from \`${o.source}\` by \`kadal-deck import slidev\`.`,
     "",
-    `- Slides: ${info.slides} — ${info.cleanSlides} (${pct}%) converted with no warning or error.`,
+    `- Slides: ${info.slides} — ${info.cleanSlides} (${pct}%) converted with no warning or error${deck}.`,
     `- Report lines: ${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes.`,
     `- Theme: Slidev \`${info.theme.slidev}\` → Kadal \`${info.theme.kadal}\`${info.theme.package ? ` (${info.theme.package})` : ""}.`,
     `- Stage: ${info.canvas.width}×${info.canvas.height}; lengths and positions scaled ×${Math.round(info.canvas.scale * 1000) / 1000} from Slidev's canvas.`,
@@ -42,13 +43,14 @@ function formatRevealReport(
 ): string {
   const { report, info } = result;
   const count = (s: ImportReportItem["severity"]) => report.filter((r) => r.severity === s).length;
-  const pct = info.slides ? Math.round((info.cleanSlides / info.slides) * 100) : 100;
+  const pct = percent(info.cleanSlides, info.slides);
+  const deck = wholeDeck(report);
   const lines: string[] = [
     "# Import report",
     "",
     `Converted from \`${o.source}\` by \`kadal-deck import reveal\`.`,
     "",
-    `- Slides: ${info.slides} — ${info.cleanSlides} (${pct}%) converted with no warning or error.`,
+    `- Slides: ${info.slides} — ${info.cleanSlides} (${pct}%) converted with no warning or error${deck}.`,
     `- Report lines: ${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes.`,
     `- Theme: reveal.js \`${info.theme.reveal ?? "(none)"}\` → Kadal \`${info.theme.kadal}\` (${info.theme.colorScheme ?? "light"}).`,
     `- Stage: ${info.canvas.width}×${info.canvas.height}; inline lengths scaled ×${info.canvas.scale} from reveal.js's.`,
@@ -60,6 +62,16 @@ function formatRevealReport(
     "",
   ];
   return listReport(lines, report, o.titles);
+}
+
+/** A slide with a problem never rounds up to 100%. */
+const percent = (clean: number, slides: number) =>
+  clean === slides ? 100 : Math.min(99, Math.round((clean / slides) * 100));
+
+/** The warnings and errors that belong to no slide, which the per-slide count leaves out. */
+function wholeDeck(report: ImportReportItem[]): string {
+  const n = report.filter((r) => r.severity !== "info" && !r.slide).length;
+  return n ? `; ${n} ${n > 1 ? "problems" : "problem"} for the whole deck` : "";
 }
 
 function listReport(lines: string[], report: ImportReportItem[], titles?: string[]): string {
