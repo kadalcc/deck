@@ -416,6 +416,20 @@ await step("keys: overview, search, jump, help, blackout, focus, theme menu, dar
   await page.keyboard.press("o");
   await page.waitForTimeout(300);
   expect(!(await nav(page)).overview, "O did not close the overview");
+  // End moves the ring in the overview, and Enter goes to the ringed slide (Enter has no
+  // binding of its own, and once fell through as an unbound key and did nothing).
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+  await page.keyboard.press("End");
+  await page.waitForTimeout(200);
+  const ringed = await nav(page);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const picked = await nav(page);
+  expect(ringed.overview && ringed.h > 1 && !picked.overview && picked.h === ringed.h && picked.v === ringed.v, `Enter in the overview did not go to the ringed slide (${JSON.stringify({ ringed, picked })})`);
+  await page.goto(`${base}#/1`);
+  await ready(page);
+  await page.waitForTimeout(300);
 
   await page.keyboard.press("/");
   await page.waitForTimeout(200);

@@ -1172,6 +1172,14 @@ function useDeckEffects(
         return;
       }
       const action: KeyAction | null = hit?.action ?? null;
+      // In the overview, Enter picks the ringed slide. Enter has no binding of its own, so this
+      // runs before the unbound-key return below; a focused tile (Tab) keeps its own Enter.
+      if (s.overview && !action && e.code === "Enter") {
+        if ((e.target as Element | null)?.closest?.(".deck-overview button")) return;
+        e.preventDefault();
+        actions.toggleOverview(false);
+        return;
+      }
       if (!action) return;
       if (s.overview && action !== "overview" && action !== "escape") {
         if (["next", "prev", "left", "right", "up", "down", "first", "last"].includes(action)) {
@@ -1181,7 +1189,6 @@ function useDeckEffects(
         else if (action === "jump") actions.toggleJump(true);
         else if (action === "search") actions.toggleSearch(true);
         else if (action === "themeMenu") actions.toggleThemeMenu();
-        else if (e.code === "Enter" || e.code === "Space") actions.toggleOverview(false);
         return;
       }
       if (s.paused && action !== "pause") {
