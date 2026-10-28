@@ -632,7 +632,7 @@ export function themeScaffold(o: ScaffoldOptions): Record<string, string> {
           colorScheme: "both",
           swatch: ["#0f766e", "#b45309"],
           themeConfig: { primary: "#0f766e", footer: true },
-          shiki: { light: "github-light", dark: "github-dark" },
+          shiki: { light: "github-light-high-contrast", dark: "github-dark-high-contrast" },
           config: {
             transition: "fade",
             fonts: { sans: "Inter", heading: "Fraunces", mono: "JetBrains Mono" },

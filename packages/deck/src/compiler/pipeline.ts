@@ -25,6 +25,7 @@ import { rehypeGlossary } from "./rehype-glossary.ts";
 import { remarkDeckFences } from "./remark-fences.ts";
 import { type RemarkIconsOptions, remarkIcons } from "./remark-icons.ts";
 import { remarkDrag } from "./remark-drag.ts";
+import { remarkRevealClasses } from "./remark-reveal.ts";
 import { type RemarkComarkOptions, remarkComark } from "./remark-comark.ts";
 import { rehypeComarkSlots } from "./rehype-comark.ts";
 import { rehypeAutoRuby } from "./rehype-ruby.ts";
@@ -253,6 +254,8 @@ export function mdxPlugins(
       ...(o.remarkPlugins ?? []),
       [remarkIcons, o.icons ?? {}] as [typeof remarkIcons, RemarkIconsOptions],
       remarkDrag,
+      // reveal.js HTML pasted into a slide: `class="fragment"` steps, `r-fit-text` fits.
+      remarkRevealClasses,
       [
         remarkDeckFences,
         {
