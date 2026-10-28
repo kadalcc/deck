@@ -39,7 +39,15 @@ import {
 import * as N from "../core/navigation.ts";
 import { readItem, writeItem } from "../core/storage.ts";
 import { createStore, useStore } from "../core/store.ts";
-import { createSwipeTracker } from "../core/touch.ts";
+import { createSwipeTracker, swipeAction, swipeAllowed } from "../core/touch.ts";
+import {
+  NAVIGATE_SELECTOR,
+  navigateEnabled,
+  navigateOf,
+  PREVIEW_SELECTOR,
+  previewOf,
+  previewOptedOut,
+} from "../core/links.ts";
 import { windowFeatures } from "../core/teleprompter.ts";
 import { isNavMessage, takesNav, type WindowMessage } from "../core/window-messages.ts";
 import { createWindowBus, type Via, type WindowBus } from "../core/windows.ts";
@@ -334,6 +342,8 @@ export function DeckRuntimeView({
     [related],
   );
   const sync = useMemo<DeckRuntime["sync"]>(() => ({ source: null }), []);
+  /** The deck's own element: what an embedded deck measures, and where its links and keys live. */
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // The position the URL asked for, read once: a step (#/h/v/click) cannot be applied until the
   // slide has reported its total, and the first hash write would otherwise erase it.
@@ -737,7 +747,7 @@ export function DeckRuntimeView({
   useBuiltinCommands(runtime);
   usePackageSetup(runtime, merged.modules);
   usePackageRoutes(deckRoutes.registry, merged.modules);
-  useDeckEffects(runtime, flags, wantedAtLoad, related);
+  useDeckEffects(runtime, flags, wantedAtLoad, related, rootRef);
   useTermEffects(runtime);
   // A share window or teleprompter the viewer closed themselves: the button that opened it stops
   // looking lit.
@@ -791,7 +801,7 @@ export function DeckRuntimeView({
 
   return (
     <DeckContext.Provider value={runtime}>
-      <DeckRoot>
+      <DeckRoot root={rootRef}>
         {/* Every slide's own <style>, scoped to it (compiler/slide-style.ts): one sheet, every view. */}
         {manifest.styles ? <style data-deck-slide-styles="">{manifest.styles}</style> : null}
         {wrapped}
@@ -857,9 +867,14 @@ function useContextStrict(): DeckRuntime {
   return ctx;
 }
 
-function DeckRoot({ children }: { children: ReactNode }) {
+function DeckRoot({
+  children,
+  root,
+}: {
+  children: ReactNode;
+  root: React.RefObject<HTMLDivElement | null>;
+}) {
   const deck = useContextStrict();
-  const root = useRef<HTMLDivElement>(null);
   usePresentingRoot(deck, root);
   const [scheme, setScheme] = useState(deck.ui.get().colorScheme);
   const [theme, setTheme] = useState(deck.ui.get().theme);
@@ -898,6 +913,8 @@ function DeckRoot({ children }: { children: ReactNode }) {
         paused ? "is-paused" : "",
         deck.config.selectable ? "" : "no-select",
         deck.config.rtl ? "rtl" : "",
+        // `center: true`: the default layout's content sits in the middle (themes/base.css).
+        deck.config.center ? "is-centered" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -977,6 +994,7 @@ function useDeckEffects(
   flags: ReturnType<typeof parseFlags>,
   wantedAtLoad: ReturnType<typeof parseHash>,
   related: Related,
+  rootRef: React.RefObject<HTMLDivElement | null>,
 ) {
   const { nav, ui, layout, config, columns, actions, base, mode, stageInset } = deck;
 
@@ -1210,16 +1228,14 @@ function useDeckEffects(
     if (mode !== "play" || deck.projector) return;
     const swipe = createSwipeTracker();
     const onDown = (e: PointerEvent) => {
-      if (e.pointerType === "touch" && config.touch) swipe.start(e.clientX, e.clientY, e.timeStamp);
+      // A scroller, a timeline, anything marked data-prevent-swipe keeps the gesture (core/touch.ts).
+      if (e.pointerType === "touch" && config.touch && swipeAllowed(e.target))
+        swipe.start(e.clientX, e.clientY, e.timeStamp);
     };
     const onUp = (e: PointerEvent) => {
       if (e.pointerType !== "touch" || !config.touch) return;
       const dir = swipe.end(e.clientX, e.clientY, e.timeStamp);
-      if (!dir) return;
-      if (dir === "left") actions.next();
-      else if (dir === "right") actions.prev();
-      else if (dir === "up") actions.down();
-      else if (dir === "down") actions.up();
+      if (dir) actions[swipeAction(dir, config.rtl)]();
     };
     let wheelLock = 0;
     const onWheel = (e: WheelEvent) => {
@@ -1234,35 +1250,24 @@ function useDeckEffects(
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      const preview = target.closest<HTMLElement>(
-        "[data-preview-image], [data-preview-video], [data-preview-link]",
-      );
+      // reveal's link classes: `.navigate-next` and the rest move the deck (core/links.ts).
+      const link = target.closest<HTMLElement>(NAVIGATE_SELECTOR);
+      const way = link ? navigateOf(link) : null;
+      if (way) {
+        e.preventDefault();
+        actions[way]();
+        return;
+      }
+      const preview = target.closest<HTMLElement>(PREVIEW_SELECTOR);
       if (preview) {
         e.preventDefault();
-        const fit = preview.dataset.previewFit ?? "scale-down";
-        if (preview.dataset.previewImage !== undefined)
-          actions.openLightbox(
-            "image",
-            preview.dataset.previewImage || preview.getAttribute("src") || "",
-            fit,
-          );
-        else if (preview.dataset.previewVideo !== undefined)
-          actions.openLightbox(
-            "video",
-            preview.dataset.previewVideo || preview.getAttribute("src") || "",
-            fit,
-          );
-        else
-          actions.openLightbox(
-            "iframe",
-            preview.dataset.previewLink || preview.getAttribute("href") || "",
-            fit,
-          );
+        const p = previewOf(preview);
+        actions.openLightbox(p.kind, p.src, p.fit);
         return;
       }
       if (config.previewLinks) {
         const a = target.closest<HTMLAnchorElement>("a[href^='http']");
-        if (a && !a.dataset.noPreview) {
+        if (a && !previewOptedOut(a)) {
           e.preventDefault();
           actions.openLightbox("iframe", a.href);
           return;
@@ -1299,6 +1304,40 @@ function useDeckEffects(
       if (idle) clearTimeout(idle);
     };
   }, [config, actions, ui, layout, mode]);
+
+  // `.navigate-*` links carry `.enabled` while their way leads somewhere, and are `disabled`
+  // otherwise, as reveal's controls are. Slides mount after the move that shows them, so the DOM is
+  // read again when it changes, a frame later.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (mode !== "play" || !root || typeof MutationObserver === "undefined") return;
+    let frame = 0;
+    const paint = () => {
+      frame = 0;
+      const links = root.querySelectorAll<HTMLElement>(NAVIGATE_SELECTOR);
+      if (!links.length) return;
+      const routes = N.availableRoutes(nav.get(), columns, config);
+      for (const el of links) {
+        const way = navigateOf(el);
+        const on = !!way && navigateEnabled(way, routes);
+        el.classList.toggle("enabled", on);
+        if (on) el.removeAttribute("disabled");
+        else el.setAttribute("disabled", "disabled");
+      }
+    };
+    const soon = () => {
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
+    paint();
+    const unsub = nav.subscribe(soon);
+    const watch = new MutationObserver(soon);
+    watch.observe(root, { childList: true, subtree: true });
+    return () => {
+      unsub();
+      watch.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [nav, columns, config, mode, rootRef]);
 
   // The share window hid its cursor for good, which was right while there was nothing in it to
   // point at. There is now — the embedded page, and the Reload above it — so it keeps the deck's
@@ -1354,8 +1393,7 @@ function useDeckEffects(
   useEffect(() => {
     if (mode !== "play" || deck.projector) return;
     const deckMs = config.autoSlide || 0;
-    const configured =
-      deckMs > 0 || [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0);
+    const configured = deckMs > 0 || [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0);
     if (configured) nav.update((s) => ({ ...s, autoSliding: true }));
     let timer: ReturnType<typeof setTimeout> | null = null;
     const schedule = () => {

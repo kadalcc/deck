@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { POSTER_DEFAULT_SIZE, posterName, resolvePoster } from "../core/poster.ts";
 import { opaqueOrigin } from "../core/storage.ts";
 import { useDeck, useSlideOptional } from "./context.ts";
+import { withPlayerApi } from "./embedded-media.ts";
 
 /**
  * An embedded page inside a slide, with manners: it loads when its slide is shown (data-src),
@@ -91,10 +92,22 @@ export function FrameShell({
   useEffect(() => {
     if (!active) {
       setLive(false);
-      setLoaded(false);
       setAttempt(0);
     }
   }, [active]);
+  // The poster comes back when the page is unloaded (SlideFrame drops `src` as its slide is left),
+  // not merely because the slide was left: a frame that preloads (`data-preload`,
+  // `preloadIframes`) keeps its page, and covering it on the way back hid a page that was there,
+  // until the never-loaded timer below reloaded it for nothing.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const mo = new MutationObserver(() => {
+      if (!el.getAttribute("src")) setLoaded(false);
+    });
+    mo.observe(el, { attributes: true, attributeFilter: ["src"] });
+    return () => mo.disconnect();
+  }, [nonce]);
 
   /**
    * Load the page again, properly.
@@ -120,7 +133,9 @@ export function FrameShell({
     if (!nonce) return;
     const el = ref.current;
     if (!el) return;
-    el.setAttribute("src", `${url}${url.includes("?") ? "&" : "?"}deck-reload=${Date.now()}`);
+    // With the player API on, as SlideFrame gave the first element (react/embedded-media.ts).
+    const src = withPlayerApi(url);
+    el.setAttribute("src", `${src}${src.includes("?") ? "&" : "?"}deck-reload=${Date.now()}`);
   }, [nonce, url]);
 
   // A page that never finishes is tried again for you, twice, while the poster is still standing

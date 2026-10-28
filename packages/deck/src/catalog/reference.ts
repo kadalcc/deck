@@ -269,8 +269,8 @@ export const THEMES: ThemeInfo[] = [
  * The first-party theme packages (packages/theme-*). Their own packages, and copies inside
  * @kadal/deck too: a deck names one (`theme: seriph`) with nothing installed, and every deck's
  * theme menu offers them all; the prebuilt shell bundles them all. The ports keep their Slidev theme's layouts, frontmatter and look (THEMES.md has the
- * name mapping, for decks moving over). Eight more are Kadal's own designs, with no `slidev`
- * field.
+ * name mapping, for decks moving over); `reveal` is reveal.js's twelve themes, for decks imported
+ * from it. Eight more are Kadal's own designs, with no `slidev` field.
  */
 export const THEME_PACKAGES: ThemePackageInfo[] = [
   {
@@ -344,6 +344,15 @@ export const THEME_PACKAGES: ThemePackageInfo[] = [
     ],
     components: [],
     slidev: "shibainu",
+  },
+  {
+    name: "reveal",
+    package: "@kadal/theme-reveal",
+    summary:
+      "reveal.js's twelve themes as `themeConfig.variant` (black, white, league, beige, night, serif, simple, solarized, moon, dracula, sky, blood): their fonts, colours and heading case, centred in reveal's box, each in light and dark. What `kadal-deck import reveal` writes.",
+    scheme: "both",
+    layouts: [],
+    components: [],
   },
   {
     name: "brand",
@@ -467,6 +476,8 @@ export const CLICK_EFFECT_META: Record<string, string> = {
   "highlight-current-green": "Green only during its own step.",
   "highlight-current-blue": "Blue only during its own step.",
   blur: "Start blurred, come into focus.",
+  custom:
+    "No built-in look: your CSS on `.effect-custom.visible` (or reveal's `.fragment.custom.visible`) decides. A `custom` class does the same.",
 };
 
 export const CLICK_AT: NamedInfo[] = [
@@ -984,7 +995,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   hash: "Keep the URL hash in step with the slide.",
   hashOneBasedIndex: "1-based slide numbers in the hash.",
   history: "Push a history entry per slide (Back walks the slides).",
-  keyboard: "Keyboard navigation on.",
+  keyboard:
+    "Keyboard navigation on (false: off), or a map of single keys over the defaults: `{ KeyQ: overview, KeyD: null }` (KeyboardEvent.code names; a Kadal action, a command id, or null to unbind). reveal.js's form reads too: keyCodes and its method names, `{ 13: next, 79: toggleOverview, 32: null }`, and in deck.config.ts a function.",
   respondToHashChanges:
     "reveal.js compatible: a change to the URL hash (a link, the address bar) moves the deck. Default true.",
   keyboardCondition:
@@ -992,12 +1004,14 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   focusBodyOnPageVisibilityChange:
     "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true.",
   overview: "The overview grid (O / Esc).",
-  touch: "Swipe navigation.",
+  touch:
+    "Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes.",
   loop: "Wrap from the last slide to the first.",
   rtl: "Right-to-left.",
   navigationMode: '"default", "linear" (arrows walk every slide) or "grid" (columns stay aligned).',
   shuffle: "Shuffle the slides on load.",
-  fragments: "Clicks/fragments on; off shows every step at once.",
+  fragments:
+    "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
   fragmentInURL: "Include the click step in the hash.",
   embedded: "The deck lives inside another page.",
   postMessage:
@@ -1007,7 +1021,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   help: "The ? keyboard help.",
   pause: "B / . blacks the screen out.",
   showNotes: 'Print notes with the slides: true (in a box) or "separate-page".',
-  autoPlayMedia: "Autoplay media on every slide (null = per element).",
+  autoPlayMedia:
+    "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background.",
   preloadIframes:
     "reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows.",
   autoAnimate: "Allow auto-animate between slides that set `autoAnimate`.",
@@ -1023,7 +1038,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   autoSlideMethod:
     'reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML.',
   mouseWheel: "Scroll-wheel navigation.",
-  previewLinks: "Open links in an overlay.",
+  previewLinks:
+    'Open every outside link in the lightbox. A link with `data-preview-link="false"` (or `data-no-preview`) opens as a link.',
   transition:
     'Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`).',
   transitionSpeed: "default · fast · slow.",
@@ -1284,7 +1300,12 @@ export const SLIDE_KEYS = [
     type: B(),
     description: "Mute the background video (default true).",
   },
-  { name: "backgroundIframe", type: S(), description: "A page (iframe URL) behind the slide." },
+  {
+    name: "backgroundIframe",
+    type: S(),
+    description:
+      "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`).",
+  },
   { name: "backgroundInteractive", type: B(), description: "Let the background page take input." },
   {
     name: "image",

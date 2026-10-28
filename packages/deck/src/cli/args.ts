@@ -1,7 +1,8 @@
 /**
  * A small, strict argument parser: `--flag value`, `--flag=value`, boolean `--flag` and
  * `--no-flag`, short aliases, positionals, and `--` to stop. Unknown flags are usage errors
- * (exit 2) unless the command passes the rest through (dev/build hand theirs to Vite).
+ * (exit 2) unless the command passes the rest through. A `forward` flag is checked like ours and
+ * then handed on as written (dev and build hand Vite's own flags to Vite this way).
  */
 
 export class UsageError extends Error {}
@@ -14,6 +15,8 @@ export interface FlagSpec {
   short?: string;
   /** May repeat; values collect into an array. */
   multiple?: boolean;
+  /** Checked, then kept in `rest` as it was written (with its value), for another program. */
+  forward?: boolean;
 }
 
 export type FlagSpecs = Record<string, FlagSpec>;
@@ -21,7 +24,7 @@ export type FlagSpecs = Record<string, FlagSpec>;
 export interface Parsed {
   flags: Record<string, string | number | boolean | string[] | undefined>;
   positionals: string[];
-  /** Tokens not understood, when `passthrough` is on (for Vite). */
+  /** `forward` flags as written, and tokens not understood when `passthrough` is on. */
   rest: string[];
 }
 
@@ -77,6 +80,7 @@ export function parseArgs(
     if (!spec && name.startsWith("no-") && specs[name.slice(3)]?.kind === "boolean") {
       if (inline !== undefined) throw new UsageError(`--${name} takes no value`);
       flags[name.slice(3)] = false;
+      if (specs[name.slice(3)]!.forward) rest.push(tok);
       continue;
     }
     if (!spec) {
@@ -97,6 +101,7 @@ export function parseArgs(
       else if (/^(true|1|yes)$/i.test(inline)) set(name, true);
       else if (/^(false|0|no)$/i.test(inline)) set(name, false);
       else throw new UsageError(`--${name} is a switch; it takes no value (got "${inline}")`);
+      if (spec.forward) rest.push(tok);
       continue;
     }
     let value = inline;
@@ -110,6 +115,7 @@ export function parseArgs(
     if (value === undefined) {
       if (spec.kind === "optional-string") {
         set(name, true);
+        if (spec.forward) rest.push(tok);
         continue;
       }
       throw new UsageError(`--${name} needs a value`);
@@ -119,6 +125,7 @@ export function parseArgs(
       if (!Number.isFinite(n)) throw new UsageError(`--${name} needs a number (got "${value}")`);
       set(name, n);
     } else set(name, value);
+    if (spec.forward) rest.push(...(inline === undefined ? [tok, value] : [tok]));
   }
   return { flags, positionals, rest };
 }

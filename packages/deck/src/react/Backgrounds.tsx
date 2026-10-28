@@ -15,6 +15,7 @@ import { useDeck } from "./context.ts";
 import { removedBackgroundHint } from "../core/removed.ts";
 import { PremiumBackground, isPremiumBackground, useAuthoring } from "./premium.tsx";
 import { useLayout, useNav, useUi } from "./hooks.ts";
+import { startFrame, stopFrames, wantsAutoplay, withPlayerApi } from "./embedded-media.ts";
 
 /**
  * Backgrounds sit behind the stage and cover exactly its box — a colour, a gradient, an image, a
@@ -130,6 +131,67 @@ export function BackgroundLayer({
         data-active={active || undefined}
       />
     );
+  return (
+    <BackgroundContent
+      bg={bg}
+      active={active}
+      className={className}
+      click={click}
+      theme={theme}
+      deckScheme={deckScheme}
+    />
+  );
+}
+
+/** A background that is there: its fill, video, frame or component, and their media. */
+function BackgroundContent({
+  bg,
+  active,
+  className,
+  click,
+  theme,
+  deckScheme,
+}: {
+  bg: SlideBackground;
+  active: boolean;
+  className?: string;
+  click: number | undefined;
+  theme: string;
+  deckScheme: string;
+}) {
+  const deck = useDeck();
+  const leaving = !!className?.includes("is-leaving");
+  // Only the stage's own copy plays and talks to its frame: the presenter's, the audience's and
+  // the thumbnails' copies of the same background stay quiet (and a YouTube background does not
+  // play twice, with sound).
+  const playing = active && deck.mode === "play";
+  const frame = useRef<HTMLIFrameElement>(null);
+  const iframeSrc = bg.iframe ? withPlayerApi(bg.iframe) : null;
+
+  // A background frame hears `slide:start` (a player: play) when shown and once it has loaded,
+  // and `slide:stop` (a player: pause) when its slide is left. reveal autoplays a background
+  // unless `autoPlayMedia: false`.
+  const shown = useRef(false);
+  useEffect(() => {
+    const f = frame.current;
+    if (!f) return;
+    if (playing) {
+      shown.current = true;
+      const autoplay = wantsAutoplay(deck.config?.autoPlayMedia, f, true);
+      if (f.getAttribute("src")) startFrame(f, autoplay);
+      const onLoad = () => {
+        if (f.getAttribute("src")) startFrame(f, autoplay);
+      };
+      f.addEventListener("load", onLoad);
+      return () => f.removeEventListener("load", onLoad);
+    }
+    if (shown.current) {
+      shown.current = false;
+      stopFrames(f.parentElement ?? f);
+    }
+    return undefined;
+  }, [playing, iframeSrc, deck.config?.autoPlayMedia]);
+
   const style: React.CSSProperties = {};
   if (bg.color) style.backgroundColor = bg.color;
   if (bg.tint) style.backgroundImage = tintWash(bg.tint);
@@ -168,11 +230,14 @@ export function BackgroundLayer({
           style={{ objectFit: bg.size === "contain" ? "contain" : "cover", opacity: bg.opacity }}
         />
       ) : null}
-      {bg.iframe ? (
+      {iframeSrc ? (
         <iframe
+          ref={frame}
           className="deck-background-iframe"
-          src={active ? bg.iframe : undefined}
+          // Kept while the layer fades out, so the page is still there to hear `slide:stop`.
+          src={active || leaving ? iframeSrc : undefined}
           title="background"
+          allow="autoplay; fullscreen"
           style={{ pointerEvents: bg.iframeInteractive ? "auto" : "none", opacity: bg.opacity }}
         />
       ) : null}

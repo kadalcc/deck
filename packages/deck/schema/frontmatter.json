@@ -251,7 +251,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -586,7 +586,7 @@
         },
         "backgroundIframe": {
           "type": "string",
-          "description": "A page (iframe URL) behind the slide."
+          "description": "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`)."
         },
         "backgroundInteractive": {
           "type": "boolean",
@@ -755,8 +755,8 @@
         },
         "center": {
           "type": "boolean",
-          "description": "Vertically centre each slide's content.",
-          "default": true
+          "description": "Vertically centre the content of slides on the default layout, as reveal.js does. False by default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other layouts place their content themselves.",
+          "default": false
         },
         "controls": {
           "anyOf": [
@@ -859,7 +859,7 @@
               "type": "object"
             }
           ],
-          "description": "Keyboard navigation on.",
+          "description": "Keyboard navigation on (false: off), or a map of single keys over the defaults: `{ KeyQ: overview, KeyD: null }` (KeyboardEvent.code names; a Kadal action, a command id, or null to unbind). reveal.js's form reads too: keyCodes and its method names, `{ 13: next, 79: toggleOverview, 32: null }`, and in deck.config.ts a function.",
           "default": true
         },
         "keyboardCondition": {
@@ -888,7 +888,7 @@
         },
         "touch": {
           "type": "boolean",
-          "description": "Swipe navigation.",
+          "description": "Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes.",
           "default": true
         },
         "loop": {
@@ -918,7 +918,7 @@
         },
         "fragments": {
           "type": "boolean",
-          "description": "Clicks/fragments on; off shows every step at once.",
+          "description": "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
           "default": true
         },
         "fragmentInURL": {
@@ -975,7 +975,7 @@
               "type": "null"
             }
           ],
-          "description": "Autoplay media on every slide (null = per element)."
+          "description": "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none; null (default) plays those marked `data-autoplay`, and a YouTube/Vimeo background."
         },
         "preloadIframes": {
           "anyOf": [
@@ -1035,7 +1035,7 @@
         },
         "previewLinks": {
           "type": "boolean",
-          "description": "Open links in an overlay.",
+          "description": "Open every outside link in the lightbox. A link with `data-preview-link=\"false\"` (or `data-no-preview`) opens as a link.",
           "default": false
         },
         "parallaxBackgroundImage": {
@@ -1159,7 +1159,7 @@
         },
         "themes": {
           "type": "array",
-          "description": "The themes the deck ships besides `theme`, first in its theme menu and in this order: built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines. The menu then offers every first-party theme not listed (sixteen in all), each loaded only when picked; a list orders the menu, it does not narrow it."
+          "description": "The themes the deck ships besides `theme`, first in its theme menu and in this order: built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or classes main.tsx's CSS defines. The menu then offers every first-party theme not listed (seventeen in all), each loaded only when picked; a list orders the menu, it does not narrow it."
         },
         "pdfSeparateFragments": {
           "type": "boolean",

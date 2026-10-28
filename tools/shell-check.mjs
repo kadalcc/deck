@@ -430,7 +430,7 @@ try {
   check("published: ArrowRight moves", /^#\/1/.test(await page.evaluate(() => location.hash)));
   const ran = await page.evaluate(() => window.__deck.commands.run("nav.goto", { index: 2 }));
   check("published: a command runs", ran.ok && ran.value.index === 2, JSON.stringify(ran.value));
-  // Every deck's theme menu offers all sixteen first-party themes; one the deck did not name
+  // Every deck's theme menu offers all seventeen first-party themes; one the deck did not name
   // loads its stylesheet when picked.
   const accent = () =>
     page.evaluate(() => getComputedStyle(document.querySelector(".deck-root")).getPropertyValue("--deck-accent").trim());
@@ -439,7 +439,7 @@ try {
   const rows = page.locator(".deck-theme-popover [role=menuitemradio]");
   await rows.first().waitFor();
   const themeCount = await rows.count();
-  check("published: the theme menu offers all sixteen themes", themeCount === 16, `${themeCount}`);
+  check("published: the theme menu offers all seventeen themes", themeCount === 17, `${themeCount}`);
   await rows.filter({ hasText: "Ocean" }).click();
   const picked = await page
     .waitForFunction(

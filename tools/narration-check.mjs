@@ -263,11 +263,28 @@ await step("presenter: play advances clicks, then the slide; pause stops", async
   const { page, context, problems } = await open(`${base}presenter#/0`);
   await page.waitForSelector(".deck-narration");
   expect(target > 0, "no slide with [click] notes in the showcase");
+  // Every position the deck passes through, noted in the page: at the brisk rate a click step can
+  // be over between two polls from here (more so on a busy machine), and a poll that missed it
+  // waited for a position the deck had already left.
+  await page.evaluate(() => {
+    const trail = (window.__trail = []);
+    const tick = async () => {
+      const s = (await window.__deck.commands.run("deck.state")).value.slide;
+      const last = trail.at(-1);
+      if (!last || last.index !== s.index || last.click !== s.click) trail.push({ index: s.index, click: s.click });
+      window.__trailTimer = setTimeout(tick, 15);
+    };
+    void tick();
+  });
   await page.evaluate((from) => window.__deck.commands.run("narrate.play", { from }), target);
-  await until(page, (i) => window.__deck.commands.run("deck.state").then((r) => r.value.slide.index === i && r.value.slide.click >= 1), target);
+  await until(page, (i) => window.__trail.some((p) => p.index === i && p.click >= 1) || window.__trail.some((p) => p.index > i), target, 30_000);
   const s1 = await state(page);
   expect(s1.playing && s1.using === "silent", `state while playing: ${JSON.stringify({ playing: s1.playing, using: s1.using })}`);
-  await until(page, (i) => window.__deck.commands.run("deck.state").then((r) => r.value.slide.index > i), target, 30_000);
+  await until(page, (i) => window.__trail.some((p) => p.index > i), target, 30_000);
+  const trail = await page.evaluate(() => (clearTimeout(window.__trailTimer), window.__trail));
+  // Its clicks first, then the next slide: the step it passed through is in the trail.
+  const firstPast = trail.findIndex((p) => p.index > target);
+  expect(trail.slice(0, firstPast).some((p) => p.index === target && p.click >= 1), `no click step before the next slide: ${JSON.stringify(trail.slice(0, 12))}`);
   await page.getByLabel("Pause narration (R)").click();
   const paused = await where(page);
   const s2 = await state(page);
