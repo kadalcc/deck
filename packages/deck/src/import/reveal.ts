@@ -340,6 +340,14 @@ interface Slide {
 /** Text, an element, or the raw text of a protected stretch (`<script>`, `<style>`, a comment). */
 type Node = { t: "text"; s: string } | { t: "el"; el: El };
 
+/**
+ * reveal.js counts highlighted lines from the top of the block (`[712: 1-2]` lights the first two,
+ * numbered 712 and 713); Kadal's steps name the line numbers shown, so they move with the offset.
+ */
+function shiftSteps(spec: string, start: number): string {
+  return start === 1 ? spec : spec.replace(/\d+/g, (n) => String(Number(n) + start - 1));
+}
+
 export function convertReveal(html: string, options: RevealImportOptions = {}): RevealImport {
   const file = options.file ?? "index.html";
   const read = options.readFile ?? (() => null);
@@ -1163,10 +1171,11 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     const opts: string[] = [];
     if (ln !== undefined) {
       const spec = typeof ln === "string" ? ln.trim() : "";
-      if (spec) meta.push(`{${spec}}`);
-      opts.push("lines:true");
       const start = str(el, "data-ln-start-from");
-      if (start && /^\d+$/.test(start)) opts.push(`startLine:${start}`);
+      const from = start && /^\d+$/.test(start) ? Number(start) : 1;
+      if (spec) meta.push(`{${shiftSteps(spec, from)}}`);
+      opts.push("lines:true");
+      if (from !== 1) opts.push(`startLine:${from}`);
     }
     if (opts.length) meta.push(`{${opts.join(",")}}`);
     const fence = "`".repeat(
@@ -1389,7 +1398,7 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
       /^(\s*)(`{3,}|~{3,})([\w+#-]*)[ \t]*\[([^\]\n]*)\][ \t]*$/gm,
       (_, ind: string, f: string, lang: string, spec: string) => {
         const m = /^\s*(\d+)\s*:\s*(.*)$/.exec(spec);
-        const steps = (m ? m[2]! : spec).trim();
+        const steps = shiftSteps((m ? m[2]! : spec).trim(), m ? Number(m[1]) : 1);
         const opts = ["lines:true", ...(m ? [`startLine:${m[1]}`] : [])];
         return `${ind}${f}${lang} ${steps ? `{${steps}}` : ""}{${opts.join(",")}}`;
       },
