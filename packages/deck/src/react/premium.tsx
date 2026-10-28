@@ -1,5 +1,11 @@
 import * as React from "react";
-import { type ComponentType, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  type ComponentType,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import * as jsxRuntime from "react/jsx-runtime";
 
 import pkg from "../../package.json" with { type: "json" };
@@ -348,6 +354,19 @@ export function PremiumBackground({
 export const isPremiumBackground = (bg: SlideBackground | null): boolean =>
   !!bg && isPremiumName(bg.component);
 
+/** Hold `registry`'s total open (as `id`) while `loading`; let go once it is not, or on unmount. */
+function useHoldWhile(
+  registry: { hold(id: string): () => void } | undefined,
+  loading: boolean,
+  id: string,
+) {
+  // A layout effect: the hold is in place before a key press can land after the commit.
+  useLayoutEffect(() => {
+    if (!registry || !loading) return;
+    return registry.hold(id);
+  }, [registry, loading, id]);
+}
+
 const layoutCache = new Map<string, ComponentType<never>>();
 
 /**
@@ -362,6 +381,12 @@ export function premiumLayout<P extends object>(
   if (hit) return hit as ComponentType<P>;
   function PremiumLayout(props: P) {
     const state = usePremiumItem(name, "layout");
+    // A library layout may take click steps of its own, which it can only say once its module
+    // has loaded: until then the slide's total is held open, so a step pressed meanwhile waits
+    // for the layout instead of leaving the slide (core/clicks.ts, `hold`).
+    const registry = useSlideOptional()?.registry;
+    const loading = state?.status === "loading";
+    useHoldWhile(registry, loading, `layout:${name}`);
     const C = (state?.status === "ready" ? state.item.component : fallback) as ComponentType<P>;
     return <C {...props} />;
   }

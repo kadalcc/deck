@@ -15,8 +15,17 @@
  *   at: [2, 5]          visible from step 2 through 4, hidden again at 5
  *   hide: true          the element starts visible and hides at its step
  *   span: 3             reserve three consecutive steps (a code block with three highlights)
+ *
+ * A part of the slide that will take steps but cannot say how many yet — a layout whose module is
+ * still loading from a host — HOLDS the registry (`hold`): until it lets go, the slide's total is
+ * not final (`pending()`), and navigation keeps a step pressed meanwhile instead of leaving the
+ * slide (core/navigation.ts, `reportSlide`). A hold lets go by itself after HOLD_LIMIT_MS, so a
+ * request that never answers cannot pin the deck to one slide.
  * ─────────────────────────────────────────────────────────────────────────────
  */
+
+/** The longest a hold keeps a slide's total open (ms). */
+export const HOLD_LIMIT_MS = 8000;
 
 export type ClickAt = number | string | [number, number] | undefined;
 
@@ -42,7 +51,14 @@ export interface ClickRegistry {
   release(id: string): void;
   /** The largest step anyone needs: the slide's click total. */
   total(): number;
-  /** Ask to be told when the total changes. */
+  /**
+   * Say that `id` will take steps it cannot count yet; returns the function that lets go (also
+   * called after `ms`). Idempotent per id.
+   */
+  hold(id: string, ms?: number): () => void;
+  /** Whether anything holds the total open (it may still grow). */
+  pending(): boolean;
+  /** Ask to be told when the total, or whether it is pending, changes. */
   onChange(listener: (total: number) => void): () => void;
 }
 
@@ -51,8 +67,10 @@ export function createClickRegistry(base = 0): ClickRegistry {
   const specs = new Map<string, ClickSpec>();
   const active = new Set<string>();
   const listeners = new Set<(total: number) => void>();
+  const holds = new Map<string, ReturnType<typeof setTimeout>>();
   let cursor = base;
   let lastTotal = -1;
+  let lastPending = false;
 
   const total = () => {
     let max = base;
@@ -62,8 +80,10 @@ export function createClickRegistry(base = 0): ClickRegistry {
 
   const notify = () => {
     const t = total();
-    if (t === lastTotal) return;
+    const p = holds.size > 0;
+    if (t === lastTotal && p === lastPending) return;
     lastTotal = t;
+    lastPending = p;
     for (const l of listeners) l(t);
   };
 
@@ -136,6 +156,21 @@ export function createClickRegistry(base = 0): ClickRegistry {
       });
     },
     total,
+    hold(id, ms = HOLD_LIMIT_MS) {
+      const letGo = () => {
+        const timer = holds.get(id);
+        if (timer === undefined) return;
+        clearTimeout(timer);
+        holds.delete(id);
+        queueMicrotask(notify);
+      };
+      if (!holds.has(id)) {
+        holds.set(id, setTimeout(letGo, ms));
+        queueMicrotask(notify);
+      }
+      return letGo;
+    },
+    pending: () => holds.size > 0,
     onChange(listener) {
       listeners.add(listener);
       return () => {
