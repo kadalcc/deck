@@ -73,6 +73,7 @@ export async function buildDownload(
     const { exportDeck } = await import("../export/index.ts");
     const result = await exportDeck({
       url: server.url,
+      root: dir,
       outDir: target,
       slug: basename(dir),
       name: DOWNLOAD_FILE.replace(/\.pdf$/, ""),

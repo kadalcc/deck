@@ -3,6 +3,7 @@ import { dirname, join, relative } from "node:path";
 
 import type { Browser, Page } from "playwright";
 
+import { loadPlaywright } from "../cli/render.ts";
 import { splitDeck } from "../compiler/index.ts";
 import {
   BLUESKY_POSTER_SIZE,
@@ -332,6 +333,8 @@ export const EXPORT_FORMATS: readonly ExportFormat[] = [
 export interface ExportOptions {
   /** The deck's URL, e.g. http://localhost:4173/showcase/ (with the trailing slash). */
   url: string;
+  /** The deck folder: Playwright is looked for in its node_modules first. Default: the cwd. */
+  root?: string;
   outDir: string;
   slug: string;
   /** The files' base name (`<name>.pdf`); defaults to the slug. */
@@ -413,7 +416,9 @@ export async function exportDeck(options: ExportOptions): Promise<ExportResult> 
   const scale = options.scale ?? 2;
   // A malformed range is the caller's mistake, said before a browser starts.
   checkRange(options.range);
-  const { chromium } = await import("playwright");
+  const { chromium } = (await loadPlaywright(
+    options.root ?? process.cwd(),
+  )) as unknown as typeof import("playwright");
   mkdirSync(options.outDir, { recursive: true });
   const browser = await chromium.launch(
     options.executablePath ? { executablePath: options.executablePath } : {},

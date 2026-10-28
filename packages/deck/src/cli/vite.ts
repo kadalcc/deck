@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
+import { NoDeckError } from "./project.ts";
+
 /** A prerequisite is missing (Vite, Playwright, Chromium): exit code 4, with what to run. */
 export class MissingDependencyError extends Error {}
 
@@ -11,6 +13,9 @@ export class MissingDependencyError extends Error {}
  * deck folder, so a deck uses the Vite version it installed rather than one we brought along.
  */
 export function viteBin(cwd: string): string {
+  // A folder that is not there (a mistyped `-C`) would still find a Vite further up, and then
+  // fail to start in it with an ENOENT that names Node rather than the folder.
+  if (!existsSync(cwd)) throw new NoDeckError(cwd);
   const req = createRequire(join(cwd, "package.json"));
   let pkgPath: string;
   try {

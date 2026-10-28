@@ -1,7 +1,9 @@
 import { afterAll, describe, expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { UsageError, parseArgs } from "./args.ts";
 import { EXIT, main } from "./index.ts";
@@ -194,6 +196,70 @@ if (process.env.KADAL_DECK_BUILD_RECORD)
     const human = await cli(["check", "-C", "my-talk"]);
     expect(human.stdout).toMatch(/deck\.mdx:\d+ +error +Unknown layout "nope"/);
     expect(existsSync(join(work, "my-talk", "node_modules"))).toBe(false);
+  }, 30_000);
+
+  test("what is missing or misnamed is said before any work starts", async () => {
+    // A mistyped -C: the deck's folder, not "spawn node ENOENT" from a Vite found further up.
+    for (const command of ["build", "dev", "export"]) {
+      const r = await cli([command, "-C", "no-such-folder", "--json"]);
+      expect(r.code, command).toBe(EXIT.missing);
+      expect(JSON.parse(r.stdout).error.message, command).toContain("No deck.mdx in");
+      expect(r.stderr, command).not.toContain("vite build");
+    }
+    // new into a file, and new with a misspelt --ci host: refused, and nothing is made.
+    writeFileSync(join(work, "a-file.mdx"), "# x\n");
+    const file = await cli(["new", "a-file.mdx", "--no-install"]);
+    expect(file.code).toBe(EXIT.usage);
+    expect(file.stderr).toContain("is a file");
+    const ci = await cli(["new", "ci-typo", "--no-install", "--ci", "netlify,netlfy"]);
+    expect(ci.code).toBe(EXIT.usage);
+    expect(existsSync(join(work, "ci-typo"))).toBe(false);
+    // check names no other deck than its folder's (it used to check deck.mdx and pass).
+    const other = await cli(["check", "-C", "my-talk", "talk.mdx"]);
+    expect(other.code).toBe(EXIT.usage);
+    expect(other.stderr).toContain('not "talk.mdx"');
+    expect((await cli(["check", "-C", "my-talk", "deck.mdx"])).code).not.toBe(EXIT.usage);
+    expect((await cli(["check", "my-talk"])).code).toBe(EXIT.usage);
+  }, 30_000);
+
+  test("export without Playwright exits 4 with what to run, before posters and the build", () => {
+    // The deck's `vite` leaves a mark if anything runs it; Playwright resolves to a module without
+    // a browser, as when it is not installed.
+    const dir = join(work, "no-playwright");
+    mkdirSync(join(dir, "node_modules", "vite", "bin"), { recursive: true });
+    writeFileSync(join(dir, "package.json"), '{"name":"no-playwright","private":true}');
+    writeFileSync(join(dir, "deck.mdx"), "# One\n");
+    writeFileSync(
+      join(dir, "node_modules", "vite", "package.json"),
+      '{"name":"vite","version":"0.0.0","bin":{"vite":"bin/vite.js"}}',
+    );
+    const mark = join(dir, "vite-ran");
+    writeFileSync(
+      join(dir, "node_modules", "vite", "bin", "vite.js"),
+      `require("node:fs").writeFileSync(${JSON.stringify(mark)}, "");`,
+    );
+    writeFileSync(
+      join(dir, "preload.ts"),
+      `Bun.plugin({ setup(b) { b.module("playwright", () => ({ exports: {}, loader: "object" })); } });`,
+    );
+    const index = pathToFileURL(resolve(import.meta.dir, "index.ts")).href;
+    writeFileSync(
+      join(dir, "driver.ts"),
+      `import { main } from ${JSON.stringify(index)};
+process.exit(await main(["export", "--json"], ${JSON.stringify(dir)}));`,
+    );
+    const r = spawnSync(
+      process.execPath,
+      ["--preload", join(dir, "preload.ts"), join(dir, "driver.ts")],
+      {
+        encoding: "utf8",
+        cwd: dir,
+      },
+    );
+    expect(r.status).toBe(EXIT.missing);
+    expect(JSON.parse(r.stdout).error.message).toContain("npx playwright install chromium");
+    expect(existsSync(mark)).toBe(false);
+    expect(r.stderr).not.toContain("vite build");
   }, 30_000);
 
   test("whoami and publish without a login exit 3 with instructions", async () => {

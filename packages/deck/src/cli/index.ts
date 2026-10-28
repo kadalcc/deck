@@ -567,6 +567,11 @@ async function run(
       }
       const target = positionals[0];
       if (!target) throw new UsageError("Where should the deck go? kadal-deck new <dir>");
+      // `--ci github-pages,docker`: the hosting recipes too (cli/hosting.ts). Read before the
+      // scaffold and its install, so a misspelt host leaves no half-made folder behind.
+      const ci = str(flags.ci);
+      const { hostTargets, writeHosting } = await import("./hosting.ts");
+      const hosts = ci ? hostTargets(ci) : null;
       const { newDeck } = await import("./new.ts");
       const result = await newDeck(resolve(cwd, target), {
         title: str(flags.title),
@@ -574,13 +579,7 @@ async function run(
         pm: pm as never,
         stdio: json ? "stderr" : "inherit",
       });
-      // `--ci github-pages,docker`: the hosting recipes too (cli/hosting.ts).
-      const ci = str(flags.ci);
-      if (ci) {
-        const { hostTargets, writeHosting } = await import("./hosting.ts");
-        const hosting = writeHosting(result.dir, hostTargets(ci));
-        result.next.push(...hosting.next);
-      }
+      if (hosts) result.next.push(...writeHosting(result.dir, hosts).next);
       if (json) emit({ ok: true, ...result });
       else
         say(
@@ -632,6 +631,15 @@ async function run(
     case "check": {
       const { openProject, checkProject, rel } = await import("./project.ts");
       const { formatDiagnostics } = await import("../authoring/index.ts");
+      // `check` lints the folder's deck.mdx; a file named after it was ignored and the verdict
+      // was about another deck (`check talk.mdx` passed with talk.mdx missing).
+      const other = positionals.find(
+        (p) => resolve(dir, p) !== dir && resolve(dir, p) !== join(dir, "deck.mdx"),
+      );
+      if (other)
+        throw new UsageError(
+          `check lints deck.mdx in the deck folder, not "${other}". For a deck elsewhere: kadal-deck check -C <folder>`,
+        );
       const project = openProject(dir);
       const result = await checkProject(project, { compile: flags.compile !== false });
       const lint = {
