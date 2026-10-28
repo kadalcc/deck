@@ -46,8 +46,8 @@ export interface RevealImportOptions {
 
 export interface RevealImportInfo {
   title: string | null;
-  /** The reveal.js theme the page links (`black`), and the Kadal theme and scheme chosen. */
-  theme: { reveal: string | null; kadal: string; colorScheme: "light" | "dark" | null };
+  /** The reveal.js theme the page links (`black`), and the Kadal theme, variant and scheme chosen. */
+  theme: { reveal: string | null; kadal: string; variant: string; colorScheme: "light" | "dark" };
   /** Kadal's stage, and the factor inline lengths were scaled by from reveal's. */
   canvas: { width: number; height: number; scale: number };
   /** Local files to copy: from (project-relative) → to (deck-relative, under public/). */
@@ -92,25 +92,26 @@ const EFFECTS = new Set([
   "highlight-current-blue",
 ]);
 
-/** reveal.js's own themes, by the scheme their background sets. */
-const DARK_THEMES = new Set([
-  "black",
-  "night",
-  "league",
-  "blood",
-  "moon",
-  "dracula",
-  "black-contrast",
-]);
-const LIGHT_THEMES = new Set([
-  "white",
-  "beige",
-  "simple",
-  "serif",
-  "sky",
-  "solarized",
-  "white-contrast",
-]);
+/**
+ * reveal.js's own themes, by the scheme their background sets: each is a variant of Kadal's
+ * `reveal` theme (packages/theme-reveal) of the same name; the high-contrast pair map to theirs.
+ */
+const REVEAL_THEMES: Record<string, { variant: string; scheme: "light" | "dark" }> = {
+  black: { variant: "black", scheme: "dark" },
+  white: { variant: "white", scheme: "light" },
+  league: { variant: "league", scheme: "dark" },
+  beige: { variant: "beige", scheme: "light" },
+  night: { variant: "night", scheme: "dark" },
+  serif: { variant: "serif", scheme: "light" },
+  simple: { variant: "simple", scheme: "light" },
+  solarized: { variant: "solarized", scheme: "light" },
+  moon: { variant: "moon", scheme: "dark" },
+  dracula: { variant: "dracula", scheme: "dark" },
+  sky: { variant: "sky", scheme: "light" },
+  blood: { variant: "blood", scheme: "dark" },
+  "black-contrast": { variant: "black", scheme: "dark" },
+  "white-contrast": { variant: "white", scheme: "light" },
+};
 
 /** Reveal.initialize options Kadal reads under the same name (core/model.ts). */
 const SAME_OPTIONS = new Set([
@@ -382,30 +383,33 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
       .join("\n"),
   );
   const revealTheme = themeM ? themeM[1]! : null;
-  const colorScheme: "light" | "dark" | null = revealTheme
-    ? DARK_THEMES.has(revealTheme)
-      ? "dark"
-      : LIGHT_THEMES.has(revealTheme)
-        ? "light"
-        : null
-    : null;
-  if (revealTheme && !colorScheme)
+  const known = revealTheme ? REVEAL_THEMES[revealTheme] : undefined;
+  // reveal.css alone (no theme) is black on white: the white look is the nearest
+  const variant = known?.variant ?? (revealTheme ? "black" : "white");
+  // an unknown theme is most often a dark one made from black; no theme is reveal.css's white
+  const colorScheme: "light" | "dark" = known?.scheme ?? (revealTheme ? "dark" : "light");
+  if (revealTheme && !known)
     deckReport({
       severity: "warning",
-      what: `The reveal.js theme "${revealTheme}" is not one of reveal's own; the deck uses Kadal's minimal theme.`,
-      suggestion: "Pick a Kadal theme (kadal-deck info themes) or restyle it in src/styles.css.",
+      what: `The reveal.js theme "${revealTheme}" is not one of reveal's own; the deck uses Kadal's reveal theme in its black variant.`,
+      suggestion:
+        "Set themeConfig.variant to the nearest of reveal's looks, or restyle it in src/styles.css.",
     });
   else if (revealTheme)
     deckReport({
       severity: "info",
-      what: `reveal.js's ${revealTheme} theme becomes Kadal's minimal theme in its ${colorScheme} scheme.`,
+      what:
+        revealTheme === variant
+          ? `reveal.js's ${revealTheme} theme is Kadal's reveal theme, variant ${variant} (${colorScheme}).`
+          : `reveal.js's ${revealTheme} theme is Kadal's reveal theme, variant ${variant} (${colorScheme}): its extra contrast is not carried over.`,
     });
 
   const head: Frontmatter = {};
   if (title) head.title = title;
-  head.theme = "minimal";
-  // reveal.css alone (no theme) is black on white
-  head.colorScheme = colorScheme ?? "light";
+  head.theme = "reveal";
+  head.colorScheme = colorScheme;
+  const themeConfig: Frontmatter = { variant };
+  head.themeConfig = themeConfig;
 
   let width = 960;
   let height = 700;
@@ -428,7 +432,13 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
           what: `Reveal.initialize's \`${k}\` is not a plain value and is dropped.`,
         });
   }
-  const scale = Math.round((KADAL_WIDTH / width) * 1000) / 1000;
+  // reveal's slide box: the reveal theme sizes it from these (960 × 700 when they are not given)
+  if (width !== 960) themeConfig.width = width;
+  if (height !== 700) themeConfig.height = height;
+  // reveal leaves 4% of the window around the slide by default; Kadal's default is none
+  if (!("margin" in head)) head.margin = 0.04;
+  // the factor reveal scales its slide by to fit Kadal's stage, which inline lengths take too
+  const scale = Math.round(Math.min(KADAL_WIDTH / width, KADAL_HEIGHT / height) * 1000) / 1000;
   if (width !== KADAL_WIDTH || height !== KADAL_HEIGHT)
     deckReport({
       severity: "info",
@@ -681,14 +691,16 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     ])
       known.add(k);
 
-    // reveal flips the text colour on a dark background; Kadal does it with a slide colour scheme
-    const flat = typeof fm.backgroundColor === "string" ? fm.backgroundColor : null;
-    const lum = flat ? luminance(flat) : null;
-    if (lum !== null) {
-      const dark = lum < 0.4;
-      if (dark && colorScheme !== "dark") fm.colorScheme = "dark";
-      if (!dark && colorScheme === "dark") fm.colorScheme = "light";
-    }
+    // reveal flips the text colour on a dark background; Kadal does it with a slide colour
+    // scheme. Always, not only when the deck's differs: a viewer can switch the deck's scheme
+    // (D, the theme menu, `contrast` and `export` in both), and the slide's colour does not move.
+    const lum =
+      typeof fm.backgroundColor === "string"
+        ? luminance(fm.backgroundColor)
+        : typeof fm.backgroundGradient === "string"
+          ? gradientLuminance(fm.backgroundGradient)
+          : null;
+    if (lum !== null) fm.colorScheme = schemeOn(lum);
 
     for (const a of attrs) {
       const n = a.name.toLowerCase();
@@ -794,6 +806,21 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
   /** The element's attributes as JSX, without the ones its conversion has used up. */
   function jsxAttrs(el: El, ctx: Ctx, drop: string[] = []): string {
     const out: string[] = [];
+    // A box the author painted (rgba(0,0,0,0.9) over an iframe) without a text colour took the
+    // theme's, which reveal's one theme made legible; Kadal draws every deck in both schemes, so
+    // the box says which text reads on it: a colour for its text, and reveal's own class
+    // (has-dark-background) for the reveal theme's headings, which carry a colour of their own.
+    const style = str(el, "style");
+    const styled = style && !drop.includes("style") ? styleObject(style, 1) : null;
+    const paint = styled ? (styled.backgroundColor ?? styled.background) : undefined;
+    const boxLum = paint && !styled!.color && opaque(paint) ? luminance(paint) : null;
+    const box = boxLum === null ? null : schemeOn(boxLum);
+    const boxClass = box ? `has-${box}-background` : null;
+    if (
+      boxClass &&
+      !el.attrs.some((a) => a.name.toLowerCase() === "class" && !drop.includes("class"))
+    )
+      out.push(`className="${boxClass}"`);
     for (const a of el.attrs) {
       const n = a.name.toLowerCase();
       if (drop.includes(n)) continue;
@@ -807,11 +834,13 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
       const value = a.value === true ? true : decodeEntities(a.value);
       if (n === "style" && typeof value === "string") {
         const obj = styleObject(value, scale);
+        if (box) obj.color = box === "dark" ? "#fff" : "#222";
         if (Object.keys(obj).length) out.push(`style={${JSON.stringify(obj)}}`);
         continue;
       }
       if (n === "class" && typeof value === "string") {
         const cls = value.split(/\s+/).filter((c) => c && c !== "fragment" && !EFFECTS.has(c));
+        if (boxClass) cls.push(boxClass);
         if (cls.length) out.push(`className="${cls.join(" ")}"`);
         continue;
       }
@@ -1433,6 +1462,16 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
   const out = slides.map((s, i) => {
     let fm = s.fm;
     if (i === 0) {
+      // The headmatter's colorScheme is the deck's AND the first slide's, so a first slide whose
+      // background sets its scheme (dark navy) cannot say so: in a light deck, or a dark one the
+      // viewer turned light, its words were dark on navy. It takes reveal's own class instead,
+      // `has-dark-background` (or -light-), which the reveal theme answers as reveal does: the
+      // text and headings in the colour that reads on that background.
+      if (s.fm.colorScheme) {
+        const cls = `has-${String(s.fm.colorScheme)}-background`;
+        s.fm.class = [s.fm.class, cls].filter(Boolean).join(" ");
+        delete s.fm.colorScheme;
+      }
       // the headmatter is also the first slide's frontmatter: on a clash the deck's value wins
       for (const k of Object.keys(s.fm))
         if (k in head && head[k] !== s.fm[k])
@@ -1480,7 +1519,7 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
     report,
     info: {
       title,
-      theme: { reveal: revealTheme, kadal: "minimal", colorScheme },
+      theme: { reveal: revealTheme, kadal: "reveal", variant, colorScheme },
       canvas: { width: KADAL_WIDTH, height: KADAL_HEIGHT, scale },
       assets: [...assets]
         .map(([from, to]) => ({ from, to }))
@@ -1563,6 +1602,32 @@ const NAMED: Record<string, string> = {
   coral: "#ff7f50",
   tomato: "#ff6347",
 };
+
+/** The scheme whose text reads better on this luminance: white (dark) or #222 (light). */
+export function schemeOn(lum: number): "dark" | "light" {
+  const onWhite = 1.05 / (lum + 0.05);
+  const onInk = (lum + 0.05) / (0.0159 + 0.05);
+  return onWhite >= onInk ? "dark" : "light";
+}
+
+/** The mean luminance of a gradient's colour stops, or null when it names none plainly. */
+export function gradientLuminance(gradient: string): number | null {
+  const stops = [
+    ...gradient.matchAll(
+      /#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|\b[a-z]{3,20}\b(?=\s*(?:[\d.]+%?\s*)?[,)])/gi,
+    ),
+  ]
+    .map((m) => luminance(m[0]))
+    .filter((l): l is number => l !== null);
+  return stops.length ? stops.reduce((a, b) => a + b, 0) / stops.length : null;
+}
+
+/** A colour that hides what is behind it: no alpha, or an alpha of at least a half. */
+function opaque(color: string): boolean {
+  const a = /^rgba\([^)]*?[,/]\s*([\d.]+%?)\s*\)$/i.exec(color.trim())?.[1];
+  if (a === undefined) return !/^(transparent|none)$/i.test(color.trim());
+  return a.endsWith("%") ? Number(a.slice(0, -1)) >= 50 : Number(a) >= 0.5;
+}
 
 /** Relative luminance (0–1) of a CSS colour, or null when it is not a plain one. */
 export function luminance(color: string): number | null {

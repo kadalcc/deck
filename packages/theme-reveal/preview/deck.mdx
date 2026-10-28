@@ -1,0 +1,90 @@
+---
+title: Reveal preview
+theme: ../
+themeConfig:
+  variant: black
+colorScheme: dark
+center: true
+margin: 0.04
+---
+
+{/* The slides of reveal.js's own demo that show its type: try another look with
+    `themeConfig: { variant: moon }` (black, white, league, beige, night, serif, simple, solarized,
+    moon, dracula, sky, blood), and T or D in the deck for the menu and the other scheme. */}
+
+# Reveal.js
+
+### The HTML Presentation Framework
+
+<small>Created by [Hakim El Hattab](https://hakim.se) and [contributors](https://github.com/hakimel/reveal.js/graphs/contributors)</small>
+
+---
+
+## Hello There
+
+reveal.js enables you to create beautiful interactive slide decks using HTML. This presentation
+will show you examples of what it can do.
+
+---
+
+## Pretty Code
+
+```js
+import React, { useState } from "react";
+
+function Example() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>Clicked {count} times</button>;
+}
+```
+
+Code syntax highlighting courtesy of [highlight.js](https://highlightjs.org/usage/).
+
+---
+
+## Point of View
+
+Press **ESC** to enter the slide overview.
+
+- Hold down the **Alt** key and click on any element to zoom towards it
+- Lists _keep_ their bullets left-aligned
+  - and nest one level deeper
+- Even with `inline code`
+
+---
+
+> &ldquo;For years there has been a theory that millions of monkeys typing at random on millions of
+> typewriters would reproduce the entire works of Shakespeare.&rdquo;
+
+---
+
+## Tabular Tables
+
+| Item     | Value | Quantity |
+| -------- | ----- | -------- |
+| Apples   | $1    | 7        |
+| Lemonade | $2    | 18       |
+| Bread    | $3    | 2        |
+
+---
+layout: two-cols
+---
+
+## Two columns
+
+A Kadal layout in reveal's type: the words on the left.
+
+::right::
+
+1. One
+2. Two
+3. Three
+
+---
+layout: section
+---
+
+# THE END
+
+- [Try the online editor](https://slides.com)
+- [Source code & documentation](https://github.com/hakimel/reveal.js)

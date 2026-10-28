@@ -50,7 +50,7 @@ function formatRevealReport(
     "",
     `- Slides: ${info.slides} — ${info.cleanSlides} (${pct}%) converted with no warning or error.`,
     `- Report lines: ${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes.`,
-    `- Theme: reveal.js \`${info.theme.reveal ?? "(none)"}\` → Kadal \`${info.theme.kadal}\` (${info.theme.colorScheme ?? "light"}).`,
+    `- Theme: reveal.js \`${info.theme.reveal ?? "(none)"}\` → Kadal \`${info.theme.kadal}\`, variant \`${info.theme.variant}\` (${info.theme.colorScheme}).`,
     `- Stage: ${info.canvas.width}×${info.canvas.height}; inline lengths scaled ×${info.canvas.scale} from reveal.js's.`,
     ...(info.assets.length ? [`- Files copied into public/: ${info.assets.length}.`] : []),
     "",

@@ -509,6 +509,24 @@
         "react": "^19.2.0",
       },
     },
+    "packages/theme-reveal": {
+      "name": "@kadal/theme-reveal",
+      "version": "0.10.1",
+      "devDependencies": {
+        "@kadal/deck": "workspace:*",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^6.0.2",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.16",
+      },
+      "peerDependencies": {
+        "@kadal/deck": "^0.10.1",
+        "react": "^19.2.0",
+      },
+    },
     "packages/theme-seriph": {
       "name": "@kadal/theme-seriph",
       "version": "0.4.2",
@@ -827,6 +845,8 @@
     "@kadal/theme-neon": ["@kadal/theme-neon@workspace:packages/theme-neon"],
 
     "@kadal/theme-ocean": ["@kadal/theme-ocean@workspace:packages/theme-ocean"],
+
+    "@kadal/theme-reveal": ["@kadal/theme-reveal@workspace:packages/theme-reveal"],
 
     "@kadal/theme-seriph": ["@kadal/theme-seriph@workspace:packages/theme-seriph"],
 
