@@ -478,12 +478,12 @@ describe("content", () => {
     expect(body).toBe("\\{a\\} \\<b\\> \\*c\\* $x^2$");
   });
 
-  test("code keeps its language and line-number steps", () => {
+  test("code keeps its language and line-number steps, moved with the offset (reveal counts from the top)", () => {
     const { body } = one(
       '<section><pre><code class="language-ts" data-trim data-line-numbers="1|2-3" data-ln-start-from="10">\n    const a = 1;\n    if (a &lt; 2) {\n      log(a);\n    }\n</code></pre></section>',
     );
     expect(body).toBe(
-      "```ts {1|2-3}{lines:true,startLine:10}\nconst a = 1;\nif (a < 2) {\n  log(a);\n}\n```",
+      "```ts {10|11-12}{lines:true,startLine:10}\nconst a = 1;\nif (a < 2) {\n  log(a);\n}\n```",
     );
     const tmpl = one(
       '<section><pre><code class="hljs python" data-line-numbers><script type="text/template">print("<b>")</script></code></pre></section>',
@@ -541,7 +541,7 @@ describe("data-markdown", () => {
       [false, "## B"],
       [true, "## B.1"],
     ]);
-    expect(s[0]!.body).toContain("```js {1|2}{lines:true,startLine:2}");
+    expect(s[0]!.body).toContain("```js {2|3}{lines:true,startLine:2}");
   });
 
   test("a missing Markdown file is an error, and the deck still converts", () => {
