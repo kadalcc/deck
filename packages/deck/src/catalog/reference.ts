@@ -970,18 +970,26 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   height: "The authored height in px; with width, the stage every screen scales.",
   minScale: "Smallest scale the stage may shrink to.",
   maxScale: "Largest scale the stage may grow to.",
+  disableLayout:
+    "reveal.js compatible: no scaling or centring; the slides fill the page at its own size and you style them responsively (bring your own layout). Default false.",
   controls: 'Show the navigation arrows; "speaker" shows them only in the presenter view.',
   controlsLayout: "Where the arrows sit.",
   controlsTutorial: "Hint at vertical slides the first time.",
   controlsBackArrows: "How the back arrows look.",
   progress: "The progress bar along the bottom.",
   slideNumber:
-    'Show slide numbers: true, or a format — "h.v", "h/v", "c" (current), "c/t" (current/total).',
+    'Show slide numbers: true, or a format — "h.v", "h/v", "c" (current), "c/t" (current/total). reveal.js compatible: deck.config.ts may pass a function of the slide ({ h, v, click, index, total, id }) returning one string or three ([h, ".", v]).',
   showSlideNumber: "Where slide numbers show.",
   hash: "Keep the URL hash in step with the slide.",
   hashOneBasedIndex: "1-based slide numbers in the hash.",
   history: "Push a history entry per slide (Back walks the slides).",
   keyboard: "Keyboard navigation on.",
+  respondToHashChanges:
+    "reveal.js compatible: a change to the URL hash (a link, the address bar) moves the deck. Default true.",
+  keyboardCondition:
+    'reveal.js compatible: when the deck takes keys. null (default): always; "focused": only while the deck has focus (a deck embedded in a page). deck.config.ts may pass a function of the KeyboardEvent instead, true letting the key through.',
+  focusBodyOnPageVisibilityChange:
+    "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true.",
   overview: "The overview grid (O / Esc).",
   touch: "Swipe navigation.",
   loop: "Wrap from the last slide to the first.",
@@ -991,26 +999,48 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   fragments: "Clicks/fragments on; off shows every step at once.",
   fragmentInURL: "Include the click step in the hash.",
   embedded: "The deck lives inside another page.",
+  postMessage:
+    "reveal.js compatible: a page that frames the deck can drive it with reveal's postMessage calls (`{ method, args }`). Default true.",
+  postMessageEvents:
+    "reveal.js compatible: post the deck's events (slide changed, fragment shown …) to the framing page, as reveal's `{ namespace: \"reveal\", eventName, state }`. Default false.",
   help: "The ? keyboard help.",
   pause: "B / . blacks the screen out.",
   showNotes: 'Print notes with the slides: true (in a box) or "separate-page".',
   autoPlayMedia: "Autoplay media on every slide (null = per element).",
+  preloadIframes:
+    "reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows.",
   autoAnimate: "Allow auto-animate between slides that set `autoAnimate`.",
   autoAnimateEasing: "CSS easing for auto-animate.",
   autoAnimateDuration: "Seconds.",
   autoAnimateUnmatched: "Fade in elements without a match.",
+  autoAnimateStyles:
+    "reveal.js compatible: the CSS properties auto-animate morphs between matched elements. Default reveal's list: opacity, color, background-color, padding, font-size, line-height, letter-spacing, border-width, border-color, border-radius, outline, outline-offset.",
+  autoAnimateMatcher:
+    "reveal.js compatible, deck.config.ts only: a function (from, to) of the two slides' elements returning the pairs to morph ([{ from, to }]), in place of matching by text and data-id. null (default): the built-in matching.",
   autoSlideStoppable: "Any input stops auto-slide.",
+  autoSlideMethod:
+    'reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right. reveal takes a function here; a name works in YAML.',
   mouseWheel: "Scroll-wheel navigation.",
   previewLinks: "Open links in an overlay.",
   transition:
     'Slide transition (see transitions), or one of your own from `transitions` (or CSS on `.deck-stage[data-transition="name"]` setting `--deck-anim-in` / `--deck-anim-out`).',
   transitionSpeed: "default · fast · slow.",
   backgroundTransition: "Transition for backgrounds.",
+  parallaxBackgroundImage:
+    "reveal.js compatible: one large image behind every slide that shifts a little with each slide (a path in public/ or a URL). Empty (default): none.",
+  parallaxBackgroundSize:
+    "reveal.js compatible: the parallax image's CSS background-size, e.g. \"2100px 900px\". Empty (default): the image's own size.",
+  parallaxBackgroundHorizontal:
+    "reveal.js compatible: pixels the parallax image moves per horizontal slide. null (default): worked out from the image and slide count.",
+  parallaxBackgroundVertical:
+    "reveal.js compatible: pixels the parallax image moves per vertical slide. null (default): worked out from the image and slide count.",
   viewDistance: "Slides kept mounted on either side.",
   mobileViewDistance: "The same, on phones.",
   hideInactiveCursor: "Hide an idle cursor.",
   hideCursorTime: "Milliseconds before it hides.",
   view: '"slide" (the stage) or "scroll" (a page).',
+  scrollLayout:
+    'reveal.js compatible: the scroll view\'s page. "compact" (default): each slide as wide as the viewport, as tall as its aspect ratio makes it; "full": each slide fills the viewport height, letterboxed, as reveal does by default.',
   scrollProgress: "The scroll view's progress bar.",
   scrollSnap: "Scroll snapping in the scroll view.",
   theme:
@@ -1166,6 +1196,24 @@ export const SLIDE_KEYS = [
     description: "Only auto-animate between slides with the same id.",
   },
   { name: "autoAnimateRestart", type: B(), description: "Break the auto-animate chain here." },
+  {
+    name: "autoAnimateEasing",
+    type: S(),
+    description:
+      "reveal.js compatible: the CSS easing of the auto-animate into this slide, over the deck's.",
+  },
+  {
+    name: "autoAnimateDuration",
+    type: N(),
+    description:
+      "reveal.js compatible: seconds the auto-animate into this slide takes, over the deck's.",
+  },
+  {
+    name: "autoAnimateUnmatched",
+    type: B(),
+    description:
+      "reveal.js compatible: whether this slide's elements with no match fade in, over the deck's.",
+  },
   {
     name: "autoSlide",
     type: N(),

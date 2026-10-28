@@ -1353,8 +1353,9 @@ function useDeckEffects(
   // when the deck or any slide sets an interval, and on `A` otherwise — see `autoSlideDelay`.
   useEffect(() => {
     if (mode !== "play" || deck.projector) return;
+    const deckMs = config.autoSlide || 0;
     const configured =
-      config.autoSlide > 0 || [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0);
+      deckMs > 0 || [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0);
     if (configured) nav.update((s) => ({ ...s, autoSliding: true }));
     let timer: ReturnType<typeof setTimeout> | null = null;
     const schedule = () => {
@@ -1362,7 +1363,7 @@ function useDeckEffects(
       const s = nav.get();
       if (!s.autoSliding || s.paused || s.overview) return;
       const opts = deck.options.get(`${s.h},${s.v}`);
-      const ms = N.autoSlideDelay(opts?.autoSlide ?? null, config.autoSlide, configured);
+      const ms = N.autoSlideDelay(opts?.autoSlide ?? null, deckMs, configured);
       if (ms === null) return;
       timer = setTimeout(() => {
         const before = nav.get();

@@ -69,6 +69,25 @@ describe("sections", () => {
     expect(what(r)).not.toContain("plugins");
   });
 
+  test("reveal's newer options carry over by name", () => {
+    const r = convertReveal(
+      page(
+        "<section><h1>Hi</h1></section>",
+        "",
+        "<script>Reveal.initialize({ parallaxBackgroundImage: 'stars.jpg', parallaxBackgroundSize: '2100px 900px', scrollLayout: 'full', keyboardCondition: 'focused', postMessageEvents: true, disableLayout: true });</script>",
+      ),
+    );
+    expect(slides(r.mdx)[0]!.fm).toMatchObject({
+      parallaxBackgroundImage: "stars.jpg",
+      parallaxBackgroundSize: "2100px 900px",
+      scrollLayout: "full",
+      keyboardCondition: "focused",
+      postMessageEvents: true,
+      disableLayout: true,
+    });
+    expect(what(r)).not.toContain("parallaxBackgroundImage");
+  });
+
   test("revealConfig reads literals and skips the rest, comments and all", () => {
     const c = revealConfig(
       "deck.initialize({\n  // a comment, with: a colon\n  controls: false,\n  margin: 0.04,\n  view: \"scroll\",\n  dependencies: [{ src: 'x.js' }],\n});",

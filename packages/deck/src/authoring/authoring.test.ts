@@ -289,6 +289,41 @@ describe("lint", () => {
     expect(await codes(md)).toEqual([]);
   });
 
+  test("reveal.js's options are known keys, with their types", async () => {
+    const head = [
+      "title: X",
+      "preloadIframes: true",
+      "respondToHashChanges: false",
+      "keyboardCondition: focused",
+      "autoSlide: false",
+      "autoSlideMethod: next",
+      "autoAnimateStyles: [opacity, color]",
+      "scrollLayout: full",
+      "parallaxBackgroundImage: /stars.jpg",
+      'parallaxBackgroundSize: "2100px 900px"',
+      "parallaxBackgroundHorizontal: 200",
+      "parallaxBackgroundVertical: 50",
+      "disableLayout: true",
+      "postMessage: false",
+      "postMessageEvents: true",
+      "focusBodyOnPageVisibilityChange: false",
+    ].join("\n");
+    const slide = [
+      "autoAnimate: true",
+      "autoAnimateEasing: ease-out",
+      "autoAnimateDuration: 0.4",
+      "autoAnimateUnmatched: false",
+    ].join("\n");
+    expect(await codes(`---\n${head}\n---\n\n# A\n\n---\n${slide}\n---\n\n# B\n`)).toEqual([]);
+    // A function is deck.config.ts's; in YAML only the plain forms are.
+    const wrong = "---\ntitle: X\nscrollLayout: wide\nkeyboardCondition: always\n---\n\n# A\n";
+    const r = await lint(wrong);
+    expect(r.diagnostics.map((d) => [d.code, d.message.split(":")[0]])).toEqual([
+      ["frontmatter-type", '"scrollLayout"'],
+      ["frontmatter-type", '"keyboardCondition"'],
+    ]);
+  });
+
   test("a talk's date is a known headmatter key (listings sort by it)", async () => {
     expect(await codes("---\ntitle: X\ndate: 2026-10-11\n---\n\n# A\n")).toEqual([]);
   });

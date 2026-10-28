@@ -88,7 +88,9 @@ function shapeOf(type: ts.Type, checker: ts.TypeChecker, depth = 0): ValueShape 
         }
         variants.push({ type: "object", properties });
       } else variants.push({ type: "object" });
-    } else opaque = true;
+    } else if (t.getCallSignatures().length && depth === 0 && members.length > 1)
+      continue; // a function beside JSON forms (`"focused" | (e) => boolean`): deck.config.ts only
+    else opaque = true;
   }
   if (bools.size === 2) variants.unshift({ type: "boolean" });
   else if (bools.size === 1) variants.unshift({ type: "boolean", enum: [...bools] });

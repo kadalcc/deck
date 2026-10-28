@@ -239,6 +239,45 @@ export type Transition =
   | "view-transition";
 export type TransitionSpeed = "default" | "fast" | "slow";
 export type SlideNumberFormat = "h.v" | "h/v" | "c" | "c/t";
+/** Where the slide-number function is called: the slide's position, 0-based like the hash. */
+export interface SlideNumberContext {
+  h: number;
+  v: number;
+  click: number;
+  /** The slide's place in the whole deck, 0-based, and how many slides there are. */
+  index: number;
+  total: number;
+  id: string | null;
+}
+/**
+ * reveal.js's custom slide number, from deck.config.ts only: one string, or three (`[h, ".", v]`)
+ * that are drawn with the separator between them.
+ */
+export type SlideNumberFunction = (slide: SlideNumberContext) => string | string[];
+/** reveal.js's `keyboardCondition` as a function (deck.config.ts only): true lets the key through. */
+export type KeyboardConditionFunction = (event: KeyboardEvent) => boolean;
+/** One pair auto-animate morphs, as reveal.js's `autoAnimateMatcher` returns them. */
+export interface AutoAnimatePair {
+  from: HTMLElement;
+  to: HTMLElement;
+}
+/** reveal.js's `autoAnimateMatcher` (deck.config.ts only): which elements of two slides pair up. */
+export type AutoAnimateMatcher = (from: HTMLElement, to: HTMLElement) => AutoAnimatePair[];
+/** The CSS properties auto-animate morphs: reveal.js's list. */
+export const AUTO_ANIMATE_STYLES = [
+  "opacity",
+  "color",
+  "background-color",
+  "padding",
+  "font-size",
+  "line-height",
+  "letter-spacing",
+  "border-width",
+  "border-color",
+  "border-radius",
+  "outline",
+  "outline-offset",
+];
 export type NavigationMode = "default" | "linear" | "grid";
 export type ColorScheme = "auto" | "light" | "dark";
 
@@ -259,6 +298,7 @@ export interface DeckConfig {
   margin: number;
   minScale: number;
   maxScale: number;
+  disableLayout: boolean;
   /** Vertically centre each slide's content. */
   center: boolean;
   controls: boolean | "speaker";
@@ -266,12 +306,15 @@ export interface DeckConfig {
   controlsTutorial: boolean;
   controlsBackArrows: "faded" | "hidden" | "visible";
   progress: boolean;
-  slideNumber: boolean | SlideNumberFormat;
+  slideNumber: boolean | SlideNumberFormat | SlideNumberFunction;
   showSlideNumber: "all" | "print" | "speaker";
   hash: boolean;
   hashOneBasedIndex: boolean;
   history: boolean;
+  respondToHashChanges: boolean;
   keyboard: boolean;
+  keyboardCondition: "focused" | KeyboardConditionFunction | null;
+  focusBodyOnPageVisibilityChange: boolean;
   overview: boolean;
   touch: boolean;
   loop: boolean;
@@ -281,17 +324,26 @@ export interface DeckConfig {
   fragments: boolean;
   fragmentInURL: boolean;
   embedded: boolean;
+  postMessage: boolean;
+  postMessageEvents: boolean;
   help: boolean;
   pause: boolean;
   showNotes: boolean | "separate-page";
   autoPlayMedia: boolean | null;
+  preloadIframes: boolean | null;
   autoAnimate: boolean;
   autoAnimateEasing: string;
   autoAnimateDuration: number;
   autoAnimateUnmatched: boolean;
-  /** Milliseconds between automatic steps; 0 disables. */
-  autoSlide: number;
+  autoAnimateStyles: string[];
+  autoAnimateMatcher: AutoAnimateMatcher | null;
+  /**
+   * Milliseconds between automatic steps; 0: only the slides that set their own, false: none,
+   * not even those.
+   */
+  autoSlide: number | false;
   autoSlideStoppable: boolean;
+  autoSlideMethod: string;
   /** Seconds per slide for the pacing timer, or null. */
   defaultTiming: number | null;
   /** Total seconds for the pacing timer, or null. */
@@ -301,11 +353,16 @@ export interface DeckConfig {
   transition: Transition;
   transitionSpeed: TransitionSpeed;
   backgroundTransition: Transition;
+  parallaxBackgroundImage: string;
+  parallaxBackgroundSize: string;
+  parallaxBackgroundHorizontal: number | null;
+  parallaxBackgroundVertical: number | null;
   viewDistance: number;
   mobileViewDistance: number;
   hideInactiveCursor: boolean;
   hideCursorTime: number;
   view: "slide" | "scroll";
+  scrollLayout: "full" | "compact";
   scrollProgress: "auto" | boolean;
   scrollSnap: "mandatory" | "proximity" | false;
   /**
@@ -501,6 +558,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   margin: 0,
   minScale: 0.2,
   maxScale: 2,
+  disableLayout: false,
   center: true,
   controls: true,
   controlsLayout: "bottom-right",
@@ -512,7 +570,10 @@ export const DEFAULT_CONFIG: DeckConfig = {
   hash: true,
   hashOneBasedIndex: false,
   history: false,
+  respondToHashChanges: true,
   keyboard: true,
+  keyboardCondition: null,
+  focusBodyOnPageVisibilityChange: true,
   overview: true,
   touch: true,
   loop: false,
@@ -522,16 +583,22 @@ export const DEFAULT_CONFIG: DeckConfig = {
   fragments: true,
   fragmentInURL: true,
   embedded: false,
+  postMessage: true,
+  postMessageEvents: false,
   help: true,
   pause: true,
   showNotes: false,
   autoPlayMedia: null,
+  preloadIframes: null,
   autoAnimate: true,
   autoAnimateEasing: "ease",
   autoAnimateDuration: 1,
   autoAnimateUnmatched: true,
+  autoAnimateStyles: AUTO_ANIMATE_STYLES,
+  autoAnimateMatcher: null,
   autoSlide: 0,
   autoSlideStoppable: true,
+  autoSlideMethod: "next",
   defaultTiming: null,
   totalTime: null,
   mouseWheel: false,
@@ -539,11 +606,16 @@ export const DEFAULT_CONFIG: DeckConfig = {
   transition: "slide",
   transitionSpeed: "default",
   backgroundTransition: "fade",
+  parallaxBackgroundImage: "",
+  parallaxBackgroundSize: "",
+  parallaxBackgroundHorizontal: null,
+  parallaxBackgroundVertical: null,
   viewDistance: 3,
   mobileViewDistance: 2,
   hideInactiveCursor: true,
   hideCursorTime: 5000,
   view: "slide",
+  scrollLayout: "compact",
   scrollProgress: "auto",
   scrollSnap: "mandatory",
   scrollActivationWidth: 0,
@@ -680,6 +752,10 @@ export interface SlideOptions {
   autoAnimate: boolean;
   autoAnimateId: string | null;
   autoAnimateRestart: boolean;
+  /** This slide's auto-animate easing, duration (seconds) and unmatched fade; null: the deck's. */
+  autoAnimateEasing: string | null;
+  autoAnimateDuration: number | null;
+  autoAnimateUnmatched: boolean | null;
   autoSlide: number | null;
   clicks: number | null;
   clicksStart: number;
@@ -932,6 +1008,10 @@ export function resolveSlideOptions(
         ? (str((fm.autoAnimate as Frontmatter).id) ?? null)
         : null),
     autoAnimateRestart: bool(fm.autoAnimateRestart, false),
+    autoAnimateEasing: str(fm.autoAnimateEasing),
+    autoAnimateDuration: num(fm.autoAnimateDuration),
+    autoAnimateUnmatched:
+      typeof fm.autoAnimateUnmatched === "boolean" ? fm.autoAnimateUnmatched : null,
     autoSlide: num(fm.autoslide ?? fm.autoSlide),
     clicks: num(fm.clicks),
     clicksStart: num(fm.clicksStart) ?? 0,
