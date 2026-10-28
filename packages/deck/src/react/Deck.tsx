@@ -347,6 +347,8 @@ export function DeckRuntimeView({
   const rootRef = useRef<HTMLDivElement>(null);
   // A deck inside part of a page (core/embedding.ts): `embedded: true` or `?embedded`.
   const embedded = isEmbedded(config, flags);
+  // An embedded deck still opens where the address says (reveal reads it at start whatever its
+  // `hash`), but only writes it when the deck set `hash` outright.
   const hashOn = usesHash(config, embedded, setsHash(manifest.headmatter, configIn));
   /** Whether this deck has the page's attention (keyboardCondition "focused"); see DeckRoot. */
   const focus = useMemo<DeckFocus>(() => ({ on: !embedded }), [embedded]);
@@ -355,10 +357,10 @@ export function DeckRuntimeView({
   // slide has reported its total, and the first hash write would otherwise erase it.
   const wantedAtLoad = useMemo(
     () =>
-      typeof window !== "undefined" && hashOn
+      typeof window !== "undefined" && config.hash
         ? parseHash(window.location.hash, columns, config.hashOneBasedIndex)
         : null,
-    [columns, config.hashOneBasedIndex, hashOn],
+    [columns, config.hashOneBasedIndex, config.hash],
   );
   /**
    * Does this window start in step with the presenter?
@@ -1116,8 +1118,9 @@ function useDeckEffects(
 
   // Hash ↔ navigation.
   useEffect(() => {
-    if (!hashOn || mode === "print" || mode === "remote") return;
+    if (!config.hash || mode === "print" || mode === "remote") return;
     const write = (s: N.NavState) => {
+      if (!hashOn) return;
       const meta = columns[s.h]?.slides[s.v];
       const id = meta && typeof meta.frontmatter.id === "string" ? meta.frontmatter.id : null;
       const next = formatHash(s, {

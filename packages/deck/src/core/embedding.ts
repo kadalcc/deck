@@ -45,8 +45,9 @@ export function keyAllowed(
 }
 
 /**
- * Whether the deck reads and writes the address's hash. An embedded deck shares the address with
- * its page (and perhaps other decks), so it keeps out of it unless the deck set `hash` itself.
+ * Whether the deck writes the address's hash as it moves. An embedded deck shares the address with
+ * its page (and perhaps other decks), so it leaves it alone unless the deck set `hash` itself; it
+ * still opens where the hash says and follows a change to it, as reveal does.
  */
 export function usesHash(
   config: Pick<DeckConfig, "hash">,
