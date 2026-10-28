@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -99,6 +99,44 @@ describe("kadal-deck commands", () => {
   test("--version and --json keep stdout to one document", async () => {
     const v = await cli(["--version", "--json"]);
     expect(JSON.parse(v.stdout).version).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  test("build --json and dev --json keep --json for themselves, not Vite", async () => {
+    // A deck whose `vite` notes its arguments and leaves the build record the plugin would.
+    const dir = join(work, "json-deck");
+    const bin = join(dir, "node_modules", "vite", "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(dir, "package.json"), '{"name":"json-deck","private":true}');
+    writeFileSync(join(dir, "deck.mdx"), "# One\n");
+    writeFileSync(
+      join(dir, "node_modules", "vite", "package.json"),
+      '{"name":"vite","version":"0.0.0","bin":{"vite":"bin/vite.js"}}',
+    );
+    const argvFile = join(dir, "argv.json");
+    writeFileSync(
+      join(bin, "vite.js"),
+      `const fs = require("node:fs");
+const args = process.argv.slice(2);
+fs.writeFileSync(${JSON.stringify(argvFile)}, JSON.stringify(args));
+// Vite's CLI refuses an option it does not know, as the real one does.
+if (args.includes("--json")) { console.error("CACError: Unknown option --json"); process.exit(1); }
+if (process.env.KADAL_DECK_BUILD_RECORD)
+  fs.writeFileSync(process.env.KADAL_DECK_BUILD_RECORD, JSON.stringify({ entry: "deck.mdx", outDir: "dist", base: "/talk/", title: "One" }));
+`,
+    );
+    const built = await cli(["build", "--json", "--base", "/talk/", "--no-download"], dir);
+    expect(built.code).toBe(EXIT.ok);
+    expect(JSON.parse(readFileSync(argvFile, "utf8"))).toEqual(["build", "--base", "/talk/"]);
+    const out = JSON.parse(built.stdout);
+    expect(out.ok).toBe(true);
+    expect(out.builds).toEqual([
+      { entry: "deck.mdx", outDir: "dist", base: "/talk/", title: "One" },
+    ]);
+
+    const dev = await cli(["dev", "--json", "--port", "5999"], dir);
+    expect(dev.code).toBe(EXIT.ok);
+    expect(JSON.parse(readFileSync(argvFile, "utf8"))).toEqual(["--port", "5999"]);
+    expect(JSON.parse(dev.stdout)).toEqual({ ok: true });
   });
 
   test("info lists sections, entries, and searches", async () => {
