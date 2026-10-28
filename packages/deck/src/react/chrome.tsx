@@ -449,7 +449,8 @@ export function statusText(node: Node): string {
     if (n.nodeType !== 1) return;
     const el = n as HTMLElement;
     if (SKIP.has(el.tagName) || el.getAttribute("aria-hidden") === "true") return;
-    const display = typeof getComputedStyle === "function" ? getComputedStyle(el).display : "";
+    // A stubbed or partial getComputedStyle (another test's, an old engine's) may leave display out.
+    const display = (typeof getComputedStyle === "function" && getComputedStyle(el).display) || "";
     if (display === "none") return;
     if (el.tagName === "IMG") {
       const alt = el.getAttribute("alt");
