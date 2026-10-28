@@ -442,6 +442,11 @@ body {
 .deck-layout-default {
   justify-content: flex-start;
 }
+/* `center: true` (reveal.js's default, which `kadal-deck import reveal` writes): the default
+   layout's content in the middle, SAFE as the centred layouts below are. */
+.deck-root.is-centered .deck-layout-default {
+  justify-content: safe center;
+}
 .deck-layout-center,
 .deck-layout-cover,
 .deck-layout-intro,

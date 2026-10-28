@@ -202,7 +202,7 @@ export const GENERATED: GeneratedData = {
     {"name":"minScale","type":{"text":"number","variants":[{"type":"number"}]}},
     {"name":"maxScale","type":{"text":"number","variants":[{"type":"number"}]}},
     {"name":"disableLayout","type":{"text":"boolean","variants":[{"type":"boolean"}]}},
-    {"name":"center","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Vertically centre each slide's content."},
+    {"name":"center","type":{"text":"boolean","variants":[{"type":"boolean"}]},"description":"Vertically centre the content of slides on the default layout, as reveal.js does. False by default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other layouts place their content themselves."},
     {"name":"controls","type":{"text":"boolean | \"speaker\"","variants":[{"type":"string","enum":["speaker"]},{"type":"boolean"}]}},
     {"name":"controlsLayout","type":{"text":"\"bottom-right\" | \"edges\"","variants":[{"type":"string","enum":["bottom-right","edges"]}]}},
     {"name":"controlsTutorial","type":{"text":"boolean","variants":[{"type":"boolean"}]}},
