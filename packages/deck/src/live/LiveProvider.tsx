@@ -14,6 +14,7 @@ import { closeTerm, openTerm } from "../react/terms.ts";
 import { RemoteMirror } from "../remote/mirror.ts";
 import { Analytics } from "./analytics.tsx";
 import { RoomClient, viewerId } from "./client.ts";
+import { reactionFloats } from "./reactions.ts";
 import { createAwayWatch } from "./away.ts";
 import { presenterTicket, viewerPass } from "./ticket.ts";
 import { turnstileToken, viewerCheck } from "./turnstile.ts";
@@ -512,9 +513,11 @@ function ReactionsOverlay() {
   const [items, setItems] = useState<{ id: number; emoji: string; x: number }[]>([]);
   useEffect(() => {
     let n = 0;
+    // The totals this window has seen, so each message floats its own step (live/reactions.ts).
+    const seen = { ...live.client.state.get().reactions };
     return live.client.on((m) => {
-      if (m.type !== "react") return;
-      const count = Math.min(6, m.n);
+      const count = reactionFloats(seen, m);
+      if (m.type !== "react" || !count) return;
       const batch = Array.from({ length: count }, () => ({
         id: n++,
         emoji: m.emoji,
