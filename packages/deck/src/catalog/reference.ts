@@ -1002,14 +1002,15 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   keyboardCondition:
     'reveal.js compatible: when the deck takes keys. null (default): always, or "focused" for an embedded deck; "focused": only while the deck has focus (a press inside it, or tabbing into it; the deck then carries `.focused`). deck.config.ts may pass a function of the KeyboardEvent instead; returning false keeps the key from the deck.',
   focusBodyOnPageVisibilityChange:
-    "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame so the keys reach the deck. Default true.",
+    "reveal.js compatible: when the tab becomes visible again, take focus back from an embedded frame or a control so the keys reach the deck (a text field keeps its caret; an embedded deck leaves its page's focus alone). Default true.",
   overview: "The overview grid (O / Esc).",
   touch:
     "Swipe navigation. A touch that starts inside `data-prevent-swipe` (or on media controls) keeps its gesture; `rtl` mirrors the horizontal swipes.",
   loop: "Wrap from the last slide to the first.",
   rtl: "Right-to-left.",
   navigationMode: '"default", "linear" (arrows walk every slide) or "grid" (columns stay aligned).',
-  shuffle: "Shuffle the slides on load.",
+  shuffle:
+    "Shuffle the slides on load, the columns and each vertical stack, as reveal.js does: a new order every load of the play view, handed to its presenter view and share window so they show the same deck. Print and export keep the authored order.",
   fragments:
     "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
   fragmentInURL: "Include the click step in the hash.",
@@ -1262,7 +1263,8 @@ export const SLIDE_KEYS = [
       text: "string | string[]",
       variants: [{ type: "string" as const }, { type: "array" as const }],
     },
-    description: "Adds state-<name> classes while the slide shows (CSS hooks).",
+    description:
+      "reveal.js's data-state: while the slide shows, `state-<name>` on the slide and both `<name>` and `state-<name>` on the deck root, so CSS for the whole page can follow it; each name it turns on fires an event of that name on the root, and `deck:state` says what changed. Names split on spaces.",
   },
   {
     name: "colorScheme",

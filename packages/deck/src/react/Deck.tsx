@@ -19,6 +19,8 @@ import type { Frontmatter } from "../compiler/split.ts";
 import { formatHash, parseFlags, parseHash } from "../core/hash.ts";
 import { isEmbedded, keyAllowed, keyboardConditionOf, usesHash } from "../core/embedding.ts";
 import { autoSlideMethod, stepAutoSlide, stepAutoSlideSelector } from "../core/auto-slide.ts";
+import { stateChange, stateClasses, stateNames } from "../core/events.ts";
+import { applyOrder, orderOf, shuffledOrder, type SlideOrder } from "../core/shuffle.ts";
 import { createCommandRegistry, KEY_COMMANDS } from "../core/commands.ts";
 import { createPanelRegistry } from "../core/panels.ts";
 import { isEditable, type KeyAction } from "../core/keyboard.ts";
@@ -282,19 +284,10 @@ export function DeckRuntimeView({
       readHostOverride(),
     );
   }, [manifest.headmatter, manifest.packages, configIn, slugFromBase]);
-  const columns = useMemo<Column[]>(
+  const authoredColumns = useMemo<Column[]>(
     () => columnsOf(manifest.slides, config),
     [manifest.slides, config],
   );
-  const options = useMemo(() => {
-    const map = new Map<string, SlideOptions>();
-    columns.forEach((c) =>
-      c.slides.forEach((s, v) =>
-        map.set(`${c.h},${v}`, resolveSlideOptions(s.frontmatter, config, s.index === 0)),
-      ),
-    );
-    return map;
-  }, [columns, config]);
 
   // The deck's own pages (react/routes.tsx): an address one of them names is that page.
   const deckRoutes = useDeckRoutes(base, { deck: manifest.packages?.routes, prop: routesIn });
@@ -308,6 +301,37 @@ export function DeckRuntimeView({
     [],
   );
   const windowId = useMemo(() => Math.random().toString(36).slice(2, 10), []);
+  /*
+   * `shuffle: true` (reveal.js): the play window deals the slides once per load, and hands its
+   * order to the deck's other windows over the bus, so the presenter view and the share window
+   * show the same deck. They never deal their own; print and export keep the authored order.
+   */
+  const dealsOrder = config.shuffle && mode === "play" && !flags.projector;
+  const [order, setOrder] = useState<SlideOrder | null>(() =>
+    dealsOrder ? shuffledOrder(authoredColumns) : null,
+  );
+  const columns = useMemo(
+    () => (order ? applyOrder(authoredColumns, order) : authoredColumns),
+    [authoredColumns, order],
+  );
+  const options = useMemo(() => {
+    const map = new Map<string, SlideOptions>();
+    columns.forEach((c) =>
+      c.slides.forEach((s, v) =>
+        map.set(`${c.h},${v}`, resolveSlideOptions(s.frontmatter, config, s.index === 0)),
+      ),
+    );
+    return map;
+  }, [columns, config]);
+  const shuffle = useMemo<ShuffleSync>(
+    () => ({
+      deals: dealsOrder,
+      wants: config.shuffle && !dealsOrder && mode !== "print" && mode !== "export",
+      adopt: (next) =>
+        setOrder((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next)),
+    }),
+    [dealsOrder, config.shuffle, mode],
+  );
   /**
    * A PROJECTOR: a window that exists to be looked at — a second screen, or the one window you
    * share on a call. It renders the deck exactly as the deck page does; what it gives up is input.
@@ -767,7 +791,12 @@ export function DeckRuntimeView({
   useBuiltinCommands(runtime);
   usePackageSetup(runtime, merged.modules);
   usePackageRoutes(deckRoutes.registry, merged.modules);
-  useDeckEffects(runtime, flags, wantedAtLoad, related, rootRef, { embedded, hashOn, focus });
+  useDeckEffects(runtime, flags, wantedAtLoad, related, rootRef, {
+    embedded,
+    hashOn,
+    focus,
+    shuffle,
+  });
   useTermEffects(runtime);
   // A share window or teleprompter the viewer closed themselves: the button that opened it stops
   // looking lit.
@@ -943,6 +972,31 @@ function DeckRoot({
     [deck.ui],
   );
   useEffect(() => deck.nav.subscribe((s) => setPaused(s.paused)), [deck.nav]);
+  /*
+   * The slide on show's `state` (reveal's data-state) on the deck root, as `<name>` and
+   * `state-<name>`, so page-wide CSS can follow the slide; each one it turns on also fires an
+   * event of that name on the root (reveal's), and `deck:state` says what changed.
+   */
+  const at = useStore(deck.nav, (s) => `${s.h},${s.v}`);
+  const states = useMemo(
+    () => (deck.mode === "play" ? stateNames(deck.options.get(at)?.state) : []),
+    [deck.mode, deck.options, at],
+  );
+  const statesKey = states.join(" ");
+  const shownStates = useRef<string[]>([]);
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const { entered, left } = stateChange(shownStates.current, states);
+    shownStates.current = states;
+    for (const name of entered) el.dispatchEvent(new Event(name, { bubbles: true }));
+    if (entered.length || left.length)
+      el.dispatchEvent(
+        new CustomEvent("deck:state", { bubbles: true, detail: { state: states, entered, left } }),
+      );
+    // `statesKey` stands for `states`: the same names in a new array change nothing.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [statesKey, root]);
   // The fonts of the theme on show (a theme picked from the menu brings its own), loaded here;
   // `--theme-*` from themeConfig, and the font tokens `fonts` points at its families.
   const fonts = useMemo(
@@ -974,6 +1028,7 @@ function DeckRoot({
         embedded && focused ? "focused" : "",
         // Tailwind's `dark:` reads a `.dark` ancestor; an embedded deck cannot put it on <html>.
         embedded && scheme === "dark" ? "dark" : "",
+        ...stateClasses(states),
       ]
         .filter(Boolean)
         .join(" ")}
@@ -1058,6 +1113,15 @@ function setsHash(...layers: unknown[]): boolean {
   return layers.some((l) => !!l && typeof l === "object" && "hash" in l);
 }
 
+/** A shuffled deck's order across its windows (see `dealsOrder`). */
+interface ShuffleSync {
+  /** This window dealt the order: it answers for it. */
+  deals: boolean;
+  /** This window shows a shuffled deck it did not deal: it takes the dealer's order. */
+  wants: boolean;
+  adopt(order: SlideOrder): void;
+}
+
 /** Whether this deck has the keys, for keyboardCondition "focused" (DeckRoot keeps it). */
 interface DeckFocus {
   on: boolean;
@@ -1073,7 +1137,12 @@ function useDeckEffects(
   wantedAtLoad: ReturnType<typeof parseHash>,
   related: Related,
   rootRef: React.RefObject<HTMLDivElement | null>,
-  { embedded, hashOn, focus }: { embedded: boolean; hashOn: boolean; focus: DeckFocus },
+  {
+    embedded,
+    hashOn,
+    focus,
+    shuffle,
+  }: { embedded: boolean; hashOn: boolean; focus: DeckFocus; shuffle: ShuffleSync },
 ) {
   const { nav, ui, layout, config, columns, actions, base, mode, stageInset } = deck;
 
@@ -1189,7 +1258,9 @@ function useDeckEffects(
       if ((p.click ?? 0) > known) pending = p;
       nav.update((st) => ({ ...N.goto(st, columns, p), follow: false }));
     };
-    window.addEventListener("hashchange", onHash);
+    // respondToHashChanges: false — the deck writes the hash but a change to it (a link, the
+    // address bar, another script on the page) does not move the deck.
+    if (config.respondToHashChanges) window.addEventListener("hashchange", onHash);
     return () => {
       unsub();
       window.removeEventListener("hashchange", onHash);
@@ -1473,6 +1544,24 @@ function useDeckEffects(
     };
   }, [deck.projector, config.hideInactiveCursor, config.hideCursorTime, ui]);
 
+  // focusBodyOnPageVisibilityChange (reveal.js): back on the tab after following a link, focus is
+  // often left in an embedded page or a control, where the deck's keys do not reach; it goes back
+  // to the page. An embedded deck leaves its page's focus alone.
+  useEffect(() => {
+    if (mode !== "play" || embedded || !config.focusBodyOnPageVisibilityChange) return;
+    const onVisible = () => {
+      if (document.hidden) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (!active || active === document.body) return;
+      // Text someone was typing in (the side editor, a form on a slide) keeps its caret.
+      if (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+      if (typeof active.blur === "function") active.blur();
+      document.body.focus();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [mode, embedded, config.focusBodyOnPageVisibilityChange]);
+
   // Fullscreen state, wake lock.
   useEffect(() => {
     const onFs = () => ui.update((s) => ({ ...s, fullscreen: !!document.fullscreenElement }));
@@ -1594,6 +1683,9 @@ function useDeckEffects(
     decksHere.add(deck.windowId);
     for (const child of related.children) bus.adopt(child);
     for (const message of related.pending.splice(0)) bus.post(message);
+    // A shuffled deck: the dealer says its order, a window that just opened asks for it.
+    if (shuffle.deals) bus.post({ type: "order", from: deck.windowId, order: orderOf(columns) });
+    else if (shuffle.wants) bus.post({ type: "order:ask", from: deck.windowId });
     const unsub = nav.subscribe((s, prev) => {
       // Only local moves go out: a position applied from another window or the room stays put.
       // A teleprompter makes none, and says nothing that could move the play window either.
@@ -1616,6 +1708,14 @@ function useDeckEffects(
       // address) is not another window of this one.
       const from = (m as { from?: unknown }).from;
       if (typeof from === "string" && from !== deck.windowId && decksHere.has(from)) return;
+      if (m.type === "order:ask" && shuffle.deals) {
+        bus.post({ type: "order", from: deck.windowId, order: orderOf(columns) });
+        return;
+      }
+      if (m.type === "order") {
+        if (shuffle.wants) shuffle.adopt((m as { order: SlideOrder }).order);
+        return;
+      }
       if (m.type !== "nav") {
         // Not a position: for whoever listens through `deck.windows` (each checks its own).
         for (const l of related.listeners) l(m, via);
@@ -1658,5 +1758,16 @@ function useDeckEffects(
       decksHere.delete(deck.windowId);
       if (related.bus === bus) related.bus = null;
     };
-  }, [nav, columns, config.slug, base, deck.windowId, deck.isPresenter, deck.sync, mode, related]);
+  }, [
+    nav,
+    columns,
+    config.slug,
+    base,
+    deck.windowId,
+    deck.isPresenter,
+    deck.sync,
+    mode,
+    related,
+    shuffle,
+  ]);
 }

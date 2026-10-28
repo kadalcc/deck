@@ -12,6 +12,9 @@ import type { Via } from "./windows.ts";
  *   presenter:ask     "how is the talk going?" — a teleprompter that has just opened
  *   presenter:state   the presenter's answer, and again whenever it changes: the timer, and the
  *                     room at a glance (hands, the pace votes, viewers, open questions)
+ *   order             a shuffled deck's slide order (`shuffle: true`), from the play window that
+ *                     shuffled it, so the presenter view and the share window show the same deck
+ *   order:ask         "what order are you in?" — a window that has just opened
  *
  * A window ignores a type it does not know, so a tab left open across an upgrade carries on with
  * the positions and drops the rest; nothing about `nav` changed when the other two arrived.
@@ -59,7 +62,20 @@ export interface PresenterState {
   room: RoomGlance | null;
 }
 
-export type WindowMessage = NavMessage | PresenterAsk | PresenterState;
+/** A shuffled deck's order: manifest slide indices, column by column (core/shuffle.ts). */
+export interface OrderMessage {
+  type: "order";
+  from: string;
+  order: number[][];
+}
+
+/** A window that has just opened, asking a shuffled play window for its order. */
+export interface OrderAsk {
+  type: "order:ask";
+  from: string;
+}
+
+export type WindowMessage = NavMessage | PresenterAsk | PresenterState | OrderMessage | OrderAsk;
 
 /** Who is receiving a position: the rules differ for the presenter and the teleprompter. */
 export interface NavReceiver {
