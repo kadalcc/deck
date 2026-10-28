@@ -166,6 +166,19 @@ const SAME_OPTIONS = new Set([
   "pdfSeparateFragments",
   "pdfMaxPagesPerSlide",
   "jumpToSlide",
+  "preloadIframes",
+  "respondToHashChanges",
+  "keyboardCondition",
+  "autoAnimateStyles",
+  "scrollLayout",
+  "parallaxBackgroundImage",
+  "parallaxBackgroundSize",
+  "parallaxBackgroundHorizontal",
+  "parallaxBackgroundVertical",
+  "disableLayout",
+  "postMessage",
+  "postMessageEvents",
+  "focusBodyOnPageVisibilityChange",
 ]);
 
 /** Options that only change how reveal.js itself runs, dropped without a report line. */

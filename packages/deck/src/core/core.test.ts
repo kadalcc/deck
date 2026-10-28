@@ -402,6 +402,60 @@ describe("a slide that forces a colour scheme", () => {
   });
 });
 
+describe("reveal.js's options (the schema; each area wires its own)", () => {
+  test("the deck options default as reveal's do, but the scroll view keeps its compact page", () => {
+    expect(DEFAULT_CONFIG).toMatchObject({
+      preloadIframes: null,
+      respondToHashChanges: true,
+      keyboardCondition: null,
+      autoSlide: 0,
+      autoSlideMethod: "next",
+      autoAnimateMatcher: null,
+      scrollLayout: "compact",
+      parallaxBackgroundImage: "",
+      parallaxBackgroundSize: "",
+      parallaxBackgroundHorizontal: null,
+      parallaxBackgroundVertical: null,
+      disableLayout: false,
+      postMessage: true,
+      postMessageEvents: false,
+      focusBodyOnPageVisibilityChange: true,
+    });
+    expect(DEFAULT_CONFIG.autoAnimateStyles).toHaveLength(12);
+    expect(DEFAULT_CONFIG.autoAnimateStyles).toContain("letter-spacing");
+  });
+  test("deck.config.ts may pass functions, and `autoSlide: false` stays false", () => {
+    const matcher = () => [];
+    const slideNumber = () => "1";
+    const c = resolveConfig(
+      { keyboardCondition: () => true, autoAnimateMatcher: matcher, slideNumber },
+      { autoSlide: false, scrollLayout: "full" },
+    );
+    expect(typeof c.keyboardCondition).toBe("function");
+    expect(c.autoAnimateMatcher).toBe(matcher);
+    expect(c.slideNumber).toBe(slideNumber);
+    expect(c.autoSlide).toBe(false);
+    expect(c.scrollLayout).toBe("full");
+  });
+  test("a slide's own auto-animate easing, duration and unmatched, or null for the deck's", () => {
+    const own = resolveSlideOptions(
+      { autoAnimateEasing: "ease-out", autoAnimateDuration: "0.5", autoAnimateUnmatched: false },
+      DEFAULT_CONFIG,
+      false,
+    );
+    expect(own).toMatchObject({
+      autoAnimateEasing: "ease-out",
+      autoAnimateDuration: 0.5,
+      autoAnimateUnmatched: false,
+    });
+    expect(resolveSlideOptions({}, DEFAULT_CONFIG, false)).toMatchObject({
+      autoAnimateEasing: null,
+      autoAnimateDuration: null,
+      autoAnimateUnmatched: null,
+    });
+  });
+});
+
 describe("a slide with its own background", () => {
   // The slide wears `has-background`, and a theme's decorative backdrop (brand's cover fill,
   // neon's sun) steps aside: a library background on a brand cover used to render as nothing.

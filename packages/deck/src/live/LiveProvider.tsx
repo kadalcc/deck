@@ -589,6 +589,7 @@ function FollowControl() {
  * sentence around the number does not need one.
  */
 export function slideLabel(deck: DeckRuntime, h: number, v: number): string {
-  const format = deck.config.slideNumber === true ? "h.v" : deck.config.slideNumber || "c";
+  const sn = deck.config.slideNumber;
+  const format = sn === true || typeof sn === "function" ? "h.v" : sn || "c";
   return N.formatSlideNumber(format === "c/t" ? "c" : format, { h, v, click: 0 }, deck.columns);
 }

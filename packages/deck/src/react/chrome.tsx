@@ -237,7 +237,9 @@ export function Progress() {
 export function SlideNumber({ inPill = false }: { inPill?: boolean }) {
   const deck = useDeck();
   const nav = useNav((s) => ({ h: s.h, v: s.v, click: s.click }));
-  const format = deck.config.slideNumber === true ? "h.v" : deck.config.slideNumber;
+  // A deck.config.ts function is drawn as h.v for now.
+  const sn = deck.config.slideNumber;
+  const format = sn === true || typeof sn === "function" ? "h.v" : sn;
   if (!format) return null;
   const text = formatSlideNumber(format, nav, deck.columns, true);
   if (inPill)
