@@ -76,13 +76,50 @@ export class RoomClient {
   position = { h: 0, v: 0, click: 0 };
   /** A presenter client stepped down to a viewer while its tab is forgotten (live/away.ts). */
   private away = false;
+  /** `connect()` was called (and `close()` not since): what `hold(false)` goes back to. */
+  private started = false;
+  private held = false;
 
   constructor(private readonly options: RoomClientOptions) {}
 
   connect() {
     if (typeof window === "undefined") return;
     this.closedByUs = false;
+    this.started = true;
     this.open();
+  }
+
+  /**
+   * Hold the connection (`true`): drop it and open none, retries included, until released
+   * (`false`), which connects again at once. A presenter view without the passcode its host
+   * wants holds its room: the host refuses that socket (401) every time, and a browser can't tell
+   * a refusal from a network that is down, so the client would otherwise try again every 15 s
+   * for as long as the page is open, with a console error each time.
+   */
+  hold(on: boolean) {
+    if (this.held === on) return;
+    this.held = on;
+    if (on) {
+      this.drop();
+      this.status.set("idle");
+    } else if (this.started && !this.closedByUs && typeof window !== "undefined") {
+      this.attempts = 0;
+      this.open();
+    }
+  }
+
+  /** Forget the socket and any retry, without the close handler scheduling another. */
+  private drop() {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    const ws = this.ws;
+    if (ws) {
+      this.ws = null;
+      ws.onclose = null;
+      if (this.heartbeat) clearInterval(this.heartbeat);
+      this.heartbeat = null;
+      ws.close();
+    }
   }
 
   private url(token: string | null): string {
@@ -97,12 +134,12 @@ export class RoomClient {
   }
 
   private open() {
-    if (this.ws || this.opening) return;
+    if (this.ws || this.opening || this.held) return;
     this.status.set("connecting");
     this.opening = true;
     const start = (token: string | null) => {
       this.opening = false;
-      if (this.closedByUs) return;
+      if (this.closedByUs || this.held) return;
       this.start(token);
     };
     if (this.options.token) this.options.token().then(start, () => start(null));
@@ -260,22 +297,14 @@ export class RoomClient {
   /** Drop the connection and open it again now — the credentials changed (a presenter signed in). */
   reconnect() {
     if (typeof window === "undefined" || this.closedByUs) return;
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = null;
     this.attempts = 0;
-    const ws = this.ws;
-    if (ws) {
-      this.ws = null;
-      ws.onclose = null;
-      if (this.heartbeat) clearInterval(this.heartbeat);
-      this.heartbeat = null;
-      ws.close();
-    }
+    this.drop();
     this.open();
   }
 
   close() {
     this.closedByUs = true;
+    this.started = false;
     if (this.timer) clearTimeout(this.timer);
     if (this.heartbeat) clearInterval(this.heartbeat);
     this.ws?.close();
