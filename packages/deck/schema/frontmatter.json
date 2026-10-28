@@ -918,7 +918,7 @@
         },
         "fragments": {
           "type": "boolean",
-          "description": "Clicks/fragments on; off shows every step at once.",
+          "description": "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
           "default": true
         },
         "fragmentInURL": {

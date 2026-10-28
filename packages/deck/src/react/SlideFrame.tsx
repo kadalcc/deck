@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -229,7 +230,7 @@ export function SlideFrame({
   h,
   v,
   active,
-  click,
+  click: clickProp,
   preview = false,
   frames = "lazy",
   prefetch = false,
@@ -251,6 +252,17 @@ export function SlideFrame({
     () => createClickRegistry(options.clicksStart),
     [options.clicksStart, meta.index],
   );
+  // reveal.js's `fragments: false`: no steps to take and every one shown. The slide is drawn at
+  // its last step and tells the nav it has none, so a press goes straight to the next slide.
+  const stepsOff = !deck.config.fragments;
+  const [lastStep, setLastStep] = useState(0);
+  useLayoutEffect(() => {
+    if (!stepsOff) return;
+    const read = () => setLastStep(options.clicks ?? registry.total());
+    read();
+    return registry.onChange(read);
+  }, [stepsOff, registry, options.clicks]);
+  const click = stepsOff ? lastStep : clickProp;
   const root = useRef<HTMLElement>(null);
   // The rails `<Stepper place>` draws on. Set from callback refs during the first commit, so the
   // re-render that portals into them lands before the browser paints.
@@ -296,14 +308,14 @@ export function SlideFrame({
     if (!reportTotal) return;
     const report = (total: number) => {
       const r = {
-        total: options.clicks ?? total,
-        held: options.clicks == null && registry.pending(),
+        total: stepsOff ? 0 : (options.clicks ?? total),
+        held: !stepsOff && options.clicks == null && registry.pending(),
       };
       deck.nav.update((s) => reportSlide(s, h, v, r, columns, config));
     };
     report(registry.total());
     return registry.onChange(report);
-  }, [registry, deck.nav, columns, config, h, v, options.clicks, reportTotal]);
+  }, [registry, deck.nav, columns, config, h, v, options.clicks, reportTotal, stepsOff]);
 
   // Media: autoplay on show, pause on hide; lazy sources (data-src) when mounted near the view.
   useEffect(() => {
