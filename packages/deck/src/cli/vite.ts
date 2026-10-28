@@ -51,17 +51,48 @@ export function spawnVite(
   });
 }
 
+/**
+ * The signals that stop us. Node's answer to each is to exit at once, without an `exit` event, so
+ * a child started with the plain `spawn` outlives us unless something hands the signal on.
+ */
+const STOP_SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
+
+/**
+ * Stop `child` when this process is told to stop. A terminal's Ctrl+C reaches both anyway; a
+ * signal sent to this process alone (an editor, a task runner, a parent's `kill`) would otherwise
+ * leave the child running and holding its port. Listening replaces Node's default of exiting, so
+ * when nothing else listens for that signal, this process then goes the way the signal says.
+ * Returns the function that stops listening (also called when the child exits).
+ */
+export function stopWithUs(child: ChildProcess): () => void {
+  const handlers = STOP_SIGNALS.map((sig) => {
+    const fn = () => {
+      off();
+      if (child.exitCode === null && child.signalCode === null) child.kill();
+      if (process.listenerCount(sig) === 0) process.kill(process.pid, sig);
+    };
+    process.on(sig, fn);
+    return [sig, fn] as const;
+  });
+  const off = () => {
+    for (const [sig, fn] of handlers) process.off(sig, fn);
+  };
+  child.once("exit", off);
+  return off;
+}
+
 export function runVite(cwd: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawnVite(cwd, args);
     // Stopping this process stops Vite too (and with it a `dev --tunnel`'s cloudflared): a
-    // terminal's Ctrl+C reaches both anyway, a `kill` from elsewhere reaches only this one.
+    // terminal's Ctrl+C reaches both anyway, a signal from elsewhere (SIGINT included: a task
+    // runner's or an editor's stop) reaches only this one.
     let stopped = false;
     const forward = (signal: NodeJS.Signals) => () => {
       stopped = true;
       if (child.exitCode === null) child.kill(signal);
     };
-    const handlers = (["SIGTERM", "SIGHUP"] as const).map((sig) => {
+    const handlers = STOP_SIGNALS.map((sig) => {
       const fn = forward(sig);
       process.on(sig, fn);
       return () => process.off(sig, fn);

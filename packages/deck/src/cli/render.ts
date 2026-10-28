@@ -4,7 +4,7 @@ import { createServer } from "node:net";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { MissingDependencyError, runVite, spawnVite } from "./vite.ts";
+import { MissingDependencyError, runVite, spawnVite, stopWithUs } from "./vite.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -69,10 +69,12 @@ export class DeckServer {
         ? ["--port", String(port), "--strictPort", "--host", "127.0.0.1", ...extra]
         : ["preview", "--port", String(port), "--strictPort", "--host", "127.0.0.1", ...extra];
     const child = spawnVite(dir, args, "pipe");
-    // However we exit, the server goes with us (an orphaned Vite would hold its port forever).
+    // However we exit, the server goes with us (an orphaned Vite would hold its port forever):
+    // a normal exit, and a signal, which ends the process without an `exit` event.
     const reap = () => child.kill();
     process.once("exit", reap);
     child.once("exit", () => process.off("exit", reap));
+    stopWithUs(child);
     let output = "";
     const url = await new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
