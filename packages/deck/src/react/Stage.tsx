@@ -191,8 +191,9 @@ export function Stage() {
     deck.config.transitions,
   );
   const stageStyle: React.CSSProperties = {
-    width: deck.config.width,
-    height: deck.config.height,
+    // `disableLayout`: the stage is the box core/layout.ts measured, unscaled.
+    width: deck.config.disableLayout ? layout.width : deck.config.width,
+    height: deck.config.disableLayout ? layout.height : deck.config.height,
     transform: `translate(${layout.left}px, ${layout.top}px) scale(${layout.scale})`,
     ...(customIn ? { "--deck-anim-in": customIn } : null),
     ...(customOut ? { "--deck-anim-out": customOut } : null),

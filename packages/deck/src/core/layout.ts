@@ -15,10 +15,21 @@ export interface Layout {
 }
 
 export function computeLayout(
-  config: Pick<DeckConfig, "width" | "height" | "margin" | "minScale" | "maxScale">,
+  config: Pick<DeckConfig, "width" | "height" | "margin" | "minScale" | "maxScale"> &
+    Partial<Pick<DeckConfig, "disableLayout">>,
   viewport: { width: number; height: number },
   dpr = 1,
 ): Layout {
+  // reveal's `disableLayout` (bring your own layout): no scaling and no centring; the stage is the
+  // viewport (or an embedded deck's element), and the slides are styled to fit it by their author.
+  if (config.disableLayout)
+    return {
+      scale: 1,
+      width: Math.max(1, viewport.width),
+      height: Math.max(1, viewport.height),
+      left: 0,
+      top: 0,
+    };
   const availableW = viewport.width * (1 - config.margin);
   const availableH = viewport.height * (1 - config.margin);
   let scale = Math.min(availableW / config.width, availableH / config.height);
