@@ -19,7 +19,8 @@
  * A desktop context holds the presenter view and the play window (one browser, so the window bus
  * joins them); a phone-sized touch context (390×844) opens the URL the presenter view's "Phone
  * remote" dialog shows. Then: Next moves the presenter and the play window, a touch on the phone's
- * slide puts the laser on the same spot of both, blackout goes on and off, the pen draws a stroke
+ * slide puts the laser on the same spot of both (and goes off at the lift even when that off is lost
+ * on the wire), blackout goes on and off, the pen draws a stroke
  * both show, the air pointer follows simulated deviceorientation events, zoom zooms the play
  * window. Then one phone at a time: the code on the QR changes once used, a second phone (an
  * "iPhone", whose motion sensors open only from a tap, as WebKit's do) takes over and the first is
@@ -425,6 +426,30 @@ await step("a finger on the phone's slide is the laser, on the same spot, on bot
   await finger("touchEnd", []);
   const off = await until(async () => !(await ui(presenter)).pointer && !(await ui(play)).pointer);
   expect(off, "lifting the finger left the laser on");
+});
+
+await step("a lift whose off is lost on the wire still switches the laser off", async () => {
+  // A socket blip at the lift (iOS suspends a page's sockets for Control Center or a screen
+  // recording) used to lose the only "off": the dot stayed on both screens for good.
+  await phone.evaluate(() => {
+    const send = WebSocket.prototype.send;
+    window.__dropOff = true;
+    WebSocket.prototype.send = function (d) {
+      if (window.__dropOff && typeof d === "string" && d.includes("present.laserOff")) {
+        window.__dropOff = false;
+        WebSocket.prototype.send = send;
+        return;
+      }
+      return send.call(this, d);
+    };
+  });
+  const pad = await boxOf(phone, ".deck-remote-pad");
+  await finger("touchStart", [[pad.x + pad.width * 0.5, pad.y + pad.height * 0.5]]);
+  expect(await until(async () => (await ui(presenter)).pointer), "the touch did not switch the laser on");
+  await finger("touchEnd", []);
+  expect(await phone.evaluate(() => !window.__dropOff), "the off was never sent");
+  const off = await until(async () => !(await ui(presenter)).pointer && !(await ui(play)).pointer, 9000);
+  expect(off, "the laser stayed on after its off was lost");
 });
 
 await step("blackout goes on and off", async () => {

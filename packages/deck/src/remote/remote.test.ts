@@ -15,7 +15,8 @@ import {
   readOrientation,
   wrapDegrees,
 } from "./air.ts";
-import { wireResult } from "./link.ts";
+import { createStore } from "../core/store.ts";
+import { type Answer, laserOff, type RemoteStatus, wireResult } from "./link.ts";
 import {
   CODE,
   CODE_TTL,
@@ -569,5 +570,87 @@ describe("the dev relay", () => {
     tick(31 * 60_000);
     relay.message(peer(), { op: "leave" });
     expect(relay.stats().pairs).toBe(0);
+  });
+});
+
+describe("the laser's off", () => {
+  // A link whose answers the test decides, and whose status it moves.
+  function fakeLink() {
+    const status = createStore<RemoteStatus>("open");
+    const sent: string[] = [];
+    const answers: ((a: Answer) => void)[] = [];
+    return {
+      status,
+      sent,
+      answer: (ok: boolean) =>
+        answers.shift()?.({ ok, ...(ok ? {} : { error: "Not connected." }) }),
+      run(id: string) {
+        sent.push(id);
+        return new Promise<Answer>((r) => answers.push(r));
+      },
+    };
+  }
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+
+  test("an off that got no answer is sent again when the link is open again", async () => {
+    const link = fakeLink();
+    const off = laserOff(link);
+    off.off();
+    link.answer(false); // lost to a blip
+    await tick();
+    link.status.set("closed");
+    link.status.set("open");
+    expect(link.sent).toEqual(["present.laserOff", "present.laserOff"]);
+    link.answer(true);
+    await tick();
+    link.status.set("closed");
+    link.status.set("open");
+    expect(link.sent.length).toBe(2); // paid: not sent again
+    off.dispose();
+  });
+
+  test("a new touch cancels an off still owed, so it cannot switch the new laser off", async () => {
+    const link = fakeLink();
+    const off = laserOff(link);
+    off.off();
+    link.answer(false);
+    await tick();
+    off.aiming();
+    link.status.set("closed");
+    link.status.set("open");
+    expect(link.sent).toEqual(["present.laserOff"]);
+    off.dispose();
+  });
+
+  test("while the link stays open, a failed off is tried again (twice)", async () => {
+    const link = fakeLink();
+    const off = laserOff(link, 1);
+    off.off();
+    link.answer(false);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(link.sent.length).toBe(2);
+    link.answer(false);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(link.sent.length).toBe(3);
+    link.answer(false);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(link.sent.length).toBe(3); // no more while open; the next reopen still sends it
+    link.status.set("closed");
+    link.status.set("open");
+    expect(link.sent.length).toBe(4);
+    off.dispose();
+  });
+
+  test("an answered off owes nothing; a late answer to an older one does not pay a newer one", async () => {
+    const link = fakeLink();
+    const off = laserOff(link);
+    off.off(); // first attempt, answer still out
+    off.off(); // second
+    link.answer(true); // the first one's answer
+    await tick();
+    link.status.set("waiting");
+    link.status.set("open");
+    expect(link.sent.length).toBe(3);
+    off.dispose();
   });
 });
