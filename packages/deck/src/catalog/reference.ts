@@ -1053,7 +1053,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   zoom: "Alt+click zooms into a point; Esc zooms back out.",
   wakeLock: "Keep the screen awake while presenting.",
   selectable: "Text can be selected.",
-  lineNumbers: "Line numbers on every code block.",
+  lineNumbers:
+    "Line numbers on every code block (and magic move) that does not set its own `{lines: …}`; `{lines:false}` opts one out.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
   monacoTypes:
     'Types for the packages `{monaco}` editors import, so hovers and errors are real: "auto" (the deck\'s installed declarations, bundled into the build; anything else from jsDelivr), "local", "cdn" or "none". Fetched types are cached in the browser; offline with nothing cached the editor works as before. `monacoTypesSource` (local · cdn/ata · none) is read too.',

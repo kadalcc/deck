@@ -114,8 +114,10 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
 
 ## Code, maths, diagrams
 
-- Fenced code is highlighted at build time (Shiki). Meta: `{lines:true}`, `[file.ts]` title,
-  `{2|4-6}` steps, `{maxHeight:'400px'}`. A ````md magic-move fence morphs between the code fences
+- Fenced code is highlighted at build time (Shiki). Meta: `{lines:true}` (or `lineNumbers: true`
+  in the headmatter for every block; `{lines:false}` opts one out), `[file.ts]` title, `{2|4-6}`
+  steps, `{maxHeight:'400px'}`. reveal.js's `[1-2|3]` / `[712: 1-2]` brackets read as steps and a
+  line offset; prefer the braces. A ````md magic-move fence morphs between the code fences
   it contains, one per click; an inner fence's own steps (```` ```ts {*|2|4-5} ````) light its
   lines first, a click each. Code follows the theme menu: a theme with its own Shiki pair
   recolours every block (and editor) when picked.

@@ -182,7 +182,7 @@ Markdown, with these on top:
 | What | How |
 | --- | --- |
 | Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` |
-| Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ```` |
+| Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ````; `lineNumbers: true` in the headmatter numbers every block that does not say `{lines:false}`; reveal.js's ```` ```js [1-2\|3] ```` and ```` [712: 1-2] ```` (steps counted from the block's first line, then a line-number offset) work too |
 | Magic move | ````` ````md magic-move ````` holding one fence per step; an inner fence's highlight steps (```` ```ts {*\|2\|4-5} ````) are clicks too, before the next morph |
 | Code marks | `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`, `[!code error]` / `warning`, `[!code word:x]` at a line's end (Shiki's notation transformers); add your own with `deck({ shiki: { transformers } })` |
 | Code groups | `::code-group` … `::` around titled fences (```` ```sh [npm] ````): tabs with file badges, ←/→ between them; `{clicks:true}`, `{print:'all'}`; or `<CodeGroup>` |

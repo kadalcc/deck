@@ -471,6 +471,12 @@ describe("lint", () => {
     expect(r.warnings).toBe(0); // `eyebrow` belongs to the deck's own layout
   });
 
+  test("reveal.js's bracket highlight form works and points at the brace form", async () => {
+    const r = await lint("# A\n\n```ts [712: 1-2|3]\na\nb\nc\n```\n");
+    expect(r.warnings).toBe(0);
+    expect(r.diagnostics.map((d) => d.message).join("\n")).toContain("{712-713}");
+  });
+
   test("reveal.js's split transitions are known names", async () => {
     const r = await lint("# A\n\n---\ntransition: zoom-in fade-out\n---\n\n# B\n");
     expect(r.warnings).toBe(0);

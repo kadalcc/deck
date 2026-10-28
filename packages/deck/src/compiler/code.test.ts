@@ -3,7 +3,7 @@ import { compile } from "@mdx-js/mdx";
 import { createHighlighter } from "shiki";
 
 import { applyCodeGroups } from "./code-groups.ts";
-import { parseCodeMeta, parseLooseObject } from "./code-meta.ts";
+import { linesOn, parseCodeMeta, parseLooseObject } from "./code-meta.ts";
 import { diffLines, splitDiffSource } from "./diff-lines.ts";
 import { deckGlossary, mdxPlugins, prepareDeck } from "./pipeline.ts";
 import { applySlots } from "./slots.ts";
@@ -43,6 +43,42 @@ async function html(mdx: string, extra: Partial<Parameters<typeof mdxPlugins>[0]
 }
 
 describe("code meta", () => {
+  test("reads reveal.js's bracket form as steps and an offset, not a title", () => {
+    const set = (...n: number[]) => new Set(n);
+    const a = parseCodeMeta("[1-2|3]");
+    expect([a.title, a.lines, a.startLine, a.steps]).toEqual([null, true, 1, [set(1, 2), set(3)]]);
+    // reveal counts from the block's first line; Kadal's steps name the numbers shown.
+    const b = parseCodeMeta("[712: 1-2|3]");
+    expect([b.title, b.startLine, b.steps]).toEqual([null, 712, [set(712, 713), set(714)]]);
+    expect(b.revealBrackets).toBe(true);
+    const c = parseCodeMeta("[712:]");
+    expect([c.startLine, c.steps, c.lines]).toEqual([712, null, true]);
+    // A title needs a letter in it; a title beside the steps stays one.
+    expect(parseCodeMeta("[app.ts]").title).toBe("app.ts");
+    expect(parseCodeMeta("[app.ts] [2|3]")).toMatchObject({ title: "app.ts", lines: true });
+    expect(parseCodeMeta("[]").lines).toBe(false);
+  });
+
+  test("reveal's attribute form counts from the block's first line too", () => {
+    const m = parseCodeMeta('data-line-numbers="1|3" data-ln-start-from="10"');
+    expect(m.steps).toEqual([new Set([10]), new Set([12])]);
+  });
+
+  test("a fence's {lines:false} reaches the runtime; silence leaves it to the deck", async () => {
+    expect(await html("```ts {lines:false}\nx\n```")).toContain('data-lines="false"');
+    expect(await html("```ts\nx\n```")).not.toContain("data-lines");
+    expect(await html("```ts [3: 1]\nx\n```")).toContain('data-start="3"');
+  });
+
+  test("a block's own lines option wins over the deck's lineNumbers", () => {
+    expect([linesOn("true", false), linesOn("false", true), linesOn(undefined, true)]).toEqual([
+      true,
+      false,
+      true,
+    ]);
+    expect(linesOn(undefined, false)).toBe(false);
+  });
+
   test("reads nested options, monaco directives and twoslash", () => {
     const m = parseCodeMeta(
       "{monaco-run} {autorun:false, showOutputAt:'+1', editorOptions:{wordWrap:'on'}} [demo.ts]",

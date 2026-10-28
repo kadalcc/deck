@@ -1193,7 +1193,7 @@
         },
         "lineNumbers": {
           "type": "boolean",
-          "description": "Line numbers on every code block.",
+          "description": "Line numbers on every code block (and magic move) that does not set its own `{lines: …}`; `{lines:false}` opts one out.",
           "default": false
         },
         "autoFit": {
