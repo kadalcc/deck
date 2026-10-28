@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { key as navKey } from "../core/navigation.ts";
 import * as N from "../core/navigation.ts";
@@ -84,6 +84,17 @@ export function PresenterPage() {
   const timelineOn = useStore(timeline);
   useTimelineCommand(narrate);
   usePresenterStateFeed();
+  // Without the passcode the host wants, the room waits for it: the host would refuse the
+  // presenter's socket every time, and the client cannot tell that from a network that is down.
+  const locked = !!live && gate.required && !gate.ok;
+  useEffect(() => live?.client.hold(locked), [live, locked]);
+  // A room that keeps failing to open may be a ticket that ran out: ask the host again, and if it
+  // says no, the passcode form comes back and the room waits.
+  const { recheck } = gate;
+  useEffect(
+    () => live?.client.status.subscribe((s, prev) => s === "offline" && prev !== s && recheck()),
+    [live, recheck],
+  );
   useEffect(() => {
     writeItem("deck.presenter.layout", layout);
     writeItem("deck.presenter.room", roomOpen ? "open" : "closed");
@@ -121,6 +132,7 @@ export function PresenterPage() {
         <strong className="deck-presenter-title" title={deck.config.title}>
           {deck.config.title}
         </strong>
+        {N.slideNumberShown(deck.config, "speaker") ? <PresenterSlideNumber /> : null}
         <PresenterTimer />
         <LayoutSwitch layout={layout} setLayout={setLayout} />
         <span className="deck-presenter-spacer" />
@@ -168,6 +180,22 @@ export function PresenterPage() {
   );
 }
 
+/**
+ * The slide number in the deck's own format (`slideNumber`), in the header: reveal.js's
+ * `showSlideNumber: "speaker"` (and `"all"`, which numbers every view) shows it in the speaker
+ * view.
+ */
+function PresenterSlideNumber() {
+  const deck = useDeck();
+  const at = useNav((s) => ({ h: s.h, v: s.v, click: s.click }));
+  const text = N.slideNumberText(deck.config.slideNumber, at, deck.columns);
+  return (
+    <span className="deck-presenter-slide-number" aria-label={`Slide ${text}`}>
+      {text}
+    </span>
+  );
+}
+
 /* ── the login gate ─────────────────────────────────────────────────────── */
 
 interface Gate {
@@ -180,6 +208,8 @@ interface Gate {
   /** Where the deck's author signs in instead, when the host offers that (an http(s) URL). */
   signIn: string | null;
   login: (passcode: string) => Promise<void>;
+  /** Ask the host again (the room keeps failing: a ticket that ran out?). */
+  recheck: () => void;
 }
 
 /** Only an http(s) link from the host is followed. */
@@ -207,6 +237,8 @@ function usePresenterGate(): Gate {
   const url = `${api}/decks/${encodeURIComponent(roomIdOf(deck.config))}/presenter`;
   // A ticket that arrives later (the passcode form, another window) is asked about again.
   const ticket = useStore(presenterTicket);
+  const [round, setRound] = useState(0);
+  const recheck = useCallback(() => setRound((n) => n + 1), []);
   useEffect(() => {
     if (!api) return;
     let alive = true;
@@ -246,7 +278,7 @@ function usePresenterGate(): Gate {
     return () => {
       alive = false;
     };
-  }, [api, url, ticket]);
+  }, [api, url, ticket, round]);
   const login = async (passcode: string) => {
     setState((s) => ({ ...s, checking: true, error: null }));
     const r = await fetch(`${url}/login`, {
@@ -270,7 +302,7 @@ function usePresenterGate(): Gate {
         error: r.status === 401 ? "That passcode is wrong." : `The host answered ${r.status}.`,
       }));
   };
-  return { ...state, login };
+  return { ...state, login, recheck };
 }
 
 /**
@@ -315,7 +347,7 @@ function PresenterLogin({ gate, stats = false }: { gate: Gate; stats?: boolean }
           void gate.login(code);
         }}
       >
-        <h1>{stats ? "Stats" : "Presenter"}</h1>
+        <h1>{stats ? "Stats" : "Presenter passcode required"}</h1>
         <p>
           {stats
             ? "This deck's stats are for its presenter. Enter the presenter passcode"

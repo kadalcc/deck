@@ -170,6 +170,24 @@ A CSS grid of its children.
 | `gap` | `string` | `"1.5rem"` | CSS gap. |
 | `children` | `ReactNode` |  |  |
 
+#### `<HStack>`
+
+Children in a row, centred both ways (reveal.js's `r-hstack`); images inside shrink to fit.
+
+```mdx
+<HStack gap="2rem">
+  <img src="/a.png" />
+  <img src="/b.png" />
+</HStack>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  |  |
+| `gap` | `string` |  | CSS gap between the children. |
+| `align` | `string` |  | Cross-axis alignment (`align-items`): center by default. |
+| `justify` | `string` |  | Main-axis distribution (`justify-content`): center by default. |
+
 #### `<Spacer>`
 
 Vertical space.
@@ -229,6 +247,27 @@ A table that is a little too big
 | `origin` | `string` | `"top left"` |  |
 | `children` | `ReactNode` |  |  |
 
+#### `<VStack>`
+
+Children in a column, centred both ways (reveal.js's `r-vstack`).
+
+```mdx
+<VStack gap="1rem">
+
+## Title
+
+![](/chart.png)
+
+</VStack>
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` |  |  |
+| `gap` | `string` |  | CSS gap between the children. |
+| `align` | `string` |  | Cross-axis alignment (`align-items`): center by default. |
+| `justify` | `string` |  | Main-axis distribution (`justify-content`): center by default. |
+
 ### Steps
 
 #### `<After>`
@@ -243,8 +282,9 @@ Shows together with the previous click instead of taking a step of its own.
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `hide` | `boolean` |  | Start visible and hide at the step instead. |
-| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects) or any CSS class the theme defines. |
+| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes. |
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
+| `autoSlide` | `number` |  | Milliseconds auto-slide waits on this step before the next, over the slide's `autoSlide` (reveal.js's `data-autoslide` on a fragment). |
 | `children` | `ReactNode` |  | What is revealed. |
 
 #### `<Case>`
@@ -277,8 +317,9 @@ One click step: shows its children from its step on, or hides them with `hide`.
 | --- | --- | --- | --- |
 | `at` | `ClickAt` |  | When: omitted = one after the previous step; "+N" relative ("+0" shares the previous step); a number is absolute (0 = always shown); [from, to] shows it from `from` until `to`. |
 | `hide` | `boolean` |  | Start visible and hide at the step instead. |
-| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects) or any CSS class the theme defines. |
+| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes. |
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
+| `autoSlide` | `number` |  | Milliseconds auto-slide waits on this step before the next, over the slide's `autoSlide` (reveal.js's `data-autoslide` on a fragment). |
 | `children` | `ReactNode` |  | What is revealed. |
 
 #### `<ClickCount>`
@@ -1458,6 +1499,7 @@ Links glossary mentions inside a plain string at render time — for words that 
 - `highlight-current-green` — Green only during its own step.
 - `highlight-current-blue` — Blue only during its own step.
 - `blur` — Start blurred, come into focus.
+- `custom` — No built-in look: your CSS on `.effect-custom.visible` (or reveal's `.fragment.custom.visible`) decides. A `custom` class does the same.
 
 ## Click timing (`at`)
 

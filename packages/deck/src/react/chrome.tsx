@@ -1,7 +1,15 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { keyLabel } from "../core/shortcuts.ts";
-import { availableRoutes, formatSlideNumber, progressOf } from "../core/navigation.ts";
+import {
+  autoSlideDelay,
+  availableRoutes,
+  countedSlides,
+  isCounted,
+  progressOf,
+  slideNumberShown as shownIn,
+  slideNumberText,
+} from "../core/navigation.ts";
 import { useDeck } from "./context.ts";
 import { HintLayer } from "./Hints.tsx";
 import { NavControlsLayer } from "./Layers.tsx";
@@ -45,6 +53,7 @@ export function Chrome() {
       ) : null}
       {deck.config.showNotes ? <NotesFooter /> : null}
       <ThemeMenu />
+      <SlideAnnouncer />
       <PauseCurtain />
       <HelpSheet />
       <JumpTo />
@@ -56,13 +65,9 @@ export function Chrome() {
   );
 }
 
-/** Whether the slide number is drawn in this view at all (`slideNumber`, `showSlideNumber`). */
+/** Whether the play view draws the slide number (`slideNumber`, `showSlideNumber: all`). */
 function slideNumberShown(deck: ReturnType<typeof useDeck>): boolean {
-  return (
-    !!deck.config.slideNumber &&
-    (deck.config.showSlideNumber === "all" ||
-      (deck.config.showSlideNumber === "print" && deck.mode === "print"))
-  );
+  return shownIn(deck.config, "play");
 }
 
 /**
@@ -169,12 +174,92 @@ export function CornerTools() {
   const overview = useNav((s) => s.overview);
   const away = useNav((s) => s.h > 0 || s.v > 0 || s.click > 0);
   const custom = !!deck.layers?.["custom-nav-controls"].length;
-  if (deck.projector || (!away && !custom)) return null;
+  const auto = useAutoSlideShown();
+  if (deck.projector || (!away && !custom && !auto)) return null;
   return (
     <div className="deck-corner-tools" hidden={overview || undefined}>
+      {auto ? <AutoSlideControl /> : null}
       {away ? <StartButton /> : null}
       {custom ? <NavControlsLayer placement="toolbar" /> : null}
     </div>
+  );
+}
+
+/**
+ * Whether the play view offers the auto-slide control: on a deck that sets an interval (its own or
+ * a slide's) and lets the viewer stop it (`autoSlideStoppable`), and, once `A` has started it, on
+ * one that sets none. reveal.js draws its control on the first kind only.
+ */
+function useAutoSlideShown(): boolean {
+  const deck = useDeck();
+  const on = useNav((s) => s.autoSliding);
+  const [started, setStarted] = useState(false);
+  useEffect(() => {
+    if (on) setStarted(true);
+  }, [on]);
+  if (deck.mode !== "play" || !deck.config.autoSlideStoppable) return false;
+  return autoSlideConfigured(deck) || on || started;
+}
+
+function autoSlideConfigured(deck: ReturnType<typeof useDeck>): boolean {
+  return (
+    (deck.config.autoSlide || 0) > 0 ||
+    [...deck.options.values()].some((o) => (o.autoSlide ?? 0) > 0)
+  );
+}
+
+/**
+ * reveal.js's auto-slide control: play or pause, in a ring that fills as the current slide's
+ * interval runs out. The timer itself is the deck's (react/Deck.tsx), which restarts it on every
+ * change of position; the ring restarts with it, from the same `autoSlideDelay`.
+ */
+export function AutoSlideControl() {
+  const deck = useDeck();
+  const actions = useActions();
+  const nav = useNav((s) => ({
+    h: s.h,
+    v: s.v,
+    on: s.autoSliding,
+    held: s.paused || s.overview,
+  }));
+  // Every change of the nav state restarts the deck's timer, so it restarts the ring too.
+  const [run, setRun] = useState(0);
+  useEffect(() => deck.nav.subscribe(() => setRun((n) => n + 1)), [deck.nav]);
+  const ms = autoSlideDelay(
+    deck.options.get(`${nav.h},${nav.v}`)?.autoSlide ?? null,
+    deck.config.autoSlide || 0,
+    autoSlideConfigured(deck),
+  );
+  const playing = nav.on && !nav.held;
+  const label = nav.on ? "Pause auto-slide" : "Start auto-slide";
+  return (
+    <button
+      type="button"
+      className={["deck-autoslide", playing ? "is-playing" : "is-paused"].join(" ")}
+      // The deck stops auto-slide on any pointer press (`autoSlideStoppable`); this press is the
+      // control's own, or pausing would stop it and the click start it again.
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={() => actions.toggleAutoSlide()}
+      aria-label={label}
+      aria-pressed={nav.on}
+      title={`${label} (A)`}
+    >
+      <svg className="deck-autoslide-dial" viewBox="0 0 36 36" aria-hidden="true">
+        <circle className="deck-autoslide-track" cx="18" cy="18" r="16" />
+        {playing && ms !== null ? (
+          <circle
+            key={run}
+            className="deck-autoslide-ring"
+            cx="18"
+            cy="18"
+            r="16"
+            pathLength={100}
+            style={{ animationDuration: `${ms}ms` }}
+          />
+        ) : null}
+      </svg>
+      <Icon name={nav.on ? "pause" : "play"} />
+    </button>
   );
 }
 
@@ -199,26 +284,20 @@ export function Progress() {
   const deck = useDeck();
   const nav = useNav((s) => ({ h: s.h, v: s.v }));
   const actions = useActions();
-  const p = progressOf(
-    {
-      ...nav,
-      click: 0,
-      direction: "none",
-      overview: false,
-      paused: false,
-      autoSliding: false,
-      totals: {},
-      presenter: null,
-      follow: true,
-      seq: 0,
-    },
-    deck.columns,
-  );
+  const p = progressOf(nav, deck.columns);
+  // The bar spans the counted slides, so a click lands on the counted slide under the pointer.
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const frac = (e.clientX - rect.left) / rect.width;
-    const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
-    actions.gotoFlat(Math.round(frac * (total - 1)));
+    const want = Math.round(frac * Math.max(0, countedSlides(deck.columns) - 1));
+    let flat = 0;
+    let seen = 0;
+    for (const c of deck.columns)
+      for (const s of c.slides) {
+        if (isCounted(s) && seen++ === want) return actions.gotoFlat(flat);
+        flat++;
+      }
+    actions.gotoFlat(Math.round(frac * Math.max(0, flat - 1)));
   };
   return (
     <div
@@ -237,11 +316,8 @@ export function Progress() {
 export function SlideNumber({ inPill = false }: { inPill?: boolean }) {
   const deck = useDeck();
   const nav = useNav((s) => ({ h: s.h, v: s.v, click: s.click }));
-  // A deck.config.ts function is drawn as h.v for now.
-  const sn = deck.config.slideNumber;
-  const format = sn === true || typeof sn === "function" ? "h.v" : sn;
-  if (!format) return null;
-  const text = formatSlideNumber(format, nav, deck.columns, true);
+  const text = slideNumberText(deck.config.slideNumber, nav, deck.columns);
+  if (text === null) return null;
   if (inPill)
     return (
       <button
@@ -264,6 +340,129 @@ export function SlideNumber({ inPill = false }: { inPill?: boolean }) {
       {text}
     </a>
   );
+}
+
+/**
+ * reveal.js's status region: a visually hidden, polite live region that a screen reader reads out
+ * when the slide changes — "Slide 3 of 12." and the slide's words — and, on a click step forward,
+ * the words that step brought in. Only what is on the slide and shown is read: hidden clicks are
+ * `aria-hidden` (components/Click.tsx), and so is anything else the deck keeps out of the
+ * accessibility tree. Stepping back says nothing, as in reveal.js; the slide is already known.
+ */
+export function SlideAnnouncer() {
+  const deck = useDeck();
+  // A fresh node per announcement: the same words twice (a step taken back and again) are a
+  // change a screen reader reads; the same text node rewritten with the same text is not.
+  const [said, setSaid] = useState({ text: "", n: 0 });
+  useEffect(() => {
+    const setText = (text: string) => setSaid((s) => ({ text, n: s.n + 1 }));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let raf = 0;
+    const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
+    const announce = (h: number, v: number, from: number | null, to: number) => {
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+      let tries = 0;
+      const read = () => {
+        const el = activeSlide(h, v);
+        const meta = deck.columns[h]?.slides[v];
+        if (from !== null) {
+          // A step forward: what came in with it, if it brought words.
+          if (!el) return;
+          const said = newlyShown(el, from, to);
+          if (said) setText(said);
+          return;
+        }
+        let words = el ? statusText(el) : "";
+        // The slide's module may still be loading: wait a little for its words, then fall back
+        // to the manifest's.
+        if (!words && tries++ < 15 && meta?.text) {
+          timer = setTimeout(read, 100);
+          return;
+        }
+        if (!words) words = meta?.text?.replace(/\s+/g, " ").trim() || meta?.title || "";
+        let index = v;
+        for (let i = 0; i < h; i++) index += deck.columns[i]!.slides.length;
+        setText(`Slide ${index + 1} of ${total}.${words ? ` ${words}` : ""}`);
+      };
+      // After the new slide has rendered and laid out its steps.
+      raf = requestAnimationFrame(() => {
+        raf = requestAnimationFrame(read);
+      });
+    };
+    const now = deck.nav.get();
+    announce(now.h, now.v, null, now.click);
+    const unsub = deck.nav.subscribe((s, p) => {
+      if (s.h !== p.h || s.v !== p.v) announce(s.h, s.v, null, s.click);
+      else if (s.click > p.click) announce(s.h, s.v, p.click, s.click);
+    });
+    return () => {
+      unsub();
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
+  }, [deck.nav, deck.columns]);
+  return (
+    <div className="deck-sr-only deck-announcer" aria-live="polite" aria-atomic="true">
+      {said.text ? <span key={said.n}>{said.text}</span> : null}
+    </div>
+  );
+}
+
+/** The slide on the stage (or in the scroll view) at a position. */
+function activeSlide(h: number, v: number): HTMLElement | null {
+  const at = `.deck-slide[data-h="${h}"][data-v="${v}"]`;
+  return (
+    document.querySelector<HTMLElement>(`.deck-stage ${at}[data-active="true"]`) ??
+    document.querySelector<HTMLElement>(`.deck-stage ${at}`) ??
+    document.querySelector<HTMLElement>(`.deck-scroll ${at}`)
+  );
+}
+
+/** The words of the elements a step from `from` to `to` brought in, outermost first. */
+export function newlyShown(slide: HTMLElement, from: number, to: number): string {
+  const hits = [...slide.querySelectorAll<HTMLElement>("[data-click-at]")].filter((el) => {
+    const at = Number(el.dataset.clickAt);
+    return at > from && at <= to && el.getAttribute("aria-hidden") !== "true";
+  });
+  return hits
+    .filter((el) => !hits.some((o) => o !== el && o.contains(el)))
+    .map(statusText)
+    .filter(Boolean)
+    .join(" ");
+}
+
+const SKIP = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]);
+
+/**
+ * The text a screen reader would find in an element, reveal.js's `getStatusText`: text nodes in
+ * order, skipping `aria-hidden` and undisplayed subtrees; an image says its alt text. Blocks are
+ * kept apart by a space, inline runs are not.
+ */
+export function statusText(node: Node): string {
+  const out: string[] = [];
+  const walk = (n: Node) => {
+    if (n.nodeType === 3) {
+      out.push(n.textContent ?? "");
+      return;
+    }
+    if (n.nodeType !== 1) return;
+    const el = n as HTMLElement;
+    if (SKIP.has(el.tagName) || el.getAttribute("aria-hidden") === "true") return;
+    const display = typeof getComputedStyle === "function" ? getComputedStyle(el).display : "";
+    if (display === "none") return;
+    if (el.tagName === "IMG") {
+      const alt = el.getAttribute("alt");
+      if (alt) out.push(` ${alt} `);
+      return;
+    }
+    const block = !display.startsWith("inline") && display !== "contents";
+    if (block) out.push(" ");
+    for (const c of el.childNodes) walk(c);
+    if (block) out.push(" ");
+  };
+  walk(node);
+  return out.join("").replace(/\s+/g, " ").trim();
 }
 
 export function PauseCurtain() {
@@ -330,6 +529,22 @@ export function HelpSheet() {
   );
 }
 
+/**
+ * What jump-to's field asks for: a number is the slide in reading order; two numbers are column
+ * and row, 1-based — reveal.js's `6/2` (its hash form) or `6.2` (its h.v number); anything else
+ * is a slide id. 0-based out, for the actions.
+ */
+export function jumpTarget(
+  input: string,
+): { flat: number } | { h: number; v: number } | { id: string } | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return { flat: Number(raw) - 1 };
+  const hv = /^(\d+)[./](\d+)$/.exec(raw);
+  if (hv) return { h: Number(hv[1]) - 1, v: Number(hv[2]) - 1 };
+  return { id: raw };
+}
+
 export function JumpTo() {
   const open = useUi((s) => s.jump);
   const actions = useActions();
@@ -347,12 +562,10 @@ export function JumpTo() {
   if (!open) return null;
   const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
   const submit = () => {
-    const raw = value.trim();
-    if (/^\d+$/.test(raw)) actions.gotoFlat(Number(raw) - 1);
-    else if (/^\d+\.\d+$/.test(raw)) {
-      const [h, v] = raw.split(".").map((n) => Number(n) - 1);
-      actions.goto(h!, v!);
-    } else if (raw) actions.gotoId(raw);
+    const to = jumpTarget(value);
+    if (to && "flat" in to) actions.gotoFlat(to.flat);
+    else if (to && "id" in to) actions.gotoId(to.id);
+    else if (to) actions.goto(to.h, to.v);
     actions.toggleJump(false);
   };
   return (

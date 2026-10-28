@@ -555,7 +555,10 @@ export async function exportDeck(options: ExportOptions): Promise<ExportResult> 
         options.withToc === false
           ? []
           : outlineTree(
-              printed.map((p) => ({ slide: p.slide, notes: p.notes })),
+              // A slide on several pages (`pdfMaxPagesPerSlide`) moves every later bookmark on.
+              printed.flatMap((p) =>
+                Array.from({ length: p.pages ?? 1 }, () => ({ slide: p.slide, notes: p.notes })),
+              ),
               facts.slides,
             );
       const count = (nodes: typeof outline): number =>

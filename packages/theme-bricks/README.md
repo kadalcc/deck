@@ -13,7 +13,7 @@ each layout, Sigmar One for headings and Signika Negative for words. Light only.
   <img src="https://deck.kadal.cc/themes/bricks-light-2.webp" alt="Bricks: a content slide, light" width="49%">
 </p>
 
-[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-bricks)
+[All 17 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-bricks)
 
 @kadal/deck ships this theme, so `theme: bricks` works with nothing else installed. Install the
 package only to give the deck a copy of its own, at a version you pick:

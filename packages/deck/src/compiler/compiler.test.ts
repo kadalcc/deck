@@ -136,7 +136,8 @@ describe("code meta", () => {
     const meta = parseCodeMeta('data-line-numbers="3-5|8-10" data-ln-start-from="4"');
     expect(meta.lines).toBe(true);
     expect(meta.startLine).toBe(4);
-    expect([...meta.steps![1]!]).toEqual([8, 9, 10]);
+    // reveal lights rows counted from the block's top (tr:nth-child), whatever the first number.
+    expect([...meta.steps![1]!]).toEqual([11, 12, 13]);
     const hidden = parseCodeMeta("{hide|1|none}");
     expect(hidden.hideUntilStep).toBe(true);
     expect(hidden.steps).toHaveLength(2);
@@ -228,7 +229,9 @@ describe("unclosedSettings", () => {
   });
 
   test("every name it looks for is a real setting", () => {
-    const real = new Set([...catalog.slideFrontmatter, ...catalog.deckFrontmatter].map((k) => k.name));
+    const real = new Set(
+      [...catalog.slideFrontmatter, ...catalog.deckFrontmatter].map((k) => k.name),
+    );
     expect(LIKELY_SETTINGS.filter((k) => !real.has(k))).toEqual([]);
   });
 });
