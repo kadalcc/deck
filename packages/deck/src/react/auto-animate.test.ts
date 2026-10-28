@@ -7,6 +7,9 @@ import {
   keyframeProperty,
   morphFrames,
   type PlacedSlide,
+  prepareAutoAnimate,
+  resetAutoAnimate,
+  runAutoAnimate,
 } from "./AutoAnimate.ts";
 
 const slide = (
@@ -107,5 +110,86 @@ describe("the animated properties", () => {
       1,
     );
     expect(img.transform).toBe("translate(0px, 0px) scale(0.5, 0.5)");
+  });
+});
+
+/**
+ * Just enough of an element for the matcher path: bun has no DOM, and these functions only touch
+ * dataset, boxes, containment and `animate`.
+ */
+interface FakeEl {
+  name: string;
+  dataset: Record<string, string>;
+  children: FakeEl[];
+  animated: Keyframe[][];
+  left: number;
+}
+const fake = (name: string, left = 0, children: FakeEl[] = []): FakeEl => ({
+  name,
+  dataset: {},
+  children,
+  animated: [],
+  left,
+});
+const all = (el: FakeEl): FakeEl[] => el.children.flatMap((c) => [c, ...all(c)]);
+const cache = new Map<FakeEl, HTMLElement>();
+const asDom = (el: FakeEl): HTMLElement => {
+  const hit = cache.get(el);
+  if (hit) return hit;
+  const dom = {
+    tagName: "DIV",
+    dataset: el.dataset,
+    textContent: el.name,
+    getAttribute: () => null,
+    hasAttribute: () => false,
+    getBoundingClientRect: () => ({ left: el.left, top: 0, width: 100, height: 50 }),
+    contains: (other: unknown) => other === dom || all(el).some((c) => asDom(c) === other),
+    animate: (frames: Keyframe[]) => {
+      el.animated.push(frames);
+      return {} as Animation;
+    },
+    querySelectorAll: (sel: string) =>
+      sel.startsWith("[data-auto-animate]")
+        ? [el, ...all(el)].filter((e) => e.dataset.autoAnimate).map(asDom)
+        : sel === "[data-auto-animate-target]"
+          ? [el, ...all(el)].filter((e) => e.dataset.autoAnimateTarget !== undefined).map(asDom)
+          : [],
+  };
+  cache.set(el, dom as unknown as HTMLElement);
+  return dom as unknown as HTMLElement;
+};
+(globalThis as { getComputedStyle?: unknown }).getComputedStyle ??= () => ({
+  getPropertyValue: () => "",
+});
+
+describe("autoAnimateMatcher and the state attributes", () => {
+  test("a matcher's pairs are what morph; both slides go pending, the arriving one running", () => {
+    const a = fake("a", 10);
+    const b = fake("b", 300);
+    const from = fake("from", 0, [a]);
+    const to = fake("to", 0, [b]);
+    const seen: unknown[] = [];
+    const plan = prepareAutoAnimate(asDom(from), asDom(to), {
+      styles: ["opacity"],
+      matcher: (f, t) => {
+        seen.push(f, t);
+        return [{ from: asDom(a), to: asDom(b) }];
+      },
+    });
+    // reveal passes the two slides themselves.
+    expect(seen).toEqual([asDom(from), asDom(to)]);
+    expect(from.dataset.autoAnimate).toBe("pending");
+    expect(to.dataset.autoAnimate).toBe("pending");
+    runAutoAnimate(plan, asDom(to), { duration: 1, easing: "ease", unmatched: true, scale: 1 });
+    expect(to.dataset.autoAnimate).toBe("running");
+    expect(b.dataset.autoAnimateTarget).toBe("0");
+    expect(b.animated[0]![0]!.transform).toBe("translate(-290px, 0px) scale(1, 1)");
+
+    // The next slide change clears them, as reveal's reset does.
+    const stage = fake("stage", 0, [from, to]);
+    resetAutoAnimate(asDom(stage));
+    expect(from.dataset.autoAnimate).toBe("");
+    expect(to.dataset.autoAnimate).toBe("");
+    expect(b.dataset.autoAnimateTarget).toBeUndefined();
   });
 });
