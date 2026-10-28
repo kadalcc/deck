@@ -30,6 +30,14 @@ export interface NavState extends Position {
   autoSliding: boolean;
   /** Per visible slide: how many clicks the runtime has registered (by "h,v"). */
   totals: Record<string, number>;
+  /**
+   * Slides whose total is not final yet: something on them that will take steps is still
+   * loading (core/clicks.ts, `hold`). A step pressed on one is kept in `queued`, not taken as
+   * "no steps left, next slide".
+   */
+  held?: Record<string, true>;
+  /** Steps pressed on a held slide, taken once it lets go (`reportSlide`). */
+  queued?: { at: string; count: number } | null;
   /** The position the presenter is at, when this window follows one and is not the presenter. */
   presenter: Position | null;
   /** Whether this window follows the presenter's navigation. */
@@ -176,7 +184,13 @@ export function up(state: NavState, columns: Column[]): NavState {
 }
 
 export function nextClick(state: NavState): NavState {
-  const total = state.totals[key(state.h, state.v)] ?? 0;
+  const k = key(state.h, state.v);
+  const total = state.totals[k] ?? 0;
+  if (state.click >= total && state.held?.[k]) {
+    // The slide's steps are not all known yet: keep the press for when they are.
+    const count = state.queued?.at === k ? state.queued.count + 1 : 1;
+    return { ...state, queued: { at: k, count } };
+  }
   if (state.click < total)
     return { ...state, click: state.click + 1, direction: "forward", seq: state.seq + 1 };
   return state;
@@ -251,6 +265,34 @@ export function setTotal(state: NavState, h: number, v: number, total: number): 
  */
 export function isCounted(slide: { frontmatter: Record<string, unknown> } | undefined): boolean {
   return slide?.frontmatter.visibility !== "uncounted";
+}
+
+/**
+ * What a slide reports about its steps: the total so far, and whether something on it still holds
+ * the total open. When the slide shown lets go, the steps pressed meanwhile are taken now, against
+ * the total it really has — so a step that loaded late is still a step, not skipped.
+ */
+export function reportSlide(
+  state: NavState,
+  h: number,
+  v: number,
+  report: { total: number; held: boolean },
+  columns: Column[],
+  config: DeckConfig,
+): NavState {
+  const k = key(h, v);
+  let s = setTotal(state, h, v, report.total);
+  if (!!s.held?.[k] === report.held) return s;
+  const held = { ...s.held };
+  if (report.held) held[k] = true;
+  else delete held[k];
+  s = { ...s, held };
+  if (report.held || s.queued?.at !== k) return s;
+  const count = s.queued.count;
+  s = { ...s, queued: null };
+  if (s.h !== h || s.v !== v) return s;
+  for (let i = 0; i < count; i++) s = next(s, columns, config);
+  return s;
 }
 
 /** How many slides count (reveal.js's `getTotalSlides`): the visible ones, less the uncounted. */

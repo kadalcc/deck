@@ -12,7 +12,7 @@ import {
 
 import { createClickRegistry } from "../core/clicks.ts";
 import type { MagicMoveData, SlideMeta, SlideOptions } from "../core/model.ts";
-import { key as navKey, setTotal } from "../core/navigation.ts";
+import { key as navKey, reportSlide } from "../core/navigation.ts";
 import { SlideContext, type SlideContextValue, useDeck } from "./context.ts";
 import { useUi } from "./hooks.ts";
 import { LayerSlot, layerProps, layersShown } from "./Layers.tsx";
@@ -289,16 +289,21 @@ export function SlideFrame({
     };
   }, [meta, deck.mode]);
 
-  // Report the click total (the registry's, or the frontmatter override) to the nav store.
+  const { columns, config } = deck;
+  // Report the click total (the registry's, or the frontmatter override) to the nav store, and
+  // whether a part still loading holds it open (a declared `clicks:` is final already).
   useEffect(() => {
     if (!reportTotal) return;
     const report = (total: number) => {
-      const t = options.clicks ?? total;
-      deck.nav.update((s) => setTotal(s, h, v, t));
+      const r = {
+        total: options.clicks ?? total,
+        held: options.clicks == null && registry.pending(),
+      };
+      deck.nav.update((s) => reportSlide(s, h, v, r, columns, config));
     };
     report(registry.total());
     return registry.onChange(report);
-  }, [registry, deck.nav, h, v, options.clicks, reportTotal]);
+  }, [registry, deck.nav, columns, config, h, v, options.clicks, reportTotal]);
 
   // Media: autoplay on show, pause on hide; lazy sources (data-src) when mounted near the view.
   useEffect(() => {

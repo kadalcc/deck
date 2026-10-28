@@ -62,7 +62,7 @@ _Start from an idea, not a blank slide._
 - **Write where you like.** Markdown and MDX in your editor, with the [VS Code extension](packages/vscode)
   and the `kadal-deck` CLI, or in the browser builder: edit right on the slide, and drop in emoji,
   icons, stickers, shapes, free photos, GIFs and memes from the media panel.
-- **Look the part.** [16 themes](#themes) in light and dark, 28 built-in backgrounds, and the
+- **Look the part.** [17 themes](#themes) in light and dark, 28 built-in backgrounds, and the
   [Pro library](#backgrounds-and-layouts) of 95 backgrounds and layouts.
 
 ## Rehearse it
@@ -185,7 +185,7 @@ carry over.
 | **Clicks and motion** ([docs](https://deck.kadal.cc/docs/clicks-and-animation/)) | `<Click>`, `<Clicks>`, `at="+2"`, notes that follow your clicks, 7 transitions (a different one in and out if you like), auto-animate, `<Motion>` |
 | **Code** ([docs](https://deck.kadal.cc/docs/code/)) | Shiki highlighting stepped line by line, magic move, Monaco editors, runnable JS/TS/Python, TwoSlash hovers, code groups, snippet imports |
 | **Maths, diagrams, sketches** ([docs](https://deck.kadal.cc/docs/math-diagrams-sketches/)) | KaTeX at build time, Mermaid in the deck's colours, Excalidraw drawings revealed region by region |
-| **Looks** ([docs](https://deck.kadal.cc/docs/themes-and-backgrounds/)) | 16 themes in light and dark, 28 built-in backgrounds (most of them animated), the [Pro library](#backgrounds-and-layouts) of 95 backgrounds and layouts on deck.kadal.cc, 200,000 icons through Iconify, Tailwind |
+| **Looks** ([docs](https://deck.kadal.cc/docs/themes-and-backgrounds/)) | 17 themes in light and dark, 28 built-in backgrounds (most of them animated), the [Pro library](#backgrounds-and-layouts) of 95 backgrounds and layouts on deck.kadal.cc, 200,000 icons through Iconify, Tailwind |
 | **Any framework** ([docs](https://deck.kadal.cc/docs/islands/)) | React and web components built in; Vue, Svelte, Solid, Preact, Qwik, Angular, Fresh, Rust/WebAssembly and Python as islands, each loaded only when its slide appears |
 | **Rehearsing** ([docs](https://deck.kadal.cc/docs/narration/)) | Narration that reads the notes and turns the pages, per-slide timings with a pacing badge, a teleprompter window, glossary cards |
 | **Presenting** ([docs](https://deck.kadal.cc/docs/presenter-and-keyboard/)) | Presenter view with notes, timer and next slide; drawing, laser, spotlight, blackout, camera, recording; a share window for video calls; a phone remote; vim keys |

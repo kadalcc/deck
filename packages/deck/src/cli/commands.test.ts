@@ -6,7 +6,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { UsageError, parseArgs } from "./args.ts";
-import { EXIT, main } from "./index.ts";
+import { EXIT, HELP, commandHelp, main } from "./index.ts";
+import { VITE_BUILD_FLAGS, VITE_DEV_FLAGS } from "./vite.ts";
 
 const work = mkdtempSync(join(tmpdir(), "kadal-deck-cmd-"));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
@@ -79,6 +80,19 @@ describe("parseArgs", () => {
     expect(r.rest).toEqual(["--port", "5300", "--host"]);
     expect(r.flags.out).toBe("x");
   });
+
+  test("forward flags are checked like ours, then kept as written for Vite", () => {
+    const argv = ["--port", "5300", "--strictPort", "-c", "v.ts", "--no-clearScreen", "--open"];
+    const r = parseArgs([...argv, "--json"], { ...VITE_DEV_FLAGS, json: { kind: "boolean" } });
+    expect(r.rest).toEqual(argv);
+    expect(r.flags.json).toBe(true);
+    // Vite takes kebab case too; values travel inline or after the flag, as written.
+    const b = parseArgs(["--out-dir=site", "--sourcemap", "talk.mdx"], VITE_BUILD_FLAGS);
+    expect(b.rest).toEqual(["--out-dir=site", "--sourcemap", "talk.mdx"]);
+    expect(() => parseArgs(["--bogus"], VITE_DEV_FLAGS)).toThrow("Unknown option --bogus");
+    expect(() => parseArgs(["--outDir"], VITE_BUILD_FLAGS)).toThrow("--outDir needs a value");
+    expect(() => parseArgs(["--port", "abc"], VITE_DEV_FLAGS)).toThrow(/needs a number/);
+  });
 });
 
 describe("kadal-deck commands", () => {
@@ -139,6 +153,36 @@ if (process.env.KADAL_DECK_BUILD_RECORD)
     expect(dev.code).toBe(EXIT.ok);
     expect(JSON.parse(readFileSync(argvFile, "utf8"))).toEqual(["--port", "5999"]);
     expect(JSON.parse(dev.stdout)).toEqual({ ok: true });
+
+    // --help is ours, and a flag neither we nor Vite know is a one-line usage error: Vite never
+    // starts, so neither its help nor its stack trace is printed.
+    rmSync(argvFile);
+    for (const command of ["build", "dev"]) {
+      const help = await cli([command, "--help"], dir);
+      expect(help.code, command).toBe(EXIT.ok);
+      expect(help.stdout, command).toBe(commandHelp(command));
+      expect(help.stdout, command).toStartWith(`kadal-deck ${command} [options]`);
+      const bad = await cli([command, "--bogus"], dir);
+      expect(bad.code, command).toBe(EXIT.usage);
+      expect(bad.stderr.split("\n")[0], command).toBe("error: Unknown option --bogus");
+      expect(bad.stderr, command).toContain(`kadal-deck ${command} --help`);
+    }
+    expect((await cli(["build", "--outDir"], dir)).stderr).toStartWith(
+      "error: --outDir needs a value",
+    );
+    expect((await cli(["dev", "--port", "abc"], dir)).code).toBe(EXIT.usage);
+    expect(existsSync(argvFile)).toBe(false);
+  });
+
+  test("each command's --help (and help <command>) prints that command's part", async () => {
+    for (const command of ["check", "export", "theme", "contrast"]) {
+      const r = await cli([command, "--help"]);
+      expect(r.code, command).toBe(EXIT.ok);
+      expect(r.stdout, command).toBe(commandHelp(command));
+      expect(r.stdout, command).not.toBe(HELP);
+    }
+    expect((await cli(["help", "publish"])).stdout).toBe(commandHelp("publish"));
+    expect((await cli(["help"])).stdout).toBe(HELP);
   });
 
   test("info lists sections, entries, and searches", async () => {

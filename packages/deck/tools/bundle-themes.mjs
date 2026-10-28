@@ -1,5 +1,5 @@
 // Copies every first-party theme package (packages/theme-*) into dist/themes/<name>/, so a deck
-// that installed nothing but @kadal/deck still offers all sixteen themes in its theme menu
+// that installed nothing but @kadal/deck still offers all seventeen themes in its theme menu
 // (theming/resolve.ts `bundledTheme`). Each copy is what npm publishes of the package — its
 // stylesheet, module and assets — under a package.json cut down to what the resolver reads; the
 // README, LICENSE and changelog stay with the package (the licence is this package's own).
