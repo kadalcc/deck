@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { chapterOfSlide, chaptersOf, clock, slideAtTime, slideRange } from "./chapters.ts";
+import {
+  chapterOfSlide,
+  chaptersOf,
+  clock,
+  nearestSlide,
+  slideAtTime,
+  slideRange,
+} from "./chapters.ts";
 import type { Timeline } from "./text.ts";
 
 /** A timeline where slide i starts at i × 10 s and lasts 10 s. */
@@ -88,5 +95,20 @@ describe("narration chapters", () => {
     expect(clock(3_727_000)).toBe("1:02:07");
     expect(slideRange({ first: 8, last: 14 })).toBe("slides 9–15");
     expect(slideRange({ first: 3, last: 3 })).toBe("slide 4");
+  });
+});
+
+describe("the dot under the pointer", () => {
+  test("is the nearest dot, not the next one whose wider target overlaps it", () => {
+    const t = timeline(10);
+    const dots = [1, 2, 3, 5, 8];
+    // At the centre of slide 3's dot (30 s), and a little either side of it.
+    expect(nearestSlide(t, dots, 30_000)).toBe(3);
+    expect(nearestSlide(t, dots, 33_000)).toBe(3);
+    expect(nearestSlide(t, dots, 28_000)).toBe(3);
+    // Halfway to the next dot and beyond goes to that one; slides without a dot are skipped.
+    expect(nearestSlide(t, dots, 41_000)).toBe(5);
+    expect(nearestSlide(t, dots, 70_000)).toBe(8);
+    expect(nearestSlide(t, [], 70_000)).toBe(0);
   });
 });

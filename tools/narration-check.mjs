@@ -131,11 +131,25 @@ const target = await (async () => {
   return i;
 })();
 
+/** The presenter toolbar's rehearsal menu, opened: speed, voice and engine. */
+async function rehearsalMenu(page) {
+  await page.locator(".deck-record button[aria-haspopup='dialog']").first().click();
+  const menu = page.getByRole("dialog", { name: "Rehearsal settings" });
+  await menu.getByLabel("Engine", { exact: true }).waitFor({ timeout: 10_000 });
+  return menu;
+}
+
 await step("presenter: the bar renders, with its commands", async (expect) => {
   const { page, context, problems } = await open(`${base}presenter#/0`);
   await page.waitForSelector(".deck-narration", { timeout: 15_000 });
-  for (const label of ["Narrate (R)", "Previous step", "Next step", "Stop narration", "Speed", "Volume", "Voice", "Engine", "Mute"])
-    expect(await page.getByLabel(label, { exact: true }).count(), `no control labelled ${label}`);
+  const bar = page.locator(".deck-narration");
+  for (const label of ["Narrate (R)", "Previous step", "Next step", "Stop narration", "Speed", "Volume", "Mute"])
+    expect(await bar.getByLabel(label, { exact: true }).count(), `no control labelled ${label}`);
+  // The presenter's bar leaves the voice and the engine to the toolbar's rehearsal menu.
+  const menu = await rehearsalMenu(page);
+  for (const label of ["Speed", "Voice", "Engine"])
+    expect(await menu.getByLabel(label, { exact: true }).count(), `no ${label} in the rehearsal menu`);
+  await page.keyboard.press("Escape");
   const ids = await page.evaluate(() => window.__deck.commands.list().map((c) => c.id).filter((id) => id.startsWith("narrate.")));
   for (const id of ["narrate.play", "narrate.pause", "narrate.toggle", "narrate.stop", "narrate.next", "narrate.prev", "narrate.rate", "narrate.volume", "narrate.voice", "narrate.state"])
     expect(ids.includes(id), `missing command ${id}`);
@@ -173,12 +187,29 @@ await step("presenter: a point for every slide, the chapters kept, a picture in 
   const xs = await page.locator(".deck-narration-dot").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().x));
   const tight = xs.slice(1).filter((x, i) => x - xs[i] < 6.5).length;
   expect(!tight, `${tight} slide points overlap`);
-  // Hover a slide's point: its number and title, and a small picture of it.
+  // Hover a slide's point: its number and title, and a small picture of it. By the mouse at the
+  // dot's centre, as a person does: the neighbouring dots' wider targets overlap it, and the slide
+  // named must be this dot's, not the next one's (whose target is on top).
   const dot = page.locator(".deck-narration-dot").nth(5);
   const n = Number(await dot.getAttribute("data-slide"));
-  await dot.hover();
+  const db = await dot.boundingBox();
+  const centre = [db.x + db.width / 2, db.y + db.height / 2];
+  await page.mouse.move(...centre);
   const tip = await tipText(page);
   expect(tip.startsWith(`${n + 1}. `), `slide point tooltip: ${tip}`);
+  // Every dot names its own slide at its centre.
+  const wrong = [];
+  for (const d of await page.locator(".deck-narration-dot").all()) {
+    const b = await d.boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    const want = Number(await d.getAttribute("data-slide"));
+    const got = await tipText(page);
+    // A chapter's larger point sits above the dots by design: beside one, it may take the pointer.
+    if (got.startsWith("Chapter ")) continue;
+    if (!got.startsWith(`${want + 1}. `)) wrong.push(`${want + 1}→${got.split(".")[0]}`);
+  }
+  expect(!wrong.length, `${wrong.length} dots name another slide at their centre: ${wrong.slice(0, 8).join(", ")}`);
+  await page.mouse.move(...centre);
   const thumb = page.locator(".deck-narration-tip .deck-narration-thumb");
   await thumb.locator(".deck-slide *").first().waitFor({ timeout: 5000 }).catch(() => {});
   const box = await thumb.boundingBox();
@@ -190,7 +221,7 @@ await step("presenter: a point for every slide, the chapters kept, a picture in 
   expect(Math.max(...pad) - Math.min(...pad) <= 1, `tooltip padding uneven: ${pad.join(", ")}`);
   await page.locator(".deck-narration-tip").screenshot({ path: join(deckDir, "check-output", "narration-tooltip.png") }).catch(() => {});
   // A click on a slide's point goes to that slide, and does not start the voice.
-  await dot.click();
+  await page.mouse.click(...centre);
   await until(page, (i) => window.__deck.commands.run("narrate.state").then((r) => r.value.slide === i), n);
   expect(!(await page.evaluate(() => window.__deck.commands.run("narrate.state"))).value.playing, "a seek started playing");
   await page.evaluate(() => window.__deck.commands.run("narrate.stop"));
@@ -257,26 +288,30 @@ await step("presenter: speed, volume, mute and the timeline", async (expect) => 
   expect((await state(page)).rate === 1.5, "speed list did not set the rate");
   expect(!(await page.getByRole("listbox").count()), "the list stayed open after a choice");
   // … and by keyboard: open with ArrowDown, type to find, Enter to choose; the deck never moves.
+  // The engine and the voice are in the toolbar's rehearsal menu.
   const before = await where(page);
-  await page.getByLabel("Engine", { exact: true }).focus();
+  const menu = await rehearsalMenu(page);
+  await menu.getByLabel("Engine", { exact: true }).focus();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.type("si");
   await page.keyboard.press("Enter");
   expect((await state(page)).engine === "silent", `engine by keyboard: ${(await state(page)).engine}`);
-  await page.getByLabel("Speed", { exact: true }).focus();
+  await menu.getByLabel("Speed", { exact: true }).focus();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("End");
   await page.keyboard.press("Enter");
   expect((await state(page)).rate === 2, `End + Enter picked rate ${(await state(page)).rate}`);
-  await page.getByLabel("Voice", { exact: true }).click();
+  await menu.getByLabel("Voice", { exact: true }).click();
   await page.keyboard.press("Escape");
   expect(!(await page.getByRole("listbox").count()), "Escape did not close the list");
   const after = await where(page);
   expect(after.index === before.index && after.click === before.click, "keys in a list moved the deck");
   // Kokoro is not installed in the showcase: offered, but not choosable.
-  await page.getByLabel("Engine", { exact: true }).click();
+  await menu.getByLabel("Engine", { exact: true }).click();
   expect((await page.getByRole("option", { name: /Kokoro/ }).getAttribute("aria-disabled")) === "true", "Kokoro not disabled");
   await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await menu.waitFor({ state: "detached", timeout: 3000 }).catch(() => {});
   await page.getByLabel("Volume", { exact: true }).fill("0.3");
   expect(Math.abs((await state(page)).volume - 0.3) < 0.01, "volume slider did not set the volume");
   await page.getByLabel("Mute", { exact: true }).click();

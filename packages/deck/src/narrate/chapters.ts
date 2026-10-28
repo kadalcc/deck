@@ -61,6 +61,25 @@ export function slideAtTime(timeline: Timeline, ms: number): number {
   return hit;
 }
 
+/**
+ * Of the slides that have a dot on the track, the one whose dot is nearest `ms`. A dot's target
+ * is wider than the gap kept between dots, so neighbouring targets overlap and the later one is on
+ * top: going by the element under the pointer named the NEXT slide at the very centre of a dot (and
+ * a click went there).
+ */
+export function nearestSlide(timeline: Timeline, dots: readonly number[], ms: number): number {
+  let best = dots[0] ?? 0;
+  let gap = Number.POSITIVE_INFINITY;
+  for (const i of dots) {
+    const d = Math.abs((timeline.slides[i]?.start ?? 0) - ms);
+    if (d < gap) {
+      gap = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
 /** The chapter a slide belongs to. */
 export function chapterOfSlide(chapters: Chapter[], slide: number): number {
   for (let i = chapters.length - 1; i >= 0; i--) if (chapters[i]!.first <= slide) return i;

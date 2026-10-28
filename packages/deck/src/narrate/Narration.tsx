@@ -17,6 +17,7 @@ import {
   chapterOfSlide,
   chaptersOf,
   clock,
+  nearestSlide,
   slideAtTime,
   slideRange,
 } from "./chapters.ts";
@@ -921,9 +922,8 @@ function Track({
         chapter,
       };
     const dot = el?.closest?.("[data-slide]");
-    const hit = dot
-      ? Number(dot.getAttribute("data-slide"))
-      : slideAtTime(timeline, (x / box.width) * total);
+    const ms = (x / box.width) * total;
+    const hit = dot ? nearestSlide(timeline, dots, ms) : slideAtTime(timeline, ms);
     const start = timeline.slides[hit]?.start ?? 0;
     // Over a dot, the marker sits on the dot; elsewhere it follows the pointer.
     return { x: dot ? (at(start) / 100) * box.width : x, slide: hit, chapter: null };
