@@ -16,11 +16,13 @@
  *   bun run export --posters             only capture posters for the embedded pages (into public/posters/)
  *   bun run export --refresh-posters     capture them again even where one exists; --no-posters skips
  */
-import { basename, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { type FlagSpecs, UsageError, bool, num, parseArgs, str } from "../cli/args.ts";
-import { DeckServer } from "../cli/render.ts";
+import { NoDeckError } from "../cli/project.ts";
+import { DeckServer, loadPlaywright } from "../cli/render.ts";
 import { SlideRangeError, checkRange } from "../core/print-options.ts";
 import {
   EXPORT_FORMATS,
@@ -183,6 +185,9 @@ export async function runExport(
   let url = str(flags.url);
   let server: DeckServer | null = null;
   const posters = { jobs: 0, captured: 0 };
+  // What is missing is said (exit 4, with what to do) before posters and a build, not after.
+  if (!url && !existsSync(join(cwd, "deck.mdx"))) throw new NoDeckError(cwd);
+  await loadPlaywright(cwd);
 
   // Posters for embedded pages, before the build so they ship with it.
   if (flags.posters !== false) {
@@ -211,6 +216,7 @@ export async function runExport(
       url,
       outDir,
       slug: room,
+      root: cwd,
       upload:
         upload === undefined
           ? null

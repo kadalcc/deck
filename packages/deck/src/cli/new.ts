@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   renameSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
@@ -80,10 +81,18 @@ export class TargetNotEmptyError extends Error {
   override name = "TargetNotEmptyError";
 }
 
+/** The folder a scaffold goes into must be missing or empty (and a folder: not a file). */
+function assertEmptyTarget(dir: string): void {
+  if (!existsSync(dir)) return;
+  if (!statSync(dir).isDirectory())
+    throw new TargetNotEmptyError(`${dir} is a file. Choose a folder that does not exist yet.`);
+  if (readdirSync(dir).length > 0)
+    throw new TargetNotEmptyError(`${dir} is not empty. Choose another directory.`);
+}
+
 export async function newDeck(target: string, options: NewOptions = {}): Promise<NewResult> {
   const dir = resolve(target);
-  if (existsSync(dir) && readdirSync(dir).length > 0)
-    throw new TargetNotEmptyError(`${dir} is not empty. Choose another directory.`);
+  assertEmptyTarget(dir);
   const template = templateDir();
   cpSync(template.dir, dir, {
     recursive: true,
@@ -182,8 +191,7 @@ export async function newPackage(
     throw new Error(`"${rawName}" has nothing a package name can use; try letters and dashes.`);
   const pkgName = `kadal-${kind}-${name}`;
   const dir = resolve(target ?? join(cwd, pkgName));
-  if (existsSync(dir) && readdirSync(dir).length > 0)
-    throw new TargetNotEmptyError(`${dir} is not empty. Choose another directory.`);
+  assertEmptyTarget(dir);
   const own = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as {
     version: string;
   };
