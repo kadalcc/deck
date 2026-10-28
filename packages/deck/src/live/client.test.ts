@@ -174,4 +174,16 @@ describe("the room client", () => {
     await Promise.resolve();
     expect(FakeSocket.all.length).toBe(2);
   });
+  test("a reaction's running total lands in the room state at once", async () => {
+    FakeSocket.all = [];
+    const client = new RoomClient({ api: "/api", room: "talk", role: "presenter", viewer: "v1" });
+    client.connect();
+    await Promise.resolve();
+    const ws = FakeSocket.all[0]!;
+    ws.open();
+    ws.receive({ type: "react", emoji: "🔥", n: 3 });
+    ws.receive({ type: "react", emoji: "👏", n: 1 });
+    expect(client.state.get().reactions).toEqual({ "🔥": 3, "👏": 1 });
+    client.close();
+  });
 });
