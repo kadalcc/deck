@@ -4,14 +4,18 @@ exports[`golden: a reveal.js demo deck converts, compiles in the runtime compile
 "---
 backgroundColor: "#0f172a"
 transition: slide
+class: has-dark-background
 title: reveal.js – The HTML Presentation Framework
-theme: minimal
+theme: reveal
 colorScheme: dark
+themeConfig:
+  variant: black
 hash: true
 controls: true
 progress: true
 center: true
 slideNumber: c/t
+margin: 0.04
 ---
 
 # reveal.js
@@ -42,6 +46,7 @@ Use the _Space_ key to navigate through all slides.
 
 ----
 backgroundGradient: "linear-gradient(to bottom, #283b95, #17b2c3)"
+colorScheme: dark
 ---
 
 ## Basement Level 1
@@ -118,9 +123,11 @@ highlight-blue
 
 ## Fragment Order
 
-- <Click as="span" at={3}>Appears last</Click>
-- <Click as="span" at={1}>Appears first</Click>
-- <Click as="span" at={2}>Appears second</Click>
+<ul>
+<Click as="li" at={3}>Appears last</Click>
+<Click as="li" at={1}>Appears first</Click>
+<Click as="li" at={2}>Appears second</Click>
+</ul>
 
 ---
 
@@ -146,7 +153,7 @@ Matching elements animate between slides.
 autoAnimate: true
 ---
 
-<h2 data-id="code-title" style={{"marginTop":"200px","color":"red"}}>Auto-Animate</h2>
+<h2 data-id="code-title" style={{"marginTop":"154.3px","color":"red"}}>Auto-Animate</h2>
 
 Matching elements animate between slides.
 
@@ -177,7 +184,7 @@ Code syntax highlighting courtesy of [highlight.js](https://highlightjs.org/usag
 Write content using inline or external Markdown.
 
 - **Bold** and _italic_ text
-- <Click as="span">A [link](https://revealjs.com)</Click>
+- A <Click as="span">[link](https://revealjs.com)</Click>
 - Inline \`code\`
 
 <Notes>
@@ -215,6 +222,7 @@ deck.slides.forEach((slide) => {
 
 ---
 backgroundColor: "#ff6347"
+colorScheme: light
 ---
 
 ## Inline slide one
@@ -234,12 +242,18 @@ With a vertical one beneath.
 <div className="callout-box">Raw HTML in Markdown</div>
 
 ---
+backgroundColor: "#000000"
 backgroundVideo: https://static.slid.es/site/homepage/v1/homepage-video-editor.mp4
 backgroundVideoLoop: true
 backgroundVideoMuted: true
+colorScheme: dark
 ---
 
+<div style={{"backgroundColor":"rgba(0, 0, 0, 0.9)","color":"#fff","padding":"30.86px"}}>
+
 ## Video Backgrounds
+
+</div>
 
 ---
 
@@ -263,7 +277,7 @@ backgroundIframe: https://hakim.se
 backgroundInteractive: true
 ---
 
-<div style={{"position":"absolute","width":"40%","right":"0","background":"rgba(0,0,0,0.9)","padding":"40px","fontSize":"40px"}}>
+<div className="has-dark-background" style={{"position":"absolute","width":"40%","right":"0","background":"rgba(0,0,0,0.9)","padding":"30.86px","fontSize":"30.86px","color":"#fff"}}>
 
 ## Iframe Backgrounds
 
@@ -280,5 +294,83 @@ state: finale
 \\- [Try the online editor](https://revealjs.com) <br /> \\- [Source code & documentation](https://github.com/hakimel/reveal.js)
 
 <button>Say hi</button>
+"
+`;
+
+exports[`golden: a reveal.js deck with a theme, layout helpers and .element attributes converts to the reveal theme's beige, its components and attributes, and compiles 1`] = `
+"---
+backgroundColor: "#1e293b"
+class: has-dark-background
+title: Layout helpers
+theme: reveal
+colorScheme: light
+themeConfig:
+  variant: beige
+hash: true
+keyboard:
+  Enter: next
+  KeyO: overview
+margin: 0.04
+center: true
+---
+
+# Layout helpers
+
+A reveal.js deck in the beige theme, on a dark first slide
+
+---
+
+<h2><FitText max={864} min={37}>Fit text</FitText></h2>
+
+---
+
+## Stretch
+
+<Stretch><img src="/assets/shapes.svg" alt="Three shapes" /></Stretch>
+
+The picture fills the height that is left.
+
+---
+
+## Stack
+
+<Stack><Click as="span"><img src="/assets/square.svg" width="694" height="463" alt="A square" /></Click> <Click as="span"><img src="/assets/circle.svg" width="463" height="463" alt="A circle" /></Click> <Click as="span"><img src="/assets/triangle.svg" width="617" height="617" alt="A triangle" /></Click></Stack>
+
+---
+
+## Frame
+
+<img className="r-frame" src="/assets/square.svg" width="463" height="309" alt="A framed square" />
+
+---
+
+<h2 style={{"color":"#9a7b2f"}} data-id="title">Element attributes</h2>
+
+<p className="note">A paragraph with a class</p>
+
+- a plain item
+- <span style={{"color":"#d0611f"}}>a coloured item</span>
+- <Click as="span" effect="fade-up">a fragment</Click>
+
+---
+autoAnimate: true
+autoAnimateDuration: 1.5
+---
+
+<h2 data-id="aa">Auto-Animate</h2>
+
+---
+autoAnimate: true
+autoAnimateEasing: ease-out
+autoAnimateDuration: 1.5
+---
+
+<h2 data-id="aa" style={{"marginTop":"308.6px","color":"#9a7b2f"}}>Auto-Animate</h2>
+
+---
+
+## Lazy media
+
+<img data-src="/assets/circle.svg" width="309" height="309" alt="A circle loaded late" />
 "
 `;

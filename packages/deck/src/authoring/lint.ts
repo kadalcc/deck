@@ -287,6 +287,14 @@ export async function lintDeck(options: LintOptions): Promise<LintResult> {
         code: "code-meta",
         message: `Highlight line ${beyond[0]} is past the end of the block (${total} lines).`,
       });
+    if (parsed.revealBrackets)
+      add({
+        ...at,
+        severity: "info",
+        code: "code-meta",
+        message:
+          "reveal.js's bracket form ([1-2|3], [712: 1-2]) works, counting from the block's first line; Kadal's own spelling is braces with the numbers shown: {1-2|3}{lines:true}, {712-713}{lines:true,startLine:712}. A file-name title needs a letter in it.",
+      });
     for (const key of Object.keys(parsed.options))
       if (!(CODE_OPTION_KEYS as readonly string[]).includes(key))
         add({

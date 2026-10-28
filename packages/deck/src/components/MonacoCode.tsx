@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 
+import { linesOn } from "../compiler/code-meta.ts";
 import { codeThemeFor } from "../compiler/code-themes.ts";
 import type { MonacoHost } from "../monaco/loader.ts";
 import { monacoLoaderFor } from "../monaco/loader.ts";
@@ -296,7 +297,7 @@ export function MonacoCode(props: CodeProps) {
       ? String(options.height)
       : null;
   const editorHeight = height && /^\d+$/.test(height) ? `${height}px` : height;
-  const lines = linesAttr === "true";
+  const lines = linesOn(linesAttr, deck.config.lineNumbers);
   const showTitle = !!title && !inGroup;
   const right = options.outputPosition === "right";
   const outputHeight =

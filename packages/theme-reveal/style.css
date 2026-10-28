@@ -1,0 +1,1050 @@
+/* Reveal — reveal.js's twelve themes for Kadal Deck: black (the default), white, league, beige,
+   night, serif, simple, solarized, moon, dracula, sky and blood, picked with
+   `themeConfig: { variant: <name> }`. Rebuilt from reveal.js's own theme variables
+   (css/theme/*.scss and template/theme.scss, reveal.js 6.0.2, MIT, © Hakim El Hattab and
+   reveal.js contributors): the fonts, colours, heading case, weight and shadows, sizes and
+   spacing are theirs. `kadal-deck import reveal` writes `theme: reveal` with the variant the page
+   linked.
+
+   Every variant draws both schemes. Its own (black is dark, white is light…) is reveal's; the
+   other is its counterpart: black ↔ white and solarized ↔ moon are reveal's own pairs, dracula's
+   light is Dracula's Alucard, and the rest keep their type and take an inverted palette. Where a
+   reveal colour fails WCAG on its own background, it is the nearest shade that does not (blood's
+   links on #222; the counterpart schemes' accents).
+
+   Units. reveal lays a 960 × 700 slide out in px and scales it to fit the window; `--reveal-u`
+   is one of those px on Kadal's 1920 × 1080 stage (themeConfig `width` / `height` when the deck
+   had its own size), so type sizes and margins are reveal's exactly and the slide's text sits in
+   reveal's box (`--reveal-pad-x`, `--reveal-pad-y`: the stage around it).
+
+   The variant arrives as data-reveal-variant on the deck root (index.tsx), so a slide that forces
+   the other scheme keeps its variant: it matches `.theme-reveal[data-reveal-variant] .theme-reveal`.
+   reveal's `--r-*` custom properties are set under their own names, for a deck's CSS that reads
+   them. */
+
+.theme-reveal {
+  /* one reveal.js pixel on Kadal's stage: reveal scales its 960 × 700 slide (themeConfig width and
+     height, when the deck had its own) to fit, and so does this */
+  --reveal-u: min(calc(1920px / var(--theme-width, 960)), calc(1080px / var(--theme-height, 700)));
+  --r-main-font-size: calc(var(--reveal-size) * var(--reveal-u));
+  --r-block-margin: calc(20 * var(--reveal-u));
+  --r-heading-margin: 0 0 calc(20 * var(--reveal-u)) 0;
+  --r-heading-line-height: 1.2;
+  /* the tokens, from reveal's variables */
+  --deck-bg: var(--r-background-color, #fff);
+  --deck-fg: var(--r-main-color, #222);
+  --deck-muted: var(--reveal-muted);
+  --deck-accent: var(--theme-primary, var(--r-link-color, #2a76dd));
+  --deck-accent-2: var(--r-link-color-hover);
+  --deck-surface: var(--reveal-surface);
+  --deck-border: var(--reveal-border);
+  --deck-heading-font: var(--r-heading-font);
+  --deck-body-font: var(--r-main-font);
+  --deck-mono-font: var(--r-code-font);
+  --deck-serif-font: "Palatino Linotype", "Book Antiqua", Palatino, FreeSerif, serif;
+  /* reveal's highlight plugin is monokai on every theme; so is the code here */
+  --deck-code-bg: #272822;
+  --deck-code-fg: #f8f8f2;
+  --deck-code-active: rgba(255, 255, 255, 0.07);
+  --deck-radius: 0px;
+  --deck-pad: calc(20 * var(--reveal-u));
+  --deck-base-size: var(--r-main-font-size);
+  --deck-live: var(--r-link-color);
+  --deck-transition: 800ms;
+  --deck-controls-color: var(--r-link-color);
+  --r-main-font: "Source Sans Pro", Helvetica, sans-serif;
+  --r-heading-font: "Source Sans Pro", Helvetica, sans-serif;
+  --r-heading-font-weight: 600;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 2.5em;
+  --r-heading2-size: 1.6em;
+  --r-heading3-size: 1.3em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 42;
+  --reveal-p-weight: inherit;
+  --r-background-color: #fff;
+  --r-background: none;
+  --r-main-color: #222;
+  --r-heading-color: #222;
+  --r-link-color: #2a76dd;
+  --r-link-color-hover: #4a8be2;
+  --r-selection-background-color: #2a76dd;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #727272;
+  --reveal-surface: rgba(34, 34, 34, 0.06);
+  --reveal-border: rgba(34, 34, 34, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-color-scheme="dark"] {
+  --deck-bg: var(--r-background-color, #191919);
+  --deck-fg: var(--r-main-color, #fff);
+  --deck-accent: var(--theme-primary, var(--r-link-color, #42affa));
+  --deck-muted: var(--reveal-muted);
+  --deck-code-bg: #272822;
+  --r-background-color: #191919;
+  --r-background: none;
+  --r-main-color: #fff;
+  --r-heading-color: #fff;
+  --r-link-color: #42affa;
+  --r-link-color-hover: #5ebbfb;
+  --r-selection-background-color: #0579c8;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #a3a3a3;
+  --reveal-surface: rgba(255, 255, 255, 0.06);
+  --reveal-border: rgba(255, 255, 255, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* reveal's highlight plugin is monokai in both schemes, so the panel stays dark when a viewer
+   toggles the scheme, and its Shiki colours stay the dark ones (as theme-neon's do). */
+.theme-reveal[data-color-scheme] .shiki,
+.theme-reveal[data-color-scheme] .shiki span {
+  color: var(--shiki-dark, inherit);
+}
+
+/* white: reveal.js's white.css (light); the dark scheme is its counterpart */
+.theme-reveal[data-reveal-variant="white"],
+.theme-reveal[data-reveal-variant="white"] .theme-reveal {
+  --r-main-font: "Source Sans Pro", Helvetica, sans-serif;
+  --r-heading-font: "Source Sans Pro", Helvetica, sans-serif;
+  --r-heading-font-weight: 600;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 2.5em;
+  --r-heading2-size: 1.6em;
+  --r-heading3-size: 1.3em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 42;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="white"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="white"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #fff;
+  --r-background: none;
+  --r-main-color: #222;
+  --r-heading-color: #222;
+  --r-link-color: #2a76dd;
+  --r-link-color-hover: #4a8be2;
+  --r-selection-background-color: #2a76dd;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #727272;
+  --reveal-surface: rgba(34, 34, 34, 0.06);
+  --reveal-border: rgba(34, 34, 34, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="white"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="white"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #191919;
+  --r-background: none;
+  --r-main-color: #fff;
+  --r-heading-color: #fff;
+  --r-link-color: #42affa;
+  --r-link-color-hover: #5ebbfb;
+  --r-selection-background-color: #0579c8;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #a3a3a3;
+  --reveal-surface: rgba(255, 255, 255, 0.06);
+  --reveal-border: rgba(255, 255, 255, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* league: reveal.js's league.css (dark); the light scheme is its counterpart */
+.theme-reveal[data-reveal-variant="league"],
+.theme-reveal[data-reveal-variant="league"] .theme-reveal {
+  --r-main-font: Lato, sans-serif;
+  --r-heading-font: "League Gothic", Impact, sans-serif;
+  --r-heading-font-weight: 400;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 40;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="league"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="league"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #f2f3f4;
+  --r-background: radial-gradient(#fff, #d9dcdf);
+  --r-main-color: #222;
+  --r-heading-color: #222;
+  --r-link-color: #0b7e89;
+  --r-link-color-hover: #0a9aa7;
+  --r-selection-background-color: #0fadbb;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow:
+    0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa,
+    0 6px 1px rgba(0, 0, 0, 0.1), 0 0 5px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 3px 5px rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.25), 0 20px 20px rgba(0, 0, 0, 0.15);
+  --reveal-muted: #696969;
+  --reveal-surface: rgba(34, 34, 34, 0.06);
+  --reveal-border: rgba(34, 34, 34, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="league"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="league"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #1c1e20;
+  --r-background: radial-gradient(#555a5f, #1c1e20);
+  --r-main-color: #eee;
+  --r-heading-color: #eee;
+  --r-link-color: #13daec;
+  --r-link-color-hover: #42e1f0;
+  --r-selection-background-color: #0fadbb;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+  --r-heading1-text-shadow:
+    0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa,
+    0 6px 1px rgba(0, 0, 0, 0.1), 0 0 5px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 3px 5px rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.25), 0 20px 20px rgba(0, 0, 0, 0.15);
+  --reveal-muted: #9a9b9c;
+  --reveal-surface: rgba(238, 238, 238, 0.06);
+  --reveal-border: rgba(238, 238, 238, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* beige: reveal.js's beige.css (light); the dark scheme is its counterpart */
+.theme-reveal[data-reveal-variant="beige"],
+.theme-reveal[data-reveal-variant="beige"] .theme-reveal {
+  --r-main-font: "Source Sans Pro", Helvetica, sans-serif;
+  --r-heading-font: "Source Sans Pro", Helvetica, sans-serif;
+  --r-heading-font-weight: 600;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 2.5em;
+  --r-heading2-size: 1.6em;
+  --r-heading3-size: 1.3em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 42;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="beige"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="beige"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #f7f3de;
+  --r-background: radial-gradient(#fff, #f7f2d3);
+  --r-main-color: #333;
+  --r-heading-color: #333;
+  --r-link-color: #8b743d;
+  --r-link-color-hover: #b39753;
+  --r-selection-background-color: #c2aa73;
+  --r-selection-color: #333;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow:
+    0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa,
+    0 6px 1px rgba(0, 0, 0, 0.1), 0 0 5px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 3px 5px rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.25), 0 20px 20px rgba(0, 0, 0, 0.15);
+  --reveal-muted: #6a6963;
+  --reveal-surface: rgba(51, 51, 51, 0.06);
+  --reveal-border: rgba(51, 51, 51, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="beige"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="beige"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #26231a;
+  --r-background: radial-gradient(#3a3527, #1e1b13);
+  --r-main-color: #f7f3de;
+  --r-heading-color: #f7f3de;
+  --r-link-color: #d1b878;
+  --r-link-color-hover: #e2cd98;
+  --r-selection-background-color: #8b743d;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #a3a090;
+  --reveal-surface: rgba(247, 243, 222, 0.06);
+  --reveal-border: rgba(247, 243, 222, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* night: reveal.js's night.css (dark); the light scheme is its counterpart */
+.theme-reveal[data-reveal-variant="night"],
+.theme-reveal[data-reveal-variant="night"] .theme-reveal {
+  --r-main-font: "Open Sans", sans-serif;
+  --r-heading-font: "Montserrat", Impact, sans-serif;
+  --r-heading-font-weight: 700;
+  --r-heading-text-transform: none;
+  --r-heading-letter-spacing: -0.03em;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 40;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="night"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="night"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #f4f4f4;
+  --r-background: none;
+  --r-main-color: #111;
+  --r-heading-color: #111;
+  --r-link-color: #8f6117;
+  --r-link-color-hover: #a87420;
+  --r-selection-background-color: #e7ad52;
+  --r-selection-color: #111;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #6a6a6a;
+  --reveal-surface: rgba(17, 17, 17, 0.06);
+  --reveal-border: rgba(17, 17, 17, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="night"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="night"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #111;
+  --r-background: none;
+  --r-main-color: #fff;
+  --r-heading-color: #fff;
+  --r-link-color: #e7ad52;
+  --r-link-color-hover: #ecbd75;
+  --r-selection-background-color: #e7ad52;
+  --r-selection-color: #111;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #a0a0a0;
+  --reveal-surface: rgba(255, 255, 255, 0.06);
+  --reveal-border: rgba(255, 255, 255, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* serif: reveal.js's serif.css (light); the dark scheme is its counterpart */
+.theme-reveal[data-reveal-variant="serif"],
+.theme-reveal[data-reveal-variant="serif"] .theme-reveal {
+  --r-main-font: "Palatino Linotype", "Book Antiqua", Palatino, FreeSerif, serif;
+  --r-heading-font: "Palatino Linotype", "Book Antiqua", Palatino, FreeSerif, serif;
+  --r-heading-font-weight: 600;
+  --r-heading-text-transform: none;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 42;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="serif"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="serif"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #f0f1eb;
+  --r-background: none;
+  --r-main-color: #000;
+  --r-heading-color: #383d3d;
+  --r-link-color: #51483d;
+  --r-link-color-hover: #857765;
+  --r-selection-background-color: #51483d;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #60605e;
+  --reveal-surface: rgba(0, 0, 0, 0.06);
+  --reveal-border: rgba(0, 0, 0, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="serif"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="serif"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #23241f;
+  --r-background: none;
+  --r-main-color: #f0f1eb;
+  --r-heading-color: #d5d9d0;
+  --r-link-color: #cdbfae;
+  --r-link-color-hover: #e3d8cb;
+  --r-selection-background-color: #857765;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #9e9f99;
+  --reveal-surface: rgba(240, 241, 235, 0.06);
+  --reveal-border: rgba(240, 241, 235, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* simple: reveal.js's simple.css (light); the dark scheme is its counterpart */
+.theme-reveal[data-reveal-variant="simple"],
+.theme-reveal[data-reveal-variant="simple"] .theme-reveal {
+  --r-main-font: Lato, sans-serif;
+  --r-heading-font: "News Cycle", Impact, sans-serif;
+  --r-heading-font-weight: 600;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 2.5em;
+  --r-heading2-size: 1.6em;
+  --r-heading3-size: 1.3em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 40;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="simple"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="simple"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #fff;
+  --r-background: none;
+  --r-main-color: #000;
+  --r-heading-color: #000;
+  --r-link-color: #00008b;
+  --r-link-color-hover: #0000d5;
+  --r-selection-background-color: #00008b;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #666666;
+  --reveal-surface: rgba(0, 0, 0, 0.06);
+  --reveal-border: rgba(0, 0, 0, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="simple"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="simple"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #000;
+  --r-background: none;
+  --r-main-color: #fff;
+  --r-heading-color: #fff;
+  --r-link-color: #a3b3ff;
+  --r-link-color-hover: #c7d1ff;
+  --r-selection-background-color: #3a4bd6;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #999999;
+  --reveal-surface: rgba(255, 255, 255, 0.06);
+  --reveal-border: rgba(255, 255, 255, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* solarized: reveal.js's solarized.css (light); the dark scheme is its counterpart */
+.theme-reveal[data-reveal-variant="solarized"],
+.theme-reveal[data-reveal-variant="solarized"] .theme-reveal {
+  --r-main-font: Lato, sans-serif;
+  --r-heading-font: "League Gothic", Impact, sans-serif;
+  --r-heading-font-weight: 400;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 40;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="solarized"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="solarized"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #fdf6e3;
+  --r-background: none;
+  --r-main-color: #657b83;
+  --r-heading-color: #586e75;
+  --r-link-color: #268bd2;
+  --r-link-color-hover: #4ea3df;
+  --r-selection-background-color: #d33682;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #586e75;
+  --reveal-surface: rgba(101, 123, 131, 0.06);
+  --reveal-border: rgba(101, 123, 131, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="solarized"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="solarized"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #002b36;
+  --r-background: none;
+  --r-main-color: #93a1a1;
+  --r-heading-color: #eee8d5;
+  --r-link-color: #268bd2;
+  --r-link-color-hover: #4ea3df;
+  --r-selection-background-color: #d33682;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #849596;
+  --reveal-surface: rgba(147, 161, 161, 0.06);
+  --reveal-border: rgba(147, 161, 161, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* moon: reveal.js's moon.css (dark); the light scheme is its counterpart */
+.theme-reveal[data-reveal-variant="moon"],
+.theme-reveal[data-reveal-variant="moon"] .theme-reveal {
+  --r-main-font: Lato, sans-serif;
+  --r-heading-font: "League Gothic", Impact, sans-serif;
+  --r-heading-font-weight: 400;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 40;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="moon"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="moon"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #fdf6e3;
+  --r-background: none;
+  --r-main-color: #657b83;
+  --r-heading-color: #586e75;
+  --r-link-color: #268bd2;
+  --r-link-color-hover: #4ea3df;
+  --r-selection-background-color: #d33682;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #586e75;
+  --reveal-surface: rgba(101, 123, 131, 0.06);
+  --reveal-border: rgba(101, 123, 131, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="moon"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="moon"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #002b36;
+  --r-background: none;
+  --r-main-color: #93a1a1;
+  --r-heading-color: #eee8d5;
+  --r-link-color: #268bd2;
+  --r-link-color-hover: #4ea3df;
+  --r-selection-background-color: #d33682;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #849596;
+  --reveal-surface: rgba(147, 161, 161, 0.06);
+  --reveal-border: rgba(147, 161, 161, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* dracula: reveal.js's dracula.css (dark); the light scheme is its counterpart */
+.theme-reveal[data-reveal-variant="dracula"],
+.theme-reveal[data-reveal-variant="dracula"] .theme-reveal {
+  --r-main-font:
+    -apple-system, BlinkMacSystemFont, "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue",
+    Helvetica, Cantarell, Ubuntu, Roboto, Noto, Arial, sans-serif;
+  --r-heading-font:
+    -apple-system, BlinkMacSystemFont, "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue",
+    Helvetica, Cantarell, Ubuntu, Roboto, Noto, Arial, sans-serif;
+  --r-heading-font-weight: 600;
+  --r-heading-text-transform: none;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 2.5em;
+  --r-heading2-size: 1.6em;
+  --r-heading3-size: 1.3em;
+  --r-heading4-size: 1em;
+  --r-code-font:
+    "Fira Code", Menlo, Consolas, Monaco, "Liberation Mono", "Lucida Console", monospace;
+  --reveal-size: 42;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="dracula"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="dracula"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #fffbeb;
+  --r-background: none;
+  --r-main-color: #1f1f1f;
+  --r-heading-color: #644ac9;
+  --r-link-color: #a3144d;
+  --r-link-color-hover: #036a96;
+  --r-selection-background-color: #cfcfde;
+  --r-selection-color: #1f1f1f;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #706e68;
+  --reveal-surface: rgba(31, 31, 31, 0.06);
+  --reveal-border: rgba(31, 31, 31, 0.22);
+  --reveal-p-shadow: none;
+  --r-bold-color: #a34d14;
+  --r-italic-color: #846e15;
+  --r-inline-code-color: #14710a;
+  --r-list-bullet-color: #036a96;
+}
+.theme-reveal[data-reveal-variant="dracula"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="dracula"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #191919;
+  --r-background: none;
+  --r-main-color: #f8f8f2;
+  --r-heading-color: #bd93f9;
+  --r-link-color: #ff79c6;
+  --r-link-color-hover: #8be9fd;
+  --r-selection-background-color: #44475a;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #9f9f9b;
+  --reveal-surface: rgba(248, 248, 242, 0.06);
+  --reveal-border: rgba(248, 248, 242, 0.22);
+  --reveal-p-shadow: none;
+  --r-bold-color: #ffb86c;
+  --r-italic-color: #f1fa8c;
+  --r-inline-code-color: #50fa7b;
+  --r-list-bullet-color: #8be9fd;
+}
+
+/* sky: reveal.js's sky.css (light); the dark scheme is its counterpart */
+.theme-reveal[data-reveal-variant="sky"],
+.theme-reveal[data-reveal-variant="sky"] .theme-reveal {
+  --r-main-font: "Open Sans", sans-serif;
+  --r-heading-font: "Quicksand", sans-serif;
+  --r-heading-font-weight: 400;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: -0.05em;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 40;
+  --reveal-p-weight: inherit;
+}
+.theme-reveal[data-reveal-variant="sky"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="sky"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #f7fbfc;
+  --r-background: radial-gradient(#f7fbfc, #add9e4);
+  --r-main-color: #333;
+  --r-heading-color: #333;
+  --r-link-color: #2a76dd;
+  --r-link-color-hover: #4a8be2;
+  --r-selection-background-color: #2a76dd;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #6e6f6f;
+  --reveal-surface: rgba(51, 51, 51, 0.06);
+  --reveal-border: rgba(51, 51, 51, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="sky"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="sky"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #0d2128;
+  --r-background: radial-gradient(#1c3d48, #0a1a20);
+  --r-main-color: #f7fbfc;
+  --r-heading-color: #f7fbfc;
+  --r-link-color: #8cc0f7;
+  --r-link-color-hover: #b3d6fa;
+  --r-selection-background-color: #2a76dd;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #99a4a7;
+  --reveal-surface: rgba(247, 251, 252, 0.06);
+  --reveal-border: rgba(247, 251, 252, 0.22);
+  --reveal-p-shadow: none;
+}
+
+/* blood: reveal.js's blood.css (dark); the light scheme is its counterpart */
+.theme-reveal[data-reveal-variant="blood"],
+.theme-reveal[data-reveal-variant="blood"] .theme-reveal {
+  --r-main-font: Ubuntu, sans-serif;
+  --r-heading-font: Ubuntu, sans-serif;
+  --r-heading-font-weight: 700;
+  --r-heading-text-transform: uppercase;
+  --r-heading-letter-spacing: normal;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --reveal-size: 40;
+  --reveal-p-weight: 300;
+}
+.theme-reveal[data-reveal-variant="blood"]:not([data-color-scheme="dark"]),
+.theme-reveal[data-reveal-variant="blood"] .theme-reveal[data-color-scheme="light"] {
+  --r-background-color: #eee;
+  --r-background: none;
+  --r-main-color: #222;
+  --r-heading-color: #222;
+  --r-link-color: #a23;
+  --r-link-color-hover: #c52a3d;
+  --r-selection-background-color: #a23;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: none;
+  --r-heading1-text-shadow: none;
+  --reveal-muted: #676767;
+  --reveal-surface: rgba(34, 34, 34, 0.06);
+  --reveal-border: rgba(34, 34, 34, 0.22);
+  --reveal-p-shadow: none;
+}
+.theme-reveal[data-reveal-variant="blood"][data-color-scheme="dark"],
+.theme-reveal[data-reveal-variant="blood"] .theme-reveal[data-color-scheme="dark"] {
+  --r-background-color: #222;
+  --r-background: none;
+  --r-main-color: #eee;
+  --r-heading-color: #eee;
+  --r-link-color: #e0465a;
+  --r-link-color-hover: #ec7483;
+  --r-selection-background-color: #a23;
+  --r-selection-color: #fff;
+  --r-heading-text-shadow: 2px 2px 2px #222;
+  --r-heading1-text-shadow:
+    0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa,
+    0 6px 1px rgba(0, 0, 0, 0.1), 0 0 5px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 3px 5px rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.25), 0 20px 20px rgba(0, 0, 0, 0.15);
+  --reveal-muted: #9c9c9c;
+  --reveal-surface: rgba(238, 238, 238, 0.06);
+  --reveal-border: rgba(238, 238, 238, 0.22);
+  --reveal-p-shadow: 1px 1px #222;
+}
+
+/* ── the page: reveal's box, its type and its background ──────────────── */
+/* reveal paints the whole window in the theme's background, so the bars beside the stage do */
+.theme-reveal.deck-root {
+  --deck-bars: var(--r-background-color);
+}
+.theme-reveal .deck-slide {
+  --reveal-pad-x: var(--deck-pad);
+  --reveal-pad-y: var(--deck-pad);
+  font-family: var(--r-main-font);
+  font-weight: normal;
+  color: var(--r-main-color);
+  line-height: 1.3;
+}
+.theme-reveal
+  .deck-slide:is(
+    .layout-default,
+    .layout-center,
+    .layout-cover,
+    .layout-intro,
+    .layout-section,
+    .layout-end,
+    .layout-fact,
+    .layout-quote,
+    .layout-statement
+  ) {
+  --reveal-pad-x: max(0px, calc((1920px - var(--theme-width, 960) * var(--reveal-u)) / 2));
+  --reveal-pad-y: max(0px, calc((1080px - var(--theme-height, 700) * var(--reveal-u)) / 2));
+  padding: var(--reveal-pad-y) var(--reveal-pad-x);
+}
+/* league, beige and sky paint a radial gradient behind every slide; a slide's own background
+   (`has-background`) is the author's */
+.theme-reveal .deck-slide:not(.has-background) {
+  background-image: var(--r-background);
+}
+.theme-reveal .deck-slide-background {
+  inset: calc(var(--reveal-pad-y) * -1) calc(var(--reveal-pad-x) * -1);
+}
+.theme-reveal .deck-slide ::selection {
+  color: var(--r-selection-color);
+  background: var(--r-selection-background-color);
+  text-shadow: none;
+}
+
+/* ── type (reveal's template/theme.scss) ──────────────────────────────── */
+.theme-reveal .deck-slide :is(h1, h2, h3, h4, h5, h6) {
+  margin: var(--r-heading-margin);
+  color: var(--r-heading-color);
+  font-family: var(--r-heading-font);
+  font-weight: var(--r-heading-font-weight);
+  line-height: var(--r-heading-line-height);
+  letter-spacing: var(--r-heading-letter-spacing);
+  text-transform: var(--r-heading-text-transform);
+  text-shadow: var(--r-heading-text-shadow);
+  text-wrap: wrap;
+  overflow-wrap: break-word;
+}
+.theme-reveal .deck-slide h1 {
+  font-size: var(--r-heading1-size);
+  text-shadow: var(--r-heading1-text-shadow);
+}
+.theme-reveal .deck-slide h2 {
+  font-size: var(--r-heading2-size);
+}
+.theme-reveal .deck-slide h3 {
+  font-size: var(--r-heading3-size);
+}
+.theme-reveal .deck-slide h4 {
+  font-size: var(--r-heading4-size);
+}
+.theme-reveal .deck-slide :is(h1, h2, h3, h4, h5, h6):last-child {
+  margin-bottom: 0;
+}
+.theme-reveal .deck-slide p {
+  margin: var(--r-block-margin) 0;
+  line-height: 1.3;
+  font-weight: var(--reveal-p-weight);
+  text-shadow: var(--reveal-p-shadow);
+}
+.theme-reveal .deck-slide :is(img, video, iframe) {
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 0;
+}
+.theme-reveal .deck-slide img {
+  margin: var(--r-block-margin) 0;
+}
+.theme-reveal .deck-slide :is(strong, b) {
+  font-weight: bold;
+}
+.theme-reveal .deck-slide :is(em, q) {
+  font-style: italic;
+}
+/* lists: an inline block, left-aligned inside, centred on the slide like a line of text */
+.theme-reveal .deck-slide :is(ol, ul, dl) {
+  display: inline-block;
+  text-align: left;
+  margin: 0 0 0 1em;
+  padding: 0;
+}
+.theme-reveal .deck-layout > :is(ol, ul, dl) {
+  align-self: center;
+}
+/* a picture on its own is a line of its own in reveal, centred like one; here it is a flex item */
+.theme-reveal
+  :is(.deck-layout-default, .deck-layout-center, .deck-layout-cover, .deck-layout-section)
+  > :is(img, video, iframe, canvas, svg, picture, object, embed) {
+  align-self: center;
+}
+.theme-reveal .deck-slide ol {
+  list-style-type: decimal;
+}
+.theme-reveal .deck-slide ul {
+  list-style-type: disc;
+}
+.theme-reveal .deck-slide ul ul {
+  list-style-type: square;
+}
+.theme-reveal .deck-slide ul ul ul {
+  list-style-type: circle;
+}
+.theme-reveal .deck-slide :is(ul, ol) :is(ul, ol) {
+  display: block;
+  margin-left: calc(40 * var(--reveal-u));
+}
+.theme-reveal .deck-slide li {
+  margin: 0;
+}
+.theme-reveal .deck-slide dt {
+  font-weight: bold;
+}
+.theme-reveal .deck-slide dd {
+  margin-left: calc(40 * var(--reveal-u));
+}
+.theme-reveal .deck-slide blockquote {
+  display: block;
+  position: relative;
+  box-sizing: content-box;
+  width: 70%;
+  margin: var(--r-block-margin) auto;
+  padding: calc(5 * var(--reveal-u));
+  font-style: italic;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+}
+.theme-reveal .deck-slide blockquote :is(p:first-child, p:last-child) {
+  display: inline-block;
+}
+.theme-reveal .deck-slide table {
+  width: auto;
+  margin: auto;
+  font-size: 1em;
+  line-height: 1.3;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.theme-reveal .deck-slide :is(th, td) {
+  text-align: left;
+  padding: 0.2em 0.5em;
+  border-bottom: 1px solid currentColor;
+}
+.theme-reveal .deck-slide th {
+  font-size: 1em;
+  font-weight: bold;
+  color: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.theme-reveal .deck-slide :is(th, td)[align="center"] {
+  text-align: center;
+}
+.theme-reveal .deck-slide :is(th, td)[align="right"] {
+  text-align: right;
+}
+.theme-reveal .deck-slide tbody tr:last-child :is(th, td) {
+  border-bottom: none;
+}
+.theme-reveal .deck-slide :is(sup, sub) {
+  font-size: smaller;
+}
+.theme-reveal .deck-slide small {
+  display: inline-block;
+  font-size: 0.6em;
+  line-height: 1.2em;
+  vertical-align: top;
+}
+.theme-reveal .deck-slide small * {
+  vertical-align: top;
+}
+.theme-reveal .deck-slide a {
+  color: var(--deck-accent);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.theme-reveal .deck-slide a:hover {
+  color: var(--r-link-color-hover);
+  text-shadow: none;
+  border: none;
+}
+.theme-reveal .deck-slide :not(pre) > code {
+  font-family: var(--r-code-font);
+  font-size: 1em;
+  text-transform: none;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+.theme-reveal .deck-slide hr {
+  border-top-color: currentColor;
+  opacity: 0.4;
+}
+
+/* ── code: reveal's pre, 90% wide, 0.55em, under a soft shadow ─────────── */
+.theme-reveal .deck-code-block {
+  width: 90%;
+  margin: var(--r-block-margin) auto;
+  font-size: 0.55em;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+.theme-reveal pre.deck-code {
+  font-size: 1em;
+  line-height: 1.2em;
+  padding: calc(5 * var(--reveal-u)) 0;
+  max-height: calc(400 * var(--reveal-u) / 0.55);
+}
+.theme-reveal pre.deck-code .line {
+  padding: 0 calc(5 * var(--reveal-u) / 0.55);
+}
+.theme-reveal .deck-code-title {
+  font-size: 0.8em;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  color: #a6a28c;
+}
+
+/* ── reveal's helpers: r-frame (Kadal's <Frame>), r-stack, r-stretch ─── */
+.theme-reveal .deck-slide :is(.deck-frame, .r-frame) {
+  border: calc(4 * var(--reveal-u)) solid var(--r-main-color);
+  border-radius: 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+}
+.theme-reveal .deck-slide a :is(.deck-frame, .r-frame) {
+  transition: all 0.15s linear;
+}
+.theme-reveal .deck-slide a:hover :is(.deck-frame, .r-frame) {
+  border-color: var(--r-link-color);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.55);
+}
+.theme-reveal .deck-slide .deck-stack img {
+  margin: 0;
+}
+
+/* ── the variants' own rules ───────────────────────────────────────────── */
+/* dracula: bold orange, italics and quotes yellow, code green, bullets cyan (Alucard's in light) */
+.theme-reveal[data-reveal-variant="dracula"] .deck-slide :is(strong, b) {
+  color: var(--r-bold-color);
+}
+.theme-reveal[data-reveal-variant="dracula"] .deck-slide :is(em, i, blockquote) {
+  color: var(--r-italic-color);
+}
+.theme-reveal[data-reveal-variant="dracula"] .deck-slide :not(pre) > code {
+  color: var(--r-inline-code-color);
+}
+.theme-reveal[data-reveal-variant="dracula"] .deck-slide li::marker {
+  color: var(--r-list-bullet-color);
+}
+/* blood: inline code in a rounded monokai chip */
+.theme-reveal[data-reveal-variant="blood"] .deck-slide p code {
+  display: inline-block;
+  color: #f8f8f2;
+  background-color: #23241f;
+  border-radius: 7px;
+}
+/* serif and sky: a taller line under links */
+.theme-reveal:is([data-reveal-variant="serif"], [data-reveal-variant="sky"]) .deck-slide a {
+  line-height: 1.3em;
+}
+
+/* reveal's has-dark-background / has-light-background (template/mixins.scss): the text and
+   headings of a slide (or a box on it) whose background is the other way round. The importer
+   gives a deck's first slide one of these when its background sets its scheme (the headmatter's
+   colorScheme is that slide's too, so it cannot say so itself), and a box the author painted. */
+.theme-reveal :is(.deck-slide.has-dark-background, .deck-slide .has-dark-background),
+.theme-reveal
+  :is(.deck-slide.has-dark-background, .deck-slide .has-dark-background)
+  :is(h1, h2, h3, h4, h5, h6) {
+  color: #fff;
+}
+.theme-reveal :is(.deck-slide.has-light-background, .deck-slide .has-light-background),
+.theme-reveal
+  :is(.deck-slide.has-light-background, .deck-slide .has-light-background)
+  :is(h1, h2, h3, h4, h5, h6) {
+  color: #222;
+}
+.theme-reveal
+  :is(.deck-slide.has-light-background, .deck-slide .has-light-background)
+  :is(h1, h2, h3, h4, h5, h6, p) {
+  text-shadow: none;
+}
+/* reveal leaves links alone; a light theme's navy link would vanish on navy, so it is lifted */
+.theme-reveal :is(.deck-slide.has-dark-background, .deck-slide .has-dark-background) a {
+  color: color-mix(in srgb, var(--r-link-color) 45%, #fff);
+}
+.theme-reveal :is(.deck-slide.has-light-background, .deck-slide .has-light-background) a {
+  color: color-mix(in srgb, var(--r-link-color) 60%, #000);
+}
+
+/* ── the layouts: reveal has one (centred text in its box); Kadal's keep reveal's type ── */
+.theme-reveal :is(.deck-layout-default, .deck-layout-center, .deck-layout-cover) {
+  text-align: center;
+}
+.theme-reveal :is(.deck-layout-intro, .deck-layout-section, .deck-layout-end) {
+  text-align: center;
+}
+.theme-reveal :is(.deck-layout-fact, .deck-layout-statement) {
+  text-align: center;
+}
+.theme-reveal .deck-layout-fact > :is(h1, h2, p, .deck-counter) {
+  font-size: var(--r-heading1-size);
+  letter-spacing: var(--r-heading-letter-spacing);
+}
+.theme-reveal .deck-layout-quote {
+  padding-inline: 0;
+  font-style: italic;
+}
+.theme-reveal .deck-layout-full {
+  padding: 0;
+}
+.theme-reveal :is(.deck-layout-two-cols, .deck-layout-two-cols-header) {
+  column-gap: calc(40 * var(--reveal-u));
+  text-align: left;
+}
+.theme-reveal :is(.deck-layout-image, .deck-layout-image-left, .deck-layout-image-right) {
+  text-align: left;
+}
+.theme-reveal :is(.deck-layout-iframe, .deck-layout-iframe-left, .deck-layout-iframe-right) {
+  text-align: left;
+}
+.theme-reveal .deck-layout-image-content :is(ol, ul, dl),
+.theme-reveal .deck-layout-iframe-content :is(ol, ul, dl) {
+  margin-left: 1em;
+}
+
+/* ── chrome: reveal's progress bar and arrows are the link colour ─────── */
+.theme-reveal .deck-progress {
+  background: rgba(0, 0, 0, 0.2);
+}
+.theme-reveal .deck-progress span {
+  background: var(--r-link-color);
+}

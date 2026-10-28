@@ -269,8 +269,8 @@ export const THEMES: ThemeInfo[] = [
  * The first-party theme packages (packages/theme-*). Their own packages, and copies inside
  * @kadal/deck too: a deck names one (`theme: seriph`) with nothing installed, and every deck's
  * theme menu offers them all; the prebuilt shell bundles them all. The ports keep their Slidev theme's layouts, frontmatter and look (THEMES.md has the
- * name mapping, for decks moving over). Eight more are Kadal's own designs, with no `slidev`
- * field.
+ * name mapping, for decks moving over); `reveal` is reveal.js's twelve themes, for decks imported
+ * from it. Eight more are Kadal's own designs, with no `slidev` field.
  */
 export const THEME_PACKAGES: ThemePackageInfo[] = [
   {
@@ -344,6 +344,15 @@ export const THEME_PACKAGES: ThemePackageInfo[] = [
     ],
     components: [],
     slidev: "shibainu",
+  },
+  {
+    name: "reveal",
+    package: "@kadal/theme-reveal",
+    summary:
+      "reveal.js's twelve themes as `themeConfig.variant` (black, white, league, beige, night, serif, simple, solarized, moon, dracula, sky, blood): their fonts, colours and heading case, centred in reveal's box, each in light and dark. What `kadal-deck import reveal` writes.",
+    scheme: "both",
+    layouts: [],
+    components: [],
   },
   {
     name: "brand",
@@ -467,6 +476,8 @@ export const CLICK_EFFECT_META: Record<string, string> = {
   "highlight-current-green": "Green only during its own step.",
   "highlight-current-blue": "Blue only during its own step.",
   blur: "Start blurred, come into focus.",
+  custom:
+    "No built-in look: your CSS on `.effect-custom.visible` (or reveal's `.fragment.custom.visible`) decides. A `custom` class does the same.",
 };
 
 export const CLICK_AT: NamedInfo[] = [
@@ -979,11 +990,13 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   progress: "The progress bar along the bottom.",
   slideNumber:
     'Show slide numbers: true, or a format — "h.v", "h/v", "c" (current), "c/t" (current/total). reveal.js compatible: deck.config.ts may pass a function of the slide ({ h, v, click, index, total, id }) returning one string or three ([h, ".", v]).',
-  showSlideNumber: "Where slide numbers show.",
+  showSlideNumber:
+    'Where slide numbers show: "all" (default) the deck, every printed page (and `kadal-deck export` PDF) and the presenter view; "print" only the printed pages; "speaker" only the presenter view.',
   hash: "Keep the URL hash in step with the slide.",
   hashOneBasedIndex: "1-based slide numbers in the hash.",
   history: "Push a history entry per slide (Back walks the slides).",
-  keyboard: "Keyboard navigation on.",
+  keyboard:
+    "Keyboard navigation on (false: off), or a map of single keys over the defaults: `{ KeyQ: overview, KeyD: null }` (KeyboardEvent.code names; a Kadal action, a command id, or null to unbind). reveal.js's form reads too: keyCodes and its method names, `{ 13: next, 79: toggleOverview, 32: null }`, and in deck.config.ts a function.",
   respondToHashChanges:
     "reveal.js compatible: a change to the URL hash (a link, the address bar) moves the deck. Default true.",
   keyboardCondition:
@@ -997,7 +1010,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   rtl: "Right-to-left.",
   navigationMode: '"default", "linear" (arrows walk every slide) or "grid" (columns stay aligned).',
   shuffle: "Shuffle the slides on load.",
-  fragments: "Clicks/fragments on; off shows every step at once.",
+  fragments:
+    "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
   fragmentInURL: "Include the click step in the hash.",
   embedded:
     "reveal.js compatible: the deck lives inside part of another page (also `?embedded`). It sizes itself from its own element (and follows it as it resizes), takes keys only while focused (a press inside it; `keyboardCondition` overrides), listens for swipes and clicks on itself alone, goes fullscreen as itself, and leaves the page's hash, title, head and colour scheme alone unless `hash` is set outright. Several embedded decks can share a page.",
@@ -1008,7 +1022,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   help: "The ? keyboard help.",
   pause: "B / . blacks the screen out.",
   showNotes: 'Print notes with the slides: true (in a box) or "separate-page".',
-  autoPlayMedia: "Autoplay media on every slide (null = per element).",
+  autoPlayMedia:
+    "Autoplay media on every slide: true plays every video, audio and YouTube/Vimeo frame when its slide is shown, false none (background videos included); null (default) plays those marked `data-autoplay`, and backgrounds.",
   preloadIframes:
     "reveal.js compatible: null (default): an iframe with `data-preload` loads within viewDistance and the rest when their slide shows; true: every iframe loads within viewDistance; false: only when its slide shows.",
   autoAnimate: "Allow auto-animate between slides that set `autoAnimate`.",
@@ -1020,7 +1035,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   autoAnimateMatcher:
     "reveal.js compatible, deck.config.ts only: a function (from, to) of the two slides' elements returning the pairs to morph ([{ from, to }]), in place of matching by text and data-id. null (default): the built-in matching.",
   autoSlideStoppable:
-    "Input stops auto-slide: a press on the deck, or any key the deck answers (A, which turns it back on, excepted).",
+    "Input stops auto-slide: a press on the deck, or any key the deck answers (A, which turns it back on, excepted). The play view shows a pause/play control with the slide's time left as a ring (bottom-left). false: neither.",
   autoSlideMethod:
     'reveal.js compatible: the step auto-slide takes, by name. "next" (default) walks every click step and slide, down a vertical stack before going right; "right" (or reveal\'s "Reveal.navigateRight") skips the stacks; also "nextSlide", "down", "prev", "left", "up", "first", "last", or any command id. reveal takes a function here; a name works in YAML.',
   mouseWheel: "Scroll-wheel navigation.",
@@ -1033,7 +1048,7 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   parallaxBackgroundImage:
     "reveal.js compatible: one large image behind every slide that shifts a little with each slide (a path in public/ or a URL). Empty (default): none.",
   parallaxBackgroundSize:
-    "reveal.js compatible: the parallax image's CSS background-size, e.g. \"2100px 900px\". Empty (default): the image's own size.",
+    "reveal.js compatible: the parallax image's CSS background-size, e.g. \"2100px 900px\" (the steps are worked out from a size in pixels). Empty (default): the image's own size.",
   parallaxBackgroundHorizontal:
     "reveal.js compatible: pixels the parallax image moves per horizontal slide. null (default): worked out from the image and slide count.",
   parallaxBackgroundVertical:
@@ -1051,13 +1066,16 @@ export const DECK_KEY_DOCS: Record<string, string> = {
     "The theme: a built-in (minimal, rla, stack, none), a package (`seriph` finds @kadal/theme-seriph, then kadal-theme-seriph, then a package of that name), a folder (`./theme`), or a class your own CSS defines (.theme-<name>). The Vite plugin imports a package's CSS and module for you; `kadal-deck theme eject` copies it into the deck.",
   colorScheme: '"auto" (follow the system), "light" or "dark".',
   pdfSeparateFragments: "A page per click step in print/PDF.",
-  pdfMaxPagesPerSlide: "Pages a tall slide may spill onto.",
-  jumpToSlide: "`:12` / g jumps.",
+  pdfMaxPagesPerSlide:
+    "reveal.js compatible: how many printed/PDF pages a slide taller than one may run onto (default 1: one page each, autoFit shrinking what overflows). Its print page grows by whole page heights and breaks across them; past the limit autoFit shrinks the rest.",
+  jumpToSlide:
+    "`:12` / g jumps: a slide number, a column and row (`6/2` or `6.2`, reveal.js's forms) or an id.",
   search: "/ searches the deck.",
   zoom: "Alt+click zooms into a point; Esc zooms back out.",
   wakeLock: "Keep the screen awake while presenting.",
   selectable: "Text can be selected.",
-  lineNumbers: "Line numbers on every code block.",
+  lineNumbers:
+    "Line numbers on every code block (and magic move) that does not set its own `{lines: …}`; `{lines:false}` opts one out.",
   magicMoveDuration: "Milliseconds per magic-move morph.",
   monacoTypes:
     'Types for the packages `{monaco}` editors import, so hovers and errors are real: "auto" (the deck\'s installed declarations, bundled into the build; anything else from jsDelivr), "local", "cdn" or "none". Fetched types are cached in the browser; offline with nothing cached the editor works as before. `monacoTypesSource` (local · cdn/ata · none) is read too.',
@@ -1170,7 +1188,8 @@ export const SLIDE_KEYS = [
   {
     name: "visibility",
     type: E("hidden", "uncounted"),
-    description: '"hidden" leaves it out; "uncounted" shows it without a number.',
+    description:
+      '"hidden" leaves it out; "uncounted" shows it but leaves it out of the slide number, the total and the progress bar (an appendix after the end, reveal.js\'s data-visibility).',
   },
   { name: "hideInToc", type: B(), description: "Keep the slide out of <Toc>." },
   {
@@ -1263,7 +1282,12 @@ export const SLIDE_KEYS = [
   },
   { name: "backgroundColor", type: S(), description: "A flat background colour." },
   { name: "backgroundGradient", type: S(), description: "A CSS gradient behind the slide." },
-  { name: "backgroundImage", type: S(), description: "An image URL behind the slide." },
+  {
+    name: "backgroundImage",
+    type: S(),
+    description:
+      "An image URL behind the slide. An animated GIF starts again from its first frame each time the slide is shown.",
+  },
   {
     name: "backgroundSize",
     type: S(),
@@ -1272,7 +1296,12 @@ export const SLIDE_KEYS = [
   { name: "backgroundPosition", type: S(), description: "CSS background-position." },
   { name: "backgroundRepeat", type: S(), description: "CSS background-repeat." },
   { name: "backgroundOpacity", type: N(), description: "0–1." },
-  { name: "backgroundVideo", type: S(), description: "A video URL behind the slide." },
+  {
+    name: "backgroundVideo",
+    type: S(),
+    description:
+      "A video URL behind the slide, or reveal.js's comma-separated list of sources, best first (`/loop.webm, /loop.mp4`). It plays from the start when the slide is shown (unless `autoPlayMedia: false`) and pauses when the slide is left.",
+  },
   {
     name: "backgroundVideoLoop",
     type: B(),
@@ -1283,7 +1312,12 @@ export const SLIDE_KEYS = [
     type: B(),
     description: "Mute the background video (default true).",
   },
-  { name: "backgroundIframe", type: S(), description: "A page (iframe URL) behind the slide." },
+  {
+    name: "backgroundIframe",
+    type: S(),
+    description:
+      "A page (iframe URL) behind the slide. It hears `slide:start` and `slide:stop` as its slide is shown and left; a YouTube or Vimeo player plays and pauses (unless `autoPlayMedia: false`).",
+  },
   { name: "backgroundInteractive", type: B(), description: "Let the background page take input." },
   {
     name: "image",

@@ -1,5 +1,5 @@
+import { flatIndex } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
-import * as N from "../core/navigation.ts";
 import { createStore, type Store } from "../core/store.ts";
 import type { TimerState } from "../core/timer.ts";
 import type { DeckRuntime } from "./context.ts";
@@ -53,7 +53,8 @@ export function expectedElapsed(
   at: { h: number; v: number },
 ): number | null {
   const total = deck.columns.reduce((n, c) => n + c.slides.length, 0);
-  const flat = N.progressOf({ ...N.initialNav(), h: at.h, v: at.v }, deck.columns) * (total - 1);
+  // Every slide in reading order: the plan spends time on the uncounted ones too.
+  const flat = flatIndex(deck.columns, at.h, at.v);
   // `totalTime` (reveal.js) or `duration` (Slidev): the length spread evenly over the slides.
   const length = deck.config.totalTime ?? deck.config.duration;
   if (length) return (length / total) * flat;

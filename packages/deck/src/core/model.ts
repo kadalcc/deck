@@ -299,7 +299,11 @@ export interface DeckConfig {
   minScale: number;
   maxScale: number;
   disableLayout: boolean;
-  /** Vertically centre each slide's content. */
+  /**
+   * Vertically centre the content of slides on the default layout, as reveal.js does. False by
+   * default (Kadal's slides start at the top); `kadal-deck import reveal` writes true. The other
+   * layouts place their content themselves.
+   */
   center: boolean;
   controls: boolean | "speaker";
   controlsLayout: "bottom-right" | "edges";
@@ -375,7 +379,7 @@ export interface DeckConfig {
    * The themes the deck ships besides `theme`, first in its theme menu and in this order:
    * built-ins, packages or folders, resolved like `theme` (the Vite plugin imports their CSS), or
    * classes main.tsx's CSS defines. The menu then offers every first-party theme not listed
-   * (sixteen in all), each loaded only when picked; a list orders the menu, it does not narrow it.
+   * (seventeen in all), each loaded only when picked; a list orders the menu, it does not narrow it.
    */
   themes: string[];
   colorScheme: ColorScheme;
@@ -559,7 +563,7 @@ export const DEFAULT_CONFIG: DeckConfig = {
   minScale: 0.2,
   maxScale: 2,
   disableLayout: false,
-  center: true,
+  center: false,
   controls: true,
   controlsLayout: "bottom-right",
   controlsTutorial: true,

@@ -3,7 +3,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { splitTransition } from "../core/model.ts";
 import { key as navKey } from "../core/navigation.ts";
 import { isKnownTransition, transitionAnimation } from "../core/transitions.ts";
-import { animateFrom, snapshot, type Snapshot } from "./AutoAnimate.ts";
+import {
+  type AutoAnimatePlan,
+  autoAnimateTiming,
+  canAutoAnimate,
+  prepareAutoAnimate,
+  resetAutoAnimate,
+  runAutoAnimate,
+} from "./AutoAnimate.ts";
 import { transitionMs } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
 import { useLayout, useNav } from "./hooks.ts";
@@ -45,9 +52,28 @@ export function Stage() {
    * a recompiled deck on the slide being edited — keyed on `seq === 0` instead, every keystroke
    * slid the slide in again, and so did the first click on a slide opened from a hash.
    */
-  const arrival = useRef({ h, v, seq, direction, mounted: true });
-  if (arrival.current.h !== h || arrival.current.v !== v)
-    arrival.current = { h, v, seq, direction, mounted: false };
+  const arrival = useRef({ h, v, seq, direction, mounted: true, auto: false });
+  if (arrival.current.h !== h || arrival.current.v !== v) {
+    /*
+     * Whether this slide was reached by auto-animate is settled on arrival and held for its whole
+     * stay, as the cut is. It used to be read off the leaving slide, which is dropped a frame
+     * after an auto-animate (it has no way out to play): the stage's transition then switched
+     * back on and the arriving slide slid in under its own morph.
+     */
+    const from = arrival.current;
+    arrival.current = {
+      h,
+      v,
+      seq,
+      direction,
+      mounted: false,
+      auto: canAutoAnimate(
+        { h: from.h, v: from.v, options: deck.options.get(navKey(from.h, from.v)) ?? null },
+        { h, v, options: deck.options.get(navKey(h, v)) ?? null },
+        deck.config.autoAnimate,
+      ),
+    };
+  }
   const slideDirection = arrival.current.direction;
   const arriving = arrival.current.seq === seq;
   // The slide just left keeps the click it was showing while it animates out — rendering it at
@@ -60,7 +86,7 @@ export function Stage() {
   } | null>(null);
   const lastPos = useRef({ h, v });
   const lastClick = useRef(click);
-  const autoSnap = useRef<Map<string, Snapshot> | null>(null);
+  const autoSnap = useRef<AutoAnimatePlan | null>(null);
   const lastOptions = useRef(deck.options.get(navKey(h, v)) ?? null);
 
   const current = deck.options.get(navKey(h, v)) ?? null;
@@ -89,13 +115,22 @@ export function Stage() {
     const prevEl = stageRef.current?.querySelector<HTMLElement>(
       `.deck-slide[data-h="${prev.h}"][data-v="${prev.v}"]`,
     );
-    const canAuto =
-      deck.config.autoAnimate &&
-      prevOptions?.autoAnimate &&
-      current?.autoAnimate &&
-      (prevOptions.autoAnimateId ?? null) === (current.autoAnimateId ?? null) &&
-      Math.abs(prev.h - h) + Math.abs(prev.v - v) === 1;
-    autoSnap.current = canAuto && prevEl ? snapshot(prevEl) : null;
+    const canAuto = canAutoAnimate(
+      { ...prev, options: prevOptions },
+      { h, v, options: current },
+      deck.config.autoAnimate,
+    );
+    if (stageRef.current) resetAutoAnimate(stageRef.current);
+    const nextEl = stageRef.current?.querySelector<HTMLElement>(
+      `.deck-slide[data-h="${h}"][data-v="${v}"]`,
+    );
+    autoSnap.current =
+      canAuto && prevEl
+        ? prepareAutoAnimate(prevEl, nextEl ?? null, {
+            styles: deck.config.autoAnimateStyles,
+            matcher: deck.config.autoAnimateMatcher,
+          })
+        : null;
     setLeaving({ h: prev.h, v: prev.v, seq, click: leavingClick });
     lastPos.current = { h, v };
     lastOptions.current = current;
@@ -142,10 +177,9 @@ export function Stage() {
     );
     if (!el) return;
     const frame = requestAnimationFrame(() => {
-      animateFrom(snap, el, {
-        duration: current?.autoAnimate ? deck.config.autoAnimateDuration : 0,
-        easing: deck.config.autoAnimateEasing,
-        unmatched: deck.config.autoAnimateUnmatched,
+      runAutoAnimate(snap, el, {
+        ...autoAnimateTiming(current, deck.config),
+        styles: deck.config.autoAnimateStyles,
         scale: layout.scale,
       });
     });
@@ -180,7 +214,8 @@ export function Stage() {
     });
   });
 
-  const autoAnimating = !!leaving && autoSnapWas(leaving, current);
+  // Auto-animating slides cut between each other, so only their elements move.
+  const autoAnimating = arrival.current.auto;
   const cut = arrival.current.mounted;
   // A named custom transition's keyframes for this direction (none for built-ins and pure CSS).
   const customIn = transitionAnimation(transition, "in", slideDirection, deck.config.transitions);
@@ -257,11 +292,4 @@ function warnUnknown(name: string) {
   console.warn(
     `[deck] transition "${name}" has no animation, so it is a cut. Name its keyframes in the headmatter (transitions: { ${name}: { in: …, out: … } }) or style .deck-stage[data-transition="${name}"].`,
   );
-}
-
-function autoSnapWas(
-  _leaving: { h: number; v: number },
-  current: { autoAnimate: boolean } | null,
-): boolean {
-  return !!current?.autoAnimate;
 }
