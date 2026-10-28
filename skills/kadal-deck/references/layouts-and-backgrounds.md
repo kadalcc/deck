@@ -220,7 +220,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `rtl` | `boolean` | `false` | Right-to-left. |
 | `navigationMode` | `NavigationMode` | `"default"` | "default", "linear" (arrows walk every slide) or "grid" (columns stay aligned). Values: `grid` `default` `linear` |
 | `shuffle` | `boolean` | `false` | Shuffle the slides on load. |
-| `fragments` | `boolean` | `true` | Clicks/fragments on; off shows every step at once. |
+| `fragments` | `boolean` | `true` | Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide. |
 | `fragmentInURL` | `boolean` | `true` | Include the click step in the hash. |
 | `embedded` | `boolean` | `false` | The deck lives inside another page. |
 | `postMessage` | `boolean` | `true` | reveal.js compatible: a page that frames the deck can drive it with reveal's postMessage calls (`{ method, args }`). Default true. |

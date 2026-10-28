@@ -271,8 +271,9 @@ Shows together with the previous click instead of taking a step of its own.
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `hide` | `boolean` |  | Start visible and hide at the step instead. |
-| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects) or any CSS class the theme defines. |
+| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes. |
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
+| `autoSlide` | `number` |  | Milliseconds auto-slide waits on this step before the next, over the slide's `autoSlide` (reveal.js's `data-autoslide` on a fragment). |
 | `children` | `ReactNode` |  | What is revealed. |
 
 #### `<Case>`
@@ -305,8 +306,9 @@ One click step: shows its children from its step on, or hides them with `hide`.
 | --- | --- | --- | --- |
 | `at` | `ClickAt` |  | When: omitted = one after the previous step; "+N" relative ("+0" shares the previous step); a number is absolute (0 = always shown); [from, to] shows it from `from` until `to`. |
 | `hide` | `boolean` |  | Start visible and hide at the step instead. |
-| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects) or any CSS class the theme defines. |
+| `effect` | `ClickEffect` | `"fade-in"` | A reveal effect (see clickEffects), or any name of your own: it becomes the class `effect-<name>` over the default fade; `custom` has no fade at all. The step also wears reveal's `fragment`, `visible` and `current-fragment` classes. |
 | `as` | `ElementType` |  | The element to render; a `span` for inline text, `div` by default. |
+| `autoSlide` | `number` |  | Milliseconds auto-slide waits on this step before the next, over the slide's `autoSlide` (reveal.js's `data-autoslide` on a fragment). |
 | `children` | `ReactNode` |  | What is revealed. |
 
 #### `<ClickCount>`
@@ -1580,6 +1582,7 @@ First-party theme packages (`theme: <name>` with nothing to install: @kadal/deck
 - `highlight-current-green` — Green only during its own step.
 - `highlight-current-blue` — Blue only during its own step.
 - `blur` — Start blurred, come into focus.
+- `custom` — No built-in look: your CSS on `.effect-custom.visible` (or reveal's `.fragment.custom.visible`) decides. A `custom` class does the same.
 
 ## Click timing (`at`)
 
@@ -1769,7 +1772,7 @@ The YAML block at the very top of deck.mdx. It configures the deck and is also t
 | `rtl` | `boolean` | `false` | Right-to-left. |
 | `navigationMode` | `NavigationMode` | `"default"` | "default", "linear" (arrows walk every slide) or "grid" (columns stay aligned). Values: `grid` `default` `linear` |
 | `shuffle` | `boolean` | `false` | Shuffle the slides on load. |
-| `fragments` | `boolean` | `true` | Clicks/fragments on; off shows every step at once. |
+| `fragments` | `boolean` | `true` | Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide. |
 | `fragmentInURL` | `boolean` | `true` | Include the click step in the hash. |
 | `embedded` | `boolean` | `false` | The deck lives inside another page. |
 | `postMessage` | `boolean` | `true` | reveal.js compatible: a page that frames the deck can drive it with reveal's postMessage calls (`{ method, args }`). Default true. |

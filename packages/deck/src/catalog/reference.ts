@@ -467,6 +467,8 @@ export const CLICK_EFFECT_META: Record<string, string> = {
   "highlight-current-green": "Green only during its own step.",
   "highlight-current-blue": "Blue only during its own step.",
   blur: "Start blurred, come into focus.",
+  custom:
+    "No built-in look: your CSS on `.effect-custom.visible` (or reveal's `.fragment.custom.visible`) decides. A `custom` class does the same.",
 };
 
 export const CLICK_AT: NamedInfo[] = [
@@ -996,7 +998,8 @@ export const DECK_KEY_DOCS: Record<string, string> = {
   rtl: "Right-to-left.",
   navigationMode: '"default", "linear" (arrows walk every slide) or "grid" (columns stay aligned).',
   shuffle: "Shuffle the slides on load.",
-  fragments: "Clicks/fragments on; off shows every step at once.",
+  fragments:
+    "Clicks/fragments on. false: every slide is drawn at its last step and a press goes straight to the next slide.",
   fragmentInURL: "Include the click step in the hash.",
   embedded: "The deck lives inside another page.",
   postMessage:

@@ -181,7 +181,7 @@ Markdown, with these on top:
 
 | What | How |
 | --- | --- |
-| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` |
+| Steps (fragments / clicks) | `<Click>…</Click>`, `<After>`, `<Clicks>` around a list; `at={3}`, `at="+2"`, `at={[2,5]}`, `hide`, `effect="fade-up"` (or a name of your own; `custom` has no default fade), `autoSlide={2000}` for that step; steps wear reveal's `fragment` / `visible` / `current-fragment` classes too; `fragments: false` shows every step at once |
 | Code that steps | ```` ```ts {1\|3-5\|all} {lines:true} [title.ts] ```` |
 | Magic move | ````` ````md magic-move ````` holding one fence per step; an inner fence's highlight steps (```` ```ts {*\|2\|4-5} ````) are clicks too, before the next morph |
 | Code marks | `// [!code ++]`, `[!code --]`, `[!code highlight]`, `[!code focus]`, `[!code error]` / `warning`, `[!code word:x]` at a line's end (Shiki's notation transformers); add your own with `deck({ shiki: { transformers } })` |

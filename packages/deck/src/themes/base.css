@@ -892,6 +892,12 @@ body {
 .deck-click.effect-blur.is-shown {
   filter: none;
 }
+/* `custom` (reveal.js's `.fragment.custom`): no default fade, so the deck's own CSS on
+   `.visible` / `.is-shown` alone decides how the step looks. */
+.deck-click.effect-custom.is-hidden {
+  opacity: unset;
+  pointer-events: unset;
+}
 /* In the overview, and in print with one page per slide (`pdfSeparateFragments: false`),
    everything is shown: a thumbnail of a slide is of the whole slide. Print with a page per step
    shows each step as it is — revealing everything there printed every step's page identical.
