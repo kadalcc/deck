@@ -14,7 +14,7 @@ with its layout names and frontmatter, so a Slidev deck moves over unchanged.
   <img src="https://deck.kadal.cc/themes/crisp-dark-2.webp" alt="Crisp: a content slide, dark" width="49%">
 </p>
 
-[All 16 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-crisp)
+[All 17 themes](https://deck.kadal.cc/themes/) · [Themes and backgrounds](https://deck.kadal.cc/docs/themes-and-backgrounds/) · [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/) · [Source](https://github.com/kadalcc/deck/tree/main/packages/theme-crisp)
 
 @kadal/deck ships this theme, so `theme: crisp` works with nothing else installed. Install the
 package only to give the deck a copy of its own, at a version you pick:

@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { tallySlides } from "./import.ts";
 import { EXIT, main } from "./index.ts";
 
 const work = mkdtempSync(join(tmpdir(), "kadal-deck-import-"));
@@ -115,6 +116,42 @@ describe("kadal-deck import slidev", () => {
     expect(forced.code).toBe(EXIT.ok);
     expect(readFileSync(join(out, "notes.txt"), "utf8")).toBe("mine");
     expect(existsSync(join(out, "deck.mdx"))).toBe(true);
+  });
+
+  test("the summary counts every problem: the whole deck's, the check's, a missing file", async () => {
+    // Slide 1 converts cleanly but names a class with no CSS (a warning for the whole deck);
+    // slide 2 shows an image that is not there (the check's error, not a package to install).
+    const src = join(work, "honest");
+    mkdirSync(src, { recursive: true });
+    writeFileSync(
+      join(src, "slides.md"),
+      '---\ntheme: default\n---\n\n# One\n\n<div class="zork-blah">hi</div>\n\n---\n\n# Two\n\n![logo](/missing.png)\n',
+    );
+    const r = await cli(["import", "slidev", "honest"]);
+    expect(r.code).toBe(1);
+    expect(r.stdout).toContain(
+      "2 slides, 1 (50%) with nothing to report; 1 problem for the whole deck (below).",
+    );
+    expect(r.stdout).toContain("check: 1 errors");
+    expect(r.stdout).toContain('"/missing.png" not found');
+    expect(r.stdout).not.toContain("to install");
+    expect(readFileSync(join(work, "honest-kadal", "IMPORT-REPORT.md"), "utf8")).toContain(
+      "- Slides: 2 — 2 (100%) converted with no warning or error; 1 problem for the whole deck.",
+    );
+  });
+
+  test("tallySlides: a slide is clean when nothing landed on it; 100% means no problem", () => {
+    const warn = (slide: number | null) => ({ severity: "warning", slide });
+    expect(tallySlides(3, [], []).line).toBe("3 slides, 3 (100%) with nothing to report.");
+    // the check counts slides from 0; a slide flagged twice counts once
+    expect(tallySlides(3, [warn(2)], [{ slide: 1 }, { slide: 2 }])).toMatchObject({
+      clean: 1,
+      wholeDeck: 0,
+    });
+    expect(tallySlides(3, [warn(null), { severity: "info", slide: 1 }], [{}]).line).toBe(
+      "3 slides, 3 (100%) with nothing to report; 2 problems for the whole deck (below).",
+    );
+    expect(tallySlides(200, [warn(7)], []).line).toStartWith("200 slides, 199 (99%)");
   });
 
   test("usage errors", async () => {

@@ -182,6 +182,27 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       "Children on top of each other in one spot — combine with clicks to swap images in place.",
     example: `<Stack>\n<Click at={[1, 2]}>![](/v1.png)</Click>\n<Click at={2}>![](/v2.png)</Click>\n</Stack>`,
   },
+  HStack: {
+    category: "layout",
+    summary:
+      "Children in a row, centred both ways (reveal.js's `r-hstack`); images inside shrink to fit.",
+    example: `<HStack gap="2rem">\n  <img src="/a.png" />\n  <img src="/b.png" />\n</HStack>`,
+    props: {
+      gap: "CSS gap.",
+      align: "align-items (center by default).",
+      justify: "justify-content (center by default).",
+    },
+  },
+  VStack: {
+    category: "layout",
+    summary: "Children in a column, centred both ways (reveal.js's `r-vstack`).",
+    example: `<VStack gap="1rem">\n\n## Title\n\n![](/chart.png)\n\n</VStack>`,
+    props: {
+      gap: "CSS gap.",
+      align: "align-items (center by default).",
+      justify: "justify-content (center by default).",
+    },
+  },
   Stretch: {
     category: "layout",
     summary: "Grows to fill the slide's remaining height (an image under a heading).",

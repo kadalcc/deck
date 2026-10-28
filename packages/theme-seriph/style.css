@@ -221,6 +221,8 @@
   font-size: calc(var(--seriph-rem) * 0.75);
   padding: calc(var(--seriph-rem) * 0.5);
   border-bottom-color: var(--deck-border);
+  /* the muted grey alone is 4.35:1 on the code panel; a fifth of the code's ink clears 4.5 */
+  color: color-mix(in srgb, var(--deck-muted) 80%, var(--deck-code-fg));
 }
 
 /* ── the layouts ──────────────────────────────────────────────────────── */

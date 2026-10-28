@@ -86,6 +86,52 @@ jobs:
       - name: The prebuilt shell compiles a deck in the browser, published and as a preview
         run: node tools/shell-check.mjs
 
+  # The narration bar and the phone remote, end to end in a headless browser. Not among the
+  # required checks: they drive timers and sockets, so a red one here is a reason to look rather
+  # than a merge block. They used to run only by hand, which is how narration-check went stale.
+  narration:
+    name: narration · the bar and autoplay in a browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          build: true
+          playwright: true
+      - name: Narration in the built showcase (silent engine)
+        run: node tools/narration-check.mjs
+
+  remote:
+    name: remote · ${{ matrix.path }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # `kadal-deck dev`'s relay
+          - path: dev relay
+            args: ""
+          # a build on a plain static host, through `kadal-deck relay`
+          - path: static host
+            args: "--static"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          build: true
+          playwright: true
+      - name: The phone remote, ${{ matrix.path }}
+        run: node tools/remote-check.mjs ${{ matrix.args }} --out "$RUNNER_TEMP/remote-check"
+      - name: The phone's screenshots, for looking at
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-check-${{ matrix.args == '' && 'dev' || 'static' }}
+          path: ${{ runner.temp }}/remote-check
+          retention-days: 7
+
   showcase:
     name: showcase · ${{ matrix.shard }}
     runs-on: ubuntu-latest

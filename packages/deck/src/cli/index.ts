@@ -51,7 +51,13 @@ import {
   saveCredentials,
 } from "./host.ts";
 import { NoDeckError } from "./project.ts";
-import { MissingDependencyError, keepStdoutClean, runVite } from "./vite.ts";
+import {
+  MissingDependencyError,
+  VITE_BUILD_FLAGS,
+  VITE_DEV_FLAGS,
+  keepStdoutClean,
+  runVite,
+} from "./vite.ts";
 
 export const EXIT = {
   ok: 0,
@@ -76,12 +82,14 @@ export const HELP = `kadal-deck <command> [options]
               vertical stacks), fragments, backgrounds, notes, code and data-markdown sections
               --out <dir> (default <folder>-kadal)  --force (write into a folder that is not empty)
               --install [--pm npm|pnpm|yarn|bun]  install its packages afterwards
-  dev         run the deck locally with live reload (Vite flags pass through)
+  dev         run the deck locally with live reload
               --host  reachable on your network (the phone remote)   --https  self-signed, for motion sensors
               --tunnel  on the internet through a Cloudflare Quick Tunnel (needs cloudflared): an
               https address and QR in the terminal, used by the phone remote; always password-guarded
               --remote [password]  on your network; with a password, the presenter, notes and
               editing ask for it from any other device (and over the tunnel)
+              Vite's own: --port <n> --strictPort --open [path] --cors --force --base <path>
+              --mode <m> --config <file> --logLevel <level> --clearScreen --debug [feat]
   build       build the deck into dist/ (any static host can serve it)   [deck files…]
               a.mdx b.mdx  several decks: dist/a/, dist/b/ and a page listing them
               --base /talks/x/  where it will be served   --out <dir>  where it goes (--outDir)
@@ -90,6 +98,8 @@ export const HELP = `kadal-deck <command> [options]
               --bundle-remote-assets  download remote images and fonts into the build
               --download  also print it to dist/deck.pdf for the deck's Download button
               (\`download: true\` in the deck does the same; --no-download skips it)
+              Vite's own: --outDir <dir> --emptyOutDir --sourcemap [inline|hidden] --minify [m]
+              --target <t> --assetsDir <dir> --mode <m> --config <file> --logLevel <level> --watch
   serve       serve a built deck as a static host would   [folder, default dist]
               --port <n> (4173)  --host <addr> (127.0.0.1; 0.0.0.0 for a container)  --base <path>
   relay       the phone remote for a build on a static host: a WebSocket relay its presenter view
@@ -167,6 +177,19 @@ Global: --dir <path> (-C) runs in another folder · --json prints one JSON objec
 (publish: the published deck moved since your last sync), 5 unresolved merge conflicts.
 
 Docs: https://deck.kadal.cc/docs/`;
+
+const hasHelp = (command: string) => HELP.includes(`\n  ${command} `);
+
+/** One command's part of HELP, with the global options: what `<command> --help` prints. */
+export function commandHelp(command: string): string {
+  const lines = HELP.split("\n");
+  const start = lines.findIndex((l) => l.startsWith(`  ${command} `));
+  if (start < 0) return HELP;
+  let end = start + 1;
+  // A command's own lines are indented past the two spaces each command name starts at.
+  while (end < lines.length && /^ {3,}\S/.test(lines[end]!)) end++;
+  return `kadal-deck ${command} [options]\n\n${lines.slice(start, end).join("\n")}\n\n${HELP.slice(HELP.indexOf("Global:"))}`;
+}
 
 interface Me {
   user: { email?: string; name?: string };
@@ -378,7 +401,7 @@ export async function main(argv: string[], cwd: string = process.cwd()): Promise
       });
     else
       console.error(
-        `error: ${message}${code === EXIT.usage ? "\n\nRun `kadal-deck help` for usage." : ""}`,
+        `error: ${message}${code === EXIT.usage ? `\n\nRun \`kadal-deck ${command && hasHelp(command) ? `${command} ` : ""}--help\` for usage.` : ""}`,
       );
     return code;
   }
@@ -399,21 +422,21 @@ async function run(
   const { json, say, emit } = io;
   switch (command) {
     case "dev": {
-      // Vite's own flags pass straight through; these are ours.
+      // Vite's own flags are checked, then handed to Vite as written (in `vite`).
       const {
         flags,
         rest: vite,
         positionals,
-      } = parseArgs(
-        rest,
-        {
-          dir: GLOBAL.dir!,
-          json: GLOBAL.json!,
-          tunnel: { kind: "boolean" },
-          remote: { kind: "optional-string" },
-        },
-        { passthrough: true },
-      );
+      } = parseArgs(rest, {
+        ...VITE_DEV_FLAGS,
+        ...GLOBAL,
+        tunnel: { kind: "boolean" },
+        remote: { kind: "optional-string" },
+      });
+      if (flags.help) {
+        say(commandHelp("dev"));
+        return EXIT.ok;
+      }
       const dir = resolve(cwd, str(flags.dir) ?? ".");
       // `dev --https`: Vite dropped its own flag, so the deck's plugin makes a certificate
       // (vite/https.ts) — a phone remote needs a secure context for its motion sensors.
@@ -437,25 +460,25 @@ async function run(
       return EXIT.ok;
     }
     case "build": {
-      // Vite's own flags pass straight through (--base, --outDir, --mode…); these are ours.
+      // Vite's own flags (--base, --outDir, --mode…) are checked, then handed to Vite as written.
       const {
         flags,
         rest: vite,
         positionals,
-      } = parseArgs(
-        rest,
-        {
-          dir: GLOBAL.dir!,
-          json: GLOBAL.json!,
-          download: { kind: "boolean" },
-          port: { kind: "number" },
-          out: { kind: "string" },
-          "without-notes": { kind: "boolean" },
-          pwa: { kind: "boolean" },
-          "bundle-remote-assets": { kind: "boolean" },
-        },
-        { passthrough: true },
-      );
+      } = parseArgs(rest, {
+        ...VITE_BUILD_FLAGS,
+        ...GLOBAL,
+        download: { kind: "boolean" },
+        port: { kind: "number" },
+        out: { kind: "string" },
+        "without-notes": { kind: "boolean" },
+        pwa: { kind: "boolean" },
+        "bundle-remote-assets": { kind: "boolean" },
+      });
+      if (flags.help) {
+        say(commandHelp("build"));
+        return EXIT.ok;
+      }
       const dir = resolve(cwd, str(flags.dir) ?? ".");
       // The deck's plugin reads these (vite/index.ts, vite/site.ts).
       if (flags["without-notes"] === true) process.env.KADAL_DECK_WITHOUT_NOTES = "1";
@@ -490,7 +513,8 @@ async function run(
     case "help":
     case "--help":
     case "-h":
-      say(HELP);
+      // `help <command>` is that command's part.
+      say(rest[0] && !rest[0].startsWith("-") ? commandHelp(rest[0]) : HELP);
       return EXIT.ok;
     case "--version":
     case "-v":
@@ -506,7 +530,7 @@ async function run(
       const { EXPORT_FLAGS, joinSwitchValues, runExport } = await import("../export/run.ts");
       const { flags } = parseArgs(joinSwitchValues(rest), { ...GLOBAL, ...EXPORT_FLAGS });
       if (flags.help) {
-        say(HELP);
+        say(commandHelp("export"));
         return EXIT.ok;
       }
       const dir = resolve(cwd, str(flags.dir) ?? ".");
@@ -529,7 +553,7 @@ async function run(
   if (!specs) throw new UsageError(`Unknown command: ${command}`);
   const { flags, positionals } = parseArgs(rest, { ...GLOBAL, ...specs });
   if (flags.help) {
-    say(HELP);
+    say(commandHelp(command));
     return EXIT.ok;
   }
   const dir = resolve(cwd, str(flags.dir) ?? ".");
@@ -930,7 +954,7 @@ async function themeCommand(rest: string[], cwd: string, { json, say, emit }: Io
   });
   const sub = positionals[0];
   if (flags.help || !sub) {
-    say(HELP);
+    say(commandHelp("theme"));
     return flags.help ? EXIT.ok : EXIT.usage;
   }
   if (sub !== "eject")
