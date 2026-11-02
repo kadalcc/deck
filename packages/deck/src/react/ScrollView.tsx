@@ -160,6 +160,7 @@ export function ScrollView() {
         styles: deck.config.autoAnimateStyles,
         scale,
         inPlace: true,
+        events: { bus: deck.events, indexh: to.h, indexv: to.v },
       });
     });
     return () => cancelAnimationFrame(frame);

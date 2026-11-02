@@ -37,6 +37,7 @@ export function stateChange(
  *   ready              the deck is up                    { indexh, indexv, indexf, currentSlide }
  *   slidechanged       another slide is on show          { indexh, indexv, indexf, previousSlide, currentSlide }
  *   slidetransitionend its transition has finished       { indexh, indexv, currentSlide }
+ *   autoanimate        an Auto-Animate morph has started { indexh, indexv, fromSlide, toSlide, animations }
  *   fragmentshown      a click step came in              { indexf, fragment, fragments }
  *   fragmenthidden     a click step went back            { indexf, fragment, fragments }
  *   overviewshown / overviewhidden, paused / resumed, autoslidepaused / autoslideresumed

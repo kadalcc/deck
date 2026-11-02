@@ -193,3 +193,42 @@ describe("autoAnimateMatcher and the state attributes", () => {
     expect(b.dataset.autoAnimateTarget).toBeUndefined();
   });
 });
+
+describe("the autoanimate event", () => {
+  test("goes out as the morph starts, with both slides, where it lands, and its animations", () => {
+    const a = fake("a", 10);
+    const b = fake("b", 300);
+    const from = fake("from", 0, [a]);
+    const to = fake("to", 0, [b]);
+    const plan = prepareAutoAnimate(asDom(from), asDom(to), {
+      styles: ["opacity"],
+      matcher: () => [{ from: asDom(a), to: asDom(b) }],
+    });
+    const heard: Array<{ type: string; data?: Record<string, unknown>; state?: string }> = [];
+    const bus = {
+      emit: (type: string, data?: Record<string, unknown>) =>
+        heard.push({ type, data, state: to.dataset.autoAnimate }),
+    };
+    // Preparing is not a morph yet: reveal tells only once it runs.
+    expect(heard).toEqual([]);
+    const animations = runAutoAnimate(plan, asDom(to), {
+      duration: 1,
+      easing: "ease",
+      unmatched: true,
+      scale: 1,
+      events: { bus, indexh: 3, indexv: 1 },
+    });
+    expect(heard).toHaveLength(1);
+    expect(heard[0]!.type).toBe("autoanimate");
+    expect(heard[0]!.data).toEqual({
+      fromSlide: asDom(from),
+      toSlide: asDom(to),
+      indexh: 3,
+      indexv: 1,
+      animations,
+    });
+    expect(animations).toHaveLength(1);
+    // By the time it is heard the arriving slide is running, as reveal's is.
+    expect(heard[0]!.state).toBe("running");
+  });
+});
