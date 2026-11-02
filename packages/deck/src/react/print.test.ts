@@ -120,6 +120,21 @@ describe("the print view reads the totals already reported", () => {
     expect(numbers({})).toEqual([]);
     expect(numbers({ slideNumber: true, showSlideNumber: "speaker" })).toEqual([]);
   });
+
+  // The number sits beside the slide, not in it: a dark slide in a light deck left it light grey.
+  test("a page's number takes its slide's forced scheme, with the theme's class", () => {
+    const config = resolveConfig({ slideNumber: "c" });
+    const d = deck({ "0,0": 0, "1,0": 0 }, config);
+    d.options.set("1,0", resolveSlideOptions({ colorScheme: "dark" }, config, false));
+    const html = renderToStaticMarkup(
+      createElement(DeckContext.Provider, { value: d }, createElement(PrintView, { options: {} })),
+    );
+    const tags = [...html.matchAll(/<div class="deck-slide-number deck-print-slide-number[^>]*>/g)];
+    expect(tags.map((m) => m[0])).toEqual([
+      '<div class="deck-slide-number deck-print-slide-number">',
+      '<div class="deck-slide-number deck-print-slide-number theme-classic" data-color-scheme="dark">',
+    ]);
+  });
 });
 
 describe("pdfMaxPagesPerSlide: how many pages a slide spills onto", () => {
