@@ -2,12 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { renderToString as renderKatex } from "katex";
 import YAML from "yaml";
 
+import { katexOptions } from "../compiler/setup.ts";
 import { cutDeck } from "../compiler/split.ts";
 import { compileDeck } from "../runtime/compile.ts";
 import { convertReveal, formatImportReport } from "./index.ts";
-import { revealConfig } from "./reveal.ts";
+import { jsLiteral, NOT_PLAIN, revealConfig } from "./reveal.ts";
 
 const page = (slides: string, head = "", script = "") =>
   `<!doctype html><html><head><title>T</title>${head}</head><body><div class="reveal"><div class="slides">${slides}</div></div>${script}</body></html>`;
@@ -222,6 +224,92 @@ describe("sections", () => {
     expect(c.found).toBe(true);
     expect(c.values).toEqual({ controls: false, margin: 0.04, view: "scroll" });
     expect(c.skipped).toEqual(["dependencies"]);
+  });
+});
+
+describe("maths written for MathJax", () => {
+  const mathjax = (options: string, slide = "<section><p>\\(\\RR\\)</p></section>") =>
+    convertReveal(page(slide, "", `<script>Reveal.initialize({ ${options} });</script>`));
+
+  test("jsLiteral reads nested literals as text, undoing escapes, and steps over functions", () => {
+    expect(
+      jsLiteral(
+        `{ tex: { macros: { RR: "\\\\mathbb{R}", bold: ['{\\\\bf #1}', 1], n: -1.5e2 }, ok: true, x: null }, startup: { ready: () => { go(1, 2); } }, f() { return [1]; }, }`,
+      ),
+    ).toEqual({
+      tex: { macros: { RR: "\\mathbb{R}", bold: ["{\\bf #1}", 1], n: -150 }, ok: true, x: null },
+      startup: { ready: NOT_PLAIN },
+      f: NOT_PLAIN,
+    });
+    expect(jsLiteral("{ ...other }")).toBe(NOT_PLAIN);
+    expect(jsLiteral("{ a: 1 } trailing")).toBe(NOT_PLAIN);
+  });
+
+  test("MathJax 3 and 4's tex.macros become katex.macros, named with their backslash", () => {
+    for (const plugin of ["mathjax3", "mathjax4"]) {
+      const r = mathjax(
+        `${plugin}: { mathjax: 'x.js', loader: { load: ['[tex]/physics'] }, tex: { packages: { '[+]': ['physics'] }, macros: { RR: "\\\\mathbb{R}", bold: ["{\\\\bf #1}", 1] } }, startup: { ready() {} } }`,
+      );
+      expect(slides(r.mdx)[0]!.fm.katex).toEqual({
+        macros: { "\\RR": "\\mathbb{R}", "\\bold": "{\\bf #1}" },
+      });
+      const n = plugin.slice(-1);
+      expect(what(r)).toContain(
+        `info: reveal's MathJax ${n} maths renders with KaTeX at build time; its 2 macros carried over to \`katex.macros\`. MathJax's own \`loader\`, \`startup\`, \`tex.packages\` are not carried.`,
+      );
+      expect(what(r)).not.toContain("is not a plain value");
+    }
+  });
+
+  test("MathJax 2's TeX.Macros carry over, under mathjax2 or its older name math", () => {
+    for (const plugin of ["mathjax2", "math"]) {
+      const r = mathjax(
+        `${plugin}: { mathjax: 'https://cdn/MathJax.js', config: 'TeX-AMS_HTML-full', TeX: { Macros: { RR: '\\\\mathbb{R}' } } }`,
+      );
+      expect(slides(r.mdx)[0]!.fm.katex).toEqual({ macros: { "\\RR": "\\mathbb{R}" } });
+      expect(what(r)).toContain(
+        "info: reveal's MathJax 2 maths renders with KaTeX at build time; its 1 macro carried over to `katex.macros`.",
+      );
+    }
+  });
+
+  test("what KaTeX's macros cannot hold is reported: an optional argument, a count the body does not use", () => {
+    const r = mathjax(
+      `mathjax3: { tex: { macros: { opt: ['#1^{#2}', 2, 'x'], two: ['{#1}', 2], odd: { a: 1 }, ok: 'k' } } }`,
+    );
+    expect(slides(r.mdx)[0]!.fm.katex).toEqual({ macros: { "\\two": "{#1}", "\\ok": "k" } });
+    const lines = what(r);
+    expect(lines).toContain(
+      "warning: The MathJax 3 macro \\opt takes an optional argument, which KaTeX's macros cannot, and is dropped.",
+    );
+    expect(lines).toContain(
+      "warning: The MathJax 3 macro \\two is declared with 2 arguments but its body uses 1; KaTeX takes 1.",
+    );
+    expect(lines).toContain(
+      "warning: The MathJax 3 macro \\odd is not a TeX string, and is dropped.",
+    );
+  });
+
+  test("the KaTeX plugin's macros and KaTeX options carry; auto-render's own do not", () => {
+    const r = mathjax(
+      `katex: { version: 'latest', delimiters: [{ left: '$', right: '$', display: false }], extensions: ['mhchem'], strict: false, macros: { '\\\\RR': '\\\\mathbb{R}' } }`,
+    );
+    expect(slides(r.mdx)[0]!.fm.katex).toEqual({
+      strict: false,
+      macros: { "\\RR": "\\mathbb{R}" },
+    });
+    expect(what(r)).not.toContain("katex");
+  });
+
+  test("a converted MathJax deck's formulas render with its macros in KaTeX", () => {
+    const r = mathjax(`mathjax3: { tex: { macros: { RR: "\\\\mathbb{R}" } } }`);
+    const { fm, body } = slides(r.mdx)[0]!;
+    expect(body).toBe("$\\RR$");
+    const html = renderKatex("\\RR", { throwOnError: false, ...katexOptions(fm) });
+    expect(html).toContain('class="mord mathbb"');
+    // without them KaTeX draws the unknown command in its error red
+    expect(html).not.toContain("#cc0000");
+    expect(renderKatex("\\RR", { throwOnError: false })).toContain("#cc0000");
   });
 });
 

@@ -137,7 +137,8 @@ header across the slide, then `::left::` and `::right::` side by side. Image lay
   (`monacoRunImports: false` to forbid, or another CDN).
 - Maths: `$inline$` and `$$display$$` (KaTeX at build time); reveal.js's `\(inline\)` and `\[display\]` work too (`\\(` writes a literal `\(`). `$$ {1|3|all}` on the opening line
   lights those lines of an `aligned`/`array` one step per click (`{at: 2}`, `{finally: 'all'}`
-  in a second group). `katex: { macros: { "\\RR": "\\mathbb{R}" } }` in the headmatter.
+  in a second group). `katex: { macros: { "\\RR": "\\mathbb{R}" } }` in the headmatter. A reveal.js
+  deck written for MathJax renders with KaTeX; `import reveal` carries its macros there.
 - Diagrams: a ```` ```mermaid {scale: 0.8, theme: 'neutral'} ```` fence or
   `<Mermaid>{`flowchart LR; A --> B`}</Mermaid>` (`mermaid:` in the headmatter configures every
   diagram); ```` ```plantuml ```` renders on `plantUmlServer` (public server by default); hand-drawn

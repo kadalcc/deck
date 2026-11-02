@@ -181,6 +181,7 @@ export function Stage() {
         ...autoAnimateTiming(current, deck.config),
         styles: deck.config.autoAnimateStyles,
         scale: layout.scale,
+        events: { bus: deck.events, indexh: h, indexv: v },
       });
     });
     return () => cancelAnimationFrame(frame);

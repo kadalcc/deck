@@ -32,6 +32,7 @@ import { type El, VOID_ELEMENTS, parseOpenTag, scanSlide } from "./tags.ts";
  *   class="r-stretch" / "r-fit-text" / "r-stack"       <Stretch> / <FitText> / <Stack>
  *   data-src                                           kept: the engine loads it near the slide
  *   Reveal.initialize({ … })                           its literal options, as headmatter
+ *   its math / mathjax2 / mathjax3 / mathjax4 / katex  `katex:` (macros), for KaTeX at build time
  *
  * Kadal took reveal.js's names for its options, so most keys carry over as they are. Nothing in
  * the page is run: scripts are reported, not executed. Local images and media the slides name are
@@ -201,6 +202,19 @@ const QUIET_OPTIONS = new Set([
   "chalkboard",
   "multiplex",
 ]);
+
+/**
+ * Reveal.initialize's maths options, by the plugin of reveal's plugin/math that reads each
+ * (`math` is MathJax 2's older name). Kadal renders every formula with KaTeX at build time, so
+ * what carries over is what KaTeX can use of them: their macros (`revealKatex`).
+ */
+const MATH_OPTIONS: Record<string, string> = {
+  math: "MathJax 2",
+  mathjax2: "MathJax 2",
+  mathjax3: "MathJax 3",
+  mathjax4: "MathJax 4",
+  katex: "KaTeX",
+};
 
 /** JSX spellings of the HTML attributes slides use. */
 const JSX_ATTR: Record<string, string> = {
@@ -428,6 +442,7 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
   const config = revealConfig(doc);
   if (config.found) {
     for (const [k, v] of Object.entries(config.values)) {
+      if (k in MATH_OPTIONS) continue; // read together, below
       if (k === "width" && typeof v === "number") width = v;
       else if (k === "height" && typeof v === "number") height = v;
       else if (k === "keyboard" && v && typeof v === "object") {
@@ -446,6 +461,8 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
           severity: "info",
           what: `Reveal.initialize's \`${k}\` is not a plain value and is dropped.`,
         });
+    const katex = revealKatex(config.values, deckReport);
+    if (katex) head.katex = katex;
   }
   // reveal's slide box: the reveal theme sizes it from these (960 × 700 when they are not given)
   if (width !== 960) themeConfig.width = width;
@@ -1819,8 +1836,9 @@ function keyboardOption(map: Record<string, unknown>, report: Reporter): Record<
 
 /**
  * The literal options of `Reveal.initialize({ … })` (or `new Reveal({ … })`): booleans, numbers
- * and strings, by key. Anything else (plugins, functions) is named in `skipped`. The page's
- * script is read as text; nothing is evaluated.
+ * and strings, by key, and the maths plugins' objects whole (`jsLiteral`). Anything else
+ * (plugins, functions) is named in `skipped`. The page's script is read as text; nothing is
+ * evaluated.
  */
 export function revealConfig(html: string): {
   found: boolean;
@@ -1908,6 +1926,10 @@ export function revealConfig(html: string): {
       const map = flatObject(value);
       if (map) values[key] = map;
       else skipped.push(key);
+    } else if (key in MATH_OPTIONS && value.startsWith("{")) {
+      const object = jsLiteral(value);
+      if (object !== NOT_PLAIN) values[key] = object;
+      else skipped.push(key);
     } else skipped.push(key);
   }
   return { found: true, values, skipped };
@@ -1958,4 +1980,247 @@ export function flatObject(text: string): Record<string, unknown> | null {
     else out[key] = NOT_PLAIN;
   }
   return out;
+}
+
+/** A JavaScript string's escapes, undone (`"\\mathbb"` is `\mathbb`). */
+const JS_ESCAPES: Record<string, string> = {
+  n: "\n",
+  t: "\t",
+  r: "\r",
+  b: "\b",
+  f: "\f",
+  v: "\v",
+  "0": "\0",
+};
+
+/**
+ * One JavaScript literal, read as text and never run: objects, arrays, strings (their escapes
+ * undone), numbers, booleans and null. A value that is none of those — a function, a variable,
+ * a template — is NOT_PLAIN where it stands, so the rest still reads (MathJax 3's `startup.ready`
+ * sits beside its `tex.macros`). NOT_PLAIN for the whole when the text is not one literal (a
+ * spread, a computed key).
+ */
+export function jsLiteral(text: string): unknown {
+  let i = 0;
+  const notOne = new Error("not a literal");
+  const space = () => {
+    while (i < text.length && /\s/.test(text[i]!)) i++;
+  };
+  const quoted = (): string => {
+    const q = text[i++]!;
+    let out = "";
+    while (i < text.length && text[i] !== q) {
+      const ch = text[i++]!;
+      if (ch !== "\\") {
+        out += ch;
+        continue;
+      }
+      const e = text[i++] ?? "";
+      if (e === "u" && text[i] === "{") {
+        const end = text.indexOf("}", i);
+        out += String.fromCodePoint(parseInt(text.slice(i + 1, end), 16));
+        i = end + 1;
+      } else if (e === "u" || e === "x") {
+        const n = e === "u" ? 4 : 2;
+        out += String.fromCharCode(parseInt(text.slice(i, i + n), 16));
+        i += n;
+      } else if (e !== "\n") out += JS_ESCAPES[e] ?? e;
+    }
+    i++;
+    return out;
+  };
+  // Past a value that is not plain, to the comma or bracket that ends it.
+  const skip = (): typeof NOT_PLAIN => {
+    let depth = 0;
+    while (i < text.length) {
+      const ch = text[i]!;
+      if (ch === '"' || ch === "'" || ch === "`") {
+        quoted();
+        continue;
+      }
+      if ("{[(".includes(ch)) depth++;
+      else if ("}])".includes(ch)) {
+        if (depth === 0) break;
+        depth--;
+      } else if (ch === "," && depth === 0) break;
+      i++;
+    }
+    return NOT_PLAIN;
+  };
+  // After an entry: a comma, or the bracket that closes the list.
+  const next = (close: string) => {
+    space();
+    if (text[i] === ",") i++;
+    else if (text[i] !== close) throw notOne;
+  };
+  const value = (): unknown => {
+    space();
+    const ch = text[i];
+    if (ch === "{") {
+      i++;
+      const out: Record<string, unknown> = {};
+      for (space(); text[i] !== "}"; space()) {
+        let key: string;
+        if (text[i] === '"' || text[i] === "'") key = quoted();
+        else {
+          key = /^[\w$]+/.exec(text.slice(i))?.[0] ?? "";
+          if (!key) throw notOne;
+          i += key.length;
+        }
+        space();
+        // `ready() { … }` and a shorthand `{ name }` hold nothing that can be read
+        if (text[i] === ":") {
+          i++;
+          out[key] = value();
+        } else out[key] = skip();
+        next("}");
+      }
+      i++;
+      return out;
+    }
+    if (ch === "[") {
+      i++;
+      const out: unknown[] = [];
+      for (space(); text[i] !== "]"; space()) {
+        out.push(value());
+        next("]");
+      }
+      i++;
+      return out;
+    }
+    if (ch === '"' || ch === "'") return quoted();
+    const word = /^(?:-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?|true|false|null)(?![\w$])/i.exec(
+      text.slice(i),
+    )?.[0];
+    if (word) {
+      i += word.length;
+      return word === "true"
+        ? true
+        : word === "false"
+          ? false
+          : word === "null"
+            ? null
+            : Number(word);
+    }
+    return skip();
+  };
+  try {
+    const out = value();
+    space();
+    return i >= text.length ? out : NOT_PLAIN;
+  } catch {
+    return NOT_PLAIN;
+  }
+}
+
+/** The KaTeX plugin's options that are auto-render's (finding the maths in the page), not KaTeX's. */
+const AUTO_RENDER_OPTIONS = new Set([
+  "local",
+  "version",
+  "extensions",
+  "delimiters",
+  "ignoredTags",
+  "ignoredClasses",
+  "preProcess",
+  "errorCallback",
+  "macros",
+]);
+
+/**
+ * Kadal's `katex:` headmatter from reveal's maths options (`MATH_OPTIONS`, as `revealConfig`
+ * reads them). Kadal renders every formula with KaTeX at build time, whichever plugin the reveal
+ * deck loaded, and KaTeX reads the same TeX for most of it; what a MathJax deck brings that
+ * KaTeX can use is its macros. MathJax 2's `TeX.Macros` and MathJax 3/4's `tex.macros` hold a
+ * body, or `[body, args]`, with `#1` meaning what it does in KaTeX; they become `katex.macros`,
+ * named with their backslash as KaTeX names them. The KaTeX plugin's own macros come over as they
+ * are, and its plain KaTeX options (`strict`, `trust` …) with them. What cannot carry is reported.
+ */
+export function revealKatex(
+  values: Record<string, unknown>,
+  report: Reporter,
+): Record<string, unknown> | null {
+  const out: Record<string, unknown> = {};
+  const macros: Record<string, string> = {};
+  const isObject = (v: unknown): v is Record<string, unknown> =>
+    !!v && typeof v === "object" && !Array.isArray(v);
+  for (const [option, plugin] of Object.entries(MATH_OPTIONS)) {
+    const config = values[option];
+    if (!isObject(config)) continue;
+    const mathjax = plugin !== "KaTeX";
+    // where the macros sit: MathJax 2's TeX.Macros, MathJax 3/4's tex.macros, KaTeX's macros
+    const [texKey, macrosKey] = !mathjax
+      ? [null, "macros"]
+      : option === "mathjax3" || option === "mathjax4"
+        ? ["tex", "macros"]
+        : ["TeX", "Macros"];
+    const tex = texKey ? config[texKey] : config;
+    const given = isObject(tex) ? tex[macrosKey] : null;
+    let carried = 0;
+    for (const [name, raw] of Object.entries(isObject(given) ? given : {})) {
+      const tag = name.startsWith("\\") ? name : `\\${name}`;
+      const body = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : null;
+      if (typeof body !== "string") {
+        report({
+          severity: "warning",
+          what: `The ${plugin} macro ${tag} is not a TeX string, and is dropped.`,
+          suggestion: `Define it in the headmatter's \`katex.macros\`.`,
+        });
+        continue;
+      }
+      if (Array.isArray(raw) && raw.length > 2) {
+        report({
+          severity: "warning",
+          what: `The ${plugin} macro ${tag} takes an optional argument, which KaTeX's macros cannot, and is dropped.`,
+          suggestion: `Define it in the headmatter's \`katex.macros\` with its arguments all required, and write them out where the deck uses it.`,
+        });
+        continue;
+      }
+      // KaTeX counts a macro's arguments from the #1, #2 … its body uses; MathJax is told.
+      let used = 0;
+      while (body.replace(/##/g, "").includes(`#${used + 1}`)) used++;
+      const declared = Array.isArray(raw) && typeof raw[1] === "number" ? raw[1] : used;
+      if (declared !== used)
+        report({
+          severity: "warning",
+          what: `The ${plugin} macro ${tag} is declared with ${declared} arguments but its body uses ${used}; KaTeX takes ${used}.`,
+        });
+      macros[tag] = body;
+      carried++;
+    }
+    if (!mathjax) {
+      for (const [k, v] of Object.entries(config)) {
+        if (AUTO_RENDER_OPTIONS.has(k)) continue;
+        if (v === null || ["string", "number", "boolean"].includes(typeof v)) out[k] = v;
+        else
+          report({
+            severity: "info",
+            what: `The KaTeX plugin's \`${k}\` is not a plain value and is dropped.`,
+          });
+      }
+      continue;
+    }
+    // what MathJax alone reads: its script and build, delimiters (Kadal's are $, $$, \( and \[),
+    // extensions and output
+    const own = [
+      ...Object.keys(config).filter((k) => !["mathjax", "config", texKey].includes(k)),
+      ...(isObject(tex) ? Object.keys(tex).filter((k) => k !== macrosKey) : []).map(
+        (k) => `${texKey}.${k}`,
+      ),
+    ];
+    report({
+      severity: "info",
+      what:
+        `reveal's ${plugin} maths renders with KaTeX at build time` +
+        (carried
+          ? `; its ${carried} macro${carried > 1 ? "s" : ""} carried over to \`katex.macros\``
+          : "") +
+        (own.length
+          ? `. MathJax's own ${own.map((k) => `\`${k}\``).join(", ")} ${own.length > 1 ? "are" : "is"} not carried.`
+          : "."),
+      suggestion:
+        "A formula using a MathJax extension KaTeX lacks shows as a red error: rewrite it in KaTeX's TeX (katex.org/docs/supported).",
+    });
+  }
+  if (Object.keys(macros).length) out.macros = macros;
+  return Object.keys(out).length ? out : null;
 }

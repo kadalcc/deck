@@ -1,3 +1,4 @@
+import type { DeckEvents } from "../core/events.ts";
 import {
   AUTO_ANIMATE_STYLES,
   type AutoAnimateMatcher,
@@ -20,6 +21,11 @@ import {
  * the morph is set up, the arriving one `"running"` once it starts; each element taking part gets
  * `data-auto-animate-target` (a number for a matched one, `unmatched` for one fading in). They
  * are cleared at the next slide change, as reveal clears them.
+ *
+ * reveal's `autoanimate` event goes out on `deck.events` as the morph starts: `{ fromSlide,
+ * toSlide, indexh, indexv, animations }`. reveal hands over `sheet`, the stylesheet its CSS
+ * transitions are written into; Kadal's morph is Web Animations, so it hands over those instead,
+ * to pause, scrub or await (`finished`). The slide left may already be out of the page by then.
  */
 export interface Snapshot {
   key: string;
@@ -149,6 +155,8 @@ export interface AutoAnimateOptions {
   styles?: readonly string[];
   /** Measure from the slide's own corner, as the plan was (`prepareAutoAnimate`'s `inPlace`). */
   inPlace?: boolean;
+  /** Where the arriving slide sits, and the bus to tell `autoanimate` on. */
+  events?: { bus: Pick<DeckEvents, "emit">; indexh: number; indexv: number };
 }
 
 /** A slide and where it sits in reading order: the one further on owns `autoAnimateRestart`. */
@@ -190,9 +198,10 @@ export function autoAnimateTiming(
  * What was read off the leaving slide: snapshots by key (the built-in matching), or by the
  * arriving element each one pairs with (an `autoAnimateMatcher`'s pairs).
  */
-export type AutoAnimatePlan =
+export type AutoAnimatePlan = { fromSlide: HTMLElement } & (
   | { kind: "keys"; snaps: Map<string, Snapshot> }
-  | { kind: "pairs"; snaps: Map<Element, Snapshot> };
+  | { kind: "pairs"; snaps: Map<Element, Snapshot> }
+);
 
 /**
  * Read the leaving slide before it goes, with the arriving one already in the page, and mark both
@@ -221,9 +230,9 @@ export function prepareAutoAnimate(
     for (const pair of opts.matcher(fromSlide, toSlide) ?? []) {
       if (pair?.from && pair.to) snaps.set(pair.to, snapOf(pair.from, "", styles, origin));
     }
-    return { kind: "pairs", snaps };
+    return { fromSlide, kind: "pairs", snaps };
   }
-  return { kind: "keys", snaps: snapshot(fromSlide, styles, origin) };
+  return { fromSlide, kind: "keys", snaps: snapshot(fromSlide, styles, origin) };
 }
 
 /** Clear what an earlier auto-animate left on the slides and their elements. */
@@ -236,7 +245,10 @@ export function resetAutoAnimate(root: ParentNode): void {
     delete el.dataset.autoAnimateTarget;
 }
 
-/** Morph the arriving slide from the plan, and mark it `data-auto-animate="running"`. */
+/**
+ * Morph the arriving slide from the plan, mark it `data-auto-animate="running"`, and tell
+ * `opts.events` (`autoanimate`).
+ */
 export function runAutoAnimate(
   plan: AutoAnimatePlan,
   toSlide: HTMLElement,
@@ -289,5 +301,9 @@ export function runAutoAnimate(
     }
   }
   toSlide.dataset.autoAnimate = "running";
+  if (opts.events) {
+    const { bus, indexh, indexv } = opts.events;
+    bus.emit("autoanimate", { fromSlide: plan.fromSlide, toSlide, indexh, indexv, animations });
+  }
   return animations;
 }

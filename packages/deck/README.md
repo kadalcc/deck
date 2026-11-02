@@ -126,7 +126,12 @@ class="notes">` and `data-notes` become `<Notes>`. Code blocks keep their langua
 read as frontmatter, `<!-- .element: … -->` as every attribute it sets, on the element before it
 (the line's heading, paragraph or image, or the link or bold it ends with; `class="fragment"` a
 `<Click>`), `Note:` as notes and
-```` ```js [1|3] ```` as Kadal's steps. `\( … \)` maths becomes `$ … $`. `Reveal.initialize`'s
+```` ```js [1|3] ```` as Kadal's steps. `\( … \)` maths becomes `$ … $`. Maths renders with
+KaTeX at build time whichever plugin the deck loaded: a MathJax 2, 3 or 4 deck's macros
+(`TeX.Macros` / `tex.macros`, a body or `[body, args]`) become `katex.macros`, as do the KaTeX
+plugin's own macros and options; a macro with an optional argument, and MathJax's own settings
+(packages, loader, delimiters), are reported rather than carried, and a formula using an extension
+KaTeX lacks shows in KaTeX's error red. `Reveal.initialize`'s
 literal options become headmatter, with reveal's default `margin: 0.04` and `center: true` (Kadal's
 own default is `center: false`: slides start at the top; `true` centres the default layout's content
 vertically, as reveal does), and its `keyboard` map in
@@ -159,9 +164,10 @@ as reveal's `data-state` does (`<name>` and `state-<name>`, and an event of that
 **Events and postMessage.** reveal's events reach scripts that are not React: `__deck.events.on(
 "slidechanged", (e) => …)` (or `useDeck().events`) hears `ready`, `slidechanged`,
 `slidetransitionend`, `fragmentshown`, `fragmenthidden`, `overviewshown`, `overviewhidden`,
-`paused`, `resumed`, `autoslidepaused`, `autoslideresumed`, `resize` and each slide `state`, with
-reveal's fields (`indexh`, `indexv`, `indexf`, `currentSlide` …); `on("*")` hears them all, and each
-also fires as a `deck:<name>` event on the deck's root element. A page that frames the deck drives
+`paused`, `resumed`, `autoslidepaused`, `autoslideresumed`, `resize`, `autoanimate` and each slide
+`state`, with reveal's fields (`indexh`, `indexv`, `indexf`, `currentSlide`, `fromSlide`/`toSlide`
+…; `autoanimate` hands over the morph's Web `animations` where reveal hands over its `sheet`);
+`on("*")` hears them all, and each also fires as a `deck:<name>` event on the deck's root element. A page that frames the deck drives
 it as it would reveal: `frame.postMessage(JSON.stringify({ method: "slide", args: [2] }), "*")`,
 answered with `{ namespace: "reveal", eventName: "callback", method, result, state }` (the moves,
 `toggleOverview`, `togglePause`, `toggleAutoSlide`, `getState`/`setState`, `getIndices`,
