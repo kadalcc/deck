@@ -34,6 +34,19 @@ describe("\\( … \\) and \\[ … \\]", () => {
     expect(out).toContain("katex-display");
   });
 
+  test("$$ … $$ on one line is a display block, as on lines of its own", async () => {
+    const oneLine = await jsx("$$\\int_0^1 x\\,dx$$");
+    const fenced = await jsx("$$\n\\int_0^1 x\\,dx\n$$");
+    expect(oneLine).toBe(fenced);
+  });
+
+  test("$$ … $$ inside a sentence renders in display mode; one dollar stays inline", async () => {
+    expect(await jsx("So $$x = 1$$ holds.", true)).toContain("katex-display");
+    const single = await jsx("So $x = 1$ holds.", true);
+    expect(single).not.toContain("katex-display");
+    expect(single).toContain("katex");
+  });
+
   test("escapes, empties and code stay text", async () => {
     const out = await jsx("a \\\\(b\\\\) and \\(\\) and `\\(x\\)`\n\n```\n\\[y\\]\n```");
     expect(out).not.toContain("language-math");

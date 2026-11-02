@@ -13,6 +13,11 @@
  *   \[ \int_0^1 x\,dx \]     display (a paragraph of its own becomes a `$$` block)
  *   \\(not maths\\)          a doubled backslash is the escape for a literal one
  *
+ * `$$x$$` on one line is display maths too. remark-math only makes a block of `$$` on lines of
+ * their own and reads the one-line form as inline, but reveal.js's MathJax and KaTeX, GitHub and
+ * Pandoc all read double dollars as display, so a deck brought over from any of them keeps its
+ * equation the size it was written at.
+ *
  * Code is never read: inline code and fences claim their text first.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -117,6 +122,25 @@ interface MdNode {
   value?: string;
   data?: Record<string, unknown>;
   children?: MdNode[];
+  position?: { start: { offset?: number } };
+}
+
+/** remark-math's inline maths written with double dollars, marked as display like `\[ … \]`. */
+function dollarDisplay(node: MdNode, source: string) {
+  for (const child of node.children ?? []) {
+    const at = child.position?.start.offset;
+    if (child.type === "inlineMath" && at !== undefined && source.startsWith("$$", at)) {
+      const value = child.value ?? "";
+      child.data = {
+        ...child.data,
+        hName: "code",
+        hProperties: { className: ["language-math", "math-display"] },
+        hChildren: [{ type: "text", value }],
+        texDisplay: true,
+      };
+    }
+    dollarDisplay(child, source);
+  }
 }
 
 /** A paragraph that is one `\[ … \]` and nothing else is remark-math's `math` block. */
@@ -156,5 +180,8 @@ export function remarkTexDelimiters(this: { data(): unknown }) {
     enter: { texMath: enterTex },
     exit: { texMath: exitTex },
   });
-  return (tree: unknown) => displayBlocks(tree as MdNode);
+  return (tree: unknown, file: { value?: unknown }) => {
+    if (typeof file.value === "string") dollarDisplay(tree as MdNode, file.value);
+    displayBlocks(tree as MdNode);
+  };
 }
