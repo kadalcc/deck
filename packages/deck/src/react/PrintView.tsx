@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { SlideOptions } from "../core/model.ts";
 import {
   clickFloor,
   key as navKey,
@@ -11,9 +12,9 @@ import { PrintDrawings } from "../draw/PrintDrawings.tsx";
 import { fileDrawings } from "../draw/source.ts";
 import { BackgroundLayer } from "./Backgrounds.tsx";
 import { useDeck } from "./context.ts";
-import { useNav } from "./hooks.ts";
+import { useNav, useUi } from "./hooks.ts";
 import { usePremiumSettled } from "./premium.tsx";
-import { loadSlide, SlideFrame } from "./SlideFrame.tsx";
+import { loadSlide, SlideFrame, useSlideScheme } from "./SlideFrame.tsx";
 import { useFontsReady } from "../theming/react.tsx";
 import { MDXProvider } from "./mdx.tsx";
 
@@ -191,9 +192,9 @@ export function PrintView({
             />
             <PrintDrawings h={p.h} v={p.v} click={p.click} allSteps={!separate} />
             {numbered ? (
-              <div className="deck-slide-number deck-print-slide-number">
+              <PrintSlideNumber options={options}>
                 {slideNumberText(deck.config.slideNumber, p, deck.columns)}
-              </div>
+              </PrintSlideNumber>
             ) : null}
             {showNotes === true && meta.hasNotes ? <PrintNotes meta={meta} /> : null}
           </div>
@@ -345,5 +346,31 @@ function PrintNotes({
         <Notes />
       </MDXProvider>
     </aside>
+  );
+}
+
+/**
+ * A printed page's slide number sits beside its slide, not in it, so it would keep the deck's
+ * scheme: on a dark slide in a light deck, light-scheme grey on the dark slide. It takes the
+ * slide's forced scheme the way the slide does (`.theme-x[data-color-scheme]`, SlideFrame).
+ */
+function PrintSlideNumber({
+  options,
+  children,
+}: {
+  options: SlideOptions;
+  children: string | null;
+}) {
+  const scheme = useSlideScheme(options);
+  const theme = useUi((s) => s.theme);
+  return (
+    <div
+      className={["deck-slide-number deck-print-slide-number", scheme ? `theme-${theme}` : ""]
+        .filter(Boolean)
+        .join(" ")}
+      data-color-scheme={scheme ?? undefined}
+    >
+      {children}
+    </div>
   );
 }

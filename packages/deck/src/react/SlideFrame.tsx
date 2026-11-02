@@ -235,6 +235,22 @@ function startFrameWhenHostIsFree(
 /** Elements a slide places at stage coordinates or behind its content; never what overflows it. */
 const PLACED = ".deck-slide-background, .deck-absolute, .deck-arrow";
 
+/**
+ * The scheme a slide forces, or null for the deck's. A library background drawn for one scheme (a
+ * chalkboard is dark) gives its slide that scheme, unless the slide chose its own: a light deck's
+ * dark text on a dark board read as nothing. Anything drawn beside the slide in its colours (the
+ * printed page's slide number) asks here too.
+ */
+export function useSlideScheme(options: SlideOptions): "light" | "dark" | null {
+  const premiumBg = usePremiumItem(
+    isPremiumName(options.background?.component) ? options.background!.component : null,
+    "background",
+  );
+  return (
+    options.colorScheme ?? (premiumBg?.status === "ready" ? (premiumBg.item.scheme ?? null) : null)
+  );
+}
+
 export function SlideFrame({
   meta,
   options,
@@ -500,14 +516,7 @@ export function SlideFrame({
   );
 
   const Layout = layoutFor(options.layout, deck.components);
-  // A library background drawn for one scheme (a chalkboard is dark) gives its slide that scheme,
-  // unless the slide chose its own: a light deck's dark text on a dark board read as nothing.
-  const premiumBg = usePremiumItem(
-    isPremiumName(options.background?.component) ? options.background!.component : null,
-    "background",
-  );
-  const colorScheme =
-    options.colorScheme ?? (premiumBg?.status === "ready" ? (premiumBg.item.scheme ?? null) : null);
+  const colorScheme = useSlideScheme(options);
   // A slide that forces a scheme wears the theme's class too: the theme's tokens for that scheme
   // are keyed `.theme-x[data-color-scheme]`, which only an element carrying both can match.
   const theme = useUi((s) => s.theme);
