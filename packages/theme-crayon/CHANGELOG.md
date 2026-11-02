@@ -1,5 +1,12 @@
 # @kadal/theme-crayon
 
+## 0.11.2
+
+### Patch Changes
+
+- Updated dependencies [2c4f2b9]
+  - @kadal/deck@0.11.2
+
 ## 0.11.1
 
 ### Patch Changes
