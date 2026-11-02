@@ -1,5 +1,23 @@
 # @kadal/deck
 
+## 0.11.3
+
+### Patch Changes
+
+- 73d09c1: `$$x$$` written on one line is display maths, as it is in reveal.js (MathJax and KaTeX), GitHub and
+  Pandoc. remark-math read it as inline maths, so an equation brought over from a reveal.js deck came
+  out at text size, its fraction squeezed. A `$$…$$` paragraph is now a display block, the same as
+  `$$` on lines of their own, and one inside a sentence renders in display mode, as `\[…\]` already
+  did.
+- 4bf349b: `kadal-deck import reveal` scales the lengths in a deck's own CSS as it scales inline ones. The
+  importer already took a reveal.js deck's inline styles from reveal's 960×700 slide to Kadal's
+  1920×1080 stage (×1.543), but copied its `<style>` blocks and local stylesheets as written. A box
+  sized in the page's CSS then kept its old size while the inline heights inside it grew, so a bar
+  chart drawn with a 380px container and inline bar heights ran up into its own heading. `px` lengths
+  in declarations now take the same factor; a media query's widths, zero and 1px hairlines stay as
+  written.
+- @kadal/prettier-plugin@0.11.3
+
 ## 0.11.2
 
 ### Patch Changes
