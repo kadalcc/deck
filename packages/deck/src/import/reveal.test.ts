@@ -176,6 +176,25 @@ describe("sections", () => {
     expect(plain.info.canvas.scale).toBe(1.543);
   });
 
+  test("the page's own CSS is scaled with the slide, as inline lengths are", () => {
+    const r = convertReveal(
+      page(
+        '<section><div class="bars"><div class="bar" style="height: 340px"></div></div></section>',
+        "<style>.bars { height: 380px; gap: 28px; border-top: 1px solid; margin: 0 -10px }\n" +
+          "@media (max-width: 600px) { .bars { height: 200px } }</style>",
+      ),
+    );
+    const css = r.files["src/reveal.css"]!;
+    // the box and the inline bar inside it keep their proportions (×1.543 for 960×700)
+    expect(css).toContain(
+      "height: 586.34px; gap: 43.204px; border-top: 1px solid; margin: 0 -15.43px",
+    );
+    expect(r.mdx).toContain('"524.62px"');
+    // a media query is about the window, so its width stays; the rule inside it scales
+    expect(css).toContain("@media (max-width: 600px) { .bars { height: 308.6px } }");
+    expect(what(r)).toContain("lengths in inline styles and the page's CSS are scaled ×1.543");
+  });
+
   test("reveal's keyboard map arrives in Kadal's key and action names", () => {
     const r = convertReveal(
       page(

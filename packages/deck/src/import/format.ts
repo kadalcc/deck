@@ -53,7 +53,7 @@ function formatRevealReport(
     `- Slides: ${info.slides} — ${info.cleanSlides} (${pct}%) converted with no warning or error${deck}.`,
     `- Report lines: ${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes.`,
     `- Theme: reveal.js \`${info.theme.reveal ?? "(none)"}\` → Kadal \`${info.theme.kadal}\`, variant \`${info.theme.variant}\` (${info.theme.colorScheme}).`,
-    `- Stage: ${info.canvas.width}×${info.canvas.height}; inline lengths scaled ×${info.canvas.scale} from reveal.js's.`,
+    `- Stage: ${info.canvas.width}×${info.canvas.height}; lengths (inline and in the page's CSS) scaled ×${info.canvas.scale} from reveal.js's.`,
     ...(info.assets.length ? [`- Files copied into public/: ${info.assets.length}.`] : []),
     "",
     "Severity: **error** — the slide does not show what the reveal.js one did; **warning** — it shows,",
