@@ -136,7 +136,7 @@ literal options become headmatter, with reveal's default `margin: 0.04` and `cen
 own default is `center: false`: slides start at the top; `true` centres the default layout's content
 vertically, as reveal does), and its `keyboard` map in
 Kadal's key and action names (`{ 13: 'toggleOverview' }` → `{ Enter: overview }`; functions are
-reported); inline lengths are
+reported); lengths, inline and in the page's own CSS, are
 scaled by the factor reveal fits its slide to Kadal's 1920×1080 with (×1.543 for 960×700). The
 theme becomes `theme: reveal` (`@kadal/theme-reveal`, shipped with the engine): reveal's twelve
 themes as `themeConfig.variant`, the one the page linked, in its own scheme; a slide size other

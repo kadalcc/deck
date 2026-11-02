@@ -53,7 +53,7 @@ export interface RevealImportInfo {
   title: string | null;
   /** The reveal.js theme the page links (`black`), and the Kadal theme, variant and scheme chosen. */
   theme: { reveal: string | null; kadal: string; variant: string; colorScheme: "light" | "dark" };
-  /** Kadal's stage, and the factor inline lengths were scaled by from reveal's. */
+  /** Kadal's stage, and the factor lengths (inline and in the page's CSS) were scaled by from reveal's. */
   canvas: { width: number; height: number; scale: number };
   /** Local files to copy: from (project-relative) → to (deck-relative, under public/). */
   assets: Array<{ from: string; to: string }>;
@@ -362,6 +362,28 @@ function shiftSteps(spec: string, start: number): string {
   return start === 1 ? spec : spec.replace(/\d+/g, (n) => String(Number(n) + start - 1));
 }
 
+/**
+ * A stylesheet written for reveal's slide, scaled as its inline styles are: a box in the page's CSS
+ * keeps its size against the inline heights inside it. Only declarations change; a media query's
+ * widths are the window's, not the slide's.
+ */
+export function scaleStylesheet(css: string, scale: number): string {
+  if (scale === 1) return css;
+  return css.replace(
+    /\{([^{}]*)\}/g,
+    (_, body: string) =>
+      `{${body.replace(
+        /:([^;{}]*)/g,
+        (_m, value: string) =>
+          `:${value.replace(/(-?\d*\.?\d+)px\b/g, (px: string, n: string) => {
+            // a hairline (1px) and zero stay as written, as they do inline
+            const v = Number(n);
+            return v === 0 || Math.abs(v) === 1 ? px : `${Math.round(v * scale * 10000) / 10000}px`;
+          })}`,
+      )}}`,
+  );
+}
+
 export function convertReveal(html: string, options: RevealImportOptions = {}): RevealImport {
   const file = options.file ?? "index.html";
   const read = options.readFile ?? (() => null);
@@ -471,12 +493,13 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
   if (!("margin" in head)) head.margin = 0.04;
   // and centres every slide vertically unless told not to (Kadal's default layout is top-aligned)
   if (!("center" in head)) head.center = true;
-  // the factor reveal scales its slide by to fit Kadal's stage, which inline lengths take too
+  // the factor reveal scales its slide by to fit Kadal's stage, which lengths written for its
+  // slide take too: inline ones, and the page's own CSS (scaleStylesheet)
   const scale = Math.round(Math.min(KADAL_WIDTH / width, KADAL_HEIGHT / height) * 1000) / 1000;
   if (width !== KADAL_WIDTH || height !== KADAL_HEIGHT)
     deckReport({
       severity: "info",
-      what: `reveal.js laid the slides out at ${width}×${height}; Kadal's stage is ${KADAL_WIDTH}×${KADAL_HEIGHT}, and inline lengths are scaled ×${scale}.`,
+      what: `reveal.js laid the slides out at ${width}×${height}; Kadal's stage is ${KADAL_WIDTH}×${KADAL_HEIGHT}, and lengths in inline styles and the page's CSS are scaled ×${scale}.`,
     });
 
   // stylesheets: the page's own <style> blocks, and linked CSS that is not reveal.js's
@@ -501,11 +524,11 @@ export function convertReveal(html: string, options: RevealImportOptions = {}): 
       continue;
     }
     const name = `src/reveal/${from!.split("/").pop()}`;
-    files[name] = css;
+    files[name] = scaleStylesheet(css, scale);
     styleImports.push(name.slice("src/".length).replace(/^/, "./"));
   }
   if (pageCss.length) {
-    files["src/reveal.css"] = `${pageCss.join("\n\n")}\n`;
+    files["src/reveal.css"] = `${scaleStylesheet(pageCss.join("\n\n"), scale)}\n`;
     styleImports.unshift("./reveal.css");
   }
   if (styleImports.length)
