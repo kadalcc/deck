@@ -145,7 +145,7 @@ Your deck is in ${cd || "."}. Next:
 
   ${cd && cd !== "." ? `cd ${cd}\n  ` : ""}${m} install
   ${run} dev                         edit deck.mdx; the page reloads as you type
-  ${x} kadal-deck login && ${x} kadal-deck publish   a URL with a live room
+  ${x} kadal-deck login && ${x} kadal-deck publish   a link with a live room, free for public decks
 
 Docs: https://deck.kadal.cc/docs/
 `);
