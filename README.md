@@ -24,6 +24,9 @@ beside you if you want it; you rehearse it with the deck reading your notes and 
 present it with your phone in your hand; and the audience joins from theirs to vote, ask and react.
 The engine is open source, and hosting is free for public decks.
 
+Try it in your browser with no sign-up at [deck.kadal.cc/app/try](https://deck.kadal.cc/app/try/), or
+start locally with `npm create @kadal/deck@latest my-talk`.
+
 <p align="center">
   <a href="https://decks.kadal.cc/@kadal-hq/tour/">
     <img src=".github/assets/hero.webp" alt="Kadal Deck on stage: the tour's title slide, Build it. Rehearse it. Own the room., on a big screen in front of an audience, the AI Assistant adding a poll slide, the speaker's phone as the remote with the notes, and an audience phone on the same slide answering a live poll" width="100%">
