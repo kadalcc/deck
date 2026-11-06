@@ -41,8 +41,10 @@ import { Drag } from "./Drag.tsx";
  *           the link back ("Template via imgflip.com") on hover and in every export.
  *
  * `provider="kadal"` marks an item from Kadal's own library (stickers, GIF loops, meme templates:
- * `kadal-deck media search kadal …`). It is credited "Kadal", and because it is ours to copy, print
- * and the exports draw it (its `still`) where a provider's GIF gets a card. `provider="kadal-store"`
+ * `kadal-deck media search kadal …`), free in any Kadal deck under the Kadal Deck licence. It is
+ * credited "Kadal" — linked to its pack in Kadal Store when the tag carries `creditUrl` (a meme
+ * template: `template.url`) — and because it is ours to copy, print and the exports draw it (its
+ * `still`) where a provider's GIF gets a card. `provider="kadal-store"`
  * marks an item from Kadal Store, which every deck may place under the Kadal Deck licence:
  * credited with its `credit` and a link to its store page (`creditUrl`), grouped under "Kadal
  * Store" with the licence and the way to the files. Every attributed item is also listed by
@@ -186,7 +188,9 @@ export function stickerCredit(
   if (typeof p.credit === "string" && p.credit.trim())
     return { label: p.credit.trim(), href: isWebUrl(p.creditUrl) ? p.creditUrl : null };
   const provider = typeof p.provider === "string" ? p.provider.toLowerCase() : "";
-  if (provider === "kadal") return { label: "Kadal", href: KADAL_URL };
+  // A Kadal library item links its pack in Kadal Store when the tag carries it (`creditUrl`).
+  if (provider === "kadal")
+    return { label: "Kadal", href: isWebUrl(p.creditUrl) ? p.creditUrl : KADAL_URL };
   if (provider === KADAL_STORE)
     return { label: "Kadal Store", href: isWebUrl(p.creditUrl) ? p.creditUrl : KADAL_STORE_URL };
   return null;
@@ -402,16 +406,24 @@ export interface GifProps {
   still?: string;
   /** The page to link to in the credit and the export card (default: the provider's page for it). */
   href?: string;
+  /** A Kadal item's pack in Kadal Store (or a store item's page): the credit's link. */
+  creditUrl?: string;
   alt?: string;
   className?: string;
 }
 
 /** What an export draws instead of the GIF: the words and the link. */
-export function gifPlaceholder(p: Pick<GifProps, "provider" | "id" | "slug" | "title" | "href">) {
+export function gifPlaceholder(
+  p: Pick<GifProps, "provider" | "id" | "slug" | "title" | "href" | "creditUrl">,
+) {
   const key = (p.provider || "klipy").toLowerCase();
   const known = PROVIDERS[key];
   const provider = known?.label ?? key.charAt(0).toUpperCase() + key.slice(1);
-  const href = isWebUrl(p.href) ? p.href : (known?.page(p.slug, p.id) ?? null);
+  const href = isWebUrl(p.href)
+    ? p.href
+    : isWebUrl(p.creditUrl)
+      ? p.creditUrl
+      : (known?.page(p.slug, p.id) ?? null);
   const title = p.title?.trim() || "untitled";
   return { provider, href, title, label: `GIF: ${title} — via ${provider}` };
 }
@@ -445,13 +457,14 @@ export function Gif({
   height,
   still,
   href,
+  creditUrl,
   alt,
   className,
 }: GifProps) {
   const where = useRenderContext();
   const reduced = useReducedMotion();
   const report = useReportHref(src);
-  const info = gifPlaceholder({ provider, id, slug, title, href });
+  const info = gifPlaceholder({ provider, id, slug, title, href, creditUrl });
   const mode = gifMode({
     src,
     still,
@@ -543,6 +556,8 @@ export interface MemeProps {
   src: string;
   /** "kadal" for a template from Kadal's own library (the same as `template={{ provider: "kadal" }}`). */
   provider?: string;
+  /** The template's page (a Kadal template's pack in Kadal Store) when `template` has no `url`. */
+  creditUrl?: string;
   alt?: string;
   template?: MemeTemplate;
   captions?: MemeCaption[];
@@ -595,7 +610,7 @@ export function memeTemplateCredit(t: unknown): { label: string; href: string } 
   if (!t || typeof t !== "object") return null;
   const o = t as MemeTemplate;
   if (typeof o.provider === "string" && o.provider.toLowerCase() === "kadal")
-    return { label: "Template by Kadal", href: KADAL_URL };
+    return { label: "Template by Kadal", href: isWebUrl(o.url) ? o.url : KADAL_URL };
   if (typeof o.provider === "string" && o.provider.toLowerCase() === KADAL_STORE)
     return {
       label: "Template from Kadal Store",
@@ -614,12 +629,24 @@ export function memeTemplateCredit(t: unknown): { label: string; href: string } 
   return null;
 }
 
-export function Meme({ src, alt, provider, template, captions, width, className }: MemeProps) {
+export function Meme({
+  src,
+  alt,
+  provider,
+  creditUrl,
+  template,
+  captions,
+  width,
+  className,
+}: MemeProps) {
   const where = useRenderContext();
   const report = useReportHref(src);
   useEffect(() => loadExtraFont("Anton"), []);
   const lines = memeLayout(captions);
-  const credit = memeTemplateCredit(template ?? (provider ? { provider } : undefined));
+  const from = template ?? (provider ? { provider } : undefined);
+  const credit = memeTemplateCredit(
+    from && !from.url && isWebUrl(creditUrl) ? { ...from, url: creditUrl } : from,
+  );
   const label = alt ?? (lines.map((l) => l.text).join(" / ") || "Meme");
   return (
     <figure

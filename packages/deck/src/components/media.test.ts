@@ -310,4 +310,29 @@ describe('provider="kadal": our own media', () => {
     expect(html).not.toContain('id="kadal/ship-it"');
     expect(html).toContain(">Kadal</a>");
   });
+
+  test("a Kadal item in a Kadal Store pack links the pack: hover, template credit, card", () => {
+    const page = "https://store.kadal.cc/p/kip-stickers?ref=deck-credits";
+    expect(stickerCredit({ provider: "kadal", creditUrl: page })).toEqual({
+      label: "Kadal",
+      href: page,
+    });
+    expect(memeTemplateCredit({ provider: "kadal", id: "kadal/two-doors", url: page })).toEqual({
+      label: "Template by Kadal",
+      href: page,
+    });
+    expect(gifPlaceholder({ provider: "kadal", title: "Loading", creditUrl: page }).href).toBe(
+      page,
+    );
+    const meme = render(
+      createElement(Meme, {
+        src: "https://x/m.webp",
+        provider: "kadal",
+        creditUrl: page,
+        captions: [],
+      }),
+    );
+    expect(meme).toContain(`href="${page}"`);
+    expect(meme).toContain("Template by Kadal");
+  });
 });

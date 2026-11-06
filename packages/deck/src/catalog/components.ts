@@ -492,7 +492,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       shadow: "A soft drop shadow that follows the outline.",
       pos: '"x,y,w,h[,r]" — written by dragging; wins over x/y/size/rotate.',
       provider:
-        '"kadal" for Kadal\'s own library (credited "Kadal"), "kadal-store" for Kadal Store (credited under Kadal Store).',
+        '"kadal" for Kadal\'s own library (free in any deck under the Kadal Deck licence, credited "Kadal", linked to `creditUrl` — its pack in Kadal Store — when given), "kadal-store" for Kadal Store (credited under Kadal Store).',
       id: 'The provider\'s id ("kadal/ship-it", "kse_…"); without a provider, the element\'s id.',
       still: "A still frame, shown under reduced motion and in print.",
       credit: "A credit of its own, on hover and in `<Credits />`.",
@@ -531,6 +531,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       height: "Height in px.",
       still: "A still frame, shown under reduced motion.",
       href: "The page to link to (default: the provider's page for it).",
+      creditUrl: "A Kadal item's pack in Kadal Store: the credit's link.",
     },
   },
   Meme: {
@@ -544,6 +545,8 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       template:
         '{ provider: "imgflip" | "kadal", id, url, name } — the source, credited with a link.',
       provider: '"kadal": a Kadal template (the same as template.provider).',
+      creditUrl:
+        "The template's page (a Kadal template's pack in Kadal Store) when `template` has no `url`.",
       captions:
         "[{ text, x, y, width, size, align, color, stroke }]: x/y/width in % of the image (defaults 5, 4, 90), size in % of its width (default 9), align left|center|right, colours CSS (default white on black).",
       width: "CSS width; a number is px.",

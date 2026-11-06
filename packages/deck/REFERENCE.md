@@ -908,6 +908,7 @@ A GIF from a provider (KLIPY), hot-linked exactly as the provider returned it, w
 | `height` | `number` |  | Height in px. |
 | `still` | `string` |  | A still frame from the provider, shown under reduced motion. |
 | `href` | `string` |  | The page to link to in the credit and the export card (default: the provider's page for it). |
+| `creditUrl` | `string` |  | A Kadal item's pack in Kadal Store (or a store item's page): the credit's link. |
 | `alt` | `string` |  |  |
 
 #### `<Iframe>`
@@ -1001,6 +1002,7 @@ Image-macro captions over a picture: white Anton with a black outline by default
 | --- | --- | --- | --- |
 | `src` * | `string` |  | The image. |
 | `provider` | `string` |  | "kadal" for a template from Kadal's own library (the same as `template={{ provider: "kadal" }}`). |
+| `creditUrl` | `string` |  | The template's page (a Kadal template's pack in Kadal Store) when `template` has no `url`. |
 | `alt` | `string` |  | Alternative text (default: the captions). |
 | `template` | `MemeTemplate` |  | { provider: "imgflip" \| "kadal", id, url, name } — the source, credited with a link. |
 | `captions` | `MemeCaption[]` |  | [{ text, x, y, width, size, align, color, stroke }]: x/y/width in % of the image (defaults 5, 4, 90), size in % of its width (default 9), align left\|center\|right, colours CSS (default white on black). |

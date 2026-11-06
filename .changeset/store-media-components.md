@@ -18,6 +18,10 @@ Kadal Store's media in any deck, credited, and the components it needs.
   `licenseUrl` like `<Sticker>`; `provider="kadal-store"` lists an item under **Kadal Store** in
   `<Credits />`, with the Kadal Deck licence and a link to get the files. A slide's `background:`
   mapping with those keys is credited too, and `lutCredit`/`lutCreditUrl` credit a grade.
+- Kadal's own library is free in any Kadal deck under the Kadal Deck licence (outside Kadal Deck
+  its files are sold in Kadal Store; versions 0.1 stay CC BY 4.0): the Credits slide, the hover
+  credit and `kadal-deck media` say so, and a Kadal item's `creditUrl` (its pack in Kadal Store; a
+  template's `template.url`) is now the link of its "Kadal" credit.
 - `background: { image, repeat: true, size: 512 }` (or `repeat: repeat` with a `px` size) tiles a
   pattern in stage pixels, the same in every view and in print.
 - `kadal-deck media search store <words> [--type pattern|music|lottie|…]` and the MCP's

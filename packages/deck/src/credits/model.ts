@@ -228,10 +228,11 @@ export const SOURCES = {
     id: "kadal",
     label: "Kadal originals",
     by: "Kadal",
-    licence: "CC BY 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by/4.0/",
+    licence: KADAL_DECK_LICENCE,
+    licenceUrl: "https://store.kadal.cc/licence/#kadal-deck",
     url: "https://kadal.cc",
-    notice: "Stickers, GIFs and meme templates from Kadal's own library.",
+    notice:
+      "Kadal's own media, free in any Kadal deck. Outside Kadal Deck its files are sold in Kadal Store; versions 0.1 of the library stay under CC BY 4.0.",
     show: "items",
   },
   kadalStore: {
@@ -470,8 +471,14 @@ function placedCredit(a: Record<string, AttrValue>, fallback: string): Use | nul
   const own = ownCredit(a);
   if (own) return own;
   if (str(a.provider)?.toLowerCase() === "kadal")
-    return { source: SOURCES.kadal, item: { title: str(a.title) ?? str(a.alt) ?? fallback } };
+    return { source: SOURCES.kadal, item: kadalItem(a, str(a.title) ?? str(a.alt) ?? fallback) };
   return null;
+}
+
+/** A Kadal library item: credited "Kadal", linked to its pack in Kadal Store when the tag says. */
+function kadalItem(a: Record<string, AttrValue>, title: string): CreditItem {
+  const href = web(a.creditUrl);
+  return href ? { title, href } : { title };
 }
 
 /** A Kadal Store file's address on a deck host (`…/api/v1/media/store/files/kse_…/…`). */
@@ -500,7 +507,9 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
       const creator = str(a.creator);
       if (creator) item.by = creator;
       if (provider === "kadal") {
-        out.push({ source: SOURCES.kadal, item });
+        // Its pack in Kadal Store, when the tag says (`creditUrl`).
+        const href = web(a.creditUrl) ?? web(a.href);
+        out.push({ source: SOURCES.kadal, item: href ? { ...item, href } : item });
         break;
       }
       if (provider === "kadal-store") {
@@ -528,7 +537,7 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
       const own = isStore(a) ? storeCredit(a, "Sticker") : ownCredit(a);
       if (own) out.push(own);
       else if (str(a.provider)?.toLowerCase() === "kadal")
-        out.push({ source: SOURCES.kadal, item: { title: title ?? str(a.id) ?? "Sticker" } });
+        out.push({ source: SOURCES.kadal, item: kadalItem(a, title ?? str(a.id) ?? "Sticker") });
       else if (emojiSetOfUrl(src))
         out.push({ source: emojiSource(emojiSetOfUrl(src)!), item: { title: title ?? "emoji" } });
       else if (/^https:\/\/([\w-]+\.)*klipy\.com\//i.test(src))
@@ -548,7 +557,11 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
       if (provider === "imgflip") {
         const href = web(t?.url);
         out.push({ source: SOURCES.imgflip, item: href ? { title: name, href } : { title: name } });
-      } else if (provider === "kadal") out.push({ source: SOURCES.kadal, item: { title: name } });
+      } else if (provider === "kadal")
+        out.push({
+          source: SOURCES.kadal,
+          item: kadalItem({ creditUrl: t?.url as AttrValue, ...a }, name),
+        });
       else if (provider === "kadal-store") out.push(storeCredit({ ...a, title: name }, name));
       else if (provider && t) {
         const href = web(t.url);

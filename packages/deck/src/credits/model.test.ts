@@ -245,6 +245,31 @@ describe("<Credits /> and the corner link", () => {
   });
 });
 
+describe("Kadal's own library", () => {
+  test("free under the Kadal Deck licence, each item linked to its pack when the tag says", () => {
+    const page = "https://store.kadal.cc/p/kip-stickers?ref=deck-credits";
+    const [g] = collectCredits([
+      `<Sticker provider="kadal" id="kadal/ship-it" src="/s.webp" alt="Ship it" creditUrl="${page}" />`,
+      `<Gif provider="kadal" id="kadal/loading" src="/l.webp" title="Loading" creditUrl="${page}" />`,
+      `<Meme provider="kadal" src="/m.webp" template={{ provider: "kadal", id: "kadal/two-doors", url: "${page}", name: "Two doors" }} />`,
+      '<Sticker provider="kadal" id="kadal/old" src="/o.webp" alt="Old" />',
+    ]);
+    expect(g).toMatchObject({
+      id: "kadal",
+      label: "Kadal originals",
+      licence: "Kadal Deck licence",
+      licenceUrl: "https://store.kadal.cc/licence/#kadal-deck",
+    });
+    expect(g!.notice).toContain("versions 0.1 of the library stay under CC BY 4.0");
+    expect(g!.items).toEqual([
+      { title: "Ship it", href: page },
+      { title: "Loading", href: page },
+      { title: "Two doors", href: page },
+      { title: "Old" },
+    ]);
+  });
+});
+
 describe("Kadal Store", () => {
   const store = (tag: string, title: string, slug: string, extra = "") =>
     `<${tag} provider="kadal-store" id="kse_abcdefghijklmnopqrst" src="https://deck.kadal.cc/api/v1/media/store/files/kse_abcdefghijklmnopqrst/0123456789ab.bin" credit="${title}" creditUrl="https://store.kadal.cc/p/${slug}?ref=deck-credits" license="Kadal Deck licence" licenseUrl="https://store.kadal.cc/licence/#kadal-deck"${extra} />`;

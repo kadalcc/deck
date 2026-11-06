@@ -48,6 +48,8 @@ export interface StickerInput {
   provider?: string;
   id?: string;
   still?: string;
+  /** A Kadal item's pack in Kadal Store, the credit's link. */
+  creditUrl?: string;
 }
 
 /** A sticker centred on the stage. */
@@ -59,6 +61,7 @@ export function stickerMdx({
   provider,
   id,
   still,
+  creditUrl,
 }: StickerInput): string {
   const h = size / (aspect > 0 ? aspect : 1);
   const x = Math.round((STAGE.width - size) / 2);
@@ -72,6 +75,7 @@ export function stickerMdx({
     ["size", size],
     ["x", x],
     ["y", y],
+    ["creditUrl", creditUrl],
   ]);
 }
 
@@ -106,6 +110,8 @@ export interface GifInput {
   creator?: string;
   width?: number;
   height?: number;
+  /** A Kadal item's pack in Kadal Store, the credit's link. */
+  creditUrl?: string;
 }
 
 export function gifMdx(g: GifInput): string {
@@ -119,6 +125,7 @@ export function gifMdx(g: GifInput): string {
     ["creator", g.creator],
     ["width", g.width],
     ["height", g.height],
+    ["creditUrl", g.creditUrl],
   ]);
 }
 
