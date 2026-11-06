@@ -66,6 +66,61 @@ id: media-av
 Media with manners: the video starts when the slide arrives and is paused and rewound when it leaves, so nothing keeps playing behind the next slide. The audio player is a plain `<audio>` with the same lazy loading.
 </Notes>
 
+----
+id: media-motion-3d
+---
+
+<p className="sc-eyebrow">Media · Lottie, 3D, a colour grade</p>
+
+## Animation, a model, a grade
+
+<Cols cols="1fr 1fr 1.3fr" gap="2rem" align="start">
+<Col>
+
+<Lottie src="media/bounce.lottie" poster="media/bounce-poster.webp" alt="A teal ball bouncing over a turning bar" loop size={300} />
+
+`<Lottie>`: a `.json` or `.lottie`, played on arrival or `at` a click.
+
+</Col>
+<Col>
+
+<Model src="media/torus.glb" poster="media/torus-poster.webp" alt="A teal torus" size={320} />
+
+`<Model>`: a `.glb` to turn; it turns by itself while shown.
+
+</Col>
+<Col>
+
+<Image src="media/sea-wide.jpg" alt="The sea at dusk, graded teal and orange" lut="media/teal-orange.cube" />
+
+`lut="x.cube"` grades an `<Image>` or a `<Video>`, in print too.
+
+</Col>
+</Cols>
+
+<Notes>
+Three things that load only when a slide has them. The Lottie player is lottie-web's light SVG build; the model is Google's model-viewer, one WebGL context for the whole deck; the grade is a 3D LUT on WebGL2, done once into an image. Print and the exports show the posters and the graded picture.
+</Notes>
+
+----
+id: media-pattern-sound
+background: { image: media/seigaiha.png, repeat: true, size: 160, opacity: 0.18 }
+---
+
+<p className="sc-eyebrow">Media · a pattern, a sound on a click</p>
+
+## Tiles and a chime
+
+`background: { image, repeat: true, size: 160 }` tiles a pattern 160 stage pixels wide, the same on the stage, in the overview and in print.
+
+<Click>The chime plays as this line appears.</Click>
+
+<Audio src="media/chime.ogg" at={1} />
+
+<Notes>
+`<Audio at={1}>` is a sound effect on the first click: invisible, played from the start each time the deck steps onto it, quiet when you step back. Music under a whole slide is `autoplay loop controls={false}` with `fade` and `volume`.
+</Notes>
+
 ---
 layout: iframe-right
 url: embed/tide.html
