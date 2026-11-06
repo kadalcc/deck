@@ -19,7 +19,7 @@ export function useVideoLut(
   o: { lut?: string; strength: number; live: boolean; print: boolean; poster: boolean },
 ): "on" | "off" | "pending" | null {
   const { lut, strength, live, print } = o;
-  // In print a poster is the picture (graded as an image); only a video without one draws a frame.
+  // In print a poster that stands in (`poster`) is graded as an image; a frame is drawn here.
   const draws = !!lut && strength > 0 && (live || (print && !o.poster));
   const [state, setState] = useState<"on" | "off" | "pending">("pending");
   useEffect(() => {

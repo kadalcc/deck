@@ -168,9 +168,25 @@ export function Video({
     } else if (click < prev && autoreset === "click" && click < startClick) v.currentTime = start;
     // "once": a video that has played is not started again — but one playing is left to play.
     if (revealed && playingAt(plan, click)) {
-      if (!(autoplay === "once" && played.current && v.paused)) void v.play().catch(() => {});
+      if (!(autoplay === "once" && played.current && v.paused)) {
+        // Shown the moment it mounts: the slide hands out lazy sources after this effect runs.
+        if (src && !v.getAttribute("src")) v.setAttribute("src", src);
+        void v.play().catch(() => {});
+      }
     } else v.pause();
-  }, [live, click, plan, revealed, noPlay, clickDriven, autoreset, start, startClick, autoplay]);
+  }, [
+    live,
+    click,
+    plan,
+    revealed,
+    noPlay,
+    clickDriven,
+    autoreset,
+    start,
+    startClick,
+    autoplay,
+    src,
+  ]);
 
   // A still: the print frame, once the video knows how long it is.
   const onLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -197,7 +213,9 @@ export function Video({
     strength,
     live,
     print: where.print,
-    poster: !!shownPoster,
+    // In print the poster is the picture only with printPoster and no printTimestamp; otherwise
+    // the video shows the frame it seeks to (onLoadedMetadata), which the canvas grades.
+    poster: noPlay ? !!printPoster && printTimestamp === undefined : !!poster,
   });
 
   const own = stickerCredit({ provider, credit, creditUrl });

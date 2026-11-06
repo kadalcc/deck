@@ -152,6 +152,9 @@ export function Audio({
     const a = ref.current;
     if (!a || !canPlay) return;
     const play = (fromTop: boolean) => {
+      // A slide shown the moment it mounts runs this before the slide gives its media their
+      // lazy sources (react/SlideFrame.tsx: a parent's effect runs after its children's).
+      if (!a.getAttribute("src")) a.setAttribute("src", src);
       if (fromTop) a.currentTime = start;
       if (autoplay === "once" && played.current && a.paused) return;
       cancelFade.current();
@@ -214,6 +217,7 @@ export function Audio({
     autoplay,
     autoreset,
     cue,
+    src,
   ]);
 
   useEffect(() => () => cancelFade.current(), []);
