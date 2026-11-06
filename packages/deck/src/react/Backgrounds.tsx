@@ -225,15 +225,19 @@ function BackgroundContent({
   if (bg.color) style.backgroundColor = bg.color;
   if (bg.tint) style.backgroundImage = tintWash(bg.tint);
   if (bg.gradient) style.backgroundImage = bg.gradient;
+  // An image sized in stage pixels (a tiled pattern: `size: 512`) is a layer of its own, drawn on
+  // the stage (OnStage) so its tiles scale with the slide; over the colour, gradient or wash.
+  const imageStyle: React.CSSProperties = {};
   if (bg.image && !gif) {
     const restart = isGif(bg.image) && showing > 0 && !bg.image.startsWith("data:");
     const url = restart
       ? `${bg.image}${bg.image.includes("?") ? "&" : "?"}deck-showing=${showing}`
       : bg.image;
-    style.backgroundImage = `url("${url}")`;
-    style.backgroundSize = bg.size;
-    style.backgroundPosition = bg.position;
-    style.backgroundRepeat = bg.repeat;
+    const into = bg.stageSize ? imageStyle : style;
+    into.backgroundImage = `url("${url}")`;
+    into.backgroundSize = bg.size;
+    into.backgroundPosition = bg.position;
+    into.backgroundRepeat = bg.repeat;
   }
   // A `pro/` name is the host's (react/premium.tsx), never the registry's.
   const premium = isPremiumBackground(bg);
@@ -252,6 +256,13 @@ function BackgroundContent({
       data-color-scheme={bg.scheme ?? undefined}
     >
       <div className="deck-background-fill" style={{ ...style, opacity: bg.opacity }} />
+      {imageStyle.backgroundImage ? (
+        <div className="deck-background-component" style={{ opacity: bg.opacity }}>
+          <OnStage>
+            <div className="deck-background-fill deck-background-tiles" style={imageStyle} />
+          </OnStage>
+        </div>
+      ) : null}
       {gif && bg.image ? (
         <img
           ref={gifImg}

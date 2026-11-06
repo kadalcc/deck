@@ -785,6 +785,12 @@ export interface SlideBackground {
   size: string;
   position: string;
   repeat: string;
+  /**
+   * The image's size is in stage pixels (`size: 512`, a number): the layer is drawn at the deck's
+   * own size and scaled with the slide, so a tiled pattern has the same tiles in the play view,
+   * the presenter's copy, a thumbnail and print. A CSS size (`"512px"`, `cover`) is the layer's own.
+   */
+  stageSize: boolean;
   opacity: number;
   video: string | null;
   videoLoop: boolean;
@@ -825,7 +831,16 @@ function num(v: unknown): number | null {
 const COLOR = /^(#|rgb|hsl|oklch|oklab|lab|lch|transparent|[a-z]+$)/i;
 const GRADIENT = /gradient\(/i;
 
-/** `background: "#fff"`, `background: "/img.png"`, `background: { image, size }`, `background: { component: "aurora", … }`. */
+/** A tiled image's tile width in stage pixels when `repeat: true` says nothing of its size. */
+export const DEFAULT_TILE = 512;
+
+/**
+ * `background: "#fff"`, `background: "/img.png"`, `background: { image, size }`, `background: {
+ * component: "aurora", … }`. A pattern tiles with `{ image, repeat: true, size: 512 }` or
+ * `{ image, repeat: repeat, size: 512px }` (the tile's width in stage pixels; 512 when `repeat:
+ * true` gives none); a wallpaper covers with `{ image }` or the bare address (`size: cover`, the
+ * default).
+ */
 export function resolveBackground(fm: Frontmatter): SlideBackground | null {
   const raw = fm.background ?? fm.backgroundColor ?? fm.backgroundImage;
   const base: SlideBackground = {
@@ -835,6 +850,7 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
     size: "cover",
     position: "center",
     repeat: "no-repeat",
+    stageSize: false,
     opacity: 1,
     video: null,
     // A background video loops unless told not to (`loop: false`, `backgroundVideoLoop: false`).
@@ -848,7 +864,8 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
     scheme: null,
   };
   let any = false;
-  const apply = (obj: Record<string, unknown>) => {
+  // `own`: Kadal's `background: { … }` object, as opposed to reveal.js's individual keys.
+  const apply = (obj: Record<string, unknown>, own = false) => {
     // With a component, `color` belongs to the component (its stroke); the layer's own wash is
     // `fill` (or `tint`). Without one, `color` is the flat background colour, as in reveal.js.
     if (str(obj.fill) || str(obj.tint)) {
@@ -866,9 +883,34 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
       base.image = str(obj.image);
       any = true;
     }
-    if (str(obj.size)) base.size = str(obj.size)!;
+    // `size: 512` (or "512"): stage pixels. Anything else is CSS, as reveal.js has it.
+    const stagePx = num(obj.size);
+    if (stagePx !== null && stagePx > 0) {
+      base.size = `${stagePx}px`;
+      base.stageSize = true;
+    } else if (str(obj.size)) {
+      base.size = str(obj.size)!;
+      base.stageSize = false;
+    }
     if (str(obj.position)) base.position = str(obj.position)!;
-    if (str(obj.repeat)) base.repeat = str(obj.repeat)!;
+    if (obj.repeat === true) {
+      base.repeat = "repeat";
+      // A pattern with no size: tiles of DEFAULT_TILE, not one tile stretched over the slide.
+      if (stagePx === null && !str(obj.size)) {
+        base.size = `${DEFAULT_TILE}px`;
+        base.stageSize = true;
+      }
+    } else if (obj.repeat === false) base.repeat = "no-repeat";
+    else if (str(obj.repeat)) base.repeat = str(obj.repeat)!;
+    // A tile in pixels (`size: 480px`, `repeat: repeat`) in Kadal's own object is stage pixels
+    // too: a pattern looks the same on the stage, a thumbnail and the printed page. reveal.js's
+    // `backgroundSize` keeps its CSS meaning.
+    if (
+      own &&
+      base.repeat !== "no-repeat" &&
+      /^\d+(?:\.\d+)?px(?: (?:\d+(?:\.\d+)?px|auto))?$/.test(base.size)
+    )
+      base.stageSize = true;
     if (num(obj.opacity) !== null) base.opacity = num(obj.opacity)!;
     if (str(obj.video)) {
       base.video = str(obj.video);
@@ -903,7 +945,7 @@ export function resolveBackground(fm: Frontmatter): SlideBackground | null {
     else if (/^[a-z][\w-]*$/i.test(s) && !isCssColorKeyword(s)) base.component = s;
     else base.color = s;
     any = true;
-  } else if (raw && typeof raw === "object") apply(raw as Record<string, unknown>);
+  } else if (raw && typeof raw === "object") apply(raw as Record<string, unknown>, true);
   // reveal.js's individual keys, as frontmatter.
   apply({
     color: fm.backgroundColor,
