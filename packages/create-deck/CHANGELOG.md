@@ -1,5 +1,11 @@
 # @kadal/create-deck
 
+## 0.12.0
+
+### Patch Changes
+
+- 10f169c: The next steps after scaffolding say that publishing a public deck is free.
+
 ## 0.11.3
 
 No changes in this release.
