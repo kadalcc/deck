@@ -34,11 +34,15 @@ interface JsxNode {
 }
 
 /** Tag names that are a drag site of their own, and the component each one compiles to. */
-export const DRAG_TAGS: Record<string, "Drag" | "DragArrow" | "Sticker"> = {
+export const DRAG_TAGS: Record<string, "Drag" | "DragArrow" | "Sticker" | "Lottie" | "Model"> = {
   Drag: "Drag",
   DragArrow: "DragArrow",
   // An image placed over the slide (components/media.tsx): a drag site under its own name.
   Sticker: "Sticker",
+  // An animation and a 3D model, placed the same way when they have x/y/pos (in the flow of the
+  // slide otherwise: counted all the same, so the numbering never depends on the props).
+  Lottie: "Lottie",
+  Model: "Model",
   VDrag: "Drag",
   VDragArrow: "DragArrow",
   "v-drag": "Drag",

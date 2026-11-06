@@ -42,8 +42,11 @@ import { Drag } from "./Drag.tsx";
  *
  * `provider="kadal"` marks an item from Kadal's own library (stickers, GIF loops, meme templates:
  * `kadal-deck media search kadal …`). It is credited "Kadal", and because it is ours to copy, print
- * and the exports draw it (its `still`) where a provider's GIF gets a card. Every attributed item
- * is also listed by `<Credits />` (credits/model.ts reads these tags when the deck compiles).
+ * and the exports draw it (its `still`) where a provider's GIF gets a card. `provider="kadal-store"`
+ * marks an item from Kadal Store, which every deck may place under the Kadal Deck licence:
+ * credited with its `credit` and a link to its store page (`creditUrl`), grouped under "Kadal
+ * Store" with the licence and the way to the files. Every attributed item is also listed by
+ * `<Credits />` (credits/model.ts reads these tags when the deck compiles).
  *
  * A host that takes reports sets `window.__KADAL_DECK__.mediaReport` (a URL): each of these then
  * offers "Report" on hover, pointing there with the deck's room and the media's address.
@@ -59,7 +62,7 @@ const subscribeReduced = (on: () => void) => {
   return () => mq?.removeEventListener?.("change", on);
 };
 /** prefers-reduced-motion, kept current; false where there is no window (SSR, tests). */
-function useReducedMotion(): boolean {
+export function useReducedMotion(): boolean {
   return useSyncExternalStore(
     subscribeReduced,
     () => (typeof window !== "undefined" && window.matchMedia?.(REDUCED).matches) || false,
@@ -88,7 +91,7 @@ export function mediaReportHref(base: string, room: string, src: string): string
   return `${base}${sep}deck=${encodeURIComponent(room)}&src=${encodeURIComponent(src)}`;
 }
 
-function useReportHref(src: string | undefined): string | null {
+export function useReportHref(src: string | undefined): string | null {
   const deck = useDeck();
   const where = useRenderContext();
   const base = readMediaReport();
@@ -97,7 +100,7 @@ function useReportHref(src: string | undefined): string | null {
 }
 
 /** The small line that appears on hover: a credit and, on a host that takes them, "Report". */
-function HoverCredit({ children, report }: { children?: ReactNode; report: string | null }) {
+export function HoverCredit({ children, report }: { children?: ReactNode; report: string | null }) {
   if (!children && !report) return null;
   return (
     <span className="deck-media-credit">
@@ -130,9 +133,9 @@ export interface StickerProps {
   shadow?: boolean;
   /** "x,y,w,h[,r]" — what dragging it in `kadal-deck dev` writes; wins over x/y/size/rotate. */
   pos?: string;
-  /** Where it came from: "kadal" for Kadal's own library (credited "Kadal"). */
+  /** Where it came from: "kadal" (Kadal's own library), "kadal-store" (Kadal Store). */
   provider?: string;
-  /** The provider's id for it ("kadal/ship-it"). Without a provider, `id` is the element's id. */
+  /** The provider's id for it ("kadal/ship-it", "kse_…"). Without a provider, `id` is the element's id. */
   id?: string;
   /** A still frame of an animated sticker: shown under reduced motion and in print. */
   still?: string;
@@ -163,19 +166,49 @@ export function stickerPlace(
 const flipOf = (flip: StickerProps["flip"]) =>
   flip === "y" ? "scaleY(-1)" : flip === true || flip === "x" ? "scaleX(-1)" : undefined;
 
-/** The words and link a sticker is credited with on hover, or null. */
+/** The props every placed piece of media can be credited with (`<Sticker>`, `<Video>`, `<Lottie>`…). */
+export interface MediaCreditProps {
+  /** Where it came from: "kadal" (Kadal's own library), "kadal-store" (Kadal Store). */
+  provider?: string;
+  /** A credit of its own ("Indigo · Seigaiha Waves Pattern"), on hover and in the deck's credits. */
+  credit?: string;
+  /** The credit's link (the work's page). */
+  creditUrl?: string;
+  /** Its licence ("CC BY 4.0", "Kadal Deck licence"), for the credits. */
+  license?: string;
+  licenseUrl?: string;
+}
+
+/** The words and link a piece of media is credited with on hover, or null. */
 export function stickerCredit(
-  p: Pick<StickerProps, "provider" | "credit" | "creditUrl">,
+  p: Pick<MediaCreditProps, "provider" | "credit" | "creditUrl">,
 ): { label: string; href: string | null } | null {
   if (typeof p.credit === "string" && p.credit.trim())
     return { label: p.credit.trim(), href: isWebUrl(p.creditUrl) ? p.creditUrl : null };
-  if (typeof p.provider === "string" && p.provider.toLowerCase() === "kadal")
-    return { label: "Kadal", href: KADAL_URL };
+  const provider = typeof p.provider === "string" ? p.provider.toLowerCase() : "";
+  if (provider === "kadal") return { label: "Kadal", href: KADAL_URL };
+  if (provider === KADAL_STORE)
+    return { label: "Kadal Store", href: isWebUrl(p.creditUrl) ? p.creditUrl : KADAL_STORE_URL };
   return null;
+}
+
+/** The hover line's content for a credit (`stickerCredit`): a link, or words. */
+export function CreditLabel({ credit }: { credit: { label: string; href: string | null } | null }) {
+  if (!credit) return null;
+  return credit.href ? (
+    <a href={credit.href} target="_blank" rel="noopener noreferrer">
+      {credit.label}
+    </a>
+  ) : (
+    <span>{credit.label}</span>
+  );
 }
 
 /** Kadal's own media: credited "Kadal", linked here. */
 export const KADAL_URL = "https://kadal.cc";
+/** Kadal Store's items: `provider="kadal-store"`, credited under "Kadal Store" (credits/model.ts). */
+export const KADAL_STORE = "kadal-store";
+export const KADAL_STORE_URL = "https://store.kadal.cc";
 
 export function Sticker({
   src,
@@ -225,17 +258,7 @@ export function Sticker({
         decoding="async"
         style={flip ? { transform: flipOf(flip) } : undefined}
       />
-      <HoverCredit report={report}>
-        {own ? (
-          own.href ? (
-            <a href={own.href} target="_blank" rel="noopener noreferrer">
-              {own.label}
-            </a>
-          ) : (
-            <span>{own.label}</span>
-          )
-        ) : null}
-      </HoverCredit>
+      <HoverCredit report={report}>{own ? <CreditLabel credit={own} /> : null}</HoverCredit>
     </Drag>
   );
 }
@@ -351,6 +374,7 @@ export function Emoji({ name, char, set, size = "1.2em", alt, className, childre
 
 const PROVIDERS: Record<string, { label: string; page: (slug?: string, id?: string) => string }> = {
   kadal: { label: "Kadal", page: () => KADAL_URL },
+  [KADAL_STORE]: { label: "Kadal Store", page: () => KADAL_STORE_URL },
   klipy: {
     label: "KLIPY",
     page: (slug) =>
@@ -433,7 +457,7 @@ export function Gif({
     still,
     print: where.print,
     reduced,
-    own: provider.toLowerCase() === "kadal",
+    own: provider.toLowerCase() === "kadal" || provider.toLowerCase() === KADAL_STORE,
   });
   const ratio = width && height ? `${width} / ${height}` : undefined;
   if (mode === "card")
@@ -572,6 +596,11 @@ export function memeTemplateCredit(t: unknown): { label: string; href: string } 
   const o = t as MemeTemplate;
   if (typeof o.provider === "string" && o.provider.toLowerCase() === "kadal")
     return { label: "Template by Kadal", href: KADAL_URL };
+  if (typeof o.provider === "string" && o.provider.toLowerCase() === KADAL_STORE)
+    return {
+      label: "Template from Kadal Store",
+      href: isWebUrl(o.url) ? o.url : KADAL_STORE_URL,
+    };
   if (o.provider === "imgflip")
     return {
       label: "Template via imgflip.com",

@@ -6,6 +6,8 @@ import { burstConfetti } from "../react/ConfettiLayer.tsx";
 import { FrameShell } from "../react/Frame.tsx";
 import { useDeck, useSlide, useSlideOptional } from "../react/context.ts";
 import { useActions, useClick, useConfig, useNav, useUi } from "../react/hooks.ts";
+import { useRenderContext } from "../react/render-context.ts";
+import { useGradedSrc } from "./lut-image.ts";
 
 /* ─────────────────────────── Math, diagrams, notes ─────────────────────────── */
 
@@ -309,7 +311,10 @@ export function Toc({
 
 /* ─────────────────────────── Media ─────────────────────────── */
 
-/** The `img` mapping: lazy, optionally a lightbox on click (`preview`). */
+/**
+ * The `img` mapping: lazy, optionally a lightbox on click (`preview`), optionally graded by a
+ * `.cube` LUT (`lut`, `lutStrength`: components/lut-gl.ts, loaded only then).
+ */
 export function Image({
   src,
   alt = "",
@@ -320,6 +325,12 @@ export function Image({
   creditUrl: _creditUrl,
   license: _license,
   licenseUrl: _licenseUrl,
+  provider,
+  id,
+  lut,
+  lutStrength,
+  lutCredit: _lutCredit,
+  lutCreditUrl: _lutCreditUrl,
   ...rest
 }: {
   src?: string;
@@ -334,44 +345,47 @@ export function Image({
   /** Its licence ("CC BY 2.0"), for the credits. */
   license?: string;
   licenseUrl?: string;
+  /** Where it came from: "kadal-store" for Kadal Store (credited under "Kadal Store"). */
+  provider?: string;
+  /** The provider's id for it ("kse_…"). Without a provider, `id` is the element's id. */
+  id?: string;
+  /** A `.cube` 3D LUT to grade it with (same origin, or served with CORS). */
+  lut?: string;
+  /** How much of the grade: 0–1 (default 1). */
+  lutStrength?: number;
+  /** The grade's own credit ("Teal Dusk · Film LUTs"), for `<Credits />`. */
+  lutCredit?: string;
+  /** The grade's page, for its credit's link. */
+  lutCreditUrl?: string;
   [key: string]: unknown;
 }) {
-  const previewSrc = typeof preview === "string" ? preview : preview ? src : undefined;
+  const where = useRenderContext();
+  const graded = useGradedSrc(src, lut, lutStrength, where.print);
+  const shown = graded.src;
+  const previewSrc =
+    typeof preview === "string"
+      ? preview
+      : preview
+        ? graded.state === "on"
+          ? shown
+          : src
+        : undefined;
   return (
     <img
-      src={src}
+      src={shown}
       alt={alt}
-      loading="lazy"
+      // A graded image is a blob already in memory: nothing to wait for.
+      loading={graded.state === "on" ? undefined : "lazy"}
+      // While it is graded, the same CORS request the grader makes (one download, not two).
+      crossOrigin={graded.state === "pending" ? "anonymous" : undefined}
       decoding="async"
       className={["deck-image", className].filter(Boolean).join(" ")}
       data-preview-image={previewSrc}
       data-preview-fit={fit}
+      data-lut={graded.state ?? undefined}
       title={typeof credit === "string" && credit ? credit : undefined}
+      {...(id && !provider ? { id } : {})}
       {...rest}
-    />
-  );
-}
-
-export function Audio({
-  src,
-  autoplay,
-  loop,
-  controls = true,
-  className,
-}: {
-  src: string;
-  autoplay?: boolean;
-  loop?: boolean;
-  controls?: boolean;
-  className?: string;
-}) {
-  return (
-    <audio
-      data-src={src}
-      data-autoplay={autoplay ? "" : undefined}
-      loop={loop}
-      controls={controls}
-      className={className}
     />
   );
 }

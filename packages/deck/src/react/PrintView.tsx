@@ -15,6 +15,7 @@ import { useDeck } from "./context.ts";
 import { useNav, useUi } from "./hooks.ts";
 import { usePremiumSettled } from "./premium.tsx";
 import { loadSlide, SlideFrame, useSlideScheme } from "./SlideFrame.tsx";
+import { useStillsSettled } from "./still-holds.ts";
 import { useFontsReady } from "../theming/react.tsx";
 import { MDXProvider } from "./mdx.tsx";
 
@@ -134,15 +135,18 @@ export function PrintView({
     return () => clearTimeout(t);
   }, []);
   const premiumSettled = usePremiumSettled() || premiumGrace;
+  // Pictures made in the page (a graded image, a Lottie's first frame): each holds for at most
+  // its own grace (react/still-holds.ts).
+  const stillsSettled = useStillsSettled();
 
-  // One more beat after the last change of page count (or the last library item arriving), so
-  // the newest pages, fonts, KaTeX, diagrams and posters have painted.
+  // One more beat after the last change of page count (or the last library item or picture
+  // arriving), so the newest pages, fonts, KaTeX, diagrams and posters have painted.
   useEffect(() => {
-    if (!settled || !premiumSettled) return;
+    if (!settled || !premiumSettled || !stillsSettled) return;
     setReady(false);
     const t = setTimeout(() => setReady(true), 400);
     return () => clearTimeout(t);
-  }, [settled, pages.length, premiumSettled, spill]);
+  }, [settled, pages.length, premiumSettled, stillsSettled, spill]);
 
   return (
     <div
@@ -150,7 +154,7 @@ export function PrintView({
       className={["deck-print-pages", omitBackground ? "is-transparent" : ""]
         .filter(Boolean)
         .join(" ")}
-      data-ready={(ready && fontsReady && premiumSettled) || undefined}
+      data-ready={(ready && fontsReady && premiumSettled && stillsSettled) || undefined}
       style={{ width: deck.config.width, zoom: fixedZoom ?? zoom }}
     >
       {pages.map((p) => {
