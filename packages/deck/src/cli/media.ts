@@ -11,12 +11,12 @@ import { HostError, hostFrom, loadCredentials, request } from "./host.ts";
  *
  *   kadal-deck media list [--kind sticker] [--q rocket] [--json]
  *   kadal-deck media add <id|name> [--to public/stickers/] [--force]
- *   kadal-deck media search <kind> <query…> [--limit 12] [--set twemoji] [--json]
+ *   kadal-deck media search <kind> <query…> [--limit 12] [--set twemoji] [--type pattern] [--json]
  *   kadal-deck media trending <kind> [--limit 12] [--set …] [--json]
  *   kadal-deck media used klipy <id> [--q query]
  *
  * `search` and `trending` are the hosted builder's media panel on the command line (icons, emoji,
- * stickers, GIFs, memes, meme templates, Kadal's own library — media-search/), each result with
+ * stickers, GIFs, memes, meme templates, Kadal's own library, Kadal Store — media-search/), each result with
  * the MDX the panel would insert and its credit. They work signed out; KLIPY's GIFs, stickers and
  * memes need the sign-in (the key comes from the host) and are asked for from this machine.
  * `used` is KLIPY's share trigger: run it for a KLIPY result you put in a deck.
@@ -111,11 +111,12 @@ interface Io {
 }
 
 const USAGE = [
-  "Usage: kadal-deck media search <kind> <query> [--limit n] [--set s]",
-  "       kadal-deck media trending <kind> [--limit n] [--set s]",
+  "Usage: kadal-deck media search <kind> <query> [--limit n] [--set s] [--type t]",
+  "       kadal-deck media trending <kind> [--limit n] [--set s] [--type t]",
   "       kadal-deck media used klipy <id> [--q query]",
   "       kadal-deck media list [--kind k] [--q text] | media add <id|name> [--to dir]",
-  "Kinds: icon, emoji, sticker, gif, meme, template, kadal. Sets: fluent, fluent-color, fluent-flat, noto, noto-animated, twemoji.",
+  "Kinds: icon, emoji, sticker, gif, meme, template, kadal, store. Sets: fluent, fluent-color, fluent-flat, noto, noto-animated, twemoji.",
+  "Store types (--type): image, icon, sticker, illustration, pattern, wallpaper, music, sfx, video, lottie, model, lut, gif, meme-template.",
 ].join("\n");
 
 const kb = (n: number | null) =>
@@ -162,6 +163,7 @@ async function findCommand(
       query,
       ...(limit !== undefined ? { limit } : {}),
       ...(str(flags.set) ? { set: str(flags.set) } : {}),
+      ...(str(flags.type) ? { type: str(flags.type) } : {}),
     });
   } catch (e) {
     if (e instanceof RangeError) throw new UsageError(e.message);
@@ -179,7 +181,17 @@ async function findCommand(
     say(`  id       ${r.id}`);
     if (r.preview) say(`  preview  ${r.preview}`);
     say(`  credit   ${r.attribution}`);
-    say(r.mdx ? r.mdx.replace(/^/gm, "  ") : "  (KLIPY holds this place; nothing to insert)");
+    say(
+      r.mdx
+        ? r.mdx.replace(/^/gm, "  ")
+        : r.provider === "klipy"
+          ? "  (KLIPY holds this place; nothing to insert)"
+          : "  (nothing to insert)",
+    );
+    if (r.frontmatter && r.frontmatter !== r.mdx) {
+      say("  or behind the slide, as its frontmatter:");
+      say(r.frontmatter.replace(/^/gm, "  "));
+    }
     say("");
   }
   for (const s of found.sources) if (s.note) say(`${s.provider}: ${s.note}`);

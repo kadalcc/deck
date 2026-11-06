@@ -280,7 +280,27 @@ describe("the MDX each source inserts (the builder's media-snippets.ts)", () => 
       'template={{"provider":"kadal","id":"kadal/two-doors","name":"Two doors"}}',
     );
     expect(tpl!.mdx).toContain('{"text":"Bottom text","x":55,"y":10,"width":40,"size":10.7}');
-    expect(sticker!.attribution).toBe("Kadal — CC BY 4.0");
+    expect(sticker!.attribution).toBe("Kadal — Kadal Deck licence");
+    expect(sticker!.licence).toBe("Kadal Deck licence");
+    expect(sticker!.link).toBe("https://kadal.cc");
+    // An item the catalog places in a Kadal Store pack links it: creditUrl, the template's url.
+    const pack = { store: { product: { slug: "kip-and-friends-reaction-stickers", name: "Kip" } } };
+    const page = "https://store.kadal.cc/p/kip-and-friends-reaction-stickers?ref=deck-credits";
+    const inPack = parseKadalCatalog({
+      version: "v3",
+      items: [
+        { ...(cat.items[0] as object), ...pack },
+        { ...(cat.items[1] as object), ...pack },
+        { ...(cat.items[2] as object), ...pack },
+      ],
+    }).items.map((i) => kadalResult(i, host, "v3"));
+    expect(inPack[0]!.mdx!.endsWith(` y={360} creditUrl="${page}" />`)).toBe(true);
+    expect(inPack[0]!.link).toBe(page);
+    expect(inPack[1]!.mdx!.endsWith(`height={450} creditUrl="${page}" />`)).toBe(true);
+    expect(inPack[2]!.mdx).toContain(`  creditUrl="${page}"\n`);
+    expect(inPack[2]!.mdx).toContain(
+      `template={{"provider":"kadal","id":"kadal/two-doors","url":"${page}","name":"Two doors"}}`,
+    );
     // The host's rule: the version encoded, the (already checked) path as listed; unsafe paths are dropped.
     expect(kadalFileUrl(host, "v 3", "a/c.png")).toBe(
       `${host}/api/v1/media/kadal/files/v%203/a/c.png`,

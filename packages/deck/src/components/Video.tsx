@@ -1,11 +1,26 @@
-import { type ReactNode, useContext, useEffect, useMemo, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import type { ClickAt } from "../core/clicks.ts";
 import { useSlideOptional } from "../react/context.ts";
-import { useConfig } from "../react/hooks.ts";
 import { useRenderContext } from "../react/render-context.ts";
-import { ClickShownContext } from "./Click.tsx";
-import { useClickPoints } from "./click-points.ts";
+import { lutStrengthOf } from "./lut.ts";
+import { useGradedSrc } from "./lut-image.ts";
+import { useVideoLut } from "./lut-video.ts";
+import {
+  type MediaPlan,
+  type MediaStep,
+  playingAt,
+  seconds,
+  seekCrossing,
+  useMediaClicks,
+} from "./media-clicks.ts";
+import {
+  CreditLabel,
+  HoverCredit,
+  type MediaCreditProps,
+  stickerCredit,
+  useReportHref,
+} from "./media.tsx";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -30,12 +45,18 @@ import { useClickPoints } from "./click-points.ts";
  * Without any click option it is the plain media element it always was: `autoplay` plays on
  * arrival and pauses on leaving, through the slide's own media handling (and the deck's
  * `autoPlayMedia`).
+ *
+ * Credited like a sticker (`provider`, `id`, `credit`, `creditUrl`, `license`, `licenseUrl`): on
+ * hover, and in `<Credits />`. `lut` grades it with a `.cube` LUT (components/lut-video.ts) — the
+ * poster as an image, the frames on a canvas over the video while it plays.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-export type VideoStep = "play" | "pause" | "rewind" | number;
+export type VideoStep = MediaStep;
+export type VideoPlan = MediaPlan;
+export { playingAt, seekCrossing };
 
-export interface VideoProps {
+export interface VideoProps extends MediaCreditProps {
   src?: string;
   /** Play when the slide (or `at`, or the enclosing `<Click>`) arrives; "once": only the first time. */
   autoplay?: boolean | "once";
@@ -57,45 +78,21 @@ export interface VideoProps {
   printPoster?: string;
   /** The frame shown in print and previews: seconds, or "last". Default `timestamp`. */
   printTimestamp?: number | string;
+  /** The provider's id for it ("kse_…"). Without a provider, `id` is the element's id. */
+  id?: string;
+  /** A `.cube` 3D LUT to grade it with (same origin, or served with CORS). */
+  lut?: string;
+  /** How much of the grade: 0–1 (default 1). */
+  lutStrength?: number;
+  /** The grade's own credit ("Teal Dusk · Film LUTs"), for `<Credits />`. */
+  lutCredit?: string;
+  /** The grade's page, for its credit's link. */
+  lutCreditUrl?: string;
   className?: string;
   /** `<source>` elements, captions (`<track>`), fallback text. */
   children?: ReactNode;
   [key: string]: unknown;
 }
-
-interface ClickPoint {
-  role: "start" | "pause" | "step";
-  at: ClickAt;
-  action?: VideoStep;
-}
-
-export interface VideoPlan {
-  /** Absolute click → what happens there, in click order. */
-  events: Array<{ click: number; action: VideoStep }>;
-}
-
-/** Whether it should be playing at `click`: the events up to it, in order (pure; tested). */
-export function playingAt(plan: VideoPlan, click: number): boolean {
-  let playing = false;
-  for (const e of plan.events) {
-    if (e.click > click) break;
-    if (e.action === "play") playing = true;
-    else if (e.action === "pause") playing = false;
-  }
-  return playing;
-}
-
-/** The seeks crossed going forward from `from` to `to` (exclusive, inclusive): the last one wins. */
-export function seekCrossing(plan: VideoPlan, from: number, to: number): VideoStep | null {
-  let seek: VideoStep | null = null;
-  for (const e of plan.events)
-    if (e.click > from && e.click <= to && (e.action === "rewind" || typeof e.action === "number"))
-      seek = e.action;
-  return seek;
-}
-
-const seconds = (v: number | string | undefined, fallback = 0) =>
-  v === undefined || !Number.isFinite(Number(v)) ? fallback : Number(v);
 
 export function Video({
   src,
@@ -111,45 +108,34 @@ export function Video({
   poster,
   printPoster,
   printTimestamp,
+  provider,
+  id,
+  credit,
+  creditUrl,
+  license: _license,
+  licenseUrl: _licenseUrl,
+  lut,
+  lutStrength,
+  lutCredit: _lutCredit,
+  lutCreditUrl: _lutCreditUrl,
   className,
   children,
   ...rest
 }: VideoProps) {
   const slide = useSlideOptional();
   const where = useRenderContext();
-  const autoPlayMedia = useConfig().autoPlayMedia;
-  const inClick = useContext(ClickShownContext);
   const ref = useRef<HTMLVideoElement>(null);
+  const frame = useRef<HTMLSpanElement>(null);
   const played = useRef(false);
   const lastClick = useRef<number | null>(null);
   const start = seconds(timestamp);
-  const stepList = Object.entries(steps ?? {})
-    .filter(([k]) => Number.isFinite(Number(k)))
-    .map(([k, action]) => ({ click: Number(k), action }));
-  const clickDriven =
-    at !== undefined ||
-    pauseAt !== undefined ||
-    stepList.length > 0 ||
-    inClick !== null ||
-    !!autoreset;
-  const points: ClickPoint[] = [
-    ...(at !== undefined ? [{ role: "start" as const, at }] : []),
-    ...(pauseAt !== undefined ? [{ role: "pause" as const, at: pauseAt }] : []),
-    ...stepList.map((s) => ({ role: "step" as const, at: s.click, action: s.action })),
-  ];
-  const clicks = useClickPoints(points.map((p) => ({ at: p.at }))).map((r) => r.start);
-  const wantsPlay = autoplay ?? (at !== undefined ? true : autoPlayMedia === true);
-  const plan: VideoPlan = useMemo(() => {
-    const events: VideoPlan["events"] = [];
-    let k = 0;
-    if (at !== undefined)
-      events.push({ click: clicks[k++] ?? 0, action: wantsPlay ? "play" : "pause" });
-    else if (wantsPlay && autoplay !== false) events.push({ click: 0, action: "play" });
-    if (pauseAt !== undefined) events.push({ click: clicks[k++] ?? 0, action: "pause" });
-    for (const s of stepList) events.push({ click: clicks[k++] ?? s.click, action: s.action });
-    return { events: events.sort((a, b) => a.click - b.click) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(clicks), JSON.stringify(stepList), at, pauseAt, wantsPlay, autoplay]);
+  const { plan, clickDriven, startClick, revealed } = useMediaClicks({
+    autoplay,
+    at,
+    pauseAt,
+    steps,
+    autoreset,
+  });
 
   // Plays only on the slide being shown: the deck, the presenter's current slide, a mirror.
   const noPlay =
@@ -159,8 +145,6 @@ export function Video({
     !(where.context === "slide" || where.context === "presenter");
   const live = !noPlay && !!slide?.active;
   const click = slide?.click ?? 0;
-  const revealed = inClick !== false;
-  const startClick = plan.events.find((e) => e.action === "play")?.click ?? 0;
 
   useEffect(() => {
     const v = ref.current;
@@ -184,9 +168,25 @@ export function Video({
     } else if (click < prev && autoreset === "click" && click < startClick) v.currentTime = start;
     // "once": a video that has played is not started again — but one playing is left to play.
     if (revealed && playingAt(plan, click)) {
-      if (!(autoplay === "once" && played.current && v.paused)) void v.play().catch(() => {});
+      if (!(autoplay === "once" && played.current && v.paused)) {
+        // Shown the moment it mounts: the slide hands out lazy sources after this effect runs.
+        if (src && !v.getAttribute("src")) v.setAttribute("src", src);
+        void v.play().catch(() => {});
+      }
     } else v.pause();
-  }, [live, click, plan, revealed, noPlay, clickDriven, autoreset, start, startClick, autoplay]);
+  }, [
+    live,
+    click,
+    plan,
+    revealed,
+    noPlay,
+    clickDriven,
+    autoreset,
+    start,
+    startClick,
+    autoplay,
+    src,
+  ]);
 
   // A still: the print frame, once the video knows how long it is.
   const onLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -198,7 +198,29 @@ export function Video({
     } else if (start && v.currentTime === 0) v.currentTime = start;
   };
 
-  return (
+  // The grade: the poster as an image, the frames on a canvas. A video whose host refuses CORS
+  // can't be graded — nor even loaded with `crossOrigin` — so it is loaded again without.
+  const [corsRefused, setCorsRefused] = useState(false);
+  useEffect(() => {
+    if (corsRefused) ref.current?.load();
+  }, [corsRefused]);
+  const strength = lutStrengthOf(lutStrength);
+  const grading = !!lut && strength > 0 && !corsRefused;
+  const shownPoster = noPlay ? (printPoster ?? poster) : poster;
+  const gradedPoster = useGradedSrc(shownPoster, grading ? lut : undefined, strength, where.print);
+  const lutState = useVideoLut(ref, frame, {
+    lut: grading ? lut : undefined,
+    strength,
+    live,
+    print: where.print,
+    // In print the poster is the picture only with printPoster and no printTimestamp; otherwise
+    // the video shows the frame it seeks to (onLoadedMetadata), which the canvas grades.
+    poster: noPlay ? !!printPoster && printTimestamp === undefined : !!poster,
+  });
+
+  const own = stickerCredit({ provider, credit, creditUrl });
+  const report = useReportHref(own ? src : undefined);
+  const video = (
     <video
       ref={ref}
       data-src={src}
@@ -209,15 +231,36 @@ export function Video({
       controls={!noPlay && controls}
       playsInline
       preload={noPlay ? "metadata" : undefined}
-      poster={noPlay ? (printPoster ?? poster) : poster}
+      poster={gradedPoster.state === "pending" ? undefined : gradedPoster.src}
+      crossOrigin={grading ? "anonymous" : undefined}
       onPlay={() => {
         played.current = true;
       }}
       onLoadedMetadata={onLoadedMetadata}
+      onError={() => {
+        if (grading && ref.current?.error) setCorsRefused(true);
+      }}
       className={["deck-video", className].filter(Boolean).join(" ")}
+      {...(id && !provider ? { id } : {})}
       {...rest}
     >
       {children}
     </video>
+  );
+  // A bare <video> as it always was, unless something needs a box around it.
+  if (!own && !lut) return video;
+  return (
+    <span
+      ref={frame}
+      className={["deck-video-frame", lutState === "on" && "is-graded"].filter(Boolean).join(" ")}
+      data-lut={
+        lut ? (corsRefused ? "off" : (lutState ?? gradedPoster.state ?? undefined)) : undefined
+      }
+    >
+      {video}
+      {!where.print ? (
+        <HoverCredit report={report}>{own ? <CreditLabel credit={own} /> : null}</HoverCredit>
+      ) : null}
+    </span>
   );
 }

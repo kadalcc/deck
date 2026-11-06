@@ -6,7 +6,6 @@ export {
   Absolute,
   Anchor,
   Arrow,
-  Audio,
   Badge,
   Callout,
   Center,
@@ -40,7 +39,10 @@ export {
   Youtube,
 } from "./content.tsx";
 export { Mark } from "./Mark.tsx";
-export { Video } from "./Video.tsx";
+export { Video, type VideoProps } from "./Video.tsx";
+export { Audio, type AudioProps } from "./Audio.tsx";
+export { Lottie, type LottieProps } from "./Lottie.tsx";
+export { Model, type ModelProps } from "./Model.tsx";
 export {
   Emoji,
   Gif,

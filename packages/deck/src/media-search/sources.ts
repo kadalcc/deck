@@ -27,6 +27,10 @@ import {
  *   meme      KLIPY's finished memes (as `<Gif>`, as the builder inserts them)
  *   template  Kadal's meme templates and Imgflip's top 100, with caption boxes; `<Meme>`
  *   kadal     everything in Kadal's own library
+ *   store     Kadal Store's shelf for decks (media-search/store.ts): images, icons, stickers,
+ *             illustrations, patterns and wallpapers (also as slide backgrounds), music and sound
+ *             effects (`<Audio>`), videos, Lottie animations, 3D models, LUTs and (Pro) shaders;
+ *             `--type` narrows it
  *
  * KLIPY's integration rules (docs.klipy.com, as the builder's lib/klipy.ts has them) hold here
  * too: the person's machine asks api.klipy.com directly (never through a Kadal host), with the
@@ -45,14 +49,32 @@ export const MEDIA_KINDS = [
   "meme",
   "template",
   "kadal",
+  "store",
 ] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
-export type MediaProvider = "iconify" | "emoji" | "klipy" | "imgflip" | "kadal";
+export type MediaProvider = "iconify" | "emoji" | "klipy" | "imgflip" | "kadal" | "kadal-store";
 
 export interface MediaResult {
   provider: MediaProvider;
-  /** What it is (a Kadal item can be any of these). */
-  type: "icon" | "emoji" | "sticker" | "gif" | "meme" | "template" | "illustration";
+  /** What it is (a Kadal or Kadal Store item can be any of these). */
+  type:
+    | "icon"
+    | "emoji"
+    | "sticker"
+    | "gif"
+    | "meme"
+    | "template"
+    | "illustration"
+    | "image"
+    | "pattern"
+    | "wallpaper"
+    | "music"
+    | "sfx"
+    | "video"
+    | "lottie"
+    | "model"
+    | "lut"
+    | "shader";
   /** Stable per provider: "mdi:rocket", "party-popper", "gifs/hello-hi-662", "181913649", "kadal/ship-it". */
   id: string;
   title: string;
@@ -62,13 +84,18 @@ export interface MediaResult {
   height: number | null;
   /** The inserted file's size, when the source says. */
   bytes: number | null;
-  /** The credit it carries: "via KLIPY", "Twemoji — CC BY 4.0", "Kadal — CC BY 4.0". */
+  /** The credit it carries: "via KLIPY", "Twemoji — CC BY 4.0", "Kadal — Kadal Deck licence". */
   attribution: string;
   licence: string;
   /** Its page at the source, or the set's. */
   link: string | null;
   /** What to put in the slide; null for a slot KLIPY holds that cannot be inserted. */
   mdx: string | null;
+  /**
+   * Kadal Store's patterns, wallpapers and shaders: the slide frontmatter (`---` … `---`, a
+   * `background:` mapping with its credit) that puts it behind a slide instead.
+   */
+  frontmatter?: string;
   /** For KLIPY: report the use with `media_used` / `kadal-deck media used klipy <id>`. */
   reportUse?: boolean;
 }
@@ -604,6 +631,8 @@ export interface KadalItem {
     align?: "top" | "bottom" | "center";
   }>;
   credit: "Kadal";
+  /** The Kadal Store pack it is sold in (a catalog read from the store's shelf says so). */
+  store?: { product: { slug: string; name: string } };
 }
 export interface KadalCatalog {
   version: string;
@@ -661,10 +690,25 @@ export function parseKadalCatalog(raw: unknown): KadalCatalog {
           }
         : {}),
       credit: "Kadal",
+      ...(kadalPack(r.store) ? { store: kadalPack(r.store)! } : {}),
     });
   }
   return { version, items };
 }
+
+/** An item's Kadal Store pack, when the catalog names one with a usable slug. */
+function kadalPack(v: unknown): KadalItem["store"] | null {
+  const p = (v as { product?: { slug?: unknown; name?: unknown } } | null)?.product;
+  return p && typeof p.slug === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/.test(p.slug)
+    ? { product: { slug: p.slug, name: typeof p.name === "string" ? p.name : p.slug } }
+    : null;
+}
+
+/** The pack's store page, marked as coming from a deck's credits: a Kadal item's `creditUrl`. */
+export const kadalPackUrl = (item: Pick<KadalItem, "store">) =>
+  item.store
+    ? `https://store.kadal.cc/p/${encodeURIComponent(item.store.product.slug)}?ref=deck-credits`
+    : undefined;
 
 export const kadalCatalogUrl = (host: string) => `${host}/api/v1/media/kadal/catalog`;
 /** A file's URL on the host (the host's `kadalFileUrl`: the version encoded, the path as listed). */
@@ -757,6 +801,7 @@ const KADAL_SIZE: Record<KadalItem["kind"], number> = {
 export function kadalResult(item: KadalItem, host: string, version: string): MediaResult {
   const url = (p: string) => kadalFileUrl(host, version, p);
   const main = url(item.files.main);
+  const creditUrl = kadalPackUrl(item);
   const still = url(item.files.still);
   let mdx: string;
   let type: MediaResult["type"];
@@ -770,6 +815,7 @@ export function kadalResult(item: KadalItem, host: string, version: string): Med
       title: item.title,
       width: item.width || undefined,
       height: item.height || undefined,
+      creditUrl,
     });
   } else if (item.kind === "meme-template") {
     type = "template";
@@ -777,10 +823,16 @@ export function kadalResult(item: KadalItem, host: string, version: string): Med
       extra: [
         ["provider", "kadal"],
         ["id", item.id],
+        ["creditUrl", creditUrl],
       ],
       src: main,
       alt: item.title,
-      template: { provider: "kadal", id: item.id, name: item.title },
+      template: {
+        provider: "kadal",
+        id: item.id,
+        ...(creditUrl ? { url: creditUrl } : {}),
+        name: item.title,
+      },
       captions: kadalCaptions(item),
       natural: { width: item.width, height: item.height },
     });
@@ -794,6 +846,7 @@ export function kadalResult(item: KadalItem, host: string, version: string): Med
       alt: item.title,
       size: KADAL_SIZE[item.kind],
       aspect: item.width && item.height ? item.width / item.height : 1,
+      creditUrl,
     });
   }
   return {
@@ -805,9 +858,9 @@ export function kadalResult(item: KadalItem, host: string, version: string): Med
     width: item.width || null,
     height: item.height || null,
     bytes: null,
-    attribution: "Kadal — CC BY 4.0",
-    licence: "CC BY 4.0",
-    link: "https://kadal.cc",
+    attribution: "Kadal — Kadal Deck licence",
+    licence: "Kadal Deck licence",
+    link: creditUrl ?? "https://kadal.cc",
     mdx,
   };
 }

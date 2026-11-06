@@ -13,10 +13,16 @@ import { iconSetInfo } from "../icons/licences.ts";
  *
  * Every slide's MDX is read once, as text, before it compiles (compiler/pipeline.ts, so the Vite
  * plugin and the hosted shell's runtime compiler agree): each `<Gif>`, `<Sticker>`, `<Meme>`,
- * `<Emoji>`, `<Icon>` (and the `<mdi-account />` tag form, and `icon="set:name"` props) and each
- * `<Image>`/`<Sticker>` with a `credit` prop says where it came from. The result is a list of
- * groups — one per source, with its licence and link, de-duplicated, in the order the deck first
- * uses them — that `<Credits />` draws (credits/Credits.tsx).
+ * `<Emoji>`, `<Icon>` (and the `<mdi-account />` tag form, and `icon="set:name"` props), each
+ * `<Image>`, `<Sticker>`, `<Video>`, `<Audio>`, `<Lottie>` and `<Model>` with a `credit` or a
+ * `provider`, and each slide whose frontmatter `background:` carries them, says where it came
+ * from. The result is a list of groups — one per source, with its licence and link,
+ * de-duplicated, in the order the deck first uses them — that `<Credits />` draws
+ * (credits/Credits.tsx).
+ *
+ * `provider="kadal-store"` puts an item under "Kadal Store": its `credit` linked to its store
+ * page (`creditUrl`), the Kadal Deck licence it is placed under, and one line to the store for the
+ * files themselves.
  *
  * With `credits` on, a "Credits" slide (`id: credits`) goes in before the deck's last slide (the
  * thank-you), or at the end of a one-slide deck or with `slide: "end"`, and every other slide gets
@@ -41,7 +47,7 @@ export interface CreditItem {
 }
 
 export interface CreditGroup {
-  /** Stable: "klipy", "imgflip", "emoji:twemoji", "iconify:mdi", "kadal", "font:anton", "image". */
+  /** Stable: "klipy", "imgflip", "emoji:twemoji", "iconify:mdi", "kadal", "kadal-store", "font:anton", "image". */
   id: string;
   /** How the slide names it: "GIFs via KLIPY", "Twemoji", "Material Design Icons". */
   label: string;
@@ -53,6 +59,8 @@ export interface CreditGroup {
   url?: string;
   /** One line more, when the source asks for it ("Loaded from KLIPY, never copied."). */
   notice?: string;
+  /** Where the notice links to, when it is a way somewhere ("Get the files on Kadal Store"). */
+  noticeUrl?: string;
   /** "item" lists titles; "count" says how many (emoji and icons: their names are noise). */
   show: "items" | "count";
   items: CreditItem[];
@@ -134,6 +142,9 @@ export function licenceUrl(spdx: string): string | undefined {
 }
 
 type Source = Omit<CreditGroup, "items">;
+
+/** The licence every Kadal Store item in a deck is placed under (store.kadal.cc/licence/#kadal-deck). */
+export const KADAL_DECK_LICENCE = "Kadal Deck licence";
 
 /** The emoji sets the host serves (components/media.tsx EMOJI_SETS), by the family they belong to. */
 const EMOJI_FAMILY: Record<string, Source> = {
@@ -217,10 +228,22 @@ export const SOURCES = {
     id: "kadal",
     label: "Kadal originals",
     by: "Kadal",
-    licence: "CC BY 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by/4.0/",
+    licence: KADAL_DECK_LICENCE,
+    licenceUrl: "https://store.kadal.cc/licence/#kadal-deck",
     url: "https://kadal.cc",
-    notice: "Stickers, GIFs and meme templates from Kadal's own library.",
+    notice:
+      "Kadal's own media, free in any Kadal deck. Outside Kadal Deck its files are sold in Kadal Store; versions 0.1 of the library stay under CC BY 4.0.",
+    show: "items",
+  },
+  kadalStore: {
+    id: "kadal-store",
+    label: "Kadal Store",
+    by: "Kadal",
+    licence: KADAL_DECK_LICENCE,
+    licenceUrl: "https://store.kadal.cc/licence/#kadal-deck",
+    url: "https://store.kadal.cc/?ref=deck-credits",
+    notice: "Get the files on Kadal Store",
+    noticeUrl: "https://store.kadal.cc/?ref=deck-credits",
     show: "items",
   },
   anton: {
@@ -279,7 +302,18 @@ export interface ScannedTag {
   attrs: Record<string, AttrValue>;
 }
 
-const TAGS = new Set(["Gif", "Sticker", "Meme", "Emoji", "Icon", "Image"]);
+const TAGS = new Set([
+  "Gif",
+  "Sticker",
+  "Meme",
+  "Emoji",
+  "Icon",
+  "Image",
+  "Video",
+  "Audio",
+  "Lottie",
+  "Model",
+]);
 
 /** The text with code (fences and inline spans) blanked to spaces: a tag in code is not used. */
 export function blankCode(text: string): string {
@@ -411,11 +445,61 @@ function ownCredit(a: Record<string, AttrValue>): Use | null {
   return { source: SOURCES.image, item };
 }
 
+const isStore = (a: Record<string, AttrValue>) => str(a.provider)?.toLowerCase() === "kadal-store";
+
+/**
+ * A Kadal Store item: its `credit` ("Indigo · Seigaiha Waves Pattern") linked to its store page,
+ * under "Kadal Store". A licence of its own is listed only when it isn't the Kadal Deck licence
+ * the whole group is placed under.
+ */
+function storeCredit(a: Record<string, AttrValue>, fallback: string): Use {
+  const item: CreditItem = { title: str(a.credit) ?? str(a.title) ?? str(a.alt) ?? fallback };
+  const href = web(a.creditUrl) ?? web(a.href);
+  if (href) item.href = href;
+  const licence = str(a.license) ?? str(a.licence);
+  if (licence && licence.toLowerCase() !== KADAL_DECK_LICENCE.toLowerCase()) {
+    item.licence = licence;
+    const lu = web(a.licenseUrl) ?? web(a.licenceUrl) ?? licenceUrl(licence);
+    if (lu) item.licenceUrl = lu;
+  }
+  return { source: SOURCES.kadalStore, item };
+}
+
+/** What one placed piece of media with only a provider or a credit owes (Video, Audio, …). */
+function placedCredit(a: Record<string, AttrValue>, fallback: string): Use | null {
+  if (isStore(a)) return storeCredit(a, fallback);
+  const own = ownCredit(a);
+  if (own) return own;
+  if (str(a.provider)?.toLowerCase() === "kadal")
+    return { source: SOURCES.kadal, item: kadalItem(a, str(a.title) ?? str(a.alt) ?? fallback) };
+  return null;
+}
+
+/** A Kadal library item: credited "Kadal", linked to its pack in Kadal Store when the tag says. */
+function kadalItem(a: Record<string, AttrValue>, title: string): CreditItem {
+  const href = web(a.creditUrl);
+  return href ? { title, href } : { title };
+}
+
+/** A Kadal Store file's address on a deck host (`…/api/v1/media/store/files/kse_…/…`). */
+const STORE_FILE = /\/api\/v1\/media\/store\/files\/kse_[a-z2-7]{20}\//;
+
+/** A `lut` with a `lutCredit`: the grade's own line, under Kadal Store when it is the store's. */
+function lutCredit(a: Record<string, AttrValue>): Use | null {
+  const title = str(a.lutCredit);
+  if (!title) return null;
+  const href = web(a.lutCreditUrl);
+  const item: CreditItem = href ? { title, href } : { title };
+  return { source: STORE_FILE.test(str(a.lut) ?? "") ? SOURCES.kadalStore : SOURCES.image, item };
+}
+
 /** What one tag owes, as (source, item) pairs. */
 export function creditsOfTag(tag: ScannedTag): Use[] {
   const a = tag.attrs;
   const title = str(a.title) ?? str(a.alt);
   const out: Use[] = [];
+  const grade = lutCredit(a);
+  if (grade) out.push(grade);
   switch (tag.name) {
     case "Gif": {
       const provider = (str(a.provider) ?? "klipy").toLowerCase();
@@ -423,7 +507,13 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
       const creator = str(a.creator);
       if (creator) item.by = creator;
       if (provider === "kadal") {
-        out.push({ source: SOURCES.kadal, item });
+        // Its pack in Kadal Store, when the tag says (`creditUrl`).
+        const href = web(a.creditUrl) ?? web(a.href);
+        out.push({ source: SOURCES.kadal, item: href ? { ...item, href } : item });
+        break;
+      }
+      if (provider === "kadal-store") {
+        out.push(storeCredit(a, "GIF"));
         break;
       }
       const href = web(a.href) ?? (provider === "klipy" ? klipyHref(str(a.slug)) : undefined);
@@ -444,10 +534,10 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
     }
     case "Sticker": {
       const src = str(a.src) ?? "";
-      const own = ownCredit(a);
+      const own = isStore(a) ? storeCredit(a, "Sticker") : ownCredit(a);
       if (own) out.push(own);
       else if (str(a.provider)?.toLowerCase() === "kadal")
-        out.push({ source: SOURCES.kadal, item: { title: title ?? str(a.id) ?? "Sticker" } });
+        out.push({ source: SOURCES.kadal, item: kadalItem(a, title ?? str(a.id) ?? "Sticker") });
       else if (emojiSetOfUrl(src))
         out.push({ source: emojiSource(emojiSetOfUrl(src)!), item: { title: title ?? "emoji" } });
       else if (/^https:\/\/([\w-]+\.)*klipy\.com\//i.test(src))
@@ -467,7 +557,12 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
       if (provider === "imgflip") {
         const href = web(t?.url);
         out.push({ source: SOURCES.imgflip, item: href ? { title: name, href } : { title: name } });
-      } else if (provider === "kadal") out.push({ source: SOURCES.kadal, item: { title: name } });
+      } else if (provider === "kadal")
+        out.push({
+          source: SOURCES.kadal,
+          item: kadalItem({ creditUrl: t?.url as AttrValue, ...a }, name),
+        });
+      else if (provider === "kadal-store") out.push(storeCredit({ ...a, title: name }, name));
       else if (provider && t) {
         const href = web(t.url);
         out.push({
@@ -502,8 +597,17 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
         out.push({ source: SOURCES.lucide, item: { title: name } });
       break;
     }
+    case "Video":
+    case "Audio":
+    case "Lottie":
+    case "Model":
+    case "Background": {
+      const use = placedCredit(a, tag.name === "Background" ? "Background" : tag.name);
+      if (use) out.push(use);
+      break;
+    }
     case "Image": {
-      const own = ownCredit(a);
+      const own = isStore(a) ? storeCredit(a, "Image") : ownCredit(a);
       if (own) out.push(own);
       else {
         const src = str(a.src) ?? "";
@@ -518,13 +622,32 @@ export function creditsOfTag(tag: ScannedTag): Use[] {
 
 const itemKey = (i: CreditItem) => `${i.title}\u0000${i.href ?? ""}\u0000${i.licence ?? ""}`;
 
+/**
+ * A slide's frontmatter `background:` as a tag, when it is credited — a Kadal Store pattern or
+ * wallpaper (`background: { image, repeat: true, size: 512, provider: "kadal-store", credit, … }`);
+ * null otherwise.
+ */
+export function backgroundTag(frontmatter: Record<string, unknown> | undefined): ScannedTag | null {
+  const bg = frontmatter?.background;
+  if (!bg || typeof bg !== "object" || Array.isArray(bg)) return null;
+  const attrs: Record<string, AttrValue> = {};
+  for (const [k, v] of Object.entries(bg as Record<string, unknown>))
+    if (typeof v === "string") attrs[k] = v;
+  return attrs.credit || attrs.provider ? { name: "Background", attrs } : null;
+}
+
+/** A slide as the credits read it: its MDX, and its frontmatter for a credited background. */
+export type CreditSource = string | { content: string; frontmatter?: Record<string, unknown> };
+
 /** Every attributed item the slides use, grouped by source, first use first, without repeats. */
-export function collectCredits(texts: Iterable<string>): CreditGroup[] {
+export function collectCredits(slides: Iterable<CreditSource>): CreditGroup[] {
   const groups = new Map<string, CreditGroup>();
   const seen = new Map<string, Set<string>>();
-  for (const text of texts) {
-    if (!text || !text.includes("<")) continue;
-    for (const tag of scanTags(text))
+  for (const slide of slides) {
+    const text = typeof slide === "string" ? slide : slide.content;
+    const bg = typeof slide === "string" ? null : backgroundTag(slide.frontmatter);
+    const tags = [...(bg ? [bg] : []), ...(text && text.includes("<") ? scanTags(text) : [])];
+    for (const tag of tags)
       for (const use of creditsOfTag(tag)) {
         let g = groups.get(use.source.id);
         if (!g) {
@@ -577,7 +700,9 @@ export function withCredits<S extends SlideLike>(
   const placed = slides.findIndex((s) => placesCredits(s.content));
   if (!options && placed < 0) return { headmatter, slides };
   const opts = options ?? { ...DEFAULT_CREDITS, slide: false as const, footer: false };
-  const groups = collectCredits(slides.map((s) => s.content));
+  const groups = collectCredits(
+    slides.map((s) => ({ content: s.content, frontmatter: s.frontmatter })),
+  );
   let out = slides;
   let at: string | null = null;
   const ids = new Set(slides.map((s) => s.frontmatter.id).filter((id) => typeof id === "string"));

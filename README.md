@@ -189,6 +189,7 @@ carry over.
 | **Code** ([docs](https://deck.kadal.cc/docs/code/)) | Shiki highlighting stepped line by line, magic move, Monaco editors, runnable JS/TS/Python, TwoSlash hovers, code groups, snippet imports |
 | **Maths, diagrams, sketches** ([docs](https://deck.kadal.cc/docs/math-diagrams-sketches/)) | KaTeX at build time, Mermaid in the deck's colours, Excalidraw drawings revealed region by region |
 | **Looks** ([docs](https://deck.kadal.cc/docs/themes-and-backgrounds/)) | 17 themes in light and dark, 28 built-in backgrounds (most of them animated), the [Pro library](#backgrounds-and-layouts) of 95 backgrounds and layouts on deck.kadal.cc, 200,000 icons through Iconify, Tailwind |
+| **Media** ([docs](https://deck.kadal.cc/docs/components/)) | Images, video and sound that know your clicks, stickers, GIFs and memes, Lottie animations, 3D models you can turn, colour grading with a `.cube` LUT, tiled patterns behind a slide, and Kadal Store's media credited for you |
 | **Any framework** ([docs](https://deck.kadal.cc/docs/islands/)) | React and web components built in; Vue, Svelte, Solid, Preact, Qwik, Angular, Fresh, Rust/WebAssembly and Python as islands, each loaded only when its slide appears |
 | **Rehearsing** ([docs](https://deck.kadal.cc/docs/narration/)) | Narration that reads the notes and turns the pages, per-slide timings with a pacing badge, a teleprompter window, glossary cards |
 | **Presenting** ([docs](https://deck.kadal.cc/docs/presenter-and-keyboard/)) | Presenter view with notes, timer and next slide; drawing, laser, spotlight, blackout, camera, recording; a share window for video calls; a phone remote; vim keys |
@@ -310,7 +311,7 @@ started with `--allow-outside`.
 | `slide_add`, `slide_update`, `slide_remove`, `slide_move`, `deck_update_frontmatter`, `notes_set` | edits that change only that slide's lines, linted on the spot |
 | `slide_render`, `deck_preview` | PNGs of slides from a dev server kept running between calls, and a live URL |
 | `deck_build`, `deck_export`, `deck_publish` | a static site, PDF/PNG/PPTX, and a published deck |
-| `media_search`, `media_trending`, `media_used` | icons, emoji, stickers, GIFs, memes, meme templates and Kadal's own library, each with the MDX to insert and its credit (`credits: true` lists them all on a Credits slide) |
+| `media_search`, `media_trending`, `media_used` | icons, emoji, stickers, GIFs, memes, meme templates, Kadal's own library and Kadal Store, each with the MDX to insert and its credit (`credits: true` lists them all on a Credits slide) |
 
 **Hosted decks, from any agent.** The hosted service runs a remote MCP server at
 `https://deck.kadal.cc/mcp` (OAuth; you pick one workspace and can make the connection read-only).

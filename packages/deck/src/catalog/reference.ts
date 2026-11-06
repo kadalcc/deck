@@ -1279,7 +1279,7 @@ export const SLIDE_KEYS = [
       variants: [{ type: "string" as const }, { type: "object" as const }],
     },
     description:
-      "A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill | tint }.",
+      "A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, repeat, opacity } / { iframe, interactive } / { fill | tint }. A pattern tiles with { image, repeat: true, size: 512 } or { image, repeat: repeat, size: 512px } (the tile's width in stage pixels, default 512: it scales with the slide in every view and print); a wallpaper covers with the bare address or { image }. A store item's credit props (provider, id, credit, creditUrl, license, licenseUrl) go in the same object and are listed by <Credits />.",
     example: "background: { component: starfield, count: 400 }",
   },
   { name: "backgroundColor", type: S(), description: "A flat background colour." },

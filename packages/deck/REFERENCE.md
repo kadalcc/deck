@@ -811,18 +811,34 @@ Text that types itself out when the slide is shown.
 
 #### `<Audio>`
 
-An audio player.
+Sound: a sound effect on a click (`at`, invisible, plays from the top each time the deck steps onto it), music under a slide (`autoplay loop controls={false}`, with `fade` and `volume`), or a player to press. Sounds only in the deck itself — never the presenter's copy, a preview or print — and is not drawn in print or exports.
 
 ```mdx
-<Audio src="/clip.mp3" />
+<Audio src="/whoosh.mp3" at={2} />
+
+<Audio src="/bed.mp3" autoplay loop controls={false} fade={1200} volume={0.5} />
 ```
 
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `src` * | `string` |  | Audio URL. |
-| `autoplay` | `boolean` |  | Play on arrival. |
-| `loop` | `boolean` |  | Loop. |
-| `controls` | `boolean` | `true` | Show controls. |
+| `autoplay` | `boolean \| "once"` |  | Play when the slide (or `at`, or the enclosing `<Click>`) arrives; "once": only the first time. |
+| `at` | `ClickAt` |  | The click at which it plays (a sound effect); implies `autoplay`. |
+| `pauseAt` | `ClickAt` |  | The click at which it stops. |
+| `steps` | `Record<string \| number, MediaStep>` |  | What happens at further clicks: `{ 3: "pause", 4: "play", 6: 12.5, 8: "rewind" }` (absolute clicks). |
+| `autoreset` | `"slide" \| "click"` |  | "slide": back to `timestamp` whenever the slide is left (the default for a cue anyway). |
+| `timestamp` | `string \| number` |  | Start here, in seconds. |
+| `loop` | `boolean` |  | Loop (a bed: keeps running, and is running when the deck comes back past its click). |
+| `volume` | `number` |  | 0–1 (default 1): where it plays, and where a fade goes to. |
+| `fade` | `number` | `0` | Milliseconds to fade in when it starts and out when it stops or the slide is left (default 0). |
+| `controls` | `boolean` |  | Show the player (default: only without click options). |
+| `title` | `string` |  | What it is, for screen readers and the credits ("Rain on a tin roof"). |
+| `id` | `string` |  | The provider's id for it ("kse_…"). Without a provider, `id` is the element's id. |
+| `provider` | `string` |  | Where it came from: "kadal" (Kadal's own library), "kadal-store" (Kadal Store). |
+| `credit` | `string` |  | A credit of its own ("Indigo · Seigaiha Waves Pattern"), on hover and in the deck's credits. |
+| `creditUrl` | `string` |  | The credit's link (the work's page). |
+| `license` | `string` |  | Its licence ("CC BY 4.0", "Kadal Deck licence"), for the credits. |
+| `licenseUrl` | `string` |  | The licence's text. |
 
 #### `<BlueSky>`
 
@@ -840,7 +856,7 @@ A Bluesky post, through Bluesky's embed, in the slide's colour scheme; `deck exp
 
 #### `<Credits>`
 
-The deck's media credits: every attributed GIF, sticker, meme template, emoji set, icon set and `<Image credit>` the slides use, collected when the deck compiles and grouped by source, each with its licence and a link. `credits: true` in the headmatter adds a slide with it before the last slide and a corner link to it on every other slide, so it is rarely written by hand; a slide that has one is used instead.
+The deck's media credits: every attributed GIF, sticker, meme template, emoji set, icon set, `<Image credit>` and credited video, audio, Lottie, model, LUT and slide background the slides use (Kadal Store's items under Kadal Store, with the Kadal Deck licence and a link to the files), collected when the deck compiles and grouped by source, each with its licence and a link. `credits: true` in the headmatter adds a slide with it before the last slide and a corner link to it on every other slide, so it is rarely written by hand; a slide that has one is used instead.
 
 ```mdx
 ---
@@ -892,6 +908,7 @@ A GIF from a provider (KLIPY), hot-linked exactly as the provider returned it, w
 | `height` | `number` |  | Height in px. |
 | `still` | `string` |  | A still frame from the provider, shown under reduced motion. |
 | `href` | `string` |  | The page to link to in the credit and the export card (default: the provider's page for it). |
+| `creditUrl` | `string` |  | A Kadal item's pack in Kadal Store (or a store item's page): the credit's link. |
 | `alt` | `string` |  |  |
 
 #### `<Iframe>`
@@ -913,12 +930,14 @@ An embedded page, loaded only while its slide is near, behind a click-to-interac
 
 #### `<Image>`
 
-The `img` mapping (every `![alt](src)`), lazy-loaded; also usable as a tag. `preview` opens a lightbox on click.
+The `img` mapping (every `![alt](src)`), lazy-loaded; also usable as a tag. `preview` opens a lightbox on click; `lut` colour-grades it with a .cube LUT.
 
 ```mdx
 ![A map of Chennai](/chennai.png)
 
 <Image src="/chart.png" alt="Revenue by month" preview fit="contain" />
+
+<Image src="/harbour.jpg" alt="The harbour at dawn" lut="/luts/teal-dusk.cube" lutStrength={0.8} />
 ```
 
 | prop | type | default | |
@@ -930,6 +949,45 @@ The `img` mapping (every `![alt](src)`), lazy-loaded; also usable as a tag. `pre
 | `credit` | `string` |  | Who to thank ("“Harbour at dawn” by Ana Ruiz"): listed by `<Credits />`, the title on hover. |
 | `creditUrl` | `string` |  | The work's page, for the credit's link. |
 | `license` | `string` |  | Its licence ("CC BY 2.0"), for the credits. |
+| `licenseUrl` | `string` |  | The licence's text. |
+| `provider` | `string` |  | Where it came from: "kadal-store" for Kadal Store (credited under "Kadal Store"). |
+| `id` | `string` |  | The provider's id for it ("kse_…"). Without a provider, `id` is the element's id. |
+| `lut` | `string` |  | A `.cube` 3D LUT to grade it with (same origin, or served with CORS). |
+| `lutStrength` | `number` |  | How much of the grade: 0–1 (default 1). |
+| `lutCredit` | `string` |  | The grade's own credit ("Teal Dusk · Film LUTs"), for `<Credits />`. |
+| `lutCreditUrl` | `string` |  | The grade's page, for its credit's link. |
+
+#### `<Lottie>`
+
+A Lottie animation (.json or .lottie) that knows the slide's clicks: plays on arrival (`autoplay`, default) or at a click (`at`, from its first frame), pauses at one (`pauseAt`), loops, changes speed; paused off its slide. Placed like a <Sticker> with x/y/pos, or in the flow. Print, exports, the overview and reduced motion show `poster` (else a still frame). lottie-web's light SVG player loads only when a deck has one.
+
+```mdx
+<Lottie src="/anim/rocket.lottie" poster="/anim/rocket.png" alt="A rocket lifting off" loop />
+
+<Lottie src="/anim/check.json" at={2} size={320} x={1400} y={600} />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `src` * | `string` |  | A Lottie JSON or a .lottie (dotLottie) file: same origin, or served with CORS. |
+| `poster` | `string` |  | A still image of it: print, exports, the overview, reduced motion, and while it loads. |
+| `alt` | `string` | `""` | What it shows, for screen readers (empty: decorative). |
+| `autoplay` | `boolean` |  | Play when the slide is shown (default true; with `at`, at that click). |
+| `at` | `ClickAt` |  | The click at which it plays, from its first frame (as `<Click at>`). |
+| `pauseAt` | `ClickAt` |  | The click at which it pauses. |
+| `loop` | `boolean` | `false` | Repeat it (default false: it plays once and holds its last frame). |
+| `speed` | `number` | `1` | Playback speed (default 1; 0.5 is half speed). |
+| `animation` | `string` |  | In a .lottie with several animations, which one (its id in the manifest). |
+| `size` | `number` |  | Width in px (stage pixels when placed); the height follows the animation. |
+| `x` | `number` |  | Left edge in stage pixels: places it over the slide, like a `<Sticker>`. |
+| `y` | `number` |  | Top edge in stage pixels. |
+| `rotate` | `number` |  | Degrees, clockwise (placed only). |
+| `pos` | `string` |  | "x,y,w,h[,r]" — what dragging it in `kadal-deck dev` writes; wins over x/y/size/rotate. |
+| `id` | `string` |  | The provider's id for it ("kse_…"). Without a provider, `id` is the element's id. |
+| `provider` | `string` |  | Where it came from: "kadal" (Kadal's own library), "kadal-store" (Kadal Store). |
+| `credit` | `string` |  | A credit of its own ("Indigo · Seigaiha Waves Pattern"), on hover and in the deck's credits. |
+| `creditUrl` | `string` |  | The credit's link (the work's page). |
+| `license` | `string` |  | Its licence ("CC BY 4.0", "Kadal Deck licence"), for the credits. |
 | `licenseUrl` | `string` |  | The licence's text. |
 
 #### `<Meme>`
@@ -944,10 +1002,48 @@ Image-macro captions over a picture: white Anton with a black outline by default
 | --- | --- | --- | --- |
 | `src` * | `string` |  | The image. |
 | `provider` | `string` |  | "kadal" for a template from Kadal's own library (the same as `template={{ provider: "kadal" }}`). |
+| `creditUrl` | `string` |  | The template's page (a Kadal template's pack in Kadal Store) when `template` has no `url`. |
 | `alt` | `string` |  | Alternative text (default: the captions). |
 | `template` | `MemeTemplate` |  | { provider: "imgflip" \| "kadal", id, url, name } — the source, credited with a link. |
 | `captions` | `MemeCaption[]` |  | [{ text, x, y, width, size, align, color, stroke }]: x/y/width in % of the image (defaults 5, 4, 90), size in % of its width (default 9), align left\|center\|right, colours CSS (default white on black). |
 | `width` | `string \| number` |  | CSS width (a number is px). Default: as wide as the image, up to its box. |
+
+#### `<Model>`
+
+A 3D model (.glb) to turn with the pointer, turning by itself while its slide is shown (`autoRotate`, never under reduced motion). Google's <model-viewer>, loaded only when a deck has one: one WebGL context for every model, a neutral studio light. Placed like a <Sticker> with x/y/pos, or in the flow. Print, exports and the overview show `poster`; a lost GPU context does too.
+
+```mdx
+<Model src="/models/chair.glb" poster="/models/chair.png" alt="An oak chair" />
+
+<Model src="/models/robot.glb" poster="/models/robot.png" alt="A robot" x={1180} y={240} size={560} camera="30deg 75deg 2.5m" />
+```
+
+| prop | type | default | |
+| --- | --- | --- | --- |
+| `src` * | `string` |  | A .glb (or .gltf) file: same origin, or served with CORS. |
+| `poster` | `string` |  | A still image of it: print, exports, the overview, while it loads, and if WebGL fails. |
+| `alt` | `string` | `""` | What it shows, for screen readers. |
+| `controls` | `boolean` |  | Turn it with the pointer (default true). |
+| `zoom` | `boolean` |  | Let the wheel and a pinch zoom (default false: the wheel stays the deck's). |
+| `autoRotate` | `boolean` |  | Turn by itself while its slide is shown (default true; never under reduced motion). |
+| `rotateSpeed` | `number` |  | Degrees a second when it turns by itself (default 30). |
+| `camera` | `string` |  | Where the camera starts: "turn tilt distance" ("30deg 75deg 2.5m", "0deg 90deg auto"). |
+| `target` | `string` |  | The point it looks at ("0m 0.5m 0m"; default the model's centre). |
+| `fov` | `string` |  | Field of view ("30deg"; default auto). |
+| `exposure` | `number` |  | Brightness (default 1). |
+| `shadow` | `number` |  | The ground shadow's strength, 0–2 (default 1). |
+| `environment` | `string` |  | An equirectangular HDR or image to light it by (default: a neutral studio). |
+| `size` | `number` |  | Width in px (stage pixels when placed; default 480). |
+| `height` | `number` |  | Height in px (default: its width). |
+| `x` | `number` |  | Left edge in stage pixels: places it over the slide, like a `<Sticker>`. |
+| `y` | `number` |  | Top edge in stage pixels. |
+| `pos` | `string` |  | "x,y,w,h[,r]" — what dragging it in `kadal-deck dev` writes; wins over x/y/size. |
+| `id` | `string` |  | The provider's id for it ("kse_…"). Without a provider, `id` is the element's id. |
+| `provider` | `string` |  | Where it came from: "kadal" (Kadal's own library), "kadal-store" (Kadal Store). |
+| `credit` | `string` |  | A credit of its own ("Indigo · Seigaiha Waves Pattern"), on hover and in the deck's credits. |
+| `creditUrl` | `string` |  | The credit's link (the work's page). |
+| `license` | `string` |  | Its licence ("CC BY 4.0", "Kadal Deck licence"), for the credits. |
+| `licenseUrl` | `string` |  | The licence's text. |
 
 #### `<Sticker>`
 
@@ -968,8 +1064,8 @@ An image placed over the slide in stage pixels — a PNG cut-out, an animated GI
 | `flip` | `boolean \| "x" \| "y"` |  | Mirror it: true or "x" left↔right, "y" upside down. |
 | `shadow` | `boolean` |  | A soft drop shadow that follows the image's outline. |
 | `pos` | `string` |  | "x,y,w,h[,r]" — what dragging it in `kadal-deck dev` writes; wins over x/y/size/rotate. |
-| `provider` | `string` |  | Where it came from: "kadal" for Kadal's own library (credited "Kadal"). |
-| `id` | `string` |  | The provider's id for it ("kadal/ship-it"). Without a provider, `id` is the element's id. |
+| `provider` | `string` |  | Where it came from: "kadal" (Kadal's own library), "kadal-store" (Kadal Store). |
+| `id` | `string` |  | The provider's id for it ("kadal/ship-it", "kse_…"). Without a provider, `id` is the element's id. |
 | `still` | `string` |  | A still frame of an animated sticker: shown under reduced motion and in print. |
 | `credit` | `string` |  | A credit of its own ("Photo by Ana Ruiz"), on hover and in the deck's credits. |
 | `creditUrl` | `string` |  | The credit's link (the work's page). |
@@ -997,6 +1093,8 @@ A video that knows the slide's clicks: plays on arrival, at a click (`at`), paus
 
 ```mdx
 <Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />
+
+<Video src="/overlay.webm" autoplay loop lut="/luts/film.cube" credit="Light leak · Overlays" creditUrl="https://store.kadal.cc/p/overlays" />
 ```
 
 | prop | type | default | |
@@ -1005,7 +1103,7 @@ A video that knows the slide's clicks: plays on arrival, at a click (`at`), paus
 | `autoplay` | `boolean \| "once"` |  | Play when the slide (or `at`, or the enclosing `<Click>`) arrives; "once": only the first time. |
 | `at` | `ClickAt` |  | The click at which it starts playing (as `<Click at>`); implies `autoplay`. |
 | `pauseAt` | `ClickAt` |  | The click at which it pauses. |
-| `steps` | `Record<string \| number, VideoStep>` |  | What happens at further clicks: `{ 3: "pause", 4: "play", 6: 12.5, 8: "rewind" }` (absolute clicks). |
+| `steps` | `Record<string \| number, MediaStep>` |  | What happens at further clicks: `{ 3: "pause", 4: "play", 6: 12.5, 8: "rewind" }` (absolute clicks). |
 | `autoreset` | `"slide" \| "click"` |  | "slide": back to `timestamp` whenever the slide is left; "click": whenever the deck steps back before `at`. |
 | `timestamp` | `string \| number` |  | Start here, in seconds. |
 | `loop` | `boolean` |  | Loop. |
@@ -1014,7 +1112,17 @@ A video that knows the slide's clicks: plays on arrival, at a click (`at`), paus
 | `poster` | `string` |  | Poster image. |
 | `printPoster` | `string` |  | The poster in print, the overview and the next-slide box (default `poster`). |
 | `printTimestamp` | `string \| number` |  | The frame shown in print and previews: seconds, or "last". Default `timestamp`. |
+| `id` | `string` |  | The provider's id for it ("kse_…"). Without a provider, `id` is the element's id. |
+| `lut` | `string` |  | A `.cube` 3D LUT to grade it with (same origin, or served with CORS). |
+| `lutStrength` | `number` |  | How much of the grade: 0–1 (default 1). |
+| `lutCredit` | `string` |  | The grade's own credit ("Teal Dusk · Film LUTs"), for `<Credits />`. |
+| `lutCreditUrl` | `string` |  | The grade's page, for its credit's link. |
 | `children` | `ReactNode` |  | `<source>` elements, captions (`<track>`), fallback text. |
+| `provider` | `string` |  | Where it came from: "kadal" (Kadal's own library), "kadal-store" (Kadal Store). |
+| `credit` | `string` |  | A credit of its own ("Indigo · Seigaiha Waves Pattern"), on hover and in the deck's credits. |
+| `creditUrl` | `string` |  | The credit's link (the work's page). |
+| `license` | `string` |  | Its licence ("CC BY 4.0", "Kadal Deck licence"), for the credits. |
+| `licenseUrl` | `string` |  | The licence's text. |
 
 #### `<Youtube>`
 
@@ -1941,7 +2049,7 @@ YAML right after a slide's `---` separator, closed by another `---`.
 | `state` | `string \| string[]` |  | reveal.js's data-state: while the slide shows, `state-<name>` on the slide and both `<name>` and `state-<name>` on the deck root, so CSS for the whole page can follow it; each name it turns on fires an event of that name on the root, and `deck:state` says what changed. Names split on spaces. |
 | `colorScheme` | `"light" \| "dark"` |  | Force light or dark tokens on this slide (dark background under a light theme). Values: `light` `dark` |
 | `zoom` | `number` |  | Scale the slide's content (0.8 fits more). |
-| `background` | `string \| object` |  | A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, opacity } / { iframe, interactive } / { fill \| tint }. |
+| `background` | `string \| object` |  | A background: a registered name (aurora…), a colour, a gradient, an image or video path/URL, or { component, ...props } / { image, size, position, repeat, opacity } / { iframe, interactive } / { fill \| tint }. A pattern tiles with { image, repeat: true, size: 512 } or { image, repeat: repeat, size: 512px } (the tile's width in stage pixels, default 512: it scales with the slide in every view and print); a wallpaper covers with the bare address or { image }. A store item's credit props (provider, id, credit, creditUrl, license, licenseUrl) go in the same object and are listed by <Credits />. |
 | `backgroundColor` | `string` |  | A flat background colour. |
 | `backgroundGradient` | `string` |  | A CSS gradient behind the slide. |
 | `backgroundImage` | `string` |  | An image URL behind the slide. An animated GIF starts again from its first frame each time the slide is shown. |

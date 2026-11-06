@@ -34,6 +34,13 @@ import {
   searchEmoji,
   searchKadal,
 } from "./sources.ts";
+import {
+  type StoreKind,
+  isStoreKind,
+  parseStorePage,
+  storeResult,
+  storeSearchUrl,
+} from "./store.ts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -44,7 +51,8 @@ import {
  * each source's results as one block (a source's own order is never touched — KLIPY's least of
  * all). A source that can't answer is a note, not an error: KLIPY needs the CLI's sign-in (its
  * key comes from the host's `/api/v1/media/config`), Kadal's library needs a host that serves
- * it. The answers that don't change (the emoji index, Imgflip's top 100, Kadal's catalog, the
+ * it, and so does Kadal Store's shelf (`store`, public like the library).
+ * The answers that don't change (the emoji index, Imgflip's top 100, Kadal's catalog, the
  * KLIPY key) are kept for the life of the `MediaSession` — the MCP server keeps one.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -81,6 +89,8 @@ export interface FindOptions {
   limit?: number;
   /** Emoji set for emoji and emoji stickers (fluent-3d by default). */
   set?: string;
+  /** Kadal Store only: one kind of element (pattern, music, lottie, model, lut…). */
+  type?: string;
 }
 
 class Skip extends Error {}
@@ -209,6 +219,23 @@ export class MediaSession {
     return items.slice(0, limit).map((i) => kadalResult(i, this.options.host, cat.version));
   }
 
+  private async fromStore(query: string, limit: number, type?: StoreKind) {
+    const { host } = this.options;
+    // Public on the host, like Kadal's library: no sign-in needed.
+    const { status, data } = await this.json(
+      storeSearchUrl(host, query, { kind: type, size: limit }),
+      { headers: { accept: "application/json" } },
+    );
+    // A host without the shelf answers its session-guarded /media/* instead (401), or 404.
+    if (status === 404 || status === 401 || status === 403)
+      throw new Skip("this host doesn't serve Kadal Store yet");
+    if (status === 503) throw new Skip("Kadal Store isn't reachable from this host right now");
+    if (status !== 200) throw new Skip(`the host answered ${status} for Kadal Store`);
+    return parseStorePage(data)
+      .items.slice(0, limit)
+      .map((el) => storeResult(el, host));
+  }
+
   private async fromEmoji(query: string, limit: number, set: string, asSticker: boolean) {
     const index = await this.emojiIndex();
     const list = index.emoji.filter((e) => e.s.includes(set));
@@ -279,6 +306,15 @@ export class MediaSession {
       case "kadal":
         jobs.push(["kadal", () => this.fromKadal(null, query, limit)]);
         break;
+      case "store": {
+        if (o.type !== undefined && !isStoreKind(o.type))
+          throw new RangeError(
+            `No Kadal Store type "${o.type}". Types: image, icon, sticker, illustration, pattern, wallpaper, music, sfx, video, lottie, model, lut, gif, meme-template.`,
+          );
+        const type = o.type as StoreKind | undefined;
+        jobs.push(["kadal-store", () => this.fromStore(query, limit, type)]);
+        break;
+      }
     }
     const settled = await Promise.all(
       jobs.map(async ([provider, run]) => {

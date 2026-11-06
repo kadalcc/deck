@@ -100,7 +100,11 @@ function Group({ group }: { group: CreditGroup }) {
           {more > 1 ? <li className="deck-credits-more">and {more} more</li> : null}
         </ul>
       )}
-      {group.notice ? <p className="deck-credits-notice">{group.notice}</p> : null}
+      {group.notice ? (
+        <p className="deck-credits-notice">
+          <External href={group.noticeUrl}>{group.notice}</External>
+        </p>
+      ) : null}
     </li>
   );
 }

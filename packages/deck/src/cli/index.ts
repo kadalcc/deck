@@ -27,7 +27,8 @@
  *   kadal-deck publish [--slug s] [--workspace handle] [--title t]
  *   kadal-deck pull | status | resolve    two-way sync with the web's quick edits (cli/sync.ts)
  *   kadal-deck media list | add <id|name>  the workspace's uploaded stickers and images (cli/media.ts)
- *   kadal-deck media search | trending | used   icons, emoji, stickers, GIFs, memes, templates, Kadal
+ *   kadal-deck media search | trending | used   icons, emoji, stickers, GIFs, memes, templates, Kadal,
+ *                                         Kadal Store
  *   kadal-deck narrate [--voice v]        bake the notes as speech (Kokoro) into public/narration/
  *   kadal-deck mcp                        a Model Context Protocol server on stdio, for AI agents
  *
@@ -140,7 +141,8 @@ export const HELP = `kadal-deck <command> [options]
   whoami      show the signed-in account and workspace
   media       find media to put in a slide, each with its MDX and credit (the builder's sources):
               media search <kind> <query> | media trending <kind>   --limit <n per source> --set <emoji set>
-              kinds: icon emoji sticker gif meme template kadal; KLIPY (gif/sticker/meme) needs login
+              kinds: icon emoji sticker gif meme template kadal store; KLIPY (gif/sticker/meme) needs login
+              store: Kadal Store's shelf (--type pattern|wallpaper|music|sfx|video|lottie|model|lut|…)
               media used klipy <id> [--q query]  tell KLIPY a result went into a deck
               the workspace's media library: media list [--kind k] [--q text]
               media add <id|name> [--to public/stickers/] [--force]  download one into the project
@@ -299,6 +301,7 @@ const COMMAND_FLAGS: Record<string, FlagSpecs> = {
   media: {
     limit: { kind: "number" },
     set: { kind: "string" },
+    type: { kind: "string" },
     kind: { kind: "string" },
     q: { kind: "string" },
     to: { kind: "string" },

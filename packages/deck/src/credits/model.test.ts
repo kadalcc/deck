@@ -244,3 +244,166 @@ describe("<Credits /> and the corner link", () => {
     expect(creditsLinkTarget({ ...credits, groups: [] }, "s0")).toBeNull();
   });
 });
+
+describe("Kadal's own library", () => {
+  test("free under the Kadal Deck licence, each item linked to its pack when the tag says", () => {
+    const page = "https://store.kadal.cc/p/kip-stickers?ref=deck-credits";
+    const [g] = collectCredits([
+      `<Sticker provider="kadal" id="kadal/ship-it" src="/s.webp" alt="Ship it" creditUrl="${page}" />`,
+      `<Gif provider="kadal" id="kadal/loading" src="/l.webp" title="Loading" creditUrl="${page}" />`,
+      `<Meme provider="kadal" src="/m.webp" template={{ provider: "kadal", id: "kadal/two-doors", url: "${page}", name: "Two doors" }} />`,
+      '<Sticker provider="kadal" id="kadal/old" src="/o.webp" alt="Old" />',
+    ]);
+    expect(g).toMatchObject({
+      id: "kadal",
+      label: "Kadal originals",
+      licence: "Kadal Deck licence",
+      licenceUrl: "https://store.kadal.cc/licence/#kadal-deck",
+    });
+    expect(g!.notice).toContain("versions 0.1 of the library stay under CC BY 4.0");
+    expect(g!.items).toEqual([
+      { title: "Ship it", href: page },
+      { title: "Loading", href: page },
+      { title: "Two doors", href: page },
+      { title: "Old" },
+    ]);
+  });
+});
+
+describe("Kadal Store", () => {
+  const store = (tag: string, title: string, slug: string, extra = "") =>
+    `<${tag} provider="kadal-store" id="kse_abcdefghijklmnopqrst" src="https://deck.kadal.cc/api/v1/media/store/files/kse_abcdefghijklmnopqrst/0123456789ab.bin" credit="${title}" creditUrl="https://store.kadal.cc/p/${slug}?ref=deck-credits" license="Kadal Deck licence" licenseUrl="https://store.kadal.cc/licence/#kadal-deck"${extra} />`;
+
+  test("every placed kind is one item under Kadal Store, linked to its page", () => {
+    const groups = collectCredits([
+      store("Sticker", "Kip waving · Kip Stickers", "kip-stickers"),
+      store("Image", "Harbour print", "harbour-print"),
+      `${store("Video", "Bokeh overlay · Light Leaks", "light-leaks")}\n${store("Audio", "Rain bed", "rain-bed")}`,
+      store("Lottie", "Rocket · Launch Lotties", "launch-lotties"),
+      store("Model", "Oak chair", "oak-chair"),
+      // The same item again: listed once.
+      store("Sticker", "Kip waving · Kip Stickers", "kip-stickers"),
+    ]);
+    expect(groups.map((g) => g.id)).toEqual(["kadal-store"]);
+    const g = groups[0]!;
+    expect(g.label).toBe("Kadal Store");
+    expect(g.licence).toBe("Kadal Deck licence");
+    expect(g.licenceUrl).toBe("https://store.kadal.cc/licence/#kadal-deck");
+    expect(g.notice).toBe("Get the files on Kadal Store");
+    expect(g.noticeUrl).toBe("https://store.kadal.cc/?ref=deck-credits");
+    expect(g.items.map((i) => i.title)).toEqual([
+      "Kip waving · Kip Stickers",
+      "Harbour print",
+      "Bokeh overlay · Light Leaks",
+      "Rain bed",
+      "Rocket · Launch Lotties",
+      "Oak chair",
+    ]);
+    // The group's licence is not repeated on each item.
+    expect(g.items[0]).toEqual({
+      title: "Kip waving · Kip Stickers",
+      href: "https://store.kadal.cc/p/kip-stickers?ref=deck-credits",
+    });
+  });
+
+  test("an item with a licence of its own keeps it; one without a credit is named by its alt", () => {
+    const [g] = collectCredits([
+      '<Sticker provider="kadal-store" id="kse_abcdefghijklmnopqrst" src="/s.png" credit="Free badge" license="CC0-1.0" />',
+      '<Image provider="kadal-store" src="/i.png" alt="A lighthouse" />',
+    ]);
+    expect(g!.items).toEqual([
+      {
+        title: "Free badge",
+        licence: "CC0-1.0",
+        licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+      },
+      { title: "A lighthouse" },
+    ]);
+  });
+
+  test("a <Video> or <Audio> with a credit and no provider is an image-style credit of its own", () => {
+    const [g] = collectCredits([
+      '<Audio src="/a.mp3" credit="“Dawn” by Ana Ruiz" creditUrl="https://ana.example/dawn" license="CC-BY-4.0" />',
+    ]);
+    expect(g!.id).toBe("image");
+    expect(g!.items[0]!.licenceUrl).toBe("https://creativecommons.org/licenses/by/4.0/");
+    expect(collectCredits(['<Video src="/a.mp4" autoplay />'])).toEqual([]);
+  });
+
+  test("a slide's background from the store, and a LUT's own credit", () => {
+    const groups = collectCredits([
+      {
+        content: "# A slide",
+        frontmatter: {
+          background: {
+            image:
+              "https://deck.kadal.cc/api/v1/media/store/files/kse_abcdefghijklmnopqrst/0123456789ab.png",
+            repeat: true,
+            size: 512,
+            provider: "kadal-store",
+            credit: "Indigo · Seigaiha Waves Pattern",
+            creditUrl: "https://store.kadal.cc/p/seigaiha-waves-pattern?ref=deck-credits",
+          },
+        },
+      },
+      {
+        content:
+          '<Image src="/me.jpg" alt="" lut="https://deck.kadal.cc/api/v1/media/store/files/kse_bbbbbbbbbbbbbbbbbbbb/0123456789ab.cube" lutCredit="Teal Dusk · Film LUTs" lutCreditUrl="https://store.kadal.cc/p/film-luts?ref=deck-credits" />',
+      },
+      { content: "plain", frontmatter: { background: "/mine.png" } },
+    ]);
+    expect(groups.map((g) => g.id)).toEqual(["kadal-store"]);
+    expect(groups[0]!.items).toEqual([
+      {
+        title: "Indigo · Seigaiha Waves Pattern",
+        href: "https://store.kadal.cc/p/seigaiha-waves-pattern?ref=deck-credits",
+      },
+      {
+        title: "Teal Dusk · Film LUTs",
+        href: "https://store.kadal.cc/p/film-luts?ref=deck-credits",
+      },
+    ]);
+  });
+
+  test("a compiled deck credits a store background on its Credits slide", () => {
+    const deck = prepareDeck(
+      [
+        "---",
+        "credits: true",
+        "---",
+        "",
+        "# One",
+        "",
+        "---",
+        "background: { image: /p.png, repeat: true, size: 256, provider: kadal-store, credit: Seigaiha, creditUrl: 'https://store.kadal.cc/p/seigaiha' }",
+        "---",
+        "",
+        "# Two",
+        "",
+        "---",
+        "",
+        "# Thanks",
+      ].join("\n"),
+      { file: "deck.mdx" },
+    );
+    const c = resolvedCredits(deck.headmatter.credits)!;
+    expect(c.groups.map((g) => g.id)).toEqual(["kadal-store"]);
+    expect(c.groups[0]!.items[0]!.title).toBe("Seigaiha");
+  });
+
+  test("<Credits /> links the notice to the store", () => {
+    const html = render(createElement(Credits), {
+      slide: "before-last",
+      footer: true,
+      title: "Credits",
+      at: "credits",
+      groups: collectCredits([store("Sticker", "Kip", "kip")]),
+    });
+    expect(html).toContain("Kadal Store");
+    expect(html).toContain('href="https://store.kadal.cc/p/kip?ref=deck-credits"');
+    expect(html).toContain('href="https://store.kadal.cc/licence/#kadal-deck"');
+    expect(html).toMatch(
+      /<a [^>]*href="https:\/\/store\.kadal\.cc\/\?ref=deck-credits"[^>]*>Get the files on Kadal Store<\/a>/,
+    );
+  });
+});
