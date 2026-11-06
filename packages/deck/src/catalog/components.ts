@@ -102,8 +102,8 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Image: {
     category: "media",
     summary:
-      "The `img` mapping (every `![alt](src)`), lazy-loaded; also usable as a tag. `preview` opens a lightbox on click.",
-    example: `![A map of Chennai](/chennai.png)\n\n<Image src="/chart.png" alt="Revenue by month" preview fit="contain" />`,
+      "The `img` mapping (every `![alt](src)`), lazy-loaded; also usable as a tag. `preview` opens a lightbox on click; `lut` colour-grades it with a .cube LUT.",
+    example: `![A map of Chennai](/chennai.png)\n\n<Image src="/chart.png" alt="Revenue by month" preview fit="contain" />\n\n<Image src="/harbour.jpg" alt="The harbour at dawn" lut="/luts/teal-dusk.cube" lutStrength={0.8} />`,
     props: {
       src: "Image URL; `/x.png` is served from the deck's public/ folder.",
       alt: "Alternative text (always write one).",
@@ -114,6 +114,14 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       creditUrl: "The work's page, for the credit's link.",
       license: 'Its licence ("CC BY 2.0"), for the credits.',
       licenseUrl: "The licence's text.",
+      provider:
+        '"kadal-store" for an item from Kadal Store (credited under Kadal Store, with its `credit` and `creditUrl`).',
+      id: "The provider's id (\"kse_…\"); without a provider, the element's id.",
+      lut: "A .cube 3D LUT (same origin, or served with CORS) to colour-grade it; print and every export show it graded. Without WebGL2 or CORS it shows ungraded.",
+      lutStrength: "How much of the grade, 0–1 (default 1).",
+      lutCredit:
+        "The grade's own credit, for `<Credits />` (under Kadal Store when the LUT is the store's).",
+      lutCreditUrl: "The grade's page, for its credit's link.",
     },
   },
   Code: {
@@ -438,7 +446,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
     category: "media",
     summary:
       "A video that knows the slide's clicks: plays on arrival, at a click (`at`), pauses at one (`pauseAt`), jumps or rewinds at others (`steps`), or when the enclosing <Click> reveals it; still at its print frame in print and thumbnails.",
-    example: `<Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />`,
+    example: `<Video src="/demo.mp4" at={1} pauseAt={3} steps={{ 2: 42 }} timestamp={5} autoreset="slide" />\n\n<Video src="/overlay.webm" autoplay loop lut="/luts/film.cube" credit="Light leak · Overlays" creditUrl="https://store.kadal.cc/p/overlays" />`,
     props: {
       src: "Video URL (public/ path or https), or `<source>` children.",
       autoplay:
@@ -455,6 +463,17 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       loop: "Loop.",
       muted: "Muted (default true).",
       controls: "Show controls.",
+      provider:
+        '"kadal-store" for an item from Kadal Store, "kadal" for Kadal\'s own (credited on hover and in `<Credits />`).',
+      id: "The provider's id (\"kse_…\"); without a provider, the element's id.",
+      credit: "A credit of its own, on hover and in `<Credits />`.",
+      creditUrl: "The credit's link (a store item's page).",
+      license: "Its licence, for the credits.",
+      licenseUrl: "The licence's text.",
+      lut: "A .cube 3D LUT to colour-grade it: the poster as an image, the frames on a canvas while it plays (same origin or CORS; else ungraded).",
+      lutStrength: "How much of the grade, 0–1 (default 1).",
+      lutCredit: "The grade's own credit, for `<Credits />`.",
+      lutCreditUrl: "The grade's page.",
     },
   },
   Sticker: {
@@ -472,8 +491,9 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
       flip: 'Mirror: true or "x" left↔right, "y" upside down.',
       shadow: "A soft drop shadow that follows the outline.",
       pos: '"x,y,w,h[,r]" — written by dragging; wins over x/y/size/rotate.',
-      provider: '"kadal" for Kadal\'s own library (credited "Kadal").',
-      id: "The provider's id (\"kadal/ship-it\"); without a provider, the element's id.",
+      provider:
+        '"kadal" for Kadal\'s own library (credited "Kadal"), "kadal-store" for Kadal Store (credited under Kadal Store).',
+      id: 'The provider\'s id ("kadal/ship-it", "kse_…"); without a provider, the element\'s id.',
       still: "A still frame, shown under reduced motion and in print.",
       credit: "A credit of its own, on hover and in `<Credits />`.",
       creditUrl: "The credit's link.",
@@ -532,7 +552,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   Credits: {
     category: "media",
     summary:
-      "The deck's media credits: every attributed GIF, sticker, meme template, emoji set, icon set and `<Image credit>` the slides use, collected when the deck compiles and grouped by source, each with its licence and a link. `credits: true` in the headmatter adds a slide with it before the last slide and a corner link to it on every other slide, so it is rarely written by hand; a slide that has one is used instead.",
+      "The deck's media credits: every attributed GIF, sticker, meme template, emoji set, icon set, `<Image credit>` and credited video, audio, Lottie, model, LUT and slide background the slides use (Kadal Store's items under Kadal Store, with the Kadal Deck licence and a link to the files), collected when the deck compiles and grouped by source, each with its licence and a link. `credits: true` in the headmatter adds a slide with it before the last slide and a corner link to it on every other slide, so it is rarely written by hand; a slide that has one is used instead.",
     example: `---\nid: credits\n---\n\n<Credits title="Thanks to" />`,
     props: {
       title:
@@ -543,13 +563,88 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
   },
   Audio: {
     category: "media",
-    summary: "An audio player.",
-    example: `<Audio src="/clip.mp3" />`,
+    summary:
+      "Sound: a sound effect on a click (`at`, invisible, plays from the top each time the deck steps onto it), music under a slide (`autoplay loop controls={false}`, with `fade` and `volume`), or a player to press. Sounds only in the deck itself — never the presenter's copy, a preview or print — and is not drawn in print or exports.",
+    example: `<Audio src="/whoosh.mp3" at={2} />\n\n<Audio src="/bed.mp3" autoplay loop controls={false} fade={1200} volume={0.5} />`,
     props: {
       src: "Audio URL.",
-      autoplay: "Play on arrival.",
-      loop: "Loop.",
-      controls: "Show controls.",
+      autoplay: 'Play on arrival (or at `at`); "once": not again after it has played.',
+      at: "The click at which it plays (a sound effect); implies autoplay.",
+      pauseAt: "The click at which it stops.",
+      steps: '{ click: "play" | "pause" | "rewind" | seconds } — what happens at further clicks.',
+      autoreset: '"slide": back to `timestamp` when the slide is left.',
+      timestamp: "Start here, seconds.",
+      loop: "Loop (a bed: keeps running, and is running when the deck comes back past its click).",
+      volume: "0–1 (default 1): where it plays and fades to.",
+      fade: "Milliseconds to fade in when it starts and out when it stops or the slide is left.",
+      controls: "Show the player (default: only without click options).",
+      title: "What it is, for screen readers and the credits.",
+      provider: '"kadal-store" for an item from Kadal Store (credited under Kadal Store).',
+      id: "The provider's id (\"kse_…\"); without a provider, the element's id.",
+      credit: "A credit of its own, on hover (with controls) and in `<Credits />`.",
+      creditUrl: "The credit's link.",
+      license: "Its licence, for the credits.",
+      licenseUrl: "The licence's text.",
+    },
+  },
+  Lottie: {
+    category: "media",
+    summary:
+      "A Lottie animation (.json or .lottie) that knows the slide's clicks: plays on arrival (`autoplay`, default) or at a click (`at`, from its first frame), pauses at one (`pauseAt`), loops, changes speed; paused off its slide. Placed like a <Sticker> with x/y/pos, or in the flow. Print, exports, the overview and reduced motion show `poster` (else a still frame). lottie-web's light SVG player loads only when a deck has one.",
+    example: `<Lottie src="/anim/rocket.lottie" poster="/anim/rocket.png" alt="A rocket lifting off" loop />\n\n<Lottie src="/anim/check.json" at={2} size={320} x={1400} y={600} />`,
+    props: {
+      src: "A Lottie JSON or a .lottie file (same origin, or served with CORS).",
+      poster: "A still image: print, exports, the overview, reduced motion, and while it loads.",
+      alt: "What it shows, for screen readers (empty: decorative).",
+      autoplay: "Play when the slide is shown (default true).",
+      at: "The click at which it plays from its first frame.",
+      pauseAt: "The click at which it pauses.",
+      loop: "Repeat it (default false: it plays once and holds its last frame).",
+      speed: "Playback speed (default 1).",
+      animation: "In a .lottie with several animations, which one (its manifest id).",
+      size: "Width in px (stage pixels when placed); the height follows the animation.",
+      x: "Left edge in stage pixels: places it over the slide.",
+      y: "Top edge in stage pixels.",
+      rotate: "Degrees clockwise (placed only).",
+      pos: '"x,y,w,h[,r]" — written by dragging; wins over x/y/size/rotate.',
+      provider: '"kadal-store" for an item from Kadal Store (credited under Kadal Store).',
+      id: "The provider's id (\"kse_…\"); without a provider, the element's id.",
+      credit: "A credit of its own, on hover and in `<Credits />`.",
+      creditUrl: "The credit's link.",
+      license: "Its licence, for the credits.",
+      licenseUrl: "The licence's text.",
+    },
+  },
+  Model: {
+    category: "media",
+    summary:
+      "A 3D model (.glb) to turn with the pointer, turning by itself while its slide is shown (`autoRotate`, never under reduced motion). Google's <model-viewer>, loaded only when a deck has one: one WebGL context for every model, a neutral studio light. Placed like a <Sticker> with x/y/pos, or in the flow. Print, exports and the overview show `poster`; a lost GPU context does too.",
+    example: `<Model src="/models/chair.glb" poster="/models/chair.png" alt="An oak chair" />\n\n<Model src="/models/robot.glb" poster="/models/robot.png" alt="A robot" x={1180} y={240} size={560} camera="30deg 75deg 2.5m" />`,
+    props: {
+      src: "A .glb (or .gltf) file (same origin, or served with CORS).",
+      poster: "A still image: print, exports, the overview, while it loads, and if WebGL fails.",
+      alt: "What it shows, for screen readers.",
+      controls: "Turn it with the pointer (default true).",
+      zoom: "Let the wheel and a pinch zoom (default false: the wheel stays the deck's).",
+      autoRotate: "Turn by itself while its slide is shown (default true).",
+      rotateSpeed: "Degrees a second (default 30).",
+      camera: 'Where the camera starts: "turn tilt distance" ("30deg 75deg 2.5m").',
+      target: 'The point it looks at ("0m 0.5m 0m").',
+      fov: 'Field of view ("30deg").',
+      exposure: "Brightness (default 1).",
+      shadow: "Ground shadow strength, 0–2 (default 1).",
+      environment: "An equirectangular HDR or image to light it by (default: a neutral studio).",
+      size: "Width in px (stage pixels when placed; default 480).",
+      height: "Height in px (default: its width).",
+      x: "Left edge in stage pixels: places it over the slide.",
+      y: "Top edge in stage pixels.",
+      pos: '"x,y,w,h[,r]" — written by dragging; wins over x/y/size.',
+      provider: '"kadal-store" for an item from Kadal Store (credited under Kadal Store).',
+      id: "The provider's id (\"kse_…\"); without a provider, the element's id.",
+      credit: "A credit of its own, on hover and in `<Credits />`.",
+      creditUrl: "The credit's link.",
+      license: "Its licence, for the credits.",
+      licenseUrl: "The licence's text.",
     },
   },
   Iframe: {
