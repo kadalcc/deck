@@ -27,6 +27,10 @@ import {
  *   meme      KLIPY's finished memes (as `<Gif>`, as the builder inserts them)
  *   template  Kadal's meme templates and Imgflip's top 100, with caption boxes; `<Meme>`
  *   kadal     everything in Kadal's own library
+ *   store     Kadal Store's shelf for decks (media-search/store.ts): images, icons, stickers,
+ *             illustrations, patterns and wallpapers (also as slide backgrounds), music and sound
+ *             effects (`<Audio>`), videos, Lottie animations, 3D models, LUTs and (Pro) shaders;
+ *             `--type` narrows it
  *
  * KLIPY's integration rules (docs.klipy.com, as the builder's lib/klipy.ts has them) hold here
  * too: the person's machine asks api.klipy.com directly (never through a Kadal host), with the
@@ -45,14 +49,32 @@ export const MEDIA_KINDS = [
   "meme",
   "template",
   "kadal",
+  "store",
 ] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
-export type MediaProvider = "iconify" | "emoji" | "klipy" | "imgflip" | "kadal";
+export type MediaProvider = "iconify" | "emoji" | "klipy" | "imgflip" | "kadal" | "kadal-store";
 
 export interface MediaResult {
   provider: MediaProvider;
-  /** What it is (a Kadal item can be any of these). */
-  type: "icon" | "emoji" | "sticker" | "gif" | "meme" | "template" | "illustration";
+  /** What it is (a Kadal or Kadal Store item can be any of these). */
+  type:
+    | "icon"
+    | "emoji"
+    | "sticker"
+    | "gif"
+    | "meme"
+    | "template"
+    | "illustration"
+    | "image"
+    | "pattern"
+    | "wallpaper"
+    | "music"
+    | "sfx"
+    | "video"
+    | "lottie"
+    | "model"
+    | "lut"
+    | "shader";
   /** Stable per provider: "mdi:rocket", "party-popper", "gifs/hello-hi-662", "181913649", "kadal/ship-it". */
   id: string;
   title: string;
@@ -69,6 +91,11 @@ export interface MediaResult {
   link: string | null;
   /** What to put in the slide; null for a slot KLIPY holds that cannot be inserted. */
   mdx: string | null;
+  /**
+   * Kadal Store's patterns, wallpapers and shaders: the slide frontmatter (`---` … `---`, a
+   * `background:` mapping with its credit) that puts it behind a slide instead.
+   */
+  frontmatter?: string;
   /** For KLIPY: report the use with `media_used` / `kadal-deck media used klipy <id>`. */
   reportUse?: boolean;
 }

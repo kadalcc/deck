@@ -32,7 +32,7 @@ export function attr(name: string, value: AttrValue): string {
   return `${name}={${JSON.stringify(value)}}`;
 }
 
-function tag(name: string, attrs: Array<[string, AttrValue]>): string {
+export function tag(name: string, attrs: Array<[string, AttrValue]>): string {
   const parts = attrs.map(([k, v]) => attr(k, v)).filter(Boolean);
   return `<${name}${parts.length ? ` ${parts.join(" ")}` : ""} />`;
 }

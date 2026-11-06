@@ -302,7 +302,7 @@ export function createServer(options: McpOptions): {
         "Workflow: deck_reference (look up components/layouts/backgrounds before using them) → deck_create or deck_outline → slide_add / slide_update / notes_set → deck_check → slide_render and LOOK at the pictures → fix → deck_export or deck_publish.",
         "Edit slides through the slide tools rather than rewriting deck.mdx: they change only that slide's lines and lint the result.",
         "A published deck may be edited on the web too (quick edit). Before editing a published deck: deck_sync_status; if the web has newer versions, deck_pull first. Conflicts: deck_conflicts (both sides, per slide) → deck_resolve (prefer keeping both sides' intent; ask the person when the two edits contradict) → deck_check → deck_publish. Never force a publish over web edits unless the person says so.",
-        "Media: media_search / media_trending find icons, emoji, stickers, GIFs, memes, meme templates and Kadal's own library; put a result's `mdx` into a slide as it is. Add `credits: true` to the headmatter and every item is credited on a Credits slide automatically. After inserting a KLIPY result, call media_used.",
+        "Media: media_search / media_trending find icons, emoji, stickers, GIFs, memes, meme templates, Kadal's own library and Kadal Store (kind store); put a result's `mdx` into a slide as it is. Add `credits: true` to the headmatter and every item is credited on a Credits slide automatically. After inserting a KLIPY result, call media_used.",
         "Resources: kadal-deck://guide/design-guide (how to make a good talk), kadal-deck://guide/authoring, kadal-deck://reference.",
       ].join("\n"),
     },
@@ -1368,10 +1368,14 @@ export function createServer(options: McpOptions): {
 
   // ── media ────────────────────────────────────────────────────────────────────────────────
   const MEDIA_KIND = z
-    .enum(["icon", "emoji", "sticker", "gif", "meme", "template", "kadal"])
+    .enum(["icon", "emoji", "sticker", "gif", "meme", "template", "kadal", "store"])
     .describe(
-      "icon (Iconify: every free set), emoji (Fluent, Noto, Noto Animated, Twemoji: <Emoji> inline), sticker (Kadal's stickers, KLIPY stickers, emoji as placeable <Sticker>), gif (Kadal's GIF loops, KLIPY GIFs), meme (KLIPY's finished memes), template (meme templates with caption boxes: Kadal's and Imgflip's top 100, as <Meme>), kadal (all of Kadal's own library).",
+      "icon (Iconify: every free set), emoji (Fluent, Noto, Noto Animated, Twemoji: <Emoji> inline), sticker (Kadal's stickers, KLIPY stickers, emoji as placeable <Sticker>), gif (Kadal's GIF loops, KLIPY GIFs), meme (KLIPY's finished memes), template (meme templates with caption boxes: Kadal's and Imgflip's top 100, as <Meme>), kadal (all of Kadal's own library), store (Kadal Store's shelf, free in any deck under the Kadal Deck licence: images, icons, stickers, illustrations, patterns and wallpapers as slide backgrounds, music and sound effects as <Audio>, videos, <Lottie> animations, <Model> 3D models, LUTs; narrow with `type`).",
     );
+  const MEDIA_TYPE = z
+    .enum(["image", "icon", "sticker", "illustration", "pattern", "wallpaper", "music", "sfx", "video", "lottie", "model", "lut", "gif", "meme-template"])
+    .optional()
+    .describe("Kadal Store only (kind store): one kind of element.");
   const MEDIA_LIMIT = z
     .number()
     .int()
@@ -1395,7 +1399,7 @@ export function createServer(options: McpOptions): {
     })
     .passthrough();
 
-  type MediaArgs = { kind: import("../media-search/sources.ts").MediaKind; query?: string; limit?: number; set?: string };
+  type MediaArgs = { kind: import("../media-search/sources.ts").MediaKind; query?: string; limit?: number; set?: string; type?: string };
   const findMedia = async (a: MediaArgs, verb: "search" | "trending") => {
     const session = await media();
     let found: import("../media-search/search.ts").MediaFind;
@@ -1407,7 +1411,7 @@ export function createServer(options: McpOptions): {
     }
     const lines = found.results.map(
       (r, i) =>
-        `${i + 1}. [${r.provider} ${r.type}] ${r.title} (id ${r.id}) — ${r.attribution}${r.preview ? `\n   preview: ${r.preview}` : ""}\n${r.mdx ? r.mdx.replace(/^/gm, "   ") : "   (a KLIPY slot with nothing to insert)"}`,
+        `${i + 1}. [${r.provider} ${r.type}] ${r.title} (id ${r.id}) — ${r.attribution}${r.preview ? `\n   preview: ${r.preview}` : ""}\n${r.mdx ? r.mdx.replace(/^/gm, "   ") : "   (nothing to insert)"}${r.frontmatter && r.frontmatter !== r.mdx ? `\n   or behind the slide, as its frontmatter:\n${r.frontmatter.replace(/^/gm, "   ")}` : ""}`,
     );
     const notes = found.sources.filter((s) => s.note).map((s) => `${s.provider}: ${s.note}`);
     const klipy = found.results.some((r) => r.reportUse);
@@ -1433,12 +1437,13 @@ export function createServer(options: McpOptions): {
     {
       title: "Search media",
       description:
-        "Find media for a slide — the same sources and the same MDX as the hosted builder's Insert media panel: Iconify icons, emoji, stickers, GIFs and memes (KLIPY), meme templates (Imgflip, with caption boxes placed), and Kadal's own stickers, GIF loops and templates. Each result has `mdx` (paste it into the slide unchanged; edit only caption text, `size`, `x`/`y`), `preview` (a picture URL), `attribution` and `id`. Credits are automatic: set `credits: true` in the headmatter (deck_update_frontmatter) and every item appears on a Credits slide with its licence. KLIPY needs the CLI's sign-in; without it the other sources still answer. Prefer one emoji set per deck; prefer Kadal's own items when they fit.",
+        "Find media for a slide — the same sources and the same MDX as the hosted builder's Insert media panel: Iconify icons, emoji, stickers, GIFs and memes (KLIPY), meme templates (Imgflip, with caption boxes placed), Kadal's own stickers, GIF loops and templates, and Kadal Store's shelf (kind store: a pattern, a wallpaper or a shader also comes with `frontmatter`, the slide's `background:` that puts it behind the slide — a shader only that way — and a LUT is attributes to add to an <Image> or <Video>). Each result has `mdx` (paste it into the slide unchanged; edit only caption text, `size`, `x`/`y`), `preview` (a picture URL), `attribution` and `id`. Credits are automatic: set `credits: true` in the headmatter (deck_update_frontmatter) and every item appears on a Credits slide with its licence. KLIPY needs the CLI's sign-in; without it the other sources still answer. Prefer one emoji set per deck; prefer Kadal's own items when they fit.",
       inputSchema: {
         kind: MEDIA_KIND,
         query: z.string().min(1).describe("What to look for: a feeling, an object, a reaction (\"mind blown\", \"rocket\", \"thank you\")."),
         limit: MEDIA_LIMIT,
         set: MEDIA_SET,
+        type: MEDIA_TYPE,
       },
       outputSchema: out({ kind: z.string(), query: z.string(), results: z.array(MEDIA_RESULT), sources: z.array(LOOSE) }),
       annotations: { readOnlyHint: true, openWorldHint: true },
@@ -1452,7 +1457,7 @@ export function createServer(options: McpOptions): {
       title: "Trending media",
       description:
         "What's popular now in a kind, with no query: KLIPY's trending GIFs, stickers and memes, Imgflip's top meme templates, the most-used emoji, a sample of the popular icon sets, Kadal's library in its own order. Same result shape as media_search (`mdx`, `preview`, `attribution`, `id`); paste the `mdx` into a slide unchanged. Credits are automatic with `credits: true` in the headmatter.",
-      inputSchema: { kind: MEDIA_KIND, limit: MEDIA_LIMIT, set: MEDIA_SET },
+      inputSchema: { kind: MEDIA_KIND, limit: MEDIA_LIMIT, set: MEDIA_SET, type: MEDIA_TYPE },
       outputSchema: out({ kind: z.string(), results: z.array(MEDIA_RESULT), sources: z.array(LOOSE) }),
       annotations: { readOnlyHint: true, openWorldHint: true },
     },

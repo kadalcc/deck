@@ -134,8 +134,20 @@ describe("the server describes itself", () => {
     const search = tools.find((t) => t.name === "media_search")!;
     const props = search.inputSchema.properties as Record<string, { enum?: string[] }>;
     expect(search.inputSchema.required).toEqual(["kind", "query"]);
-    expect(props.kind!.enum).toEqual(["icon", "emoji", "sticker", "gif", "meme", "template", "kadal"]);
+    expect(props.kind!.enum).toEqual([
+      "icon",
+      "emoji",
+      "sticker",
+      "gif",
+      "meme",
+      "template",
+      "kadal",
+      "store",
+    ]);
     expect(props.set!.enum).toContain("twemoji");
+    // Kadal Store narrows by its element kinds.
+    expect(props.type!.enum).toContain("pattern");
+    expect(props.type!.enum).toContain("lottie");
     expect(search.description).toContain("mdx");
     expect(search.description).toContain("credits: true");
     expect(search.annotations?.readOnlyHint).toBe(true);
