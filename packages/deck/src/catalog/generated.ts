@@ -368,7 +368,6 @@ export const GENERATED: GeneratedData = {
     "transition",
     "transitionSpeed",
     "transitions",
-    "trim",
     "url",
     "visibility",
     "zoom",

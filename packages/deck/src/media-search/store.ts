@@ -146,10 +146,8 @@ export function parseStorePage(raw: unknown): { items: StoreElement[]; total: nu
         ? { captionBoxes: r.captionBoxes as NonNullable<StoreElement["captionBoxes"]> }
         : {}),
       pro: r.pro === true,
-      ...(typeof r.mdx === "string" && r.mdx.trim() ? { mdx: r.mdx } : {}),
-      ...(typeof r.frontmatter === "string" && r.frontmatter.trim()
-        ? { frontmatter: r.frontmatter }
-        : {}),
+      ...(s(r.mdx).trim() ? { mdx: s(r.mdx) } : {}),
+      ...(s(r.frontmatter).trim() ? { frontmatter: s(r.frontmatter) } : {}),
     });
   }
   return { items, total: n(o.total) ?? items.length };
