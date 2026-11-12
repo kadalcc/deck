@@ -1100,6 +1100,7 @@ A video that knows the slide's clicks: plays on arrival, at a click (`at`), paus
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `src` | `string` |  | Video URL (public/ path or https), or `<source>` children. |
+| `hevc` | `string` |  | The same clip as HEVC with alpha (an MP4 tagged hvc1). Safari and every iOS browser play this one, since they draw a WebM's transparency as black; other browsers keep `src`. |
 | `autoplay` | `boolean \| "once"` |  | Play when the slide (or `at`, or the enclosing `<Click>`) arrives; "once": only the first time. |
 | `at` | `ClickAt` |  | The click at which it starts playing (as `<Click at>`); implies `autoplay`. |
 | `pauseAt` | `ClickAt` |  | The click at which it pauses. |

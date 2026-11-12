@@ -63,7 +63,10 @@ export { playingAt, seekCrossing };
 
 export interface VideoProps extends MediaCreditProps {
   src?: string;
-  /** The same clip as HEVC with alpha (an MP4 tagged hvc1), for WebKit: see above. */
+  /**
+   * The same clip as HEVC with alpha (an MP4 tagged hvc1). Safari and every iOS browser play this
+   * one, since they draw a WebM's transparency as black; other browsers keep `src`.
+   */
   hevc?: string;
   /** Play when the slide (or `at`, or the enclosing `<Click>`) arrives; "once": only the first time. */
   autoplay?: boolean | "once";
