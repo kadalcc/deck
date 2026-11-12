@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import type { ClickAt } from "../core/clicks.ts";
 import { useSlideOptional } from "../react/context.ts";
@@ -46,6 +46,11 @@ import {
  * arrival and pauses on leaving, through the slide's own media handling (and the deck's
  * `autoPlayMedia`).
  *
+ * A transparent clip ships as a VP9 WebM, whose alpha WebKit (Safari, and every browser on iOS)
+ * decodes as black. `hevc` names the same clip as HEVC with alpha, the one form WebKit shows
+ * transparent; WebKit gets that, everything else keeps `src`. Not by `canPlayType`: Safari says
+ * "probably" to VP9 and drops its alpha, and Chrome on a Mac plays HEVC but drops its alpha too.
+ *
  * Credited like a sticker (`provider`, `id`, `credit`, `creditUrl`, `license`, `licenseUrl`): on
  * hover, and in `<Credits />`. `lut` grades it with a `.cube` LUT (components/lut-video.ts) — the
  * poster as an image, the frames on a canvas over the video while it plays.
@@ -58,6 +63,8 @@ export { playingAt, seekCrossing };
 
 export interface VideoProps extends MediaCreditProps {
   src?: string;
+  /** The same clip as HEVC with alpha (an MP4 tagged hvc1), for WebKit: see above. */
+  hevc?: string;
   /** Play when the slide (or `at`, or the enclosing `<Click>`) arrives; "once": only the first time. */
   autoplay?: boolean | "once";
   /** The click at which it starts playing (as `<Click at>`); implies `autoplay`. */
@@ -94,8 +101,28 @@ export interface VideoProps extends MediaCreditProps {
   [key: string]: unknown;
 }
 
+/**
+ * WebKit without Blink or Gecko: Safari, and iOS's Chrome (CriOS), Firefox (FxiOS) and Edge, which
+ * all run WebKit. A Blink or Gecko browser says so in its own token, desktop Firefox has no
+ * AppleWebKit at all.
+ */
+export function wantsHevcAlpha(ua: string): boolean {
+  return /AppleWebKit\//.test(ua) && !/(?:Chrome|Chromium|Edg|OPR|Firefox)\//.test(ua);
+}
+
+const noSubscribe = () => () => {};
+/** False on the server and while hydrating, so the markup matches; the browser's answer after. */
+function useWantsHevc(): boolean {
+  return useSyncExternalStore(
+    noSubscribe,
+    () => typeof navigator !== "undefined" && wantsHevcAlpha(navigator.userAgent),
+    () => false,
+  );
+}
+
 export function Video({
-  src,
+  src: webSrc,
+  hevc,
   autoplay,
   at,
   pauseAt,
@@ -125,6 +152,8 @@ export function Video({
   const slide = useSlideOptional();
   const where = useRenderContext();
   const ref = useRef<HTMLVideoElement>(null);
+  const wantsHevc = useWantsHevc();
+  const src = hevc && wantsHevc ? hevc : webSrc;
   const frame = useRef<HTMLSpanElement>(null);
   const played = useRef(false);
   const lastClick = useRef<number | null>(null);
@@ -217,6 +246,13 @@ export function Video({
     // the video shows the frame it seeks to (onLoadedMetadata), which the canvas grades.
     poster: noPlay ? !!printPoster && printTimestamp === undefined : !!poster,
   });
+
+  // The source changed after the slide handed it out (WebKit learns it wants `hevc` once
+  // hydrated): load the new one.
+  useEffect(() => {
+    const v = ref.current;
+    if (v && src && v.getAttribute("src") && v.getAttribute("src") !== src) v.setAttribute("src", src);
+  }, [src]);
 
   const own = stickerCredit({ provider, credit, creditUrl });
   const report = useReportHref(own ? src : undefined);

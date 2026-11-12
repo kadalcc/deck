@@ -18,7 +18,7 @@ import { Lottie, lottieStillFrame } from "./Lottie.tsx";
 import { crossesPlay } from "./media-clicks.ts";
 import { stickerCredit } from "./media.tsx";
 import { Model, modelAttributes, modelPlace } from "./Model.tsx";
-import { Video } from "./Video.tsx";
+import { Video, wantsHevcAlpha } from "./Video.tsx";
 
 /**
  * Just enough of a deck and a slide for the media components: a mode, a config, a click
@@ -97,6 +97,47 @@ describe("credits on hover", () => {
     expect(render(<Video src="/a.mp4" {...STORE} />, { mode: "print" }).html).not.toContain(
       "deck-media-credit",
     );
+  });
+});
+
+describe("<Video hevc>", () => {
+  test("WebKit takes the HEVC-alpha clip; Blink and Gecko keep the WebM", () => {
+    const UA = {
+      safari:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
+      iosSafari:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
+      iosChrome:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.6778.73 Mobile/15E148 Safari/604.1",
+      iosFirefox:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/132.0 Mobile/15E148 Safari/605.1.15",
+      macChrome:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      macEdge:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+      android:
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+      firefox: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:132.0) Gecko/20100101 Firefox/132.0",
+    };
+    expect(
+      Object.fromEntries(Object.entries(UA).map(([k, ua]) => [k, wantsHevcAlpha(ua)])),
+    ).toEqual({
+      safari: true,
+      iosSafari: true,
+      iosChrome: true,
+      iosFirefox: true,
+      macChrome: false,
+      macEdge: false,
+      android: false,
+      firefox: false,
+    });
+  });
+
+  test("rendered on the server (and while hydrating) it names the WebM, as every browser starts", () => {
+    const html = render(<Video src="/a.webm" hevc="/a.mp4" autoplay loop />).html;
+    expect(html).toContain('data-src="/a.webm"');
+    expect(html).not.toContain("/a.mp4");
+    expect(html).not.toContain("hevc=");
   });
 });
 
