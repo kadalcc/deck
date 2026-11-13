@@ -87,6 +87,12 @@ before anything is on screen. A presenter who leaves the slide before Angular fi
 handled by a flag the startup checks; props that arrive in the meantime are kept and applied when
 the application lands.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See

@@ -53,6 +53,12 @@ npm run dev      # the preview deck, live
 npm run check    # lint it
 ```
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence and attribution
 
 MIT. This package is a port of [`@slidev/theme-seriph`](https://github.com/slidevjs/themes), MIT License,

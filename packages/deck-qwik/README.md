@@ -85,6 +85,12 @@ setting a flag the render completion checks.
 Built against `@qwik.dev/core` **2.0.0-rc.0**, which is the Qwik that supports Vite 8. Qwik 1
 (`@builder.io/qwik`) is stable but caps at Vite 6.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See

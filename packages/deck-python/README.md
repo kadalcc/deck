@@ -82,6 +82,12 @@ presented offline cannot run a Python island unless it serves Pyodide itself —
 On the showcase slide, the Python ticker reads a few seconds behind the other nine. That is not a
 bug: it is the download, visible.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See

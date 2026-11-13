@@ -47,6 +47,12 @@ Slides compiled this way cannot `import`: they use the engine's components.
 (stage a placeholder, add the trusted publisher, publish). Hosts build it from this repo
 (`bun run build` here → `dist/`) until then; remove `private` once bootstrapped.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, like the engine. See

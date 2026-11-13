@@ -31,6 +31,12 @@ npm create @kadal/deck@latest -- --addon qr         # kadal-addon-qr/
 The contract is [THEMES.md](https://github.com/kadalcc/deck/blob/main/packages/deck/THEMES.md) in
 `@kadal/deck`; the guide is [Writing a theme](https://deck.kadal.cc/docs/writing-a-theme/).
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, like the engine. See

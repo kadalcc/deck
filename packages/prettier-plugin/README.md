@@ -65,6 +65,12 @@ const { text, changed, kept } = await formatDeck(source, prettier, { proseWrap: 
 // kept: [{ slide, line, reason }] for each part left as written, and why
 ```
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, like the engine (see [LICENSING.md](https://github.com/kadalcc/deck/blob/main/LICENSING.md)).

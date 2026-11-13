@@ -430,5 +430,5 @@ are listed in [BACKERS.md](BACKERS.md). Companies can sponsor
 <!-- /sponsors -->
 
 <p align="center">
-  <sub>Made in Chennai by <a href="https://kadal.cc">Kadal</a> · <a href="https://deck.kadal.cc">deck.kadal.cc</a> · <a href="mailto:hello@kadal.cc">hello@kadal.cc</a></sub>
+  <sub>Made in Chennai, India by <a href="https://kadal.cc">Kadal</a> · <a href="https://deck.kadal.cc">deck.kadal.cc</a> · <a href="mailto:hello@kadal.cc">hello@kadal.cc</a> · <a href="https://work.kadal.cc/contact/">Contact and office</a></sub>
 </p>

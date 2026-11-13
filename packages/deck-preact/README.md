@@ -58,6 +58,12 @@ A Preact component is a plain function returning vnodes — identical in shape t
 production-compiled Svelte component. A Preact component and a React component can be the same
 source text. Only the stamp separates them.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See

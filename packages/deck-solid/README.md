@@ -69,6 +69,12 @@ is the cheapest island update of any framework here.
 Solid's JSX is a compiler that emits `createComponent` calls, and this package is plain TypeScript
 nobody runs Babel over. It calls `createComponent` directly — the same thing, written out.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
