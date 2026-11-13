@@ -1,5 +1,13 @@
 # @kadal/theme-crisp
 
+## 0.13.1
+
+### Patch Changes
+
+- 2a8b979: Each package page says who makes Kadal Deck and links to Kadal's contact page and office in Chennai, India.
+- Updated dependencies [2a8b979]
+  - @kadal/deck@0.13.1
+
 ## 0.13.0
 
 ### Patch Changes
