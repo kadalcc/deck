@@ -74,6 +74,12 @@ node tools/theme-shots.mjs folio               # screenshots in light and dark, 
 
 Body and muted text meet WCAG AA (4.5:1) on the page and on cards in every scheme the theme draws (checked by `tools/theme-shots.mjs`). Anything that moves stands still under `prefers-reduced-motion` and on a still copy; printed pages and exports drop shadows and glows.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, like the engine (see LICENSE); a commercial licence is available — see [LICENSING](https://github.com/kadalcc/deck/blob/main/LICENSING.md).

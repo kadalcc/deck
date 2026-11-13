@@ -86,6 +86,12 @@ island, and the deck's print and export paths run a real browser. Same reasoning
 **No live cross-framework children.** `children` arrive as HTML and are passed as a `deckSlot` prop.
 A React subtree cannot keep its state inside a Svelte component.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See

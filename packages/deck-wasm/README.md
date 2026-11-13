@@ -122,6 +122,12 @@ toolchain). The module holds the state and does the arithmetic; the shim beside 
 and the interval. That division is not a simplification for the demo — it is exactly what
 `wasm-bindgen` generates, written out by hand so the seam is visible.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See

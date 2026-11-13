@@ -45,6 +45,12 @@ The practical difference from writing `framework="preact"` is documentation. An 
 Fresh island should see Fresh in the deck, and should also see this page explaining which half of
 Fresh came with it.
 
+## Who makes it
+
+[Kadal Deck](https://deck.kadal.cc) is made by [Kadal](https://kadal.cc), a small AI product studio
+in Chennai, India. Write to [hello@kadal.cc](mailto:hello@kadal.cc), or see
+[our contact page and office](https://work.kadal.cc/contact/).
+
 ## Licence
 
 AGPL-3.0-or-later, with a commercial licence available — the same terms as the engine. See
