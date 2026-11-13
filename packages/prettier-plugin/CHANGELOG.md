@@ -1,5 +1,11 @@
 # @kadal/prettier-plugin
 
+## 0.13.1
+
+### Patch Changes
+
+- 2a8b979: Each package page says who makes Kadal Deck and links to Kadal's contact page and office in Chennai, India.
+
 ## 0.13.0
 
 No changes in this release.

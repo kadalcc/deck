@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+### Patch Changes
+
+- 2a8b979: Each package page says who makes Kadal Deck and links to Kadal's contact page and office in Chennai, India.
+
 ## 0.1.3
 
 ### Patch Changes
